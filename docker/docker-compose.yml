@@ -1,7 +1,7 @@
 networks:
-  public_1:
+  docker_public_1:
     external: true
-  private_1:
+  docker_private_1:
     external: true
 
 services:
@@ -27,8 +27,8 @@ services:
       - /app/node_modules
     working_dir: /app
     networks:
-      - public_1
-      - private_1
+      - docker_public_1
+      - docker_private_1
     # depends_on:
     #   - php_01
     #   - pgvector_03
