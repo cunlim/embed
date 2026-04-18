@@ -17,12 +17,13 @@
     * `/app/` ➔ Laravel Reverb 웹소켓으로 라우팅 (Upgrade 헤더 적용 완료)
 
 ## 2. 기술 스택 및 인프라
-* **Frontend:** Next.js (node_01 v24.15.0), shadcn/ui
-* **Backend:** Laravel 13.5.0 (php_01 docker container, FROM php:8.5.3-fpm-bookworm)
+* **Frontend:** Next.js (nextjs_01 v24.15.0), shadcn/ui
+* **Backend:** Laravel 13.5.0 (php:8.5.3-fpm-bookworm)
 * **Database:** PostgreSQL 15+ (with `pgvector` extension)
 * **In-Memory Store:** Redis (Session, Cache, Queue, Broadcasting)
 * **Infrastructure:** Docker & Docker Compose(/var/app/docker/docker-compose.yml, ./docker/docker-compose.yml), Nginx (Reverse Proxy), WSL Ubuntu
 * **API Documentation:** Swagger UI 또는 Postman Collection 배포
+* **docker container** nextjs_01, php_01, pgvector_03, redis_04
 
 ## 3. 데이터베이스 주요 테이블 정의
 * **categories_coupang / categories_naver / categories_taobao:**
