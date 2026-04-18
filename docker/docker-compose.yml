@@ -1,0 +1,36 @@
+networks:
+  public_1:
+    external: true
+  private_1:
+    external: true
+
+services:
+
+  nextjs_01:
+    container_name: nextjs_01
+    hostname: 'nextjs_01'
+    build:
+      context: ../nextjs
+      dockerfile: dockerfile
+    restart: unless-stopped
+    environment:
+      WATCHPACK_POLLING: true  # 파일 변경 즉시 감지 (HMR)
+      NODE_ENV: development
+      PORT: 3000
+      TZ: Asia/Seoul
+    # ports:
+    #   - "3000:3000"
+    expose:
+      - "3000"
+    volumes:
+      - ../nextjs:/app
+      - /app/node_modules
+    working_dir: /app
+    networks:
+      - public_1
+      - private_1
+    # depends_on:
+    #   - php_01
+    #   - pgvector_03
+    #   - redis_04
+
