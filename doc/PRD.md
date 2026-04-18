@@ -107,14 +107,3 @@ Nginx가 앞단에서 트래픽을 분류하여 각 컨테이너로 전달하며
 * **테스트 코드:** 백엔드 주요 로직(임베딩 파이프라인, 동적 파싱, API 응답)에 대한 테스트 코드 의무 작성.
 * **자동화 파이프라인:** GitLab CI/CD를 구성하여 코드 푸시 시 SonarQube 정적 분석 수행 후 타겟 서버(WSL Ubuntu)에 Docker Compose 형태로 자동 배포.
 
-
-
-1. postgres_02 컨테이너에 이상의 환경에 사용될수 있게 pgvector 확장 설치 등 추가적인 작업을 어떻게 해야 할지 알려주세요. 현재 postgres_02 에는 sonarqube 용 테이블만 존재할거고 보존하면서 작업할수 있을지도 알려주세요
-
-2. /var/app/www/cl_embed 에는 next.js, laravel 등 모든 소스코드들이 들어있을 폴더입니다. VOL_DIR_WWW_HOST 등 값들을 확인하기 위해 @/var/app/docker/.env 파일도 살펴봐주세요
-
-3. Next.js, laravel 은 /var/app/www/cl_embed 빈 폴더에 0부터 생성하여 작업해야 합니다.
-
-4. MySQL 컨테이너는 사용하지 않고 postgres_02 컨테이너만 연결하여 작업하면 됩니다.
-
-5. OAuth 설정값은 /var/app/www/cl_embed/laravel/.env.01 파일에 저장되어있고 필요한 위치에 이동하고 편집이 필요하면 편집하여 사용하면 됩니다.
