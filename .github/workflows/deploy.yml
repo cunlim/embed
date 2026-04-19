@@ -27,7 +27,7 @@ jobs:
           cd ../laravel
 
           # 3. 백그라운드 데몬 실행 (docker exec -d 옵션 사용)
-          docker exec -d php_01 bash -c "
+          docker exec -d -w /var/www/cl_embed/laravel php_01 bash -c
             nohup php artisan serve --host=0.0.0.0 --port=8000 > logs/serve.log 2>&1 &
             nohup php artisan reverb:start --host=0.0.0.0 --port=8080 > logs/reverb.log 2>&1 &
             nohup php artisan queue:work > logs/queue.log 2>&1 &
