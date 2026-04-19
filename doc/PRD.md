@@ -17,19 +17,19 @@
     * `/app/` ➔ Laravel Reverb 웹소켓으로 라우팅 (Upgrade 헤더 적용 완료)
 
 ## 3. 기술 스택 및 인프라
-* **Frontend:** Next.js (node v24.15.0, next.js 16.2.4), shadcn/ui
+* **Frontend:** Next.js (Node v24.15.0, Next.js 16.2.4), shadcn/ui
 * **Backend:** Laravel 13.5.0 (php:8.5.3-fpm-bookworm)
 * **Database:** PostgreSQL 15+ (with `pgvector` extension)
 * **In-Memory Store:** Redis (Session, Cache, Queue, Broadcasting)
-* **Infrastructure:** Docker & Docker Compose(/var/app/docker/docker-compose.yml, ./docker/docker-compose.yml), Nginx (Reverse Proxy), WSL Ubuntu
+* **Infrastructure:** Docker & Docker Compose(`/var/app/docker/docker-compose.yml`, `./docker/docker-compose.yml`), Nginx (Reverse Proxy), WSL Ubuntu
 * **API Documentation:** Swagger UI 또는 Postman Collection 배포
-* **docker container:** nextjs_01, php_01, pgvector_03, redis_04
+* **Docker Container:** `nextjs_01`, `php_01`, `pgvector_03`, `redis_04`
 
 ## 4. 데이터베이스 주요 테이블 정의
 * **categories_coupang / categories_naver / categories_taobao:**
     * `id` (PK)
     * `category_code` (VARCHAR, 플랫폼별 영문/숫자 코드)
-    * `category_name` (VARCHAR, 예: "패션의류>여성의류>레깅스")
+    * `category_name` (VARCHAR, 예: "패션의류>여성의류>레깅스" - 별도 정규화 없이 원시 문자열 저장)
 * **category_embeddings:** (모델별 다중 임베딩 지원을 위한 1:N 테이블)
     * `id` (PK)
     * `platform_type` (VARCHAR, 'coupang', 'naver', 'taobao')
@@ -52,10 +52,10 @@ Nginx가 앞단에서 트래픽을 분류하여 각 컨테이너로 전달하며
 ## 6. 핵심 기능 요구사항
 
 ### 6.1. 대량 카테고리 임베딩 파이프라인 (Batch Embedding)
-* **설명:** 수천/수만 건의 카테고리 텍스트를 LLM(OpenAI 등) API를 통해 벡터 데이터로 변환하여 DB에 저장합니다.
+* **설명:** 수천/수만 건의 카테고리 텍스트를 LLM(로컬 Ollama 등) API를 통해 벡터 데이터로 변환하여 DB에 저장.
 * **요구사항:**
-    * API 요청 시 전체 작업을 청크(Chunk) 단위로 분할하여 Redis Queue에 적재해야 합니다.
-    * **Rate Limit 대응:** 외부 API의 분당 요청 제한(429 에러)을 우회하기 위해 `Redis::throttle()`을 적용하거나 Job 사이에 의도적인 딜레이(Sleep)를 부여하는 방어 로직을 포함해야 합니다.
+    * API 요청 시 전체 작업을 청크(Chunk) 단위로 분할하여 Redis Queue에 적재.
+    * **Rate Limit 대응:** 외부/로컬 API의 분당 요청 제한(429 에러)을 우회하기 위해 `Redis::throttle()`을 적용하거나 Job 사이에 의도적인 딜레이(Sleep)를 부여하는 방어 로직을 포함해야 합니다.
     * API 서버는 즉시 응답(202 Accepted)하고, 실제 작업은 백그라운드 워커가 처리합니다.
 
 ### 6.2. 검색 및 추천 엔진
@@ -91,7 +91,7 @@ Nginx가 앞단에서 트래픽을 분류하여 각 컨테이너로 전달하며
 * **인증 방식:** 이메일/비밀번호, Google, GitHub, Naver OAuth 연동. 추가 정보 입력 생략.
 * **데이터 관리 이원화:**
     * **비회원 (게스트):** 검색 로그, 추천 개수 설정값 등은 브라우저의 `LocalStorage`에 저장하여 DB 부하 및 찌꺼기 데이터 생성을 방지합니다.
-    * **회원 (로그인 유저):** 해당 데이터들은 각 계정(`User ID`)에 종속되어 DB에 저장 및 동기화됩니다.
+    * **회원:** OAuth (Google, GitHub, Naver) 로그인 지원, 해당 데이터들은 각 계정(`User ID`)에 종속되어 DB에 저장 및 동기화됩니다.
 
 ## 8. 다음 개발 마일스톤 (Next Milestones)
 * **Phase 1: Laravel 비동기 로직 구현 (Back-end)**
@@ -109,3 +109,4 @@ Nginx가 앞단에서 트래픽을 분류하여 각 컨테이너로 전달하며
 ## 9. 테스트 및 배포 (CI/CD)
 * **테스트 코드:** 백엔드 주요 로직(임베딩 파이프라인 중복 방지, Rate Limit 대응, API 응답)에 대한 테스트 코드 의무 작성.
 * **자동화 파이프라인:** GitLab CI/CD를 구성하여 코드 푸시 시 SonarQube 정적 분석 수행 후 타겟 서버(WSL Ubuntu)에 Docker Compose 형태로 자동 배포.
+* **실행 환경:** WSL 내부 Self-Hosted Runner를 통해 컨테이너 재시작 및 백그라운드 데몬(`queue`, `reverb`, `serve`) 실행 자동화.
