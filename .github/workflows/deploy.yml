@@ -1,0 +1,34 @@
+name: Local CI/CD
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted # 중요: 클라우드가 아닌 로컬 WSL Runner를 지정
+    steps:
+      - uses: actions/checkout@v4
+      # # 테스트 코드 실행 (선택)
+      # - name: Run Laravel Tests
+      #   run: docker exec php_01 php artisan test
+      # 변경사항 반영 및 컨테이너 재시작
+      - name: Restart Containers and Run Daemons
+        run: |
+          cd ./docker
+          docker compose restart nextjs_01
+
+          # 1. 컨테이너 재시작 (기존 프로세스 모두 Kill 됨)
+          cd /var/app/docker
+          docker compose restart php_01
+
+          # 2. php_01 컨테이너가 완전히 뜰 때까지 약간 대기 (필요 시)
+          sleep 3
+
+          cd -
+          cd ../laravel
+
+          # 3. 백그라운드 데몬 실행 (docker exec -d 옵션 사용)
+          docker exec -d php_01 bash -c "
+            nohup php artisan serve --host=0.0.0.0 --port=8000 > logs/serve.log 2>&1 &
+            nohup php artisan reverb:start --host=0.0.0.0 --port=8080 > logs/reverb.log 2>&1 &
+            nohup php artisan queue:work > logs/queue.log 2>&1 &
+          "
