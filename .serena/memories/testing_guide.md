@@ -13,29 +13,31 @@
 
 ## 테스트 실행
 
+모든 테스트 명령어는 Docker 컨테이너 `php_01`에서 실행됩니다.
+
 ### 전체 테스트
 ```bash
-php artisan test
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan test
 ```
 
 ### 컴팩트 모드 (출력 간소화)
 ```bash
-php artisan test --compact
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --compact
 ```
 
 ### 특정 테스트 필터링
 ```bash
-php artisan test --compact --filter=testName
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --compact --filter=testName
 ```
 
 ### 유닛 테스트만 실행
 ```bash
-php artisan test --testsuite=Unit
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --testsuite=Unit
 ```
 
 ### 피처 테스트만 실행
 ```bash
-php artisan test --testsuite=Feature
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --testsuite=Feature
 ```
 
 ## 테스트 작성
@@ -43,10 +45,10 @@ php artisan test --testsuite=Feature
 ### 새 테스트 생성
 ```bash
 # 피처 테스트
-php artisan make:test --pest UserTest
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:test --pest UserTest
 
 # 유닛 테스트
-php artisan make:test --pest --unit UserServiceTest
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:test --pest --unit UserServiceTest
 ```
 
 ### Pest 테스트 구조
@@ -57,14 +59,14 @@ use App\Models\User;
 
 test('사용자 생성 테스트', function () {
     $user = User::factory()->create();
-    
+
     expect($user->name)->toBeString();
     expect($user->email)->toBeString();
 });
 
 it('사용자 이메일 유효성 검사', function () {
     $user = User::factory()->create(['email' => 'test@example.com']);
-    
+
     expect($user->email)->toBe('test@example.com');
 });
 ```
@@ -80,7 +82,7 @@ uses(RefreshDatabase::class);
 test('데이터베이스 마이그레이션 테스트', function () {
     // RefreshDatabase가 각 테스트 후 DB 리셋
     expect(User::count())->toBe(0);
-    
+
     User::factory()->count(5)->create();
     expect(User::count())->toBe(5);
 });
@@ -93,10 +95,10 @@ test('데이터베이스 마이그레이션 테스트', function () {
 test('팩토리 사용 테스트', function () {
     // 기본 팩토리
     $user = User::factory()->create();
-    
+
     // 커스텀 상태
     $admin = User::factory()->admin()->create();
-    
+
     // 여러 개 생성
     $users = User::factory()->count(10)->create();
 });
@@ -110,11 +112,11 @@ use App\Services\PaymentService;
 
 test('결제 서비스 모킹', function () {
     $mock = mock(PaymentService::class);
-    
+
     $mock->shouldReceive('process')
          ->once()
          ->andReturn(true);
-    
+
     // 테스트 코드...
 });
 ```

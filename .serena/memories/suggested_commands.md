@@ -1,189 +1,131 @@
-# 개발 명령어
+# 자주 사용하는 명령어
 
-## Laravel 백엔드
+모든 명령어는 Docker 컨테이너 `php_01`에서 실행됩니다.
 
-### 개발 서버 실행
+## Laravel Artisan 명령어
+
+### 마이그레이션
 ```bash
-# Laravel 개발 서버 + 큐 + 로그 + Vite
-composer run dev
+# 마이그레이션 실행
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan migrate
 
-# 또는 개별 실행
-php artisan serve
-php artisan queue:listen --tries=1 --timeout=0
-php artisan pail --timeout=0
-npm run dev
+# 마이그레이션 롤백
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan migrate:rollback
+
+# 마이그레이션 상태 확인
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan migrate:status
+
+# 마이그레이션 초기화 (모든 테이블 삭제 후 다시 생성)
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan migrate:fresh
+
+# 시드 데이터 실행
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan db:seed
 ```
 
-### 테스트 실행
+### 코드 생성
+```bash
+# 컨트롤러 생성
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:controller Api/PostController
+
+# 모델 생성 (팩토리, 마이그레이션, 시더 포함)
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:model Post -mfs
+
+# 마이그레이션만 생성
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:migration create_posts_table
+
+# 리소스 클래스 생성
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:resource PostResource
+
+# Request 클래스 생성
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:request StorePostRequest
+
+# 테스트 생성
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:test --pest PostTest
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:test --pest --unit PostServiceTest
+```
+
+### 라우트
+```bash
+# 라우트 목록 확인
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan route:list
+
+# 라우트 캐시 삭제
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan route:clear
+```
+
+### 설정
+```bash
+# 설정 캐시 삭제
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan config:clear
+
+# 캐시 삭제 (모든 캐시)
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan cache:clear
+
+# 뷰 캐시 삭제
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan view:clear
+```
+
+### 환경
+```bash
+# 환경 정보 확인
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan about
+
+# 환경 변수 목록
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan env
+```
+
+### 테스트
 ```bash
 # 전체 테스트
-php artisan test
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan test
 
 # 컴팩트 모드
-php artisan test --compact
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --compact
 
-# 특정 테스트 필터링
-php artisan test --compact --filter=testName
-
-# Pest 전용
-php artisan make:test --pest TestName
+# 특정 테스트
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --compact --filter=PostTest
 ```
 
 ### 코드 포맷팅
 ```bash
-# PHP 파일 포맷팅
-vendor/bin/pint --dirty --format agent
-
-# 포맷팅 테스트 (수정 없음)
-vendor/bin/pint --test --format agent
+# Pint로 코드 포맷팅
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan pint --dirty --format
 ```
 
-### 데이터베이스
+### 빌드/서브스크라이버
 ```bash
-# 마이그레이션 실행
-php artisan migrate
+# 빌드 목록 확인
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan vendor:publish --provider="App\\Providers\\AppServiceProvider"
 
-# 마이그레이션 롤백
-php artisan migrate:rollback
-
-# 마이그레이션 리프레시
-php artisan migrate:fresh
-
-# 시더 실행
-php artisan db:seed
+# 에셋 빌드 (Next.js)
+docker exec -w /var/www/cl_embed/nextjs node_01 npm run build
 ```
 
-### 라우트 확인
+## Docker 명령어
+
 ```bash
-# 전체 라우트 목록
-php artisan route:list
+# PHP 컨테이너 접속 (대화형 쉘)
+docker exec -it php_01 bash
 
-# 특정 메서드 필터링
-php artisan route:list --method=GET
-
-# 특정 경로 필터링
-php artisan route:list --path=api
-```
-
-### 설정 확인
-```bash
-# 설정 값 확인
-php artisan config:show app.name
-php artisan config:show database.default
-
-# 환경 변수 확인
-# .env 파일 직접 읽기
-```
-
-### 기타 아티즌 명령어
-```bash
-# 사용 가능한 명령어 목록
-php artisan list
-
-# 명령어 도움말
-php artisan [command] --help
-
-# 틴커 실행
-php artisan tinker --execute 'User::count();'
-```
-
-## Next.js 프론트엔드
-
-### 개발 서버 실행
-```bash
-npm run dev
-```
-
-### 빌드
-```bash
-npm run build
-```
-
-### 프로덕션 서버 실행
-```bash
-npm start
-```
-
-### 코드 검사
-```bash
-npm run lint
-```
-
-## Docker
-
-### 컨테이너 실행
-```bash
-# docker-compose.yml이 있는 디렉토리에서
-docker-compose up -d
-
-# 특정 서비스 실행
-docker-compose up nextjs_01 -d
+# PHP 컨테이너에서 특정 명령어 실행
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan ...
 
 # 로그 확인
-docker-compose logs -f nextjs_01
+docker logs -f php_01
+
+# 컨테이너 재시작
+docker restart php_01
 ```
 
-## Git
+## Next.js 명령어
 
-### 기본 명령어
 ```bash
-# 상태 확인
-git status
+# 개발 서버 실행
+docker exec -w /var/app/www/cl_embed/nextjs node_01 npm run dev
 
-# 변경사항 추가
-git add .
+# 프로덕션 빌드
+docker exec -w /var/app/www/cl_embed/nextjs node_01 npm run build
 
-# 커밋
-git commit -m "메시지"
-
-# 푸시
-git push
-
-# 풀
-git pull
-
-# 브랜치 생성
-git checkout -b 브랜치명
-
-# 브랜치 목록
-git branch
+# ESLint 실행
+docker exec -w /var/app/www/cl_embed/nextjs node_01 npx next lint
 ```
-
-## 시스템 명령어
-
-### 파일 탐색
-```bash
-# 디렉토리 목록
-ls -la
-
-# 현재 경로
-pwd
-
-# 파일 찾기
-find . -name "*.php"
-
-# 내용 검색
-grep -r "검색어" .
-```
-
-### 권한 관리
-```bash
-# 실행 권한 부여
-chmod +x 파일명
-```
-
-## 개발 워크플로우
-
-### 새 기능 추가
-1. 테스트 작성 (TDD)
-2. 코드 구현
-3. 포맷팅 실행: `vendor/bin/pint --dirty --format agent`
-4. 테스트 실행: `php artisan test --compact`
-5. 커밋 및 푸시
-
-### 버그 수정
-1. 테스트로 문제 재현
-2. 코드 수정
-3. 테스트 실행
-4. 포맷팅 실행
-5. 커밋 및 푸시

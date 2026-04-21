@@ -39,13 +39,13 @@ enum Status: string {
 ## 코드 포맷팅 (Laravel Pint)
 - PHP 파일 수정 후 반드시 포맷팅 실행:
 ```bash
-vendor/bin/pint --dirty --format agent
+docker exec -w /var/www/cl_embed/laravel php_01 php artisan pint --dirty --format
 ```
 
 ## 테스트 (Pest PHP)
-- 테스트 생성: `php artisan make:test --pest {name}`
-- 테스트 실행: `php artisan test --compact`
-- 테스트 필터링: `php artisan test --compact --filter=testName`
+- 테스트 생성: `docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:test --pest {name}`
+- 테스트 실행: `docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --compact`
+- 테스트 필터링: `docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --compact --filter=testName`
 
 ## Next.js / TypeScript
 
