@@ -24,7 +24,7 @@
 * **AI Models (Local Ollama):** `translategemma:4b` (번역용), 임베딩용 모델
 * **Infrastructure:** Docker & Docker Compose(`/var/app/docker/docker-compose.yml`, `./docker/docker-compose.yml`), Nginx (Reverse Proxy), WSL Ubuntu
 * **API Documentation:** Swagger UI 또는 Postman Collection 배포
-* **Docker Container:** `nextjs_01`, `php_01`, `pgvector_03`, `redis_04`
+* **Docker Container:** `nextjs_01`, `docker exec -w /var/www/cl_embed/laravel php_01`, `pgvector_03`, `redis_04`
 
 ## 4. 데이터베이스 주요 테이블 정의
 * **categories:** (네이버 카테고리 기준 단일 테이블 생성 완료)
