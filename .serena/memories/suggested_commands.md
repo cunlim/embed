@@ -1,101 +1,101 @@
 # 자주 사용하는 명령어
 
-모든 명령어는 Docker 컨테이너 `php_01`에서 실행됩니다.
+모든 명령어는 Docker 컨테이너 `cl_embed_laravel`에서 실행됩니다.
 
 ## Laravel Artisan 명령어
 
 ### 마이그레이션
 ```bash
 # 마이그레이션 실행
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan migrate
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan migrate
 
 # 마이그레이션 롤백
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan migrate:rollback
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan migrate:rollback
 
 # 마이그레이션 상태 확인
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan migrate:status
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan migrate:status
 
 # 마이그레이션 초기화 (모든 테이블 삭제 후 다시 생성)
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan migrate:fresh
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan migrate:fresh
 
 # 시드 데이터 실행
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan db:seed
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan db:seed
 ```
 
 ### 코드 생성
 ```bash
 # 컨트롤러 생성
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:controller Api/PostController
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan make:controller Api/PostController
 
 # 모델 생성 (팩토리, 마이그레이션, 시더 포함)
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:model Post -mfs
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan make:model Post -mfs
 
 # 마이그레이션만 생성
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:migration create_posts_table
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan make:migration create_posts_table
 
 # 리소스 클래스 생성
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:resource PostResource
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan make:resource PostResource
 
 # Request 클래스 생성
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:request StorePostRequest
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan make:request StorePostRequest
 
 # 테스트 생성
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:test --pest PostTest
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:test --pest --unit PostServiceTest
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan make:test --pest PostTest
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan make:test --pest --unit PostServiceTest
 ```
 
 ### 라우트
 ```bash
 # 라우트 목록 확인
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan route:list
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan route:list
 
 # 라우트 캐시 삭제
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan route:clear
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan route:clear
 ```
 
 ### 설정
 ```bash
 # 설정 캐시 삭제
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan config:clear
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan config:clear
 
 # 캐시 삭제 (모든 캐시)
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan cache:clear
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan cache:clear
 
 # 뷰 캐시 삭제
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan view:clear
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan view:clear
 ```
 
 ### 환경
 ```bash
 # 환경 정보 확인
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan about
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan about
 
 # 환경 변수 목록
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan env
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan env
 ```
 
 ### 테스트
 ```bash
 # 전체 테스트
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan test
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan test
 
 # 컴팩트 모드
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --compact
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan test --compact
 
 # 특정 테스트
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --compact --filter=PostTest
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan test --compact --filter=PostTest
 ```
 
 ### 코드 포맷팅
 ```bash
 # Pint로 코드 포맷팅
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan pint --dirty --format
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan pint --dirty --format
 ```
 
 ### 빌드/서브스크라이버
 ```bash
 # 빌드 목록 확인
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan vendor:publish --provider="App\\Providers\\AppServiceProvider"
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan vendor:publish --provider="App\\Providers\\AppServiceProvider"
 
 # 에셋 빌드 (Next.js)
 docker exec -w /var/www/cl_embed/nextjs node_01 npm run build
@@ -105,16 +105,16 @@ docker exec -w /var/www/cl_embed/nextjs node_01 npm run build
 
 ```bash
 # PHP 컨테이너 접속 (대화형 쉘)
-docker exec -it php_01 bash
+docker exec -it cl_embed_laravel bash
 
 # PHP 컨테이너에서 특정 명령어 실행
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan ...
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan ...
 
 # 로그 확인
-docker logs -f php_01
+docker logs -f cl_embed_laravel
 
 # 컨테이너 재시작
-docker restart php_01
+docker restart cl_embed_laravel
 ```
 
 ## Next.js 명령어

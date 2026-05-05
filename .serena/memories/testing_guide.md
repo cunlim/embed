@@ -13,31 +13,31 @@
 
 ## 테스트 실행
 
-모든 테스트 명령어는 Docker 컨테이너 `php_01`에서 실행됩니다.
+모든 테스트 명령어는 Docker 컨테이너 `cl_embed_laravel`에서 실행됩니다.
 
 ### 전체 테스트
 ```bash
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan test
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan test
 ```
 
 ### 컴팩트 모드 (출력 간소화)
 ```bash
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --compact
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan test --compact
 ```
 
 ### 특정 테스트 필터링
 ```bash
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --compact --filter=testName
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan test --compact --filter=testName
 ```
 
 ### 유닛 테스트만 실행
 ```bash
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --testsuite=Unit
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan test --testsuite=Unit
 ```
 
 ### 피처 테스트만 실행
 ```bash
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --testsuite=Feature
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan test --testsuite=Feature
 ```
 
 ## 테스트 작성
@@ -45,10 +45,10 @@ docker exec -w /var/www/cl_embed/laravel php_01 php artisan test --testsuite=Fea
 ### 새 테스트 생성
 ```bash
 # 피처 테스트
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:test --pest UserTest
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan make:test --pest UserTest
 
 # 유닛 테스트
-docker exec -w /var/www/cl_embed/laravel php_01 php artisan make:test --pest --unit UserServiceTest
+docker exec -w /var/www/cl_embed/laravel cl_embed_laravel php artisan make:test --pest --unit UserServiceTest
 ```
 
 ### Pest 테스트 구조
