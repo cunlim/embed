@@ -25,6 +25,12 @@
 * **Infrastructure:** Docker & Docker Compose(`./docker/docker-compose.yml`), Nginx (Reverse Proxy), WSL Ubuntu
 * **API Documentation:** Swagger UI 또는 Postman Collection 배포
 * **Docker Container:** `cl_embed_nextjs`, `cl_embed_laravel`, `cl_embed_pgvector`, `cl_embed_redis`
+* cl_embed_laravel 컨테이너에서 laravel 실행 명령어:
+  docker exec -d cl_embed_laravel bash -c "
+    nohup php artisan serve --host=0.0.0.0 --port=8000 > logs/serve.log 2>&1 &
+    nohup php artisan reverb:start --host=0.0.0.0 --port=8080 > logs/reverb.log 2>&1 &
+    nohup php artisan queue:work > logs/queue.log 2>&1 &
+  "
 
 ## 4. 데이터베이스 주요 테이블 정의
 * **categories:** (네이버 카테고리 기준 단일 테이블 생성 완료)
