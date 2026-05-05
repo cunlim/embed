@@ -6,9 +6,9 @@ networks:
 
 services:
 
-  nextjs_01:
-    container_name: nextjs_01
-    hostname: 'nextjs_01'
+  nextjs_embed:
+    container_name: nextjs_embed
+    hostname: 'nextjs_embed'
     build:
       context: ../nextjs
       dockerfile: dockerfile

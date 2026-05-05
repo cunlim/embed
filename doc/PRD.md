@@ -7,7 +7,7 @@
 ## 2. 현재 진행 상황 (Current Status: 인프라 구축 완료)
 가장 난이도가 높은 멀티 컨테이너 환경의 인프라 세팅 및 네트워크 라우팅이 성공적으로 완료되었습니다.
 * **도메인 연결:** `https://embed.cunlim.dev` 호스트 연결 완료
-* **프론트엔드:** Next.js 기반 컨테이너(`nextjs_01`, Port 3000) 정상 구동 (`WATCHPACK_POLLING` 적용 완료)
+* **프론트엔드:** Next.js 기반 컨테이너(`nextjs_embed`, Port 3000) 정상 구동 (`WATCHPACK_POLLING` 적용 완료)
 * **백엔드:** Laravel 기반 컨테이너(`php_01`, Port 9000/FPM) 정상 구동 (DB 마이그레이션 완료)
 * **비동기/실시간 환경:** * Redis 연동 및 `queue:work` 데몬 구동 확인
   * Laravel Reverb (`reverb:start`, Port 8080) 웹소켓 서버 구동 및 101 핸드셰이크 응답 확인
@@ -24,7 +24,7 @@
 * **AI Models (Local Ollama):** `translategemma:4b` (번역용), 임베딩용 모델
 * **Infrastructure:** Docker & Docker Compose(`/var/app/docker/docker-compose.yml`, `./docker/docker-compose.yml`), Nginx (Reverse Proxy), WSL Ubuntu
 * **API Documentation:** Swagger UI 또는 Postman Collection 배포
-* **Docker Container:** `nextjs_01`, `docker exec -w /var/www/cl_embed/laravel php_01`, `pgvector_03`, `redis_04`
+* **Docker Container:** `nextjs_embed`, `docker exec -w /var/www/cl_embed/laravel php_01`, `pgvector_03`, `redis_04`
 
 ## 4. 데이터베이스 주요 테이블 정의
 * **categories:** (네이버 카테고리 기준 단일 테이블 생성 완료)
@@ -129,5 +129,5 @@ Nginx가 앞단에서 트래픽을 분류하여 각 컨테이너로 전달하며
 
 ## 9. 테스트 및 배포 (CI/CD)
 * **테스트 코드:** 백엔드 주요 로직(번역 텍스트 분할/재조립, AI 응답 예외 처리, Job Chaining, 중복 방지, Rate Limit 대응, API 응답)에 대한 테스트 코드 의무 작성.
-* **자동화 파이프라인:** GitLab CI/CD를 구성하여 코드 푸시 시 SonarQube 정적 분석 수행 후 타겟 서버(WSL Ubuntu)에 Docker Compose 형태로 자동 배포.
-* **실행 환경:** WSL 내부 Self-Hosted Runner를 통해 컨테이너 재시작 및 백그라운드 데몬(`queue`, `reverb`, `serve`) 실행 자동화.
+* **자동화 파이프라인:** github CI/CD를 구성하여 코드 푸시 시 테스트코드 진행, SonarQube 정적 분석 수행 필요.
+* **실행 환경:** 현재 WSL2 에서 직접 개발, 저장 즉시 배포(WATCHPACK_POLLING, volume). 내부 Self-Hosted Runner를 통해 컨테이너 재시작 및 백그라운드 데몬(`queue`, `reverb`, `serve`) 실행 자동화.

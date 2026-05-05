@@ -14,7 +14,7 @@ jobs:
       - name: Restart Containers and Run Daemons
         run: |
           cd ./docker
-          docker compose restart nextjs_01
+          docker compose restart nextjs_embed
 
           # 1. 컨테이너 재시작 (기존 프로세스 모두 Kill 됨)
           cd /var/app/docker
