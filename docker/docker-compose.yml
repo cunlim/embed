@@ -6,9 +6,9 @@ networks:
 
 services:
 
-  nextjs_embed:
-    container_name: nextjs_embed
-    hostname: 'nextjs_embed'
+  cl_embed_nextjs:
+    container_name: cl_embed_nextjs
+    hostname: 'cl_embed_nextjs'
     build:
       context: ../nextjs
       dockerfile: dockerfile
