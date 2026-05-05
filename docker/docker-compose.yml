@@ -11,7 +11,7 @@ services:
     hostname: 'cl_embed_nextjs'
     build:
       context: ../nextjs
-      dockerfile: dockerfile
+      dockerfile: ../docker/nextjs/dockerfile
     restart: unless-stopped
     environment:
       WATCHPACK_POLLING: true  # 파일 변경 즉시 감지 (HMR)
