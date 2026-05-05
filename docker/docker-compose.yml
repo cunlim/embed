@@ -30,7 +30,27 @@ services:
       - docker_public_1
       - docker_private_1
     # depends_on:
-    #   - php_01
+    #   - cl_embed_laravel
     #   - pgvector_03
     #   - redis_04
+
+  cl_embed_laravel:  # 8.5.5-fpm-trixie
+    container_name: cl_embed_laravel
+    hostname: 'cl_embed_laravel'
+    build:
+      context: ./laravel
+      dockerfile: dockerfile
+    restart: unless-stopped
+    volumes:
+      - ../laravel:/var/www/html
+      - ./laravel/volume/log:/var/log/php
+    environment:
+      TZ: ${TZ}
+    expose:
+      - "8000"
+      - "8080"
+      # - "9000"
+    networks:
+      - docker_public_1
+      - docker_private_1
 

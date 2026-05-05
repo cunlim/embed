@@ -1,0 +1,17 @@
+FROM php:8.5.5-fpm-trixie
+
+
+# Composer 설치 (멀티 스테이지 빌드 패턴 적용 - 매우 안전하고 빠름)
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+#  PHP 확장 모듈 설치. 마법의 스크립트(install-php-extensions) 다운로드
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+
+
+# 필수 OS 유틸리티 패키지 설치 (PHP 확장용 라이브러리는 여기서 뺍니다)
+RUN apt-get update && apt-get install -y \
+procps curl tree nano vim cron wget acl \
+# apt 캐시를 삭제하여 도커 이미지 용량 최적화
+&& rm -rf /var/lib/apt/lists/*
+
+RUN install-php-extensions intl mbstring zip bcmath gd imagick xdebug pdo_mysql pdo_pgsql redis pcntl
+
