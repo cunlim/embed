@@ -6,7 +6,7 @@
 
 ## 2. 현재 진행 상황 (Current Status: 인프라 구축 완료)
 가장 난이도가 높은 멀티 컨테이너 환경의 인프라 세팅 및 네트워크 라우팅이 성공적으로 완료되었습니다.
-* **도메인 연결:** cloudflared tunnel 을 통해 `https://embed.cunlim.dev` 호스트 연결 완료
+* **도메인 연결:** `https://embed.cunlim.dev` 호스트 연결 완료
 * **프론트엔드:** Next.js 기반 컨테이너(`cl_embed_nextjs`, Port 3000) 정상 구동 (`WATCHPACK_POLLING` 적용 완료)
 * **백엔드:** Laravel 기반 컨테이너(`cl_embed_laravel`) 정상 구동 (DB 마이그레이션 완료)
 * **비동기/실시간 환경:** * Redis 연동 및 `queue:work` 데몬 구동 확인
@@ -51,13 +51,15 @@
   * `id` (PK)
   * `user_id` (FK, **Nullable** - 비회원은 NULL 처리 또는 LocalStorage 의존)
   * `search_keyword` (VARCHAR)
-  * `target_language` (VARCHAR, 검색 시 선택한 언어)
+  * `embed_model_name` (VARCHAR, 예: 'llama3', 'nomic-embed-text')
+  * `embedding` (VECTOR, 다중 모델 지원을 위해 차원 수를 특정하지 않은 가변 타입으로 선언하거나, 성능 최적화가 필수적인 경우 모델별로 파티셔닝된 테이블 구성 고려)
   * `created_at` (TIMESTAMP)
+  * Unique Index (`search_keyword`)
 
 ## 5. 시스템 아키텍처 (System Architecture)
-Nginx가 앞단에서 트래픽을 분류하여 각 컨테이너로 전달하며, 백엔드는 메인 API 처리, 백그라운드 번역/임베딩 큐 처리, 실시간 웹소켓 서버로 역할을 완벽히 분리하여 병목을 방지합니다.
+도메인에 접근하면 cloudflared tunnel 을 통해 wsl Nginx docker 컨테이너가 앞단에서 트래픽을 분류하여 각 컨테이너로 전달하며, 백엔드는 메인 API 처리, 백그라운드 번역/임베딩 큐 처리, 실시간 웹소켓 서버로 역할을 완벽히 분리하여 병목을 방지합니다.
 
-* **웹 요청:** Client ➔ Nginx ➔ Next.js (UI) OR Laravel FPM (API)
+* **웹 요청:** Client ➔ cloudflared tunnel ➔ Nginx ➔ Next.js (UI) OR Laravel FPM (API)
 * **비동기 처리:** Laravel ➔ Redis (Job 적재) ➔ `queue:work` (백그라운드 번역 및 임베딩 생성) ➔ PostgreSQL (저장)
 * **실시간 통신:** `queue:work` ➔ Redis (Pub/Sub) ➔ Reverb Server ➔ Nginx (`/app`) ➔ Client (진행률 UI 업데이트)
 
@@ -80,7 +82,7 @@ Nginx가 앞단에서 트래픽을 분류하여 각 컨테이너로 전달하며
 ### 6.2. 검색 및 추천 엔진
 * **텍스트 입력 및 버튼:** 상품 묘사 텍스트 입력 후 타겟 언어(한국어/중국어/영어) 선택, '추천' 버튼 클릭.
 * **LIKE 검색 영역:** 선택한 언어 필드에서 `LIKE '%키워드%'` 쿼리 실행. 결과 리스트에 입력된 키워드는 **Bold** 처리하여 표시.
-* **AI 추천 영역 (언어별 추천):** * 입력 텍스트를 선택된 임베딩 모델로 벡터화.
+* **AI 추천 영역 (언어별 추천):** * 입력 텍스트를 일단 search_logs 에서 검색, 없으면 선택된 임베딩 모델로 벡터화. 벡터 결과는 search_logs 에 저장하여 추후 검색 시 벡터화 과정 없이 조회한 후 코사인 유사도 계산.
   * 타겟 언어로 필터링된 `category_embeddings` 데이터들과 코사인 유사도를 계산. **언어별 카테고리 추천 리스트**를 나열하고 각 결과에 유사도 수치 표시.
 * **임베딩 모델 선택:** UI 상단의 Select Box를 통해 소스코드나 DB에 미리 등록된 모델(Ollama 로컬 모델 또는 외부 API) 선택 가능. (유저 임의 모델 추가 불가)
 
@@ -107,8 +109,8 @@ Nginx가 앞단에서 트래픽을 분류하여 각 컨테이너로 전달하며
 * **히스토리:** 검색 내역, 클릭 결과를 기록하여 재검색 제공.
 
 ## 7. 로그인 및 사용자 데이터 관리 격리
-* **접근 제어:** 로그인 여부와 상관없이 메인 페이지 및 검색/추천 기능 접근 가능.
-* **인증 방식:** 이메일/비밀번호, Google, GitHub, Naver OAuth 연동. 추가 정보 입력 생략.
+* **접근 제어:** 로그인 여부와 상관없이 메인 페이지 및 검색/추천 기능 접근 가능. 최고관리자 페이지가 존재하여 검색/추천 기능에 접근할수 있는지 여부를 컨트롤 할수 있게 해야 함.
+* **인증 방식:** 이메일/비밀번호, Google, GitHub, Naver OAuth 연동. 아이디 등 추가 정보 입력 생략.
 * **데이터 관리 이원화:**
   * **비회원 (게스트):** 검색 로그, 추천 개수 설정값 등은 브라우저의 `LocalStorage`에 저장하여 DB 부하 및 찌꺼기 데이터 생성을 방지합니다.
   * **회원:** OAuth (Google, GitHub, Naver) 로그인 지원, 사용자 활동 데이터들은 각 계정(`User ID`)에 종속되어 DB에 저장 및 동기화됩니다.
@@ -129,5 +131,5 @@ Nginx가 앞단에서 트래픽을 분류하여 각 컨테이너로 전달하며
 
 ## 9. 테스트 및 배포 (CI/CD)
 * **테스트 코드:** 백엔드 주요 로직(번역 텍스트 분할/재조립, AI 응답 예외 처리, Job Chaining, 중복 방지, Rate Limit 대응, API 응답)에 대한 테스트 코드 의무 작성.
-* **자동화 파이프라인:** github CI/CD를 구성하여 코드 푸시 시 테스트코드 진행, SonarQube 정적 분석 수행 필요.
+* **자동화 파이프라인:** github CI/CD를 구성하여 코드 푸시 시 `테스트 실행`, `SonarQube 정적 분석 수행` 필요.
 * **실행 환경:** 현재 WSL2 에서 직접 개발, 저장 즉시 배포(WATCHPACK_POLLING, volume). 내부 Self-Hosted Runner를 통해 컨테이너 재시작 및 백그라운드 데몬(`queue`, `reverb`, `serve`) 실행 자동화.
