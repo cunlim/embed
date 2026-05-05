@@ -1,0 +1,72 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+nextjs/node_modules
+/nextjs/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/nextjs/coverage
+
+# next.js
+# /.next/
+/nextjs/out/
+
+# production
+/nextjs/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+# npm-debug.log*
+# yarn-debug.log*
+# yarn-error.log*
+# .pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+# .env*
+
+# vercel
+# .vercel
+
+# typescript
+# *.tsbuildinfo
+# next-env.d.ts
+
+
+
+
+# *.log
+# .DS_Store
+# .env
+# .env.backup
+# .env.production
+# .phpactor.json
+.phpunit.result.cache
+/laravel/.cursor/
+/laravel/.idea
+/laravel/.nova
+/laravel/.phpunit.cache
+/laravel/.vscode
+# /laravel/.zed
+# /laravel/auth.json
+/laravel/node_modules
+/laravel/public/build
+/laravel/public/hot
+/laravel/public/storage
+/laravel/storage/*.key
+/laravel/storage/pail
+/laravel/vendor
+# _ide_helper.php
+# Homestead.json
+# Homestead.yaml
+# Thumbs.db
+
+volume/

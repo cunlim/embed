@@ -29,10 +29,9 @@ services:
     networks:
       - docker_public_1
       - docker_private_1
-    # depends_on:
-    #   - cl_embed_laravel
-    #   - pgvector_03
-    #   - redis_04
+    depends_on:
+      - cl_embed_pgvector
+      - cl_embed_redis
 
   cl_embed_laravel:  # 8.5.5-fpm-trixie
     container_name: cl_embed_laravel
@@ -50,6 +49,44 @@ services:
       - "8000"
       - "8080"
       # - "9000"
+    networks:
+      - docker_public_1
+      - docker_private_1
+    depends_on:
+      - cl_embed_pgvector
+      - cl_embed_redis
+
+  cl_embed_pgvector:
+    image: pgvector/pgvector:pg15-bookworm
+    container_name: cl_embed_pgvector
+    hostname: 'cl_embed_pgvector'
+    restart: unless-stopped
+    ports:
+      - "40103:5432"
+    volumes:
+      - ./db/pgvector/volume/data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: '${DB_USER}'
+      POSTGRES_PASSWORD: '${DB_PASSWORD}'
+      POSTGRES_DB: cl_embed
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+      TZ: ${TZ}
+    networks:
+      - docker_public_1
+      - docker_private_1
+
+  cl_embed_redis:
+    image: redis:8.4.2-alpine3.22
+    container_name: cl_embed_redis
+    hostname: 'cl_embed_redis'
+    restart: unless-stopped
+    ports:
+      - "40104:6379"
+    command: redis-server --appendonly yes 
+    volumes:
+      - ./db/redis/volume/data:/data
+    environment:
+      TZ: ${TZ}
     networks:
       - docker_public_1
       - docker_private_1
