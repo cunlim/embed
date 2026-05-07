@@ -263,14 +263,9 @@ class TestBuildPreamble:
         assert "이전 시도 실패" in result
         assert "타입 에러 발생" in result
 
-    def test_includes_docker_exec_examples(self, executor):
+    def test_includes_max_retries(self, executor):
         result = executor._build_preamble("", "")
-        assert "docker exec cl_embed_laravel" in result
-        assert "docker exec cl_embed_nextjs" in result
-
-    def test_includes_index_path(self, executor):
-        result = executor._build_preamble("", "")
-        assert "/phases/0-mvp/index.json" in result
+        assert str(ex.StepExecutor.MAX_RETRIES) in result
 
     def test_includes_index_path(self, executor):
         result = executor._build_preamble("", "")
