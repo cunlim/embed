@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.env.backup
+.env.production
+*.log
+node_modules/
+.next/
+dist/
+build/
