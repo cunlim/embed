@@ -19,7 +19,7 @@
 설계 원칙:
 
 1. **Scope 최소화** — 하나의 step에서 하나의 레이어 또는 모듈만 다룬다. 여러 모듈을 동시에 수정해야 하면 step을 쪼갠다.
-2. **자기완결성** — 각 step 파일은 독립된 Claude 세션에서 실행된다. "이전 대화에서 논의한 바와 같이" 같은 외부 참조는 금지한다. 필요한 정보는 전부 파일 안에 적는다.
+2. **자기완결성** — 각 step 파일은 execute.py에 의해 개별 `claude -p` 호출로 실행된다. step 간에는 summary만 컨텍스트로 전달되므로, "이전 대화에서 논의한 바와 같이" 같은 외부 참조는 금지한다. 필요한 정보는 전부 파일 안에 적는다.
 3. **사전 준비 강제** — 관련 문서 경로와 이전 step에서 생성/수정된 파일 경로를 명시한다. 세션이 코드를 읽고 맥락을 파악한 뒤 작업하도록 유도한다.
 4. **시그니처 수준 지시** — 함수/클래스의 인터페이스만 제시하고 내부 구현은 에이전트 재량에 맡긴다. 단, 설계 의도에서 벗어나면 안 되는 핵심 규칙(멱등성, 보안, 데이터 무결성 등)은 반드시 명시한다.
 5. **AC는 실행 가능한 커맨드** — "~가 동작해야 한다" 같은 추상적 서술이 아닌 `npm run build && npm test` 같은 실제 실행 가능한 검증 커맨드를 포함한다.
@@ -94,6 +94,8 @@
 
 - `/docs/ARCHITECTURE.md`
 - `/docs/ADR.md`
+- `/docs/PRD.md`
+- `/docs/UI_GUIDE.md` (UI 작업 시)
 - {이전 step에서 생성/수정된 파일 경로}
 
 이전 step에서 만들어진 코드를 꼼꼼히 읽고, 설계 의도를 이해한 뒤 작업하라.
@@ -107,9 +109,12 @@
 ## Acceptance Criteria
 
 ```bash
-npm run build   # 컴파일 에러 없음
-npm test        # 테스트 통과
+# 예: Docker 기반 프로젝트의 경우
+docker exec {container} npm run build   # 빌드 에러 없음
+docker exec {container} npm test        # 테스트 통과
 ```
+
+> AC는 프로젝트의 실제 실행 환경(Docker, 로컬 등)에 맞춰 작성하라. 위 예시는 필요에 따라 수정할 것.
 
 ## 검증 절차
 
@@ -117,7 +122,7 @@ npm test        # 테스트 통과
 2. 아키텍처 체크리스트를 확인한다:
    - ARCHITECTURE.md 디렉토리 구조를 따르는가?
    - ADR 기술 스택을 벗어나지 않았는가?
-   - CLAUDE.md CRITICAL 규칙을 위반하지 않았는가?
+   - CLAUDE.md의 규칙을 위반하지 않았는가?
 3. 결과에 따라 `phases/{task-name}/index.json`의 해당 step을 업데이트한다:
    - 성공 → `"status": "completed"`, `"summary": "산출물 한 줄 요약"`
    - 수정 3회 시도 후에도 실패 → `"status": "error"`, `"error_message": "구체적 에러 내용"`
