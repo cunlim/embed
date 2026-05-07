@@ -60,40 +60,6 @@ Client → cloudflared tunnel → Nginx (Reverse Proxy)
 - **Job Chaining**: 개별 카테고리(Row) 단위로 `Bus::chain()` 또는 `Bus::batch()` 활용
 - **실시간 Progress**: `queue:work` → Redis Pub/Sub → Reverb Server → Client (프로그레스 바)
 
-## 데이터 흐름
-
-```
-[사용자 입력]
-    ↓
-Next.js (Client Component)
-    ↓ POST /api/search
-Laravel FPM (API 컨트롤러)
-    ├── translation_cache 查询 (캐시 히트 시 번역 생략)
-    └── search_keyword 查询 (임베딩 캐시 히트 시 재사용)
-    ↓
-PostgreSQL with pgvector — cosine similarity 검색
-    ↓
-결과 응답 (json)
-    ↓
-Next.js UI 업데이트
-```
-
-```
-[일괄 번역/임베딩 파이프라인]
-관리자가 '일괄 처리' 트리거
-    ↓
-JobDispatch → Redis Queue
-    ↓
-queue:work 데몬
-    ├── 텍스트 분할 (">" 기준)
-    ├── translation_cache 查询/삽입
-    ├── Ollama translategemma:4b 번역
-    ├── categories 테이블 업데이트
-    └── 언어별 category_embeddings INSERT (vector 768차원)
-    ↓
-Progress Event → Redis Pub/Sub → Reverb → Client (Progress Bar)
-```
-
 ## 상태 관리
 
 | 데이터 종류 | 관리 방식 |
@@ -103,17 +69,6 @@ Progress Event → Redis Pub/Sub → Reverb → Client (Progress Bar)
 | 세션/인증 | Laravel Session + Redis |
 | 비회원 설정값 (추천 개수 등) | LocalStorage |
 | 진행률 (배치 작업) | Reverb WebSocket 채널 구독 |
-
-## DB 주요 테이블
-
-| 테이블 | 용도 |
-|--------|------|
-| `categories` | 네이버 카테고리 기준 (한국어 원문, 번역 필드) |
-| `translation_cache` | 번역 중복 방지 (source_text + target_lang UNIQUE) |
-| `category_embeddings` | 모델별/언어별 다중 임베딩 (1:N, VECTOR(768)) |
-| `search_logs` | 검색어 임베딩 캐시 + 검색 이력 |
-| `users` | OAuth 로그인 사용자 |
-| `failed_jobs` | 실패한 Job 기록 |
 
 ## CI/CD
 

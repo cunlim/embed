@@ -61,10 +61,10 @@ rounded-lg bg-[#141414] border border-neutral-800 p-6
 ### 버튼
 
 ```
-Primary:  rounded-lg bg-white text-black hover:bg-neutral-200 font-medium px-4 py-2
-Secondary: rounded-lg bg-neutral-800 text-neutral-200 hover:bg-neutral-700 px-4 py-2
+Primary:     rounded-lg bg-orange-500 text-white hover:bg-orange-400 font-medium px-4 py-2
+Secondary:   rounded-lg bg-neutral-800 text-neutral-200 hover:bg-neutral-700 px-4 py-2
 Destructive: rounded-lg bg-red-600 text-white hover:bg-red-500 px-4 py-2
-Text:     text-neutral-400 hover:text-neutral-200 px-3 py-1
+Text:        text-neutral-400 hover:text-neutral-200 px-3 py-1
 ```
 
 ### 입력 필드
@@ -138,31 +138,59 @@ rounded-xl bg-[#141414] border border-neutral-800 p-6 shadow-2xl
 ### 버튼 A — 벡터 계산 과정 모달
 
 ```
-- 제목: "벡터 유사도 계산"
-- 원시 벡터 배열 앞 3개 + "..." + 뒤 3개 표시
-- 벡터 값: font-mono, 작고(12px), 회색
-- cosine_similarity 수치: 큰 글씨(2xl), orange-500
-- 닫기 버튼
+제목:          "벡터 유사도 계산"
+벡터 표시:     검색어 벡터 앞 3개 값 + "..." + 뒤 3개 값
+              카테고리 벡터 앞 3개 값 + "..." + 뒤 3개 값
+              예시: [0.123, -0.456, 0.789, ...] [-0.234, 0.567, -0.891]
+벡터 스타일:   font-mono text-xs text-neutral-500, 배경 구분선 border-neutral-800
+공식 표기:     cosine_similarity = (A · B) / (||A|| × ||B||)
+              text-sm text-neutral-400, 라벨로 설명
+결과 수치:      0.8234 — text-2xl font-bold text-orange-500
+닫기 버튼:     Secondary 버튼
 ```
 
-### 버튼 B — 계층형 Select Box 모달
+### 버튼 B — 동적 계층형 Select Box 모달
 
 ```
-- 상위 Select (대분류): category_name의 첫 번째 세그먼트
-- 중위 Select (중분류): 두 번째 세그먼트 (상위 선택 시 표시)
-- 하위 Select (소분류): 세 번째 세그먼트 (중위 선택 시 표시)
-- 상위 선택 변경 시 하위 Select 즉시 숨김
-- 최하위 도달 시: category_code + 임베딩 값 표시
-- 완료 버튼 (적용)
+입력 데이터:   "가구/인테리어>DIY자재/용품>목재" 형태의 원시 문자열
+파싱 로직:     ">" 기준 분할 → ['가구/인테리어', 'DIY자재/용품', '목재']
+
+1단계 Select (대분류):
+  - label: "대분류 선택"
+  - options: 분할된 문자열의 1번째 세그먼트 고유값 리스트
+  - 선택 시 → 2단계 Select 표시
+
+2단계 Select (중분류):
+  - label: "중분류 선택"
+  - options: 상위 선택에 종속된 2번째 세그먼트 필터링 결과
+  - 미선택 시: "카테고리를 선택해주세요" placeholder, disabled 스타일
+
+3단계 Select (소분류):
+  - label: "소분류 선택"
+  - options: 상위+중위 선택에 종속된 3번째 세그먼트 필터링 결과
+  - 미선택 시: disabled
+
+최하위 도달 시 (모든 Select 선택 완료):
+  - category_code: font-mono text-xs text-neutral-400
+  - 임베딩 값: font-mono text-xs text-neutral-600 (768차원 벡터 앞뒤 일부)
+  - '적용' 버튼: Primary 버튼 (orange-500), 클릭 시 부모 리스트에 선택 항목 적용
+  - '닫기' 버튼: Secondary 버튼
+
+상위 Select 변경 시:
+  - 하위 Select 즉시 비활성화 + 숨김 (display: none)
+  - 선택된 값 초기화
 ```
 
 ### 검색 결과 카드
 
 ```
-- category_name (타겟 언어, Bold 처리된 키워드)
-- category_code (작은 회색 글씨)
-- 유사도 수치 (orange-500, 소수점 4자리)
-- 클릭 시 상세 정보 또는 버튼 A/B 트리거
+카테고리명:    category_name (타겟 언어)
+              키워드 부분만 <strong>Bold</strong> 처리 — text-neutral-300
+카테고리 코드: category_code — text-xs font-mono text-neutral-500
+유사도 수치:   text-sm font-medium text-orange-500, 소수점 4자리 (예: 0.8723)
+버튼 영역:     버튼 A 아이콘 (벡터) + 버튼 B 아이콘 (계층형) — text-neutral-400 hover:text-neutral-200
+클릭 동작:     카드 자체 클릭 → 상세 정보 표시 또는 버튼 A/B 모달 트리거
+레이아웃:      rounded-lg bg-neutral-900 border border-neutral-800 p-4, hover:border-neutral-700
 ```
 
 ## 접근성

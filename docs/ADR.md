@@ -93,11 +93,55 @@
 
 ---
 
-### ADR-008:translation_cache 기반 중복 번역 방지
+### ADR-008: translation_cache 기반 중복 번역 방지
 **결정**: `translation_cache` 테이블 — `source_text` + `target_lang` UNIQUE 인덱스
 **이유**:
 - 동일 한국어 텍스트를 여러 카테고리에서 재사용할 경우, 중복 번역을 방지하여 Ollama API 호출 최소화
 - 텍스트 분할 (`>` 기준) 후 개별 단위를 캐시하여 분할-재조립 구조와 자연스럽게 결합
+- 캐시 히트 시 네트워크 왕복 지연 없음 — 응답 속도 향상
 **트레이드오프**:
 - 캐시 히트율에 따라 응답 품질 좌우 — 처음 실행 시 모든 텍스트에 번역 API 호출 발생
 - Ollama 환각/비정형 응답이 캐시에 저장되면 이를 정정하기까지 수동介入 필요
+- **방어 로직:** 정규식 검증 + 최대 3회 재시도로 환각 응답의 캐시 저장 방지
+
+---
+
+### ADR-009: Redis Throttle / Job 딜레이 (Rate Limit 우회)
+**결정**: `Redis::throttle()` 또는 Job 간 `sleep()` 딜레이 적용
+**이유**:
+- Ollama 로컬 API는 분당 요청 제한(429)을 반환할 수 있음 — 특히 GPU 리소스 부족 시
+- Throttle로 분당 요청 수를 제어하면 429 에러를 선제적으로 방지
+- `Cache::lock()`과 조합하여 동일 언어+모델 조합의 동시 요청을 차단
+**구현**:
+```php
+Redis::throttle('ollama')->allow(env('OLLAMA_THROTTLE_PER_MIN', 30))->every(60)->then(
+    fn() => /* Ollama API 호출 */,
+    fn() => throw new \RuntimeException('Rate limit exceeded')
+);
+```
+**트레이드오프**:
+- Throttle 딜레이로 전체 파이프라인 소요 시간 증가
+- Ollama 서버 성능에 따라 `OLLAMA_THROTTLE_PER_MIN` 환경변수 조정이 필요
+
+---
+
+### ADR-010: Nginx URL 라우팅 규칙
+**결정**: Nginx가 cloudflared tunnel → 서비스 간 프록시 역할, 3개 경로로 분기
+**이유**:
+- `/` (Next.js UI) — CSR/SRR 렌더링
+- `/api/` (Laravel FPM) — REST API — `Location`, `Upgrade` 헤더 전달
+- `/app/` (Laravel Reverb) — WebSocket Upgrade — 헤더 전환 필수
+- 단일 Nginx로 3개 서비스를 관 리하여 인프라 단순화
+**WebSocket Upgrade 헤더 (구현 필수)**:
+```nginx
+location /app/ {
+    proxy_pass http://reverb:8080;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 86400;
+}
+```
+**트레이드오프**:
+- Reverb 포트(8080)가 WSL2 환경에서 충돌 가능 — 사전 체크 필요
+- Redis Pub/Sub 메시지 유실 가능 — 프로덕션에선 Redis Cluster 권장
