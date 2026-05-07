@@ -19,23 +19,17 @@
 * **API 문서 라우팅**:
   - `/docs/` ➔ Swagger UI 컨테이너 또는 Laravel L5-Swagger 뷰 연결 (API 명세서 제공)
 
-## 데이터베이스 주요 테이블 정의
-* **categories**: 단일 카테고리 체계 (네이버 기준)
-  - `id` (bigserial, PK), `category_code` (UNIQUE, 플랫폼 코드)
-  - `category_name_ko`, `category_name_zh` (Nullable), `category_name_en` (Nullable) — B-tree 인덱스
-* **translation_cache**: 중복 방지 캐시 테이블
-  - `source_text`(분할 텍스트), `target_lang`, `translated_text` / Unique Index(`source_text`, `target_lang`)
-* **category_embeddings**: 다중 언어/모델 지원 (1:N)
-  - `category_id` (FK), `language` (ko, zh, en), `embed_model_name` (예: nomic-embed-text, llama3)
-  - `embedding` (VECTOR(768) - pgvector 고정 차원 필수)
-* **search_logs**: 검색어 임베딩 캐시 겸 이력 테이블
-  - `user_id` (FK, Nullable), `session_id` (비회원 식별 UUID), `search_keyword` (동일 키워드 캐시, UNIQUE 아님)
-  - `embed_model_name`, `embedding` (VECTOR(768))
-* **users**: OAuth 및 이메일 회원 관리
-  - `id` (bigserial, PK), `name`, `email` (UNIQUE), `password` (Nullable)
-  - `provider` (VARCHAR, Nullable - google, github, naver), `provider_id` (VARCHAR, Nullable)
-* **failed_jobs**: 비동기 큐 처리 실패 이력 관리 (Ollama 환각/타임아웃 등)
-  - `id` (bigserial, PK), `uuid`, `connection`, `queue`, `payload`, `exception`, `failed_at`
+## 데이터베이스 주요 테이블
+
+컬럼 상세는 `laravel/database/migrations/`의 각 마이그레이션 파일 참조.
+
+| 테이블 | 목적 | 비고 |
+|--------|------|------|
+| `categories` | 단일 카테고리 체계 (네이버 기준) | |
+| `category_embeddings` | 다중 언어/모델 임베딩 (1:N) | VECTOR(768) pgvector |
+| `translation_cache` | 번역 결과 캐시 (중복 방지) | |
+| `search_logs` | 검색어 임베딩 캐시 겸 이력 | 비회원은 `session_id` 식별 |
+| `users` | OAuth 및 이메일 회원 관리 | 추후 `provider`/`provider_id` 컬럼 추가 예정 (OAuth 연동 시) |
 
 ## 데이터 흐름 (비동기 및 웹소켓 파이프라인)
 ```

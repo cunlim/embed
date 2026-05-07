@@ -155,11 +155,10 @@ docker exec cl_embed_nextjs npm run lint
 curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" http://localhost:8080/app/{app_id}
 ```
 
-## 데이터베이스 (상세: `docs/ARCHITECTURE.md`)
+## 데이터베이스
 
 - PostgreSQL 15+ with pgvector
-- 주요 테이블: `categories`, `translation_cache`, `category_embeddings`, `search_logs`, `users`, `failed_jobs`
-- `category_embeddings.embedding`: VECTOR(768) 고정 차원
+- 스키마 정의: `laravel/database/migrations/` (각 테이블별 마이그레이션 파일 참조)
 
 ## CI/CD (셀프호스티드 WSL GitHub Actions 러너)
 
