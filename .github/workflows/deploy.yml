@@ -1,4 +1,7 @@
 name: Local CI/CD
+# 브랜치 전략: develop + main
+# - develop: 일상 개발 브랜치 (feature/* → PR → develop)
+# - main:   안정 릴리스 브랜치 (develop → PR → main, CI/CD 자동 배포)
 on:
   push:
     branches: [ main ]

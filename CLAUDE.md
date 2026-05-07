@@ -64,6 +64,17 @@ cl_embed/
       → Redis Pub/Sub → Reverb WebSocket → 클라이언트 (진행률)
 ```
 
+## 브랜치 전략 (develop + main)
+
+- **`develop`**: 일상 개발 브랜치. feature/* 브랜치에서 작업 후 PR로 머지. 기본 작업 브랜치.
+- **`main`**: 안정 릴리스 브랜치. develop에서 충분히 검증된 후 PR로 머지. CI/CD가 main 푸시를 감지해 자동 배포.
+- **`feature/*`**: 개별 기능 개발. develop에서 분기, 완료 후 PR → develop.
+
+```
+feature/phase-1-api ──▶ develop ──▶ main ──▶ (CI/CD 배포)
+feature/phase-2-ui  ──▶ develop ──▶ main ──▶ (CI/CD 배포)
+```
+
 ## 개발 프로세스
 
 - **CRITICAL: TDD** — 새 기능 구현 시 반드시 테스트를 먼저 작성하고, 테스트가 통과하는 구현을 작성할 것
