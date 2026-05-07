@@ -32,6 +32,10 @@ cl_embed/
 - **도메인**: https://embed.cunlim.dev (cloudflared tunnel → Nginx → 컨테이너)
 - **Nginx 라우팅**: `/` → Next.js, `/api/` → Laravel FPM, `/app/` → Laravel Reverb WebSocket
 
+## 개발 프로세스
+- CRITICAL: 새 기능 구현 시 반드시 테스트를 먼저 작성하고, 테스트가 통과하는 구현을 작성할 것 (TDD)
+- 커밋 메시지는 conventional commits 형식을 따를 것 (feat:, fix:, docs:, refactor:)
+
 ## 자주 사용하는 명령어
 
 ### Docker Compose
