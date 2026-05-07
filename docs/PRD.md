@@ -220,10 +220,12 @@ Client → cloudflared tunnel → Nginx (Reverse Proxy)
 ## 8. 다음 개발 마일스톤
 
 ### Phase 1: Laravel 비동기 텍스트 파이프라인 (Back-end)
-- [ ] 다국어 `categories`, `translation_cache` 모델 + 마이그레이션 (VECTOR(768) 컬럼)
+- [ ] 다국어 `categories`, `translation_cache`, `category_embeddings`, `search_logs` 모델 + 마이그레이션 (VECTOR(768) 컬럼)
 - [ ] `translategemma:4b` 연동, 텍스트 Split/Join 유틸리티, 환각/재시도 방어 로직
 - [ ] Job Chaining 구성, 중복 락(Lock), Progress Update Event 클래스
 - [ ] API 라우트 및 컨트롤러 연결
+- [ ] OAuth 인증 — Laravel Socialite (`laravel/socialite` + `socialiteproviders/naver`) + 이메일/비밀번호 Login
+- [ ] OAuth 로그인/로그아웃 API 테스트
 
 ### Phase 2: Next.js 실시간 UI 연동 (Front-end)
 - [ ] `laravel-echo` + `pusher-js` 패키지 설치
@@ -232,7 +234,10 @@ Client → cloudflared tunnel → Nginx (Reverse Proxy)
 
 ### Phase 3: 언어별 검색 로직 및 최종 연동 (Integration)
 - [ ] `pgvector` 언어별 필터링 검색 쿼리 (Laravel DB Raw Query)
+- [ ] LIKE 검색 + AI 추천 결과 동시 병합 UI
 - [ ] 버튼 A (벡터 계산 모달) 및 버튼 B (계층형 Select Box 모달) 구현
+- [ ] 개별 카테고리 추가 (한국어 단일 입력 → category_code 자동 생성 → 동일 Job 클래스로 파이프라인 실행)
+- [ ] 검색 히스토리 기록 및 재검색 제공
 - [ ] 엔드투엔드 테스트 및 UI 최종 조정
 
 ---

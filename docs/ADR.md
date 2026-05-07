@@ -145,3 +145,46 @@ location /app/ {
 **트레이드오프**:
 - Reverb 포트(8080)가 WSL2 환경에서 충돌 가능 — 사전 체크 필요
 - Redis Pub/Sub 메시지 유실 가능 — 프로덕션에선 Redis Cluster 권장
+
+---
+
+### ADR-011: Laravel Socialite OAuth (Google, GitHub, Naver)
+**결정**: OAuth 인증은 Laravel Socialite 라이브러리 사용, 이메일/비밀번호 Login도 지원
+**이유**:
+- 사용자 추가 정보(별명, 전화번호 등) 입력 생략 — 즉시 서비스 이용 가능
+- Socialite의 추상화된 Provider로 Google/GitHub/Naver 세 공급자를同一 인터페이스로 연동
+- 인증 세션은 Redis에 저장 (`config/session.php` `driver => 'redis'`)
+**트레이드오프**:
+- OAuth 공급자별 API credential (CLIENT_ID, CLIENT_SECRET) 환경변수 관리 필요
+- Naver는 Socialite에 기본 내장되어 있지 않아 `laravel/socialite` + `socialiteproviders/naver` 패키지 추가 필요
+
+---
+
+### ADR-012: 검색 파이프라인 (LIKE + AI 추천 결합)
+**결정**: 사용자가 선택한 언어로 LIKE 검색과 pgvector 코사인 유사도 추천을 동시에 실행, 결과 병합
+**이유**:
+- LIKE 검색: 키워드 Bold 처리, 빠른 퍼스트 리저lt 정렬
+- AI 추천: semantic 유사도 기반 정확한 추천
+- 두 결과를 통합하여 UX 다양성 확보 (빠른 결과 + 정확한 추천)
+**검색어 임베딩 캐시 (`search_logs`)**:
+- 정확히 일치하는 `search_keyword` 조회 → 캐시 히트 시 임베딩 재사용
+- 캐시 미스 시 선택된 모델로 벡터화 → `search_logs` 저장 후 사용
+- 비회원은 `session_id`(LocalStorage UUID), 회원은 `user_id`로 식별
+**트레이드오프**:
+- `search_keyword` 인덱스는 UNIQUE 아님 — 동일 키워드 중복 검색 허용 (더 많은 로그 축적 가능)
+
+---
+
+### ADR-013: Job 실패 처리 및 재시도 정책
+**결정**: 재시도 횟수 기본 3회, 최종 실패 시 `failed_jobs` 테이블 기록
+**이유**:
+- Ollama 환각 응답, 네트워크 지연, 429 Rate Limit에 대비한 자동 복구
+- 3회 재시도 후에도 실패한 텍스트는 정형 검증 실패이므로 수동 intervention 필요
+- `Bus::chain()` 길게 연결된 체인의 경우, 개별 Job 실패가 체인 중단을 유발 → 재시도 정책으로 완화
+**환각 방어 로직**:
+1. 정규식 검증 (번역 결과가 한국어/영어/숫자/기호 외 포함 시 실패)
+2. 최대 3회 자동 재시도
+3. 실패 시 `failed_jobs` 기록 + 해당 row는 NULL 유지
+**트레이드오프**:
+- 재시도 딜레이로 파이프라인 총 소요 시간 증가
+- 실패 로그 모니터링 필요 — 자동 알람 미구현 시 수동 확인

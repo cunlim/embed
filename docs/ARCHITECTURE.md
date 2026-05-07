@@ -3,24 +3,24 @@
 ## 디렉토리 구조
 
 ```
-cl_embed/
-├── nextjs/                    # 프론트엔드: Next.js 16 + React 19 + Tailwind v4 + TypeScript + shadcn/ui
-│   ├── app/                   # Next.js App Router (페이지 + API 라우트)
+cl_embed/                          # 루트: Next.js + Laravel 모노레포
+├── nextjs/                   # 프론트엔드: Next.js 16 + React 19 + Tailwind v4 + TypeScript + shadcn/ui
+│   ├── app/                  # Next.js App Router (페이지 + API 라우트)
 │   ├── components/           # UI 컴포넌트
 │   └── ...
-├── laravel/                   # 백엔드: Laravel 13 + PHP 8.5 + Pest 4
+├── laravel/                  # 백엔드: Laravel 13 + PHP 8.5 + Pest 4
 │   ├── app/
 │   │   ├── Http/Controllers/ # API 컨트롤러
-│   │   ├── Jobs/             # 비동기 Job (번역, 임베딩)
-│   │   ├── Events/           # 실시간 이벤트 (Progress Update)
-│   │   └── Models/           # Eloquent 모델
-│   ├── database/migrations/   # 마이그레이션
+│   │   ├── Jobs/            # 비동기 Job (번역, 임베딩)
+│   │   ├── Events/          # 실시간 이벤트 (Progress Update)
+│   │   └── Models/          # Eloquent 모델 (Category, TranslationCache, CategoryEmbedding, SearchLog, User)
+│   ├── database/migrations/  # 마이그레이션
 │   └── ...
-├── docker/                    # Docker Compose + Dockerfiles
-│   ├── docker-compose.yml    # 4개 서비스 (nextjs, laravel, pgvector, redis)
+├── docker/                   # Docker Compose + Dockerfiles
+│   ├── docker-compose.yml   # 4개 서비스 (cl_embed_nextjs, cl_embed_laravel, cl_embed_pgvector, cl_embed_redis)
 │   ├── laravel/
 │   └── nextjs/
-└── docs/                     # 문서 (ADR, ARCHITECTURE, PRD, UI_GUIDE)
+└── docs/                    # 문서 (ADR, ARCHITECTURE, PRD, UI_GUIDE)
 ```
 
 ## 기술 스택
@@ -38,15 +38,18 @@ cl_embed/
 ## 인프라 / 네트워크
 
 ```
-Client → cloudflared tunnel → Nginx (Reverse Proxy)
+Client → cloudflared tunnel → Nginx (Reverse Proxy, WSL Docker 컨테이너)
                                     │
                     ┌───────────────┼────────────────┐
                     ↓               ↓                ↓
-              Next.js          Laravel FPM        Reverb WS
-            (Port 3000)       (Port 8000)       (Port 8080)
-                                          /api/          /app/
+          Next.js (3000)     Laravel FPM (8000)   Reverb WS (8080)
+          cl_embed_nextjs     cl_embed_laravel    cl_embed_laravel
+                                    │                   │
+                              PostgreSQL (5432)    Redis (6379)
+                              cl_embed_pgvector    cl_embed_redis
 ```
 
+- **도메인**: `https://embed.cunlim.dev` — cloudflared tunnel → Nginx → 컨테이너
 - **Nginx 라우팅 규칙**
   - `/` → Next.js (UI)
   - `/api/` → Laravel FPM (REST API)
@@ -70,8 +73,15 @@ Client → cloudflared tunnel → Nginx (Reverse Proxy)
 | 비회원 설정값 (추천 개수 등) | LocalStorage |
 | 진행률 (배치 작업) | Reverb WebSocket 채널 구독 |
 
-## CI/CD
+## 데이터 관리 이원화
 
-- GitHub Actions (셀프호스티드 WSL 러너)
-- `main` 브랜치 푸시 시: Docker Compose 서비스 재시작 + 데몬 재실행 (serve, reverb, queue:work)
-- SonarQube 정적 분석 (`sonar-project.properties`, 키: `cl_embed`)
+| 사용자 유형 | 임베딩 캐시 (`search_logs`) | 개인 설정 |
+|---|---|---|
+| 비회원 (게스트) | `session_id` (LocalStorage UUID) — DB 저장, 인덱스 UNIQUE 아님 (중복 검색 허용) | 브라우저 `LocalStorage` |
+| 회원 | `user_id` 에 종속, DB 저장 | DB 저장 및 동기화 |
+
+**권한 제어**: 로그인 여부와 관계없이 검색/추천 기능 접근 가능. 카테고리 추가/수정/삭제는 관리자 전용.
+
+**OAuth 인증**: Laravel Socialite — Google, GitHub, Naver (추가 정보 입력 생략)
+
+## CI/CD
