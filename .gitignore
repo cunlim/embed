@@ -3,11 +3,9 @@ __pycache__/
 *$py.class
 *.so
 .Python
-.env
-.env.backup
-.env.production
-*.log
 node_modules/
 .next/
-dist/
-build/
+
+# phase execution outputs
+phases/**/phase*-output.json
+phases/**/step*-output.json
