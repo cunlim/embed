@@ -16,6 +16,8 @@
   - `/api/` ➔ Laravel FPM (메인 API 데이터 제공)
   - `/app/` ➔ Laravel Reverb (WebSocket 전용, Upgrade 헤더 적용 완료)
 * **Server Components 기본**: Next.js App Router 환경에서 실시간 인터랙션(웹소켓 프로그레스 바, 모달)이 필요한 구간만 Client Component 채택.
+* **API 문서 라우팅**:
+  - `/docs/` ➔ Swagger UI 컨테이너 또는 Laravel L5-Swagger 뷰 연결 (API 명세서 제공)
 
 ## 데이터베이스 주요 테이블 정의
 * **categories**: 단일 카테고리 체계 (네이버 기준)
@@ -29,6 +31,11 @@
 * **search_logs**: 검색어 임베딩 캐시 겸 이력 테이블
   - `user_id` (FK, Nullable), `session_id` (비회원 식별 UUID), `search_keyword` (동일 키워드 캐시, UNIQUE 아님)
   - `embed_model_name`, `embedding` (VECTOR(768))
+* **users**: OAuth 및 이메일 회원 관리
+  - `id` (bigserial, PK), `name`, `email` (UNIQUE), `password` (Nullable)
+  - `provider` (VARCHAR, Nullable - google, github, naver), `provider_id` (VARCHAR, Nullable)
+* **failed_jobs**: 비동기 큐 처리 실패 이력 관리 (Ollama 환각/타임아웃 등)
+  - `id` (bigserial, PK), `uuid`, `connection`, `queue`, `payload`, `exception`, `failed_at`
 
 ## 데이터 흐름 (비동기 및 웹소켓 파이프라인)
 ```
