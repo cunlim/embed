@@ -25,20 +25,15 @@
 * **Infrastructure:** Docker & Docker Compose(`./docker/docker-compose.yml`), Nginx (Reverse Proxy), WSL Ubuntu
 * **API Documentation:** Swagger UI 또는 Postman Collection 배포
 * **Docker Container:** `cl_embed_nextjs`, `cl_embed_laravel`, `cl_embed_pgvector`, `cl_embed_redis`
-* cl_embed_laravel 컨테이너에서 laravel 실행 명령어:
-  docker exec -d cl_embed_laravel bash -c "
-    nohup php artisan serve --host=0.0.0.0 --port=8000 > logs/serve.log 2>&1 &
-    nohup php artisan reverb:start --host=0.0.0.0 --port=8080 > logs/reverb.log 2>&1 &
-    nohup php artisan queue:work > logs/queue.log 2>&1 &
-  "
+* Laravel 데몬 실행 명령어는 `CLAUDE.md` 참조
 
 ## 4. 데이터베이스 주요 테이블 정의
 * **categories:** (네이버 카테고리 기준 단일 테이블 생성 완료)
   * `id` (bigserial, PK): 고유 식별자
   * `category_code` (varchar(50), UNIQUE, NOT NULL): 플랫폼 영문/숫자 코드
   * `category_name_ko` (varchar(255), NOT NULL): 한국어 카테고리명 (B-tree 인덱스 적용)
-  * `category_name_zh` (varchar(255), NULL): 중국어 번역본 (B-tree 인덱스 적용, 초기값 비움)
-  * `category_name_en` (varchar(255), NULL): 영어 번역본 (B-tree 인덱스 적용, 초기값 비움)
+  * `category_name_zh` (varchar(255), **Nullable**): 중국어 번역본, 번역 전까지 NULL (B-tree 인덱스 적용)
+  * `category_name_en` (varchar(255), **Nullable**): 영어 번역본, 번역 전까지 NULL (B-tree 인덱스 적용)
   * `created_at` (timestamp(0), DEFAULT CURRENT_TIMESTAMP): 생성 일시
   * `updated_at` (timestamp(0), DEFAULT CURRENT_TIMESTAMP): 수정 일시
 * **translation_cache:** (번역 비용 및 시간 절감을 위한 중복 방지 테이블)
@@ -51,16 +46,17 @@
   * `id` (PK)
   * `category_id` (FK)
   * `language` (VARCHAR, 'ko', 'zh', 'en')
-  * `embed_model_name` (VARCHAR, 예: 'llama3', 'nomic-embed-text')
-  * `embedding` (VECTOR, 다중 모델 지원을 위해 차원 수를 특정하지 않은 가변 타입으로 선언하거나, 성능 최적화가 필수적인 경우 모델별로 파티셔닝된 테이블 구성 고려)
-* **search_logs:**
+  * `embed_model_name` (VARCHAR, 예: 'nomic-embed-text', 'llama3')
+  * `embedding` (VECTOR(768)) — pgvector는 고정 차원 필수. nomic-embed-text(768차원) 기준. 모델 변경 시 마이그레이션 필요
+* **search_logs:** (검색어 임베딩 캐시 겸 검색 이력)
   * `id` (PK)
-  * `user_id` (FK, **Nullable** - 비회원은 NULL 처리 또는 LocalStorage 의존)
+  * `user_id` (FK, **Nullable** — 비회원은 NULL)
+  * `session_id` (VARCHAR, **Nullable** — 비회원 식별용, LocalStorage UUID 저장)
   * `search_keyword` (VARCHAR)
-  * `embed_model_name` (VARCHAR, 예: 'llama3', 'nomic-embed-text')
-  * `embedding` (VECTOR, 다중 모델 지원을 위해 차원 수를 특정하지 않은 가변 타입으로 선언하거나, 성능 최적화가 필수적인 경우 모델별로 파티셔닝된 테이블 구성 고려)
+  * `embed_model_name` (VARCHAR, 예: 'nomic-embed-text', 'llama3')
+  * `embedding` (VECTOR(768))
   * `created_at` (TIMESTAMP)
-  * Unique Index (`search_keyword`)
+  * Index (`search_keyword`) — 동일 키워드 재검색 시 임베딩 재사용, UNIQUE 아님 (중복 검색 허용)
 
 ## 5. 시스템 아키텍처 (System Architecture)
 도메인에 접근하면 cloudflared tunnel 을 통해 wsl Nginx docker 컨테이너가 앞단에서 트래픽을 분류하여 각 컨테이너로 전달하며, 백엔드는 메인 API 처리, 백그라운드 번역/임베딩 큐 처리, 실시간 웹소켓 서버로 역할을 완벽히 분리하여 병목을 방지합니다.
@@ -88,7 +84,7 @@
 ### 6.2. 검색 및 추천 엔진
 * **텍스트 입력 및 버튼:** 상품 묘사 텍스트 입력 후 타겟 언어(한국어/중국어/영어) 선택, '추천' 버튼 클릭.
 * **LIKE 검색 영역:** 선택한 언어 필드에서 `LIKE '%키워드%'` 쿼리 실행. 결과 리스트에 입력된 키워드는 **Bold** 처리하여 표시.
-* **AI 추천 영역 (언어별 추천):** * 입력 텍스트를 일단 search_logs 에서 검색, 없으면 선택된 임베딩 모델로 벡터화. 벡터 결과는 search_logs 에 저장하여 추후 검색 시 벡터화 과정 없이 조회한 후 코사인 유사도 계산.
+* **AI 추천 영역 (언어별 추천):** * 입력 텍스트를 `search_logs` 테이블에서 정확히 일치하는 `search_keyword`로 조회. 캐시가 존재하면 해당 임베딩을 재사용하고, 없으면 선택된 임베딩 모델로 벡터화하여 `search_logs`에 저장 후 사용.
   * 타겟 언어로 필터링된 `category_embeddings` 데이터들과 코사인 유사도를 계산. **언어별 카테고리 추천 리스트**를 나열하고 각 결과에 유사도 수치 표시.
 * **임베딩 모델 선택:** UI 상단의 Select Box를 통해 소스코드나 DB에 미리 등록된 모델(Ollama 로컬 모델 또는 외부 API) 선택 가능. (유저 임의 모델 추가 불가)
 
@@ -115,15 +111,15 @@
 * **히스토리:** 검색 내역, 클릭 결과를 기록하여 재검색 제공.
 
 ## 7. 로그인 및 사용자 데이터 관리 격리
-* **접근 제어:** 로그인 여부와 상관없이 메인 페이지 및 검색/추천 기능 접근 가능. 최고관리자 페이지가 존재하여 검색/추천 기능에 접근할수 있는지 여부를 컨트롤 할수 있게 해야 함.
+* **접근 제어:** 로그인 여부와 상관없이 메인 페이지 및 검색/추천 기능 접근 가능. 관리자 전용 페이지에서 **카테고리 추가/수정/삭제 등 데이터 쓰기 작업**에 대한 접근 권한을 제어함.
 * **인증 방식:** 이메일/비밀번호, Google, GitHub, Naver OAuth 연동. 아이디 등 추가 정보 입력 생략.
 * **데이터 관리 이원화:**
-  * **비회원 (게스트):** 검색 로그, 추천 개수 설정값 등은 브라우저의 `LocalStorage`에 저장하여 DB 부하 및 찌꺼기 데이터 생성을 방지합니다.
+  * **비회원 (게스트):** `search_logs`(임베딩 캐시)는 DB에 `session_id`로 저장하고, 추천 개수 설정값 등 개인 설정만 브라우저 `LocalStorage`에 저장합니다.
   * **회원:** OAuth (Google, GitHub, Naver) 로그인 지원, 사용자 활동 데이터들은 각 계정(`User ID`)에 종속되어 DB에 저장 및 동기화됩니다.
 
 ## 8. 다음 개발 마일스톤 (Next Milestones)
 * **Phase 1: Laravel 비동기 텍스트 파이프라인 구현 (Back-end)**
-  * 다국어 `categories`, `translation_cache` 모델 및 마이그레이션 구성 (가변 VECTOR 컬럼 적용).
+  * 다국어 `categories`, `translation_cache` 모델 및 마이그레이션 구성 (VECTOR(768) 컬럼 적용).
   * `translategemma:4b` 연동 로직, 텍스트 Split/Join 유틸리티 클래스 작성 및 환각/재시도 방어 로직 구현.
   * Job Chaining 구성, 중복 락(Lock) 처리, Progress Update Event 클래스 작성.
   * API 라우트 및 컨트롤러 연결.

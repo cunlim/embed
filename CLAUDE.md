@@ -27,14 +27,10 @@ cl_embed/
 └── doc/PRD.md              # 제품 요구사항 문서
 ```
 
-### 인프라
+### 인프라 (상세: `doc/PRD.md` 3, 5절)
 
 - **도메인**: https://embed.cunlim.dev (cloudflared tunnel → Nginx → 컨테이너)
 - **Nginx 라우팅**: `/` → Next.js, `/api/` → Laravel FPM, `/app/` → Laravel Reverb WebSocket
-- **PostgreSQL 15+** pgvector 확장 포함 (포트 40103)
-- **Redis 8.4** 큐/캐시/세션/브로드캐스팅 용 (포트 40104)
-- **로컬 Ollama**: `translategemma:4b` 번역용, 임베딩 모델 미정
-- **컨테이너**: `cl_embed_nextjs`, `cl_embed_laravel`, `cl_embed_pgvector`, `cl_embed_redis`
 
 ### Laravel 데몬 (`cl_embed_laravel` 컨테이너 내부 실행)
 
@@ -136,9 +132,6 @@ SonarQube 설정 완료 (`sonar-project.properties`, 키: `cl_embed`), 외부에
 - tinker에서 직접 SQL 대신 Boost의 `database-query` 도구를 읽기 전용 쿼리에 사용
 - 마이그레이션이나 모델 작성 전 `database-schema` Boost 도구로 테이블 구조 먼저 확인
 
-## 현재 진행 상황 (PRD 기준)
+## 현재 진행 상황
 
-인프라 구축 완료. 다음 마일스톤:
-1. **Phase 1**: Laravel 비동기 텍스트 파이프라인 (번역/임베딩 잡, API 라우트)
-2. **Phase 2**: Next.js 실시간 UI (Laravel Echo + Reverb 연동)
-3. **Phase 3**: 언어별 검색 + pgvector 쿼리, E2E 테스트
+인프라 구축 완료 (`doc/PRD.md` 2절 참조). 이후 마일스톤은 PRD 8절에 정의된 Phase 1→3 순서로 진행.
