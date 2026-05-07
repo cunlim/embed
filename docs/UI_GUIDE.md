@@ -1,9 +1,9 @@
 # UI 디자인 가이드
 
 ## 디자인 원칙
-1. {원칙 1 — 예: "도구처럼 보여야 한다. 마케팅 페이지가 아니라 매일 쓰는 대시보드."}
-2. {원칙 2}
-3. {원칙 3}
+1. **도구처럼 보여야 한다**: 마케팅 템플릿이 아닌, 직관적이고 매일 쓰는 대시보드 환경 구축. 검색과 추천 데이터에 집중한다.
+2. **명확한 계층구조 및 즉각적 피드백**: 대/중/소 계층 및 실시간 데이터 처리율을 사용자가 실시간으로 확인 가능하게 한다.
+3. **결과 시인성 확보**: 검색 키워드 및 결과 도출 데이터를 사용자가 한눈에 파악할 수 있도록 볼드(Bold) 및 수치화하여 하이라이팅한다.
 
 ## AI 슬롭 안티패턴 — 하지 마라
 | 금지 사항 | 이유 |
@@ -20,57 +20,63 @@
 ### 배경
 | 용도 | 값 |
 |------|------|
-| 페이지 | {예: #0a0a0a} |
-| 카드 | {예: #141414} |
+| 페이지 | #0a0a0a |
+| 카드 | #141414 |
 
 ### 텍스트
 | 용도 | 값 |
 |------|------|
-| 주 텍스트 | {예: text-white} |
-| 본문 | {예: text-neutral-300} |
-| 보조 | {예: text-neutral-400} |
-| 비활성 | {예: text-neutral-500} |
+| 주 텍스트 | text-white |
+| 본문 | text-neutral-300 |
+| 보조 | text-neutral-400 |
+| 비활성 | text-neutral-500 |
 
 ### 데이터/시맨틱 색상
 | 용도 | 값 |
 |------|------|
-| {긍정/성공} | {예: #22c55e} |
-| {부정/에러} | {예: #ef4444} |
-| {중립/기본} | {예: #525252} |
+| 긍정/성공 | #22c55e |
+| 부정/에러 | #ef4444 |
+| 중립/기본 | #525252 |
 
 ## 컴포넌트
 ### 카드
-```
-{예: rounded-lg bg-[#141414] border border-neutral-800 p-6}
-```
-
+`rounded-lg bg-[#141414] border border-neutral-800 p-6`
 ### 버튼
-```
-Primary: {예: rounded-lg bg-white text-black hover:bg-neutral-200}
-Text:    {예: text-neutral-500 hover:text-neutral-300}
-```
+- Primary: `rounded-lg bg-white text-black hover:bg-neutral-200 transition-colors`
+- Text: `text-neutral-500 hover:text-neutral-300 transition-colors`
+### 입력 필드 및 Select
+`rounded-lg bg-neutral-900 border border-neutral-800 px-4 py-3 text-white`
 
-### 입력 필드
-```
-{예: rounded-lg bg-neutral-900 border border-neutral-800 px-4 py-3}
-```
+## 레이아웃 및 타이포그래피
+- **전체 너비**: `max-w-5xl`
+- **정렬**: 좌측 정렬 기본. (중앙 정렬 금지)
+- **간격**: 내부 요소 `gap-3~4`, 메인 섹션 간 `space-y-8`
+- **타이포그래피**: 
+  - 페이지 제목: `text-4xl font-semibold text-white`
+  - 카드 제목: `text-sm font-medium text-neutral-400`
+  - 본문: `text-sm text-neutral-300 leading-relaxed`
 
-## 레이아웃
-- 전체 너비: {예: max-w-5xl}
-- 정렬: {예: 좌측 정렬 기본. 중앙 정렬 금지}
-- 간격: {예: gap-3~4, 섹션 간 space-y-8}
+## 애니메이션 및 아이콘
+- **허용 애니메이션**: `fade-in (0.4s)`, `slide-up (0.5s)`. 그 외 모든 글로우/바운스 효과 금지.
+- **아이콘**: SVG 인라인 적용, `strokeWidth 1.5`, 둥근 배경 박스 컨테이너 금지.
 
-## 타이포그래피
-| 용도 | 스타일 |
-|------|--------|
-| 페이지 제목 | {예: text-4xl font-semibold text-white} |
-| 카드 제목 | {예: text-sm font-medium text-neutral-400} |
-| 본문 | {예: text-sm text-neutral-300 leading-relaxed} |
+---
 
-## 애니메이션
-- {허용할 애니메이션만 나열. 예: fade-in (0.4s), slide-up (0.5s)}
-- {그 외 모든 애니메이션 금지}
+## 도메인 특화 컴포넌트
 
-## 아이콘
-- {예: SVG 인라인, strokeWidth 1.5}
-- {예: 아이콘 컨테이너(둥근 배경 박스)로 감싸지 않는다}
+### 검색 추천 영역
+- 텍스트 입력 및 타겟 언어(한국어/중국어/영어) 선택, 임베딩 모델 Select Box (소스코드/DB 사전 등록 모델만 표시, 유저 임의 추가 불가).
+- **키워드 하이라이트**: `LIKE` 조건으로 검색된 결과 리스트에서 입력 키워드는 **Bold** 처리.
+- **유사도 및 출력 설정**: 코사인 유사도 수치 결과 함께 표시. 출력 추천 개수 설정 가능 (기본값 10개).
+- **진행률 바(Progress Bar)**: 백엔드 이벤트 수신 시 '번역 완료 건수' 및 '임베딩 완료 건수'를 프로그레스 바로 렌더링 (락이 걸려있는 상태일 경우 중복 호출 없이 UI 업데이트만 수행).
+
+### 버튼 A (벡터 계산 과정 모달)
+- 동작: 결과 간 벡터의 $cosine\_similarity = \frac{A \cdot B}{||A|| ||B||}$ 계산식 과정을 노출.
+- UI 처리: 원시 벡터 배열 노출 시 앞뒤 일부만 표기하고 중간은 줄임표(...) 생략, 최하단 최종 유사도 표기.
+
+### 버튼 B (동적 계층형 Select Box 모달)
+- 동작: `"A>B>C"` 형태의 원시 문자열을 동적 파싱하여 계층 구조 생성. 해당 결과가 대/중/소 단계별로 이미 선택된 상태의 Select Box들을 렌더링.
+- 상호작용: 
+  - 상위 카테고리 변경 시 하위 Select Box가 실시간으로 연동 업데이트.
+  - "카테고리를 선택해주세요" 클릭 시 하위 Select Box 즉시 숨김.
+  - 최하위 분류 도달 시 해당 카테고리 코드 및 임베딩 값을 표시하고 '완료' 버튼 노출.
