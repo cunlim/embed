@@ -17,6 +17,7 @@
 5. **빌드 가능**: 변경사항을 반영하여 빌드/테스트가 정상 통과하는가?
    - 백엔드: `docker exec cl_embed_laravel php artisan test --compact`
    - 프론트엔드: `docker exec cl_embed_nextjs npm run build`
+6. **정적 분석**: SonarQube(`sonar-project.properties`, 키: `cl_embed`) 분석에서 새 이슈가 발생하지 않는가?
 
 ## 출력 형식
 
@@ -27,5 +28,6 @@
 | 테스트 존재 | ✅/❌ | {새 기능에 대한 테스트 작성 여부} |
 | CRITICAL 규칙 | ✅/❌ | {CLAUDE.md 규칙 위반 여부} |
 | 빌드 가능 | ✅/❌ | {빌드/테스트 결과} |
+| 정적 분석 | ✅/❌ | {상세} |
 
 위반 사항이 있으면 수정 방안을 구체적으로 제시하라.
