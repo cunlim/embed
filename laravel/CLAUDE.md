@@ -158,3 +158,67 @@ This project has domain-specific skills available. You MUST activate the relevan
 - Do NOT delete tests without approval.
 
 </laravel-boost-guidelines>
+
+## 프로젝트 관련 (cl_embed)
+
+### Laravel 데몬 실행
+
+`cl_embed_laravel` 컨테이너 내부에서 실행해야 하는 데몬들입니다.
+호스트에서 실행 시 반드시 `docker exec`를 사용하세요.
+
+```bash
+# 컨테이너 접속 후 직접 실행
+php artisan serve --host=0.0.0.0 --port=8000
+php artisan reverb:start --host=0.0.0.0 --port=8080
+php artisan queue:work
+
+# 호스트에서 docker exec 로 일괄 실행
+docker exec -d cl_embed_laravel bash -c "
+  nohup php artisan serve --host=0.0.0.0 --port=8000 > logs/serve.log 2>&1 &
+  nohup php artisan reverb:start --host=0.0.0.0 --port=8080 > logs/reverb.log 2>&1 &
+  nohup php artisan queue:work > logs/queue.log 2>&1 &
+"
+```
+
+### 자주 사용하는 명령어
+
+모든 명령어는 `cl_embed_laravel` 컨테이너 대상으로 `docker exec`를 통해 실행합니다.
+
+```bash
+# 테스트 실행
+docker exec cl_embed_laravel php artisan test --compact
+docker exec cl_embed_laravel php artisan test --compact --filter=testName
+
+# PHP 코드 포맷팅
+docker exec cl_embed_laravel vendor/bin/pint --format agent
+
+# 파일 생성
+docker exec cl_embed_laravel php artisan make:model ModelName --migration --factory --seed --test
+docker exec cl_embed_laravel php artisan make:test --pest TestName
+docker exec cl_embed_laravel php artisan make:controller Api/ControllerName
+
+# 라우트 확인
+docker exec cl_embed_laravel php artisan route:list
+
+# 설정 확인
+docker exec cl_embed_laravel php artisan config:show app.name
+```
+
+### 주요 패키지
+
+- `laravel/reverb` — WebSocket 브로드캐스팅
+- `laravel/boost` — Laravel MCP 서버 (도구: `database-query`, `database-schema`, `search-docs`)
+- `pestphp/pest` — 테스트 프레임워크 (Pest 4)
+- `laravel/pint` — 코드 포맷터 (Pint 1)
+- `laravel/pail` — 로그 뷰어
+
+### Laravel 코드 컨벤션
+
+- **PHP 8 속성(Attribute) 사용**: `$fillable`/`$hidden` 프로퍼티 대신 `#[Fillable([...])]`와 `#[Hidden([...])]` 사용
+- **생성자 프로퍼티 프로모션**: `public function __construct(public Type $var) {}`
+- **타입 힌트**: 모든 메서드에 명시적 반환 타입과 파라미터 타입 선언
+- **제어 구조**: 단일 라인이라도 항상 중괄호 사용
+- **URL 생성**: `route()` 헬퍼 함수와 명명된 라우트 사용
+- **API 리소스**: 버저닝과 함께 Eloquent API Resources 사용
+- **Pest 테스트**: `php artisan make:test --pest`로 생성, 기존 테스트 컨벤션 따름
+- **PHP 변경 완료 전** 반드시 `vendor/bin/pint --format agent` 실행 (컨테이너 내부 기준)
