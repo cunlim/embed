@@ -38,7 +38,7 @@
           },
           {
             "type": "command",
-            "command": "cd /var/app/www/cl_embed && docker run --rm -e SONAR_HOST_URL=\"https://sonarqube.cunlim.dev\" -e SONAR_TOKEN=\"$SONAR_TOKEN\" -v \"$(pwd)/.claude:/usr/src/.claude\" -v \"$(pwd)/.github:/usr/src/.github\" -v \"$(pwd)/scripts:/usr/src/scripts\" -v \"$(pwd)/nextjs:/usr/src/nextjs\" -v \"$(pwd)/laravel:/usr/src/laravel\" -v \"$(pwd)/sonar-project.properties:/usr/src/sonar-project.properties\" sonarsource/sonar-scanner-cli -Dsonar.projectBaseDir=/usr/src 2>/dev/null || true",
+            "command": "cd /var/app/www/cl_embed && docker run --rm -e SONAR_HOST_URL=\"https://sonarqube.cunlim.dev\" -e SONAR_TOKEN=\"$SONAR_TOKEN\" -v \"$(pwd):/usr/src\" sonarsource/sonar-scanner-cli 2>/dev/null || true",
             "timeout": 1200,
             "statusMessage": "SonarQube 정적 분석 중..."
           }
