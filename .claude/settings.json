@@ -19,6 +19,36 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "docker exec cl_embed_nextjs npm run lint 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "Next.js 린트 검사 중..."
+          },
+          {
+            "type": "command",
+            "command": "docker exec -e NODE_ENV=production cl_embed_nextjs npm run build 2>/dev/null || true",
+            "timeout": 120,
+            "statusMessage": "Next.js 빌드 중..."
+          },
+          {
+            "type": "command",
+            "command": "docker exec cl_embed_laravel vendor/bin/pint --format agent 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "Laravel Pint 코드 포맷 중..."
+          },
+          {
+            "type": "command",
+            "command": "docker exec cl_embed_laravel php artisan test --compact 2>/dev/null || true",
+            "timeout": 120,
+            "statusMessage": "Laravel 테스트 실행 중..."
+          }
+        ]
+      }
     ]
   }
 }
