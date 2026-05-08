@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y \
 # 작업 디렉토리 생성 및 이동
 WORKDIR /app
 
+# 의존성 파일 먼저 복사 (레이어 캐싱 활용)
 COPY package*.json ./
 
 # npm 설정 (캐시 사용 및 무결성 확인)
@@ -21,13 +22,20 @@ COPY package*.json ./
 # RUN npm ci --only=production --ignore-scripts
 RUN npm ci
 
-COPY . .
+# COPY . .
+# 소스 코드 복사 (민감 파일은 .dockerignore로 제외)
+COPY --chown=node:node next.config.* tsconfig.json ./
+COPY --chown=node:node public/ public/
+COPY --chown=node:node app/ app/
 
 # 환경변수 정의 (예: development or production 구분)
 ENV NODE_ENV=development
 ENV PORT=3000
 
 EXPOSE 3000
+
+# 보안: root가 아닌 node 사용자로 전환
+USER node
 
 # 개발용이므로 ["npm", "run", "dev"]로 실행합니다. 운영 시에는 RUN npm run build 후 CMD ["npm", "start"]를 사용합니다.
 CMD ["npm", "run", "dev"]

@@ -115,7 +115,7 @@ class StepExecutor:
 
         r = self._run_git("rev-parse", "--abbrev-ref", "HEAD")
         if r.returncode != 0:
-            print(f"  ERROR: git을 사용할 수 없거나 git repo가 아닙니다.")
+            print("  ERROR: git을 사용할 수 없거나 git repo가 아닙니다.")
             print(f"  {r.stderr.strip()}")
             sys.exit(1)
 
@@ -128,7 +128,7 @@ class StepExecutor:
         if r.returncode != 0:
             print(f"  ERROR: 브랜치 '{branch}' checkout 실패.")
             print(f"  {r.stderr.strip()}")
-            print(f"  Hint: 변경사항을 stash하거나 commit한 후 다시 시도하세요.")
+            print("  Hint: 변경사항을 stash하거나 commit한 후 다시 시도하세요.")
             sys.exit(1)
 
         print(f"  Branch: {branch}")
@@ -260,10 +260,10 @@ class StepExecutor:
 
     def _print_header(self):
         print(f"\n{'='*60}")
-        print(f"  Harness Step Executor")
+        print("  Harness Step Executor")
         print(f"  Phase: {self._phase_name} | Steps: {self._total}")
         if self._auto_push:
-            print(f"  Auto-push: enabled")
+            print("  Auto-push: enabled")
         print(f"{'='*60}")
 
     def _check_blockers(self):
@@ -272,12 +272,12 @@ class StepExecutor:
             if s["status"] == "error":
                 print(f"\n  ✗ Step {s['step']} ({s['name']}) failed.")
                 print(f"  Error: {s.get('error_message', 'unknown')}")
-                print(f"  Fix and reset status to 'pending' to retry.")
+                print("  Fix and reset status to 'pending' to retry.")
                 sys.exit(1)
             if s["status"] == "blocked":
                 print(f"\n  ⏸ Step {s['step']} ({s['name']}) blocked.")
                 print(f"  Reason: {s.get('blocked_reason', 'unknown')}")
-                print(f"  Resolve and reset status to 'pending' to retry.")
+                print("  Resolve and reset status to 'pending' to retry.")
                 sys.exit(2)
             if s["status"] != "pending":
                 break
@@ -297,69 +297,90 @@ class StepExecutor:
         prev_error = None
 
         for attempt in range(1, self.MAX_RETRIES + 1):
-            index = self._read_json(self._index_file)
-            step_context = self._build_step_context(index)
-            preamble = self._build_preamble(guardrails, step_context, prev_error)
-
-            tag = f"Step {step_num}/{self._total - 1} ({done} done): {step_name}"
-            if attempt > 1:
-                tag += f" [retry {attempt}/{self.MAX_RETRIES}]"
-
-            with progress_indicator(tag) as pi:
-                self._invoke_claude(step, preamble)
-                elapsed = int(pi.elapsed)
-
-            index = self._read_json(self._index_file)
-            status = next((s.get("status", "pending") for s in index["steps"] if s["step"] == step_num), "pending")
+            elapsed = self._run_step_attempt(step, guardrails, step_num, step_name, done, prev_error, attempt)
             ts = self._stamp()
 
-            if status == "completed":
-                for s in index["steps"]:
-                    if s["step"] == step_num:
-                        s["completed_at"] = ts
-                self._write_json(self._index_file, index)
-                self._commit_step(step_num, step_name)
-                print(f"  ✓ Step {step_num}: {step_name} [{elapsed}s]")
+            if self._try_complete(step_num, step_name, ts, elapsed):
                 return True
 
-            if status == "blocked":
-                for s in index["steps"]:
-                    if s["step"] == step_num:
-                        s["blocked_at"] = ts
-                self._write_json(self._index_file, index)
-                reason = next((s.get("blocked_reason", "") for s in index["steps"] if s["step"] == step_num), "")
-                print(f"  ⏸ Step {step_num}: {step_name} blocked [{elapsed}s]")
-                print(f"    Reason: {reason}")
+            if self._try_block(step_num, step_name, ts, elapsed):
                 self._update_top_index("blocked")
                 sys.exit(2)
 
-            err_msg = next(
-                (s.get("error_message", "Step did not update status") for s in index["steps"] if s["step"] == step_num),
-                "Step did not update status",
-            )
-
-            if attempt < self.MAX_RETRIES:
-                for s in index["steps"]:
-                    if s["step"] == step_num:
-                        s["status"] = "pending"
-                        s.pop("error_message", None)
-                self._write_json(self._index_file, index)
-                prev_error = err_msg
-                print(f"  ↻ Step {step_num}: retry {attempt}/{self.MAX_RETRIES} — {err_msg}")
-            else:
-                for s in index["steps"]:
-                    if s["step"] == step_num:
-                        s["status"] = "error"
-                        s["error_message"] = f"[{self.MAX_RETRIES}회 시도 후 실패] {err_msg}"
-                        s["failed_at"] = ts
-                self._write_json(self._index_file, index)
-                self._commit_step(step_num, step_name)
-                print(f"  ✗ Step {step_num}: {step_name} failed after {self.MAX_RETRIES} attempts [{elapsed}s]")
-                print(f"    Error: {err_msg}")
+            err_msg = self._get_step_error(step_num)
+            if not self._try_retry(step_num, step_name, err_msg, attempt, elapsed, ts):
                 self._update_top_index("error")
                 sys.exit(1)
 
+            prev_error = err_msg
+
         return False  # unreachable
+
+    def _run_step_attempt(self, step, guardrails, step_num, step_name, done, prev_error, attempt):
+        index = self._read_json(self._index_file)
+        step_context = self._build_step_context(index)
+        preamble = self._build_preamble(guardrails, step_context, prev_error)
+        tag = f"Step {step_num}/{self._total - 1} ({done} done): {step_name}"
+        if attempt > 1:
+            tag += f" [retry {attempt}/{self.MAX_RETRIES}]"
+        with progress_indicator(tag) as pi:
+            self._invoke_claude(step, preamble)
+            return int(pi.elapsed)
+
+    def _try_complete(self, step_num, step_name, ts, elapsed):
+        index = self._read_json(self._index_file)
+        status = next((s.get("status", "pending") for s in index["steps"] if s["step"] == step_num), "pending")
+        if status != "completed":
+            return False
+        for s in index["steps"]:
+            if s["step"] == step_num:
+                s["completed_at"] = ts
+        self._write_json(self._index_file, index)
+        self._commit_step(step_num, step_name)
+        print(f"  ✓ Step {step_num}: {step_name} [{elapsed}s]")
+        return True
+
+    def _try_block(self, step_num, step_name, ts, elapsed):
+        index = self._read_json(self._index_file)
+        status = next((s.get("status", "pending") for s in index["steps"] if s["step"] == step_num), "pending")
+        if status != "blocked":
+            return False
+        for s in index["steps"]:
+            if s["step"] == step_num:
+                s["blocked_at"] = ts
+        self._write_json(self._index_file, index)
+        reason = next((s.get("blocked_reason", "") for s in index["steps"] if s["step"] == step_num), "")
+        print(f"  ⏸ Step {step_num}: {step_name} blocked [{elapsed}s]")
+        print(f"    Reason: {reason}")
+        return True
+
+    def _try_retry(self, step_num, step_name, err_msg, attempt, elapsed, ts):
+        index = self._read_json(self._index_file)
+        if attempt < self.MAX_RETRIES:
+            for s in index["steps"]:
+                if s["step"] == step_num:
+                    s["status"] = "pending"
+                    s.pop("error_message", None)
+            self._write_json(self._index_file, index)
+            print(f"  ↻ Step {step_num}: retry {attempt}/{self.MAX_RETRIES} — {err_msg}")
+            return True
+        for s in index["steps"]:
+            if s["step"] == step_num:
+                s["status"] = "error"
+                s["error_message"] = f"[{self.MAX_RETRIES}회 시도 후 실패] {err_msg}"
+                s["failed_at"] = ts
+        self._write_json(self._index_file, index)
+        self._commit_step(step_num, step_name)
+        print(f"  ✗ Step {step_num}: {step_name} failed after {self.MAX_RETRIES} attempts [{elapsed}s]")
+        print(f"    Error: {err_msg}")
+        return False
+
+    def _get_step_error(self, step_num):
+        index = self._read_json(self._index_file)
+        return next(
+            (s.get("error_message", "Step did not update status") for s in index["steps"] if s["step"] == step_num),
+            "Step did not update status",
+        )
 
     def _execute_all_steps(self, guardrails: str):
         while True:
