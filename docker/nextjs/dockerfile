@@ -1,6 +1,6 @@
 FROM node:24.15.0-trixie-slim
 
-# 2. 시스템 의존성 설치 (apt-get)
+# 시스템 의존성 설치 (apt-get)
 # - openssl, libssl-dev: 추후 Prisma 같은 ORM으로 PostgreSQL 연결 시 필수
 # - postgresql-client: 컨테이너 내부에서 DB 핑(ping) 테스트 등 디버깅 목적
 # - curl: 내부 헬스체크 및 Laravel API 통신 테스트 용도
@@ -11,8 +11,15 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# 작업 디렉토리 생성 및 이동
 WORKDIR /app
+
+# node 사용자가 /app에 쓰기 가능하도록 소유권 변경
+RUN chown node:node /app
+
+# root 권한이 더 이상 필요하지 않으므로 node 사용자로 전환
+# 이후 모든 npm/npx 명령어는 node 사용자로 실행되어
+# node_modules 등 생성 파일이 node 소유로 유지됨
+USER node
 
 # 의존성 파일 먼저 복사 (레이어 캐싱 활용)
 COPY package*.json ./
@@ -24,21 +31,19 @@ RUN npm ci
 
 # COPY . .
 # 소스 코드 복사 (민감 파일은 .dockerignore로 제외)
-COPY --chown=node:node next.config.* tsconfig.json ./
-COPY --chown=node:node public/ public/
-COPY --chown=node:node app/ app/
+COPY next.config.* tsconfig.json ./
+COPY public/ public/
+COPY app/ app/
 
 # 환경변수 정의 (예: development or production 구분)
-ENV NODE_ENV=development
+# ENV NODE_ENV=development
 ENV PORT=3000
 
 EXPOSE 3000
 
-# node_modules와 캐시 디렉토리 소유권을 node 사용자로 변경
-RUN mkdir -p .next && chown -R node:node .next node_modules
+# node 사용자로 .next 캐시 디렉토리 생성
+RUN mkdir -p .next
 
-# 보안: root가 아닌 node 사용자로 전환
-USER node
-
-# 개발용이므로 ["npm", "run", "dev"]로 실행합니다. 운영 시에는 RUN npm run build 후 CMD ["npm", "start"]를 사용합니다.
+# 개발용 CMD. 운영 시에는 docker-compose 또는 CI/CD에서
+# npm run build 후 CMD를 npm start로 변경
 CMD ["npm", "run", "dev"]

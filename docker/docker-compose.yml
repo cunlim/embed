@@ -15,7 +15,6 @@ services:
     restart: unless-stopped
     environment:
       WATCHPACK_POLLING: true  # 파일 변경 즉시 감지 (HMR)
-      NODE_ENV: development
       PORT: 3000
       TZ: Asia/Seoul
     # ports:
