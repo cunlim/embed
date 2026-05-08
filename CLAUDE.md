@@ -77,6 +77,29 @@ docker compose logs -f cl_embed_laravel
 docker compose logs -f cl_embed_nextjs
 ```
 
+## 로깅
+
+### Nginx 로그 (`docker/nginx/volume/log/`)
+
+Nginx 리버스 프록시가 경로별로 별도 로그 파일에 기록합니다.
+
+| 로그 파일 | 내용 |
+|-----------|------|
+| `embed_error.log` / `embed_access.log` | Nginx 전체 요청/오류 |
+| `embed_api_error.log` / `embed_api_access.log` | `/api/` 라우팅 (Laravel API) |
+| `embed_app_error.log` / `embed_app_access.log` | `/app/` 라우팅 (Laravel Reverb WebSocket) |
+| `embed_nextjs_error.log` / `embed_nextjs_access.log` | `/` 라우팅 (Next.js 프론트엔드) |
+
+### Laravel 프로세스 로그 (`laravel/logs/`)
+
+Laravel 컨테이너(`cl_embed_laravel`) 내부에서 실행되는 3개의 프로세스가 각각 별도 파일에 기록합니다. Docker Compose volume `./laravel/volume/log:/var/log/php`로 호스트에 마운트됩니다.
+
+| 로그 파일 | 프로세스 | 포트 | 목적 |
+|-----------|----------|------|------|
+| `serve.log` | `php artisan serve` | 8000 | Laravel HTTP 요청 처리 |
+| `queue.log` | `php artisan queue:work` | — | 큐 Job (번역/임베딩) 처리 |
+| `reverb.log` | `php artisan reverb:start` | 8080 | WebSocket 실시간 브로드캐스트 |
+
 ## CI/CD (셀프호스티드 WSL GitHub Actions 러너)
 
 `main` 브랜치 푸시 시 컨테이너 재시작 및 데몬 재실행. SonarQube (`sonar-project.properties`, 키: `cl_embed`)는 외부에서 분석 실행.

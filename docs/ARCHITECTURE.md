@@ -9,6 +9,8 @@
 └── redis_04/           # Redis (Session, Cache, Queue, Broadcasting)
 ```
 * 도메인: `https://embed.cunlim.dev` 호스트 연결 (cloudflared tunnel 사용)
+* **Nginx 로그**: `docker/nginx/volume/log/` — 경로별 분리 기록 (`/api/`, `/app/`, `/`)
+* **Laravel 프로세스 로그**: `laravel/logs/` — `serve.log`, `queue.log`, `reverb.log` (Docker volume `./laravel/volume/log:/var/log/php`)
 
 ## 패턴
 * **리버스 프록시 트래픽 라우팅 (Nginx)**:
