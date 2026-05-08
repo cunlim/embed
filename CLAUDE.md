@@ -62,6 +62,20 @@ cl_embed/
 | 인프라 | Docker 4컨테이너, cloudflared, Nginx | `docs/ARCHITECTURE.md` |
 | 데이터 흐름 | 비동기 파이프라인 + WebSocket | `docs/ARCHITECTURE.md` |
 
+## 컨테이너 접속
+
+Next.js 관련 작업은 호스트에서 직접 실행하지 말고 반드시 `cl_embed_nextjs` 컨테이너 내부에서 실행해야 합니다. (node_modules 권한 문제 방지)
+
+```bash
+# Next.js 컨테이너 접속
+docker exec -it cl_embed_nextjs /bin/sh
+
+# Laravel 컨테이너 접속
+docker exec -it cl_embed_laravel /bin/bash
+```
+
+컨테이너 내부에서 npm 명령어 실행 시 `--no-bin-links` 플래그가 필요할 수 있습니다.
+
 ## Docker Compose
 
 ```bash
