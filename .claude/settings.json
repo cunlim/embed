@@ -35,6 +35,12 @@
             "command": "docker exec cl_embed_laravel php artisan test --compact 2>/dev/null || true",
             "timeout": 120,
             "statusMessage": "Laravel 테스트 실행 중..."
+          },
+          {
+            "type": "command",
+            "command": "cd /var/app/www/cl_embed && docker run --rm -e SONAR_HOST_URL=\"https://sonarqube.cunlim.dev\" -e SONAR_TOKEN=\"$SONAR_TOKEN\" -v \"$(pwd)/nextjs:/usr/src/nextjs\" -v \"$(pwd)/laravel:/usr/src/laravel\" -v \"$(pwd)/sonar-project.properties:/usr/src/sonar-project.properties\" sonarsource/sonar-scanner-cli -Dsonar.projectBaseDir=/usr/src 2>/dev/null || true",
+            "timeout": 1200,
+            "statusMessage": "SonarQube 정적 분석 중..."
           }
         ]
       }
