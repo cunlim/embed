@@ -9,3 +9,6 @@ node_modules/
 # phase execution outputs
 phases/**/phase*-output.json
 phases/**/step*-output.json
+
+# Playwright MCP debug output
+.playwright-mcp/
