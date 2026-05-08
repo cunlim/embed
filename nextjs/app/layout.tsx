@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const outfit = Outfit({
   variable: "--font-heading",
@@ -43,7 +44,7 @@ export default function RootLayout({
         />
       </head>
       <body className="flex min-h-dvh flex-col bg-noise">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
