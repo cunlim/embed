@@ -5,8 +5,8 @@
 ./docker/docker-compose.yml (WSL Ubuntu 기반)
 ├── cl_embed_nextjs/    # Next.js (상세 버전/포트/명령어: [`nextjs/CLAUDE.md`](../nextjs/CLAUDE.md))
 ├── cl_embed_laravel/   # Laravel API & Queue 데몬 (상세 버전/명령어: [`laravel/CLAUDE.md`](../laravel/CLAUDE.md))
-├── cl_embed_pgvector/  # PostgreSQL 15+ (pgvector extension)
-└── cl_embed_redis/     # Redis (Session, Cache, Queue, Broadcasting)
+├── pgvector_03/        # PostgreSQL 15+ (pgvector extension)
+└── redis_04/           # Redis (Session, Cache, Queue, Broadcasting)
 ```
 * 도메인: `https://embed.cunlim.dev` 호스트 연결 (cloudflared tunnel 사용)
 
