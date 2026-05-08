@@ -20,7 +20,7 @@
           },
           {
             "type": "command",
-            "command": "docker exec -e NODE_ENV=production cl_embed_nextjs npm run build 2>/dev/null || true",
+            "command": "docker exec cl_embed_nextjs npm run build 2>/dev/null || true",
             "timeout": 120,
             "statusMessage": "Next.js 빌드 중..."
           },
