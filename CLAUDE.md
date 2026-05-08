@@ -43,9 +43,10 @@ cl_embed/
 
 ## 개발 프로세스
 
-- **TDD** — 새 기능 구현 시 테스트를 먼저 작성하고 통과시키는 구현을 작성 (Laravel: Pest 4)
-- 커밋 메시지는 conventional commits 형식 (feat:, fix:, docs:, refactor:)
-- PHP 변경 후 `vendor/bin/pint --format agent` 실행 (컨테이너 내부)
+- **CRITICAL: TDD** — 새 기능 구현 시 반드시 테스트를 먼저 작성하고, 테스트가 통과하는 구현을 작성할 것
+  - Laravel: Pest 4 (`php artisan test --compact`)
+- 커밋 메시지는 conventional commits 형식을 따를 것 (feat:, fix:, docs:, refactor:)
+- PHP 변경 완료 전 `vendor/bin/pint --format agent` 실행 (컨테이너 내부)
 
 ## 기술 스택
 
