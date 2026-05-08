@@ -3,8 +3,8 @@
 ## 디렉토리 구조 및 인프라 (멀티 컨테이너)
 ```
 ./docker/docker-compose.yml (WSL Ubuntu 기반)
-├── cl_embed_nextjs/    # Port 3000, Next.js 16.2.4 (Node v24.15.0), WATCHPACK_POLLING 적용
-├── cl_embed_laravel/   # Laravel 13.5.0 (php:8.5.5-fpm-trixie) API & Queue 데몬
+├── cl_embed_nextjs/    # Next.js (상세 버전/포트/명령어: [`nextjs/CLAUDE.md`](../nextjs/CLAUDE.md))
+├── cl_embed_laravel/   # Laravel API & Queue 데몬 (상세 버전/명령어: [`laravel/CLAUDE.md`](../laravel/CLAUDE.md))
 ├── cl_embed_pgvector/  # PostgreSQL 15+ (pgvector extension)
 └── cl_embed_redis/     # Redis (Session, Cache, Queue, Broadcasting)
 ```
