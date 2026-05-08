@@ -1,55 +1,53 @@
 # 프로젝트 개요
 
-## 프로젝트 이름
-cl_embed
+## 프로젝트 목적
+AI 기반 다국어 카테고리 추천 시스템 (포트폴리오). 사용자 텍스트를 분석해 네이버 카테고리 체계 기준으로 적합한 카테고리를 추천. 한국어/중국어/영어 지원.
 
-## 프로젝트 설명
-Laravel 백엔드와 Next.js 프론트엔드를 결합한 하이브리드 웹 애플리케이션
+## 현재 상태
+인프라(Docker 컨테이너 4개, 도메인, CI/CD) 구축 완료. 애플리케이션 코드는 아직 작성되지 않음.
 
 ## 기술 스택
+| 영역 | 스택 |
+|------|------|
+| 백엔드 | Laravel 13 + PHP 8.5 |
+| 프론트엔드 | Next.js 16 + React 19 + Tailwind v4 + TypeScript |
+| DB | PostgreSQL 15 + pgvector |
+| 비동기 | Laravel Queue + Redis + Reverb |
+| AI | Ollama 로컬 모델 (translategemma:4b, nomic-embed-text) |
+| 인증 | Laravel Sanctum + Socialite |
+| 인프라 | Docker 4컨테이너, cloudflared, Nginx |
 
-### 백엔드 (Laravel)
-- **PHP**: 8.5
-- **Laravel Framework**: v13
-- **Laravel Reverb**: v1 (실시간 이벤트)
-- **Laravel Boost**: v2 (AI 에이전트 지원)
-- **Laravel Pint**: v1 (코드 포맷팅)
-- **Laravel Pail**: v1 (로깅)
-- **테스트**: Pest PHP v4, PHPUnit v12
-- **데이터베이스**: SQLite (테스트), PostgreSQL (추정)
-
-### 프론트엔드 (Next.js)
-- **Next.js**: 16.2.4
-- **React**: 19.2.4
-- **TypeScript**: 5
-- **Tailwind CSS**: 4
-- **ESLint**: 9
-
-### 인프라
-- **Docker**: 컨테이너화된 개발 환경
-- **네트워크**: docker_public_1, docker_private_1
-
-## 프로젝트 구조
+## 레포지토리 구조
 ```
-/var/app/www/cl_embed/
-├── laravel/          # 백엔드 (Laravel)
-│   ├── app/          # 애플리케이션 코드
-│   ├── config/       # 설정 파일
-│   ├── database/     # 마이그레이션, 시더
-│   ├── routes/       # 라우트 정의
-│   ├── tests/        # 테스트
-│   └── ...
-├── nextjs/           # 프론트엔드 (Next.js)
-│   ├── app/          # Next.js 앱 디렉토리
-│   ├── public/       # 정적 파일
-│   └── ...
-├── docker/           # Docker 설정
-│   └── docker-compose.yml
-└── doc/              # 문서
+cl_embed/
+├── nextjs/          # 프론트엔드: Next.js 16 + React 19 + Tailwind v4 + TypeScript
+├── laravel/         # 백엔드: Laravel 13 + PHP 8.5 + Pest 4
+├── docker/          # Docker Compose + Dockerfiles (4개 서비스: nextjs, laravel, pgvector, redis)
+├── docs/            # 설계 문서 (PRD.md, ARCHITECTURE.md, ADR.md, UI_GUIDE.md)
+├── phases/          # Phase별 작업 산출물
+├── scripts/         # Claude Code Harness 스크립트
+└── .github/workflows/deploy.yml  # CI/CD
 ```
 
-## 주요 기능
-- Laravel 백엔드 API 서버
-- Next.js 프론트엔드 웹 인터페이스
-- 실시간 이벤트 (Laravel Reverb)
-- AI 에이전트 지원 (Laravel Boost)
+## 브랜치 전략
+- **develop**: 일상 개발 브랜치
+- **main**: 안정 릴리스 브랜치 (CI/CD 자동 배포)
+- **feature/***: 개별 기능 개발 브랜치
+- 릴리스: `scripts/git_release.sh` 실행
+
+## Phase 계획
+- Phase 1: Laravel 비동기 백엔드 파이프라인 (현재 진행 예정)
+- Phase 2: Next.js 실시간 UI 연동
+- Phase 3: 검색 로직 완성 및 Integration
+
+## 핵심 기능
+1. 일괄 번역 및 임베딩 파이프라인 (Queue + Ollama)
+2. 검색 및 추천 엔진 (pgvector 코사인 유사도)
+3. 실시간 처리 및 동시성 제어 (Redis Lock + WebSocket)
+4. 개별 카테고리 추가 기능 (관리자 전용)
+5. OAuth 로그인 (Google, GitHub, Naver)
+
+## 핵심 성공 지표
+- 캐시 히트 시: 100ms 이하 응답
+- 신규 키워드: 1.5초 이하 응답
+- AI 번역 실패 시 재시도 성공률 99% 이상
