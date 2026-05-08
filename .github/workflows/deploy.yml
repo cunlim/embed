@@ -11,15 +11,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. Laravel 테스트 실행 — 회귀 방지
+      # 1. SonarQube 정적 분석 — 코드 품질 게이트
+      - name: SonarQube Analysis
+        run: |
+          docker run --rm \
+            -e SONAR_HOST_URL="${{ secrets.SONAR_HOST_URL }}" \
+            -e SONAR_TOKEN="${{ secrets.SONAR_TOKEN }}" \
+            -v "$(pwd):/usr/src" \
+            sonarsource/sonar-scanner-cli
+
+      # 2. Laravel 테스트 실행 — 회귀 방지
       - name: Run Laravel Tests
         run: docker exec cl_embed_laravel php artisan test --compact
 
-      # 2. DB 마이그레이션 실행 — 스키마 변경 반영
+      # 3. DB 마이그레이션 실행 — 스키마 변경 반영
       - name: Run Database Migrations
         run: docker exec cl_embed_laravel php artisan migrate --force
 
-      # 3. 컨테이너 재시작 및 데몬 재실행
+      # 4. 컨테이너 재시작 및 데몬 재실행
       - name: Restart Containers and Run Daemons
         run: |
           cd ./docker
