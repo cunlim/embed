@@ -40,6 +40,7 @@ cl_embed/
 - **`develop`**: 일상 개발 브랜치. feature/* 브랜치에서 작업 후 PR로 머지.
 - **`main`**: 안정 릴리스 브랜치. CI/CD가 main 푸시를 감지해 자동 배포.
 - **`feature/*`**: 개별 기능 개발. develop에서 분기, 완료 후 PR → develop.
+- **`develop → main 릴리스**: `scripts/git_release.sh` 실행 (develop을 main에 머지 후 푸시, 완료 후 develop으로 복귀)
 
 ## 개발 프로세스
 
