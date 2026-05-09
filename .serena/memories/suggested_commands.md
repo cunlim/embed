@@ -84,4 +84,3 @@ git commit -m "refactor: 코드 리팩토링"
 ## CI/CD
 - main 브랜치 푸시 시 GitHub Actions가 자동 배포 실행
 - 셀프호스티드 WSL GitHub Actions 러너 사용
-- SonarQube (키: cl_embed) 외부 분석
