@@ -9,6 +9,11 @@
 - README, CLAUDE.md, AGENTS.md, PRD 등 문서 파일은 한국어로 작성합니다.
 - 코드 내 주석은 한국어로 작성합니다.
 
+## plugin, skills, mcp 사용
+* 모든 프론트엔드 UI 작업은 `ui-ux-pro-max:ui-ux-pro-max` plugin 을 활성화하여 수행한다.
+* 모든 작업량이 큰 작업은 `superpowers` plugin 을 활성화하여 수행한다.
+* 에러, 이슈가 발생하면  `compound-engineering` plugin 으로 잘못을 재발하지 않도록 개선한다.
+
 ## 프로젝트 개요
 
 AI 기반 다국어 카테고리 추천 시스템 (포트폴리오). 사용자 텍스트를 분석해 네이버 카테고리 체계 기준으로 적합한 카테고리를 추천. 한국어/중국어/영어 지원, pgvector 코사인 유사도 검색 사용.
