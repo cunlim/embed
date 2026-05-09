@@ -12,3 +12,6 @@ phases/**/step*-output.json
 
 # Playwright MCP debug output
 .playwright-mcp/
+
+# Superpowers brainstorming sessions
+.superpowers/
