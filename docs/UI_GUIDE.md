@@ -2,7 +2,7 @@
 
 ## 디자인 원칙
 
-1. **ce-frontend-design skill 사용**: 모든 프론트엔드 UI 작업은 `ce-frontend-design` skill을 활성화하여 수행한다.
+1. **ui-ux-pro-max:ui-ux-pro-max plugin 사용**: 모든 프론트엔드 UI 작업은 `ui-ux-pro-max` skill을 활성화하여 수행한다.
 2. **shadcn/ui 사용**: 모든 UI 컴포넌트는 shadcn/ui (`base-nova` 스타일) 기반으로 구축한다.
 3. **반응형 디자인**: 모바일(375px) → 태블릿(768px) → 데스크톱(1280px+) 순으로 mobile-first 디자인.
 4. **화이트/다크 모드**: `next-themes` 기반 class 전략으로 light/dark 모두 지원.
