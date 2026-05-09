@@ -123,7 +123,7 @@ export default function Home() {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-9 rounded-lg text-sm"
+                className="h-9 rounded-lg text-sm dark:bg-input"
               >
                 기술 문서
               </Button>
