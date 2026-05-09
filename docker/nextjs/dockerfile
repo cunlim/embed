@@ -25,10 +25,8 @@ COPY package*.json ./
 RUN npm ci
 
 # COPY . .
-# 소스 코드 복사 (민감 파일은 .dockerignore로 제외)
-COPY next.config.* tsconfig.json ./
-COPY public/ public/
-COPY app/ app/
+# 소스 코드 전체 복사 (불필요 파일은 .dockerignore로 제외)
+COPY . ./
 
 # 환경변수 정의 (예: development or production 구분)
 # ENV NODE_ENV=development
