@@ -10,7 +10,7 @@
 - `/laravel/CLAUDE.md`
 - `/laravel/app/Repositories/SearchLogRepository.php` (이전 step에서 생성됨)
 - `/laravel/app/Models/SearchLog.php`
-- `/laravel/app/Http/Controllers/Api/RecommendController.php` (이전 step에서 수정됨)
+- `/laravel/app/Http/Controllers/Api/RecommendController.php` (이전 task에서 생성됨 — 이 step에서 캐싱 로직을 추가한다)
 
 이전 step에서 만들어진 코드를 꼼꼼히 읽고, 설계 의도를 이해한 뒤 작업하라.
 
@@ -56,7 +56,13 @@ class EmbeddingCacheService
 
 ### RecommendController 수정
 
-`EmbeddingCacheService`를 사용하도록 `recommend()` 메서드 리팩토링. `SearchLogRepository` 직접 호출 제거.
+`recommend()` 메서드를 다음 흐름으로 리팩토링하라:
+
+1. `EmbeddingCacheService::getOrCreateEmbedding()`으로 검색어 임베딩 획득 (캐시 히트 시 임베딩 재생성 없음 — 100ms 이하 달성)
+2. 반환된 `SearchLog`의 `embedding`을 사용해 `CategoryEmbedding::similarTo()` 호출
+3. 상위 5개 결과를 `RecommendResource`로 반환
+
+기존 `api-layer/step1`에서 구현된 기본 쿼리(`DB::select()`)를 `scopeSimilarTo`로 교체하고, `EmbeddingCacheService`를 통해 캐싱을 통합한다. `SearchLogRepository`나 `EmbeddingGenerator`를 직접 호출하지 마라 — `EmbeddingCacheService`가 둘을 캡슐화한다.
 
 ## 생성할 파일
 

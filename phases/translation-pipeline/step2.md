@@ -47,7 +47,13 @@ class TranslationProgress implements ShouldBroadcast
 
 ### 이벤트 발행 위치 수정
 
-`BatchTranslatePipeline`의 `handle()` 메서드에서 batch 진행 상황을 추적하고, 주기적으로 `TranslationProgress` 이벤트를 broadcast하도록 수정하라.
+`BatchTranslatePipeline`의 `handle()` 메서드에서 Bus::batch()를 구성할 때 다음 콜백을 등록하라:
+
+1. **batch `progress()` 콜백**: 개별 Job 하나가 완료될 때마다 호출됨. 이 시점에 `TranslationProgress` 이벤트를 broadcast하여 실시간 진행률을 전달한다.
+2. **batch `then()` 콜백**: 모든 Job 완료 시 `BatchCompleted` 이벤트를 broadcast한다.
+3. **batch `catch()` 콜백**: 일부 Job 실패 시 `BatchFailed` 이벤트를 broadcast한다.
+
+`TranslationProgress.broadcastAs()`는 `'translation.progress'`를 반환해야 하며, 클라이언트는 `.listen('.translation.progress', ...)`로 수신한다.
 
 ### BatchCompleted / BatchFailed 이벤트 (`app/Events/BatchCompleted.php`, `app/Events/BatchFailed.php`)
 

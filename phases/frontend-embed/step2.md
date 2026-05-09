@@ -22,6 +22,15 @@
 
 `/login` 로그인/회원가입 페이지를 생성하라 (UI_GUIDE.md §6.2 참조).
 
+### 패키지 설치
+
+컨테이너 내부에서 실행:
+```bash
+npm install react-hook-form @hookform/resolvers zod
+```
+
+이 패키지들은 폼 상태 관리와 유효성 검증에 사용된다.
+
 ### 페이지 구성
 
 1. **중앙 정렬 카드 레이아웃**
@@ -73,6 +82,7 @@ shadcn Form + React Hook Form 사용. 클라이언트 측 유효성 검사:
 - `nextjs/app/login/page.tsx`
 - `nextjs/hooks/useAuth.ts`
 - `nextjs/lib/api.ts` (수정 — 인증 API 함수 추가)
+- `nextjs/package.json` (수정 — react-hook-form, @hookform/resolvers, zod 추가)
 
 ## Acceptance Criteria
 

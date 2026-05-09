@@ -10,6 +10,7 @@
 - `/laravel/CLAUDE.md`
 - `/laravel/app/Http/Controllers/Api/CategoryController.php` (이전 step에서 생성됨)
 - `/laravel/app/Http/Resources/CategoryResource.php` (이전 step에서 생성됨)
+- `/laravel/routes/api.php` (이전 step에서 생성됨 — 라우트 추가 필요)
 - `/laravel/app/Services/EmbeddingGenerator.php` (이전 task에서 생성됨)
 - `/laravel/app/Models/SearchLog.php` (이전 task에서 생성됨)
 - `/laravel/app/Models/CategoryEmbedding.php`
@@ -52,6 +53,16 @@ class RecommendController extends Controller
 - `text` — 필수, string, min:1, max:500
 - `target_language` — 필수, string, in:ko,zh,en
 
+### Recommend 라우트 등록 (`routes/api.php`)
+
+`routes/api.php`에 다음 라우트를 추가하라:
+
+```php
+Route::post('recommend', [RecommendController::class, 'recommend']);
+```
+
+`bootstrap/app.php`에서 이미 `/api` prefix가 적용되므로, `routes/api.php` 내부에서는 prefix 없이 정의한다.
+
 ### RecommendResource (`app/Http/Resources/RecommendResource.php`)
 
 각 추천 항목:
@@ -62,6 +73,7 @@ class RecommendController extends Controller
 - `laravel/app/Http/Controllers/Api/RecommendController.php`
 - `laravel/app/Http/Requests/RecommendRequest.php`
 - `laravel/app/Http/Resources/RecommendResource.php`
+- `laravel/routes/api.php` (수정 — recommend 라우트 추가)
 
 ## Acceptance Criteria
 

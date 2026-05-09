@@ -20,20 +20,19 @@ API 라우트와 CategoryController를 생성하라.
 
 ### API 라우트 파일 생성 (`routes/api.php`)
 
+`bootstrap/app.php`에서 이미 `/api` prefix가 적용되므로, `routes/api.php` 내부에서는 prefix 없이 라우트를 정의한다.
+
 ```php
-Route::prefix('api')->group(function () {
-    // 카테고리
-    Route::get('categories', [CategoryController::class, 'index']);
-    Route::post('categories', [CategoryController::class, 'store']);
-    Route::get('categories/{category}', [CategoryController::class, 'show']);
+// 카테고리
+Route::get('categories', [CategoryController::class, 'index']);
+Route::post('categories', [CategoryController::class, 'store']);
+Route::get('categories/{category}', [CategoryController::class, 'show']);
 
-    // 일괄 번역/임베딩
-    Route::post('categories/batch-translate', [CategoryController::class, 'batchTranslate']);
-
-    // 추천 (다음 step에서 구현)
-    Route::post('recommend', [RecommendController::class, 'recommend']);
-});
+// 일괄 번역/임베딩
+Route::post('categories/batch-translate', [CategoryController::class, 'batchTranslate']);
 ```
+
+> **참고**: `POST /api/recommend` 라우트는 `RecommendController`가 생성되는 다음 step(step1)에서 등록한다.
 
 ### `bootstrap/app.php` 수정
 
@@ -110,6 +109,7 @@ docker exec cl_embed_laravel php artisan test --compact
 ## 금지사항
 
 - 이 step에서 인증 미들웨어를 적용하지 마라. auth는 다음 task(auth-system)에서 처리한다.
+- `routes/api.php` 내부에서 `Route::prefix('api')`를 다시 감싸지 마라. 이유: `bootstrap/app.php`에서 이미 `/api` prefix가 적용되므로 `/api/api/categories` 같은 이중 prefix가 발생한다.
 - api.php 라우트를 web.php에 섞어 정의하지 마라. 별도 파일로 분리한다.
 - `batchTranslate()`에서 실제 Job을 dispatch만 하고 응답은 즉시 반환하라. 동기 처리하지 마라.
 - 기존 테스트를 깨뜨리지 마라

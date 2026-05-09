@@ -37,7 +37,8 @@ LIMIT :limit
 
 ### SearchLogRepository (`app/Repositories/SearchLogRepository.php`)
 
-검색 이력 조회를 전담하는 Repository:
+검색 이력 조회를 전담하는 Repository. 이 클래스는 다음 step에서 `EmbeddingCacheService`가 내부적으로 사용한다.
+
 ```php
 class SearchLogRepository
 {
@@ -46,18 +47,10 @@ class SearchLogRepository
 }
 ```
 
-### RecommendController 리팩토링
-
-`recommend()` 메서드에 다음 최적화 적용:
-1. `SearchLogRepository::findByKeyword()`로 과거 동일 검색어 조회 → 캐시 히트 시 즉시 반환 (PRD §1.3: 100ms 이하)
-2. 미스 시: `EmbeddingGenerator::generate()` → `CategoryEmbedding::similarTo()` → 상위 5개 반환
-3. 검색 결과를 `SearchLog`에 저장 (다음 검색 시 캐시 히트)
-
 ## 생성할 파일
 
 - `laravel/app/Repositories/SearchLogRepository.php`
 - `laravel/app/Models/CategoryEmbedding.php` (수정 — scopeSimilarTo 추가)
-- `laravel/app/Http/Controllers/Api/RecommendController.php` (수정 — 캐싱 로직 추가)
 
 ## Acceptance Criteria
 
