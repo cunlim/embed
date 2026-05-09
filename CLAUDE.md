@@ -81,6 +81,11 @@ docker exec -it cl_embed_laravel /bin/bash
 
 컨테이너 내부에서 npm 명령어 실행 시 `--no-bin-links` 플래그가 필요할 수 있습니다.
 
+## 인프라 환경 (WSL2)
+
+- **WSL2 `networkingMode=mirrored`**: Windows 호스트와 WSL2가 동일한 네트워크를 공유. Docker 컨테이너 내부에서 `host.docker.internal`로 Windows 호스트의 Ollama(port 11434)에 접근 가능.
+- **Ollama**: Windows 호스트에서 실행 중인 Ollama(`host.docker.internal:11434`)를 Laravel 컨테이너가 호출한다.
+
 ## Docker Compose
 
 ```bash

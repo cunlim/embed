@@ -27,7 +27,7 @@ composer require laravel/socialite
 
 ### OAuth 설정
 
-`config/services.php`에 세 가지 OAuth 제공자 설정 추가:
+`config/services.php`에 세 가지 OAuth 제공자 설정 추가. **주의: `ollama-integration` task의 step0에서 추가한 ollama 설정이 이미 존재한다. 해당 설정을 보존한 채 OAuth 설정만 추가하라. 기존 키를 삭제하거나 덮어쓰지 마라.**
 ```php
 'google' => [
     'client_id' => env('GOOGLE_CLIENT_ID'),

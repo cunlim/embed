@@ -56,16 +56,16 @@ class CategoryController extends Controller
 핵심 규칙:
 - `index()` — 모든 Category를 `CategoryResource` 컬렉션으로 반환
 - `store()` — 단일 카테고리 생성. 인증 필요 (Sanctum middleware, 다음 task에서 적용).
-  - `category_code` 자동 생성: `CAT_` + 8자리 무작위 영숫자 (`Str::random(8)`). unique 제약조건 충돌 시 최대 3회 재시도.
+  - `category_code` 자동 생성: `CAT_` + 8자리 무작위 영숫자 (`Str::random(8)`). unique 제약조건 충돌 시 최대 3회 재시도. `CategoryFactory`(`backend-models/step0`에서 생성됨)의 생성 규칙과 동일한 방식을 사용하라.
   - 생성된 Category에 대해 `TranslateAndEmbedJob` dispatch
 - `show()` — 단일 Category 상세
 - `batchTranslate()` — `BatchTranslatePipeline` Job dispatch 후 `202 Accepted` + `batch_id` JSON 응답
-  - 요청 본문: `{ "target_languages": ["zh", "en"] }`
+  - 요청 본문: `{ "target_language": "zh" }` — 단일 언어 문자열. 여러 언어 처리는 언어별로 각각 API를 호출한다.
 
 ### Form Requests
 
 - `CategoryStoreRequest` — `category_name_ko` 필수, string, max:255
-- `BatchTranslateRequest` — `target_languages` 필수, array, 각 값은 `in:zh,en`
+- `BatchTranslateRequest` — `target_language` 필수, string, in:zh,en
 
 ### Eloquent Resources
 

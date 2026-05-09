@@ -55,9 +55,46 @@ class TranslationProgress implements ShouldBroadcast
 
 `TranslationProgress.broadcastAs()`는 `'translation.progress'`를 반환해야 하며, 클라이언트는 `.listen('.translation.progress', ...)`로 수신한다.
 
-### BatchCompleted / BatchFailed 이벤트 (`app/Events/BatchCompleted.php`, `app/Events/BatchFailed.php`)
+### BatchCompleted 이벤트 (`app/Events/BatchCompleted.php`)
 
-Batch 완료/실패 시 broadcast하는 이벤트. 위와 동일한 패턴으로 생성하라.
+Batch 전체 성공 시 broadcast하는 이벤트.
+
+```php
+namespace App\Events;
+
+class BatchCompleted implements ShouldBroadcast
+{
+    use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public function __construct(
+        public string $batchId,
+    ) {}
+
+    public function broadcastOn(): Channel;   // new Channel('translation.{$this->batchId}')
+    public function broadcastAs(): string;    // 'batch.completed'
+}
+```
+
+### BatchFailed 이벤트 (`app/Events/BatchFailed.php`)
+
+Batch 실패 시 broadcast하는 이벤트.
+
+```php
+namespace App\Events;
+
+class BatchFailed implements ShouldBroadcast
+{
+    use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public function __construct(
+        public string $batchId,
+        public string $errorMessage,
+    ) {}
+
+    public function broadcastOn(): Channel;   // new Channel('translation.{$this->batchId}')
+    public function broadcastAs(): string;    // 'batch.failed'
+}
+```
 
 ## 생성할 파일
 

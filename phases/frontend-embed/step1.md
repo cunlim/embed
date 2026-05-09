@@ -28,21 +28,27 @@
 1. **네비게이션 바** — 로고 + 테마 토글 (랜딩 페이지와 동일 패턴)
 2. **검색 입력 영역**:
    - 큰 라운드 입력창 (`rounded-full`, `h-12` 이상)
-   - 언어 선택 (ko/zh/en) 드롭다운 또는 탭
+   - 언어 선택 (ko/zh/en) — 계층형 Select Box 또는 탭 (ARCHITECTURE.md: "계층형 Select Box" 요구사항 반영)
    - "분석" CTA 버튼
 3. **추천 결과 영역**:
    - 결과 카드 리스트 (각 카드: 카테고리 코드, 카테고리명, 유사도 점수)
    - 유사도 점수는 `text-accent font-mono text-lg`로 하이라이트
+   - 각 결과 카드에서 **코사인 유사도 상세** 정보 표시 (ARCHITECTURE.md: "코사인 유사도 상세" 요구사항)
    - 키워드 매칭 부분 `font-semibold text-accent` 처리
-4. **상태 처리**:
+4. **벡터 과정 모달** (ARCHITECTURE.md, PRD §3.2):
+   - shadcn Dialog 컴포넌트 사용
+   - 검색어 → 정규화 → 임베딩 생성 → pgvector 유사도 검색 → 결과 매핑의 각 단계를 시각적으로 표시
+   - 결과 카드 클릭 또는 "상세 보기" 버튼으로 열기
+5. **상태 처리**:
    - **로딩**: skeleton 또는 pulse 애니메이션
    - **빈 상태**: `flex flex-col items-center gap-2 py-12` + 아이콘 + 메시지
    - **에러**: 빨간색 경고 + 재시도 버튼
    - **결과 없음**: 아이콘 + "일치하는 카테고리가 없습니다" + 설명
-5. **일괄 번역 진행률**:
+6. **일괄 번역 진행률**:
    - `useBatchProgress` 훅 사용
    - 진행률 바 (shadcn Progress 컴포넌트)
    - 완료/실패 카운트 표시
+   - 여러 언어를 처리하려면 언어별로 각각 `POST /api/categories/batch-translate`를 호출한다. 하나의 호출은 하나의 언어만 처리.
 
 ### API 연동
 
@@ -52,7 +58,8 @@
 // Response: { recommendations: Array<{ category_code, category_name, similarity_score }> }
 
 // POST /api/categories/batch-translate
-// Request: { target_languages: string[] }
+// 언어별 직렬 처리. 여러 언어 필요 시 언어별로 각각 호출
+// Request: { target_language: string }  (단일 언어: "zh" | "en")
 // Response: { batch_id: string }
 ```
 

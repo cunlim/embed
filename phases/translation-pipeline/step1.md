@@ -18,7 +18,7 @@
 
 ### BatchTranslatePipeline (`app/Jobs/BatchTranslatePipeline.php`)
 
-ADM-002에 따라 `Bus::batch()`를 사용하여 모든 카테고리에 대한 번역/임베딩 Job을 일괄 dispatch한다.
+ADM-002에 따라 `Bus::batch()`를 사용하여 모든 카테고리에 대한 번역/임베딩 Job을 일괄 dispatch한다. **번역은 언어별로 직렬 실행**되므로, 하나의 Pipeline은 하나의 언어만 처리한다. 여러 언어를 처리하려면 언어별로 Batch를 각각 dispatch해야 한다.
 
 시그니처:
 ```php
@@ -29,7 +29,7 @@ class BatchTranslatePipeline implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public function __construct(
-        private array $targetLanguages, // ['zh', 'en']
+        private string $targetLanguage, // 'zh' | 'en' — 단일 언어
         private ?array $categoryIds = null, // null이면 전체 카테고리
     ) {}
 
@@ -43,7 +43,7 @@ class BatchTranslatePipeline implements ShouldQueue
 3. Batch에 `then()` 콜백: 완료 시 `BatchCompleted` 이벤트 dispatch
 4. Batch에 `catch()` 콜백: 실패 시 `BatchFailed` 이벤트 dispatch
 5. Batch에 `allowFailures()` 설정 — 개별 Job 실패가 전체 Batch에 영향을 주지 않도록 (ADR-003: failed_jobs로 이관)
-6. Batch name 설정 → `"translate-embed-{언어들}"`
+6. Batch name 설정 → `"translate-embed-{언어}"`
 
 ## 생성할 파일
 
@@ -54,7 +54,7 @@ class BatchTranslatePipeline implements ShouldQueue
 ```bash
 # Batch Job 생성 확인
 docker exec cl_embed_laravel php artisan tinker --execute '
-  echo get_class(new App\Jobs\BatchTranslatePipeline(["zh", "en"]));
+  echo get_class(new App\Jobs\BatchTranslatePipeline("zh"));
 '
 
 # PHP 코드 포맷팅

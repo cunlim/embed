@@ -47,9 +47,9 @@ test('POST /api/categories/batch-translate — 인증 없이 401');
 
 `tests/Feature/BatchTranslateTest.php`:
 ```php
-// 일괄 번역 파이프라인 테스트
-test('BatchTranslatePipeline — Job dispatch 성공');
-test('중복 BatchTranslatePipeline — Lock으로 차단');
+// 일괄 번역 파이프라인 테스트 (언어별 직렬)
+test('BatchTranslatePipeline — 단일 언어 Job dispatch 성공');
+test('중복 BatchTranslatePipeline — 동일 언어 Lock으로 차단');
 ```
 
 `tests/Feature/TranslationTest.php`:

@@ -32,7 +32,7 @@ class TranslateAndEmbedJob implements ShouldQueue
 
     public function __construct(
         private int $categoryId,
-        private array $targetLanguages, // ['zh', 'en']
+        private string $targetLanguage, // 'zh' | 'en' — 단일 언어
     ) {}
 
     public function handle(
@@ -44,12 +44,13 @@ class TranslateAndEmbedJob implements ShouldQueue
 
 핵심 규칙:
 1. `handle()` 메서드에서 Category 모델을 조회한다.
-2. `category_name_ko`를 `$targetLanguages` 각각에 대해 `translator->translate()` 호출.
+2. `category_name_ko`를 `$targetLanguage`에 대해 `translator->translate()` 호출.
 3. 번역 결과를 Category 모델의 `category_name_zh` / `category_name_en`에 저장.
-4. 각 언어별로 `embedder->generate()` 호출하여 768차원 벡터 생성.
+4. `embedder->generate()` 호출하여 768차원 벡터 생성.
 5. 생성된 임베딩을 `CategoryEmbedding` 모델에 `language` + `embed_model_name`(`nomic-embed-text`)과 함께 저장.
 6. 동일 `(category_id, language, embed_model_name)` 조합이 이미 존재하면 업데이트 (`updateOrCreate`).
 7. 실패 시 `$this->fail($exception)` 호출 — Laravel Queue가 자동으로 `failed_jobs`에 기록.
+8. 번역은 언어별로 직렬 실행된다. 하나의 Job은 하나의 언어만 처리한다.
 
 ## 생성할 파일
 
@@ -60,7 +61,7 @@ class TranslateAndEmbedJob implements ShouldQueue
 ```bash
 # Job 생성 확인
 docker exec cl_embed_laravel php artisan tinker --execute '
-  echo get_class(new App\Jobs\TranslateAndEmbedJob(1, ["zh", "en"]));
+  echo get_class(new App\Jobs\TranslateAndEmbedJob(1, "zh"));
 '
 
 # PHP 코드 포맷팅

@@ -17,7 +17,7 @@
 
 ## 작업
 
-동일 언어/모델의 중복 실행을 방지하는 Redis Lock 로직을 `BatchTranslatePipeline`에 추가하라.
+동일 언어의 중복 실행을 방지하는 Redis Lock 로직을 `BatchTranslatePipeline`에 추가하라.
 
 ### BatchTranslatePipeline 수정
 
@@ -26,14 +26,14 @@
 ```php
 // Lock 키 포맷: "translate-batch:{언어코드}"
 // 예: "translate-batch:zh", "translate-batch:en"
+// Pipeline이 단일 언어만 처리하므로, lock 하나만 획득/실패 여부가 전체 Pipeline 실행 여부를 결정한다
 ```
 
 핵심 규칙:
-1. `Cache::lock("translate-batch:{$lang}", 600)` — 10분 타임아웃.
-2. Lock 획득 실패 시 Job을 즉시 종료하고, 이미 실행 중임을 알리는 이벤트를 broadcast.
+1. `Cache::lock("translate-batch:{$targetLanguage}", 600)` — 10분 타임아웃, 단일 lock.
+2. Lock 획득 실패 시 Job을 즉시 종료하고, `AlreadyRunning` 이벤트를 broadcast.
 3. Lock은 batch 완료/실패 콜백에서 자동 해제 (`owner` 기반).
-4. 언어별로 별도 lock을 획득하므로 `zh`가 실행 중이어도 `en`은 별도로 실행 가능.
-5. `block()`을 호출하지 마라. 논블로킹으로 즉시 성공/실패를 반환해야 한다.
+4. `block()`을 호출하지 마라. 논블로킹으로 즉시 성공/실패를 반환해야 한다.
 
 ### AlreadyRunning 이벤트 (`app/Events/AlreadyRunning.php`)
 
@@ -90,5 +90,4 @@ docker exec cl_embed_laravel php artisan test --compact
 ## 금지사항
 
 - `Cache::lock()->block()`을 호출하지 마라. 이유: PRD §3.3에 따라 이미 실행 중이면 즉시 거절해야 한다.
-- 한 번에 하나의 글로벌 lock만 사용하지 마라. 언어별로 독립적인 lock을 사용해야 zh/en 동시 실행이 가능하다.
 - 기존 테스트를 깨뜨리지 마라

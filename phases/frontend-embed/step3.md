@@ -37,7 +37,7 @@
    - category_code 자동 생성 안내 텍스트 (예: "카테고리 코드는 자동 생성됩니다")
 4. **일괄 번역 트리거**:
    - "전체 번역 실행" 버튼
-   - 언어 선택 체크박스 (중국어, 영어)
+   - 언어 선택 (중국어/영어) — 라디오 버튼 또는 단일 선택. 번역은 언어별로 직렬 실행되므로 한 번에 하나의 언어만 처리한다. 두 언어 모두 실행하려면 각각 개별 호출.
    - batch_id 표시 및 진행률 바 (useBatchProgress 훅 사용)
 5. **상태 처리**:
    - **로딩**: 테이블 skeleton
@@ -59,7 +59,7 @@
 // Response: { data: Category }, 401 if not authed
 
 // POST /api/categories/batch-translate
-// Request: { target_languages: string[] }
+// Request: { target_language: string }  (단일 언어)
 // Response: { batch_id: string }, 401 if not authed
 ```
 

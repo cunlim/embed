@@ -15,6 +15,14 @@
 
 `Category`와 `CategoryEmbedding` 모델을 생성하라. 이미 마이그레이션과 테이블이 존재하므로 모델만 생성하면 된다.
 
+### pgvector 패키지 설치
+
+```bash
+composer require laravel-pgvector
+```
+
+이 패키지는 `Vector` cast 클래스를 제공하여 pgvector 컬럼을 PHP 배열과 자동으로 변환해준다.
+
 ### Category 모델 (`app/Models/Category.php`)
 
 - `HasFactory` 트레이트 사용
@@ -26,7 +34,7 @@
 
 - `HasFactory` 트레이트 사용
 - `category()` — `belongsTo` 관계 정의
-- `embedding` 컬럼은 vector(768) 타입. Eloquent에서 vector 컬럼을 다루기 위한 캐스트를 `casts()` 메서드에 정의할 것 (JSON array로 변환)
+- `embedding` 컬럼은 vector(768) 타입. `laravel-pgvector` 패키지의 `Vector` cast를 사용하라. `casts()` 메서드에 `'embedding' => Vector::class`로 정의.
 
 ### Factory
 
@@ -84,5 +92,5 @@ docker exec cl_embed_laravel php artisan test --compact
 ## 금지사항
 
 - 마이그레이션 파일을 수정하지 마라. 이미 존재하며 정상 동작한다.
-- vector 컬럼을 PHP 배열로 변환할 때 `accessors` 대신 `casts()`를 사용하라. 이유: Laravel 13의 Attribute 캐스팅 방식을 따라야 한다.
+- vector 컬럼을 PHP 배열로 변환할 때 `casts()`에 `Vector::class`를 사용하라. JSON array cast를 사용하지 마라. 이유: pgvector `<=>` 연산자와의 호환성을 위해 `laravel-pgvector`의 전용 cast를 사용해야 한다.
 - 기존 테스트를 깨뜨리지 마라

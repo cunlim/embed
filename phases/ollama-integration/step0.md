@@ -28,7 +28,8 @@ class OllamaClient
 {
     public function __construct(
         private string $baseUrl,   // 기본값: env('OLLAMA_HOST', 'http://host.docker.internal:11434')
-        private int $timeout = 120 // Ollama 응답 대기 시간 (초)
+                                    // WSL2 networkingMode=mirrored 환경에서 정상 동작
+        private int $timeout = 120
     ) {}
 
     public function chat(string $model, string $prompt, array $options = []): string;

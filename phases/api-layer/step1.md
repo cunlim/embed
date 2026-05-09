@@ -21,6 +21,8 @@
 
 검색어를 받아 카테고리를 추천하는 RecommendController를 생성하라.
 
+> **중요: 이 step에서 구현하는 추천 로직은 임시 구현이다.** `search-integration/step1`에서 `EmbeddingCacheService` + `scopeSimilarTo` 기반으로 완전히 교체된다. 여기서는 동작하는 기본 구현만 작성하고, 불필요한 최적화나 추상화를 하지 마라.
+
 ### RecommendController (`app/Http/Controllers/Api/RecommendController.php`)
 
 시그니처:
@@ -29,7 +31,7 @@ namespace App\Http\Controllers\Api;
 
 class RecommendController extends Controller
 {
-    public function recommend(RecommendRequest $request): RecommendResource;
+    public function recommend(RecommendRequest $request): JsonResponse; // 5개 추천 결과 배열을 JSON으로 반환
 }
 ```
 
