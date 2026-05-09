@@ -1,0 +1,8 @@
+{
+  "project": "cl_embed",
+  "phase": "auth-system",
+  "steps": [
+    { "step": 0, "name": "sanctum-setup", "status": "pending" },
+    { "step": 1, "name": "socialite-oauth", "status": "pending" }
+  ]
+}

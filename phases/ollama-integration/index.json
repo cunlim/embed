@@ -1,0 +1,9 @@
+{
+  "project": "cl_embed",
+  "phase": "ollama-integration",
+  "steps": [
+    { "step": 0, "name": "ollama-client", "status": "pending" },
+    { "step": 1, "name": "translation-service", "status": "pending" },
+    { "step": 2, "name": "embedding-service", "status": "pending" }
+  ]
+}

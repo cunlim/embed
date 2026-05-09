@@ -1,0 +1,10 @@
+{
+  "project": "cl_embed",
+  "phase": "translation-pipeline",
+  "steps": [
+    { "step": 0, "name": "translate-embed-job", "status": "pending" },
+    { "step": 1, "name": "batch-pipeline", "status": "pending" },
+    { "step": 2, "name": "websocket-events", "status": "pending" },
+    { "step": 3, "name": "concurrency-lock", "status": "pending" }
+  ]
+}

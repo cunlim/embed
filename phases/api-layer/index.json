@@ -1,0 +1,8 @@
+{
+  "project": "cl_embed",
+  "phase": "api-layer",
+  "steps": [
+    { "step": 0, "name": "api-routes", "status": "pending" },
+    { "step": 1, "name": "recommend-controller", "status": "pending" }
+  ]
+}

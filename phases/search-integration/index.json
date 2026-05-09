@@ -1,0 +1,9 @@
+{
+  "project": "cl_embed",
+  "phase": "search-integration",
+  "steps": [
+    { "step": 0, "name": "pgvector-query", "status": "pending" },
+    { "step": 1, "name": "search-caching", "status": "pending" },
+    { "step": 2, "name": "e2e-integration", "status": "pending" }
+  ]
+}

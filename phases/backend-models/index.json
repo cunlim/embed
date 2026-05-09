@@ -1,0 +1,8 @@
+{
+  "project": "cl_embed",
+  "phase": "backend-models",
+  "steps": [
+    { "step": 0, "name": "category-models", "status": "pending" },
+    { "step": 1, "name": "support-models", "status": "pending" }
+  ]
+}
