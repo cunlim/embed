@@ -11,15 +11,10 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
-# node 사용자가 /app에 쓰기 가능하도록 소유권 변경
-RUN chown node:node /app
-
 # root 권한이 더 이상 필요하지 않으므로 node 사용자로 전환
-# 이후 모든 npm/npx 명령어는 node 사용자로 실행되어
-# node_modules 등 생성 파일이 node 소유로 유지됨
 USER node
+
+WORKDIR /app
 
 # 의존성 파일 먼저 복사 (레이어 캐싱 활용)
 COPY package*.json ./
