@@ -6,7 +6,7 @@
 
 - `/docs/ARCHITECTURE.md` (특히 "데이터 흐름")
 - `/docs/PRD.md` (특히 §3.2 검색 및 추천 엔진)
-- `/docs/ADR.md` (ADR-001: pgvector, ADR-003: nomic-embed-text)
+- `/docs/ADR.md` (ADR-001: pgvector, ADR-003: bge-m3:567m)
 - `/laravel/CLAUDE.md`
 - `/laravel/app/Http/Controllers/Api/CategoryController.php` (이전 step에서 생성됨)
 - `/laravel/app/Http/Resources/CategoryResource.php` (이전 step에서 생성됨)

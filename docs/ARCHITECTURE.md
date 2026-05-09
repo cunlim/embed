@@ -37,7 +37,7 @@
 | 테이블 | 목적 | 비고 |
 |--------|------|------|
 | `categories` | 단일 카테고리 체계 (네이버 기준) | |
-| `category_embeddings` | 다중 언어/모델 임베딩 (1:N) | VECTOR(768) pgvector |
+| `category_embeddings` | 다중 언어/모델 임베딩 (1:N) | VECTOR(1024) pgvector |
 | `translation_cache` | 번역 결과 캐시 (중복 방지) | |
 | `search_logs` | 검색어 임베딩 캐시 겸 이력 | 비회원은 `session_id` 식별 |
 | `users` | OAuth 및 이메일 회원 관리 | 추후 `provider`/`provider_id` 컬럼 추가 예정 (OAuth 연동 시) |
@@ -47,7 +47,7 @@
 1. 클라이언트 트리거 (일괄 처리 시작) → Nginx → `/api/` (Laravel)
 2. 백엔드는 중복 실행 방지(Redis Cache::lock) 검증 후 즉시 202 Accepted 응답.
 3. Queue Job 적재 → `queue:work` 데몬 실행
-   - [텍스트 분할(> 기준) → 캐시 확인/번역(translategemma:4b) → 재조립 → 언어별 임베딩 생성(언어별 3개)]
+   - [ko: 원문 임베딩 / zh,en: 텍스트 분할(> 기준) → 캐시 확인/번역(translategemma:4b) → 재조립 → 언어별 임베딩 생성(bge-m3:567m, 1024차원)]
 4. Rate Limit 방어: 외부 API 연동 시 `Redis::throttle()` 또는 의도적 Sleep 부여.
 5. 큐 처리 중 이벤트 발생 → Redis Pub/Sub → Laravel Reverb (Port 8080)
 6. Nginx `/app/` 라우팅 → 클라이언트 (프로그레스 바 렌더링)

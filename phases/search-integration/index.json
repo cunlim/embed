@@ -4,6 +4,7 @@
   "steps": [
     { "step": 0, "name": "pgvector-query", "status": "pending" },
     { "step": 1, "name": "search-caching", "status": "pending" },
-    { "step": 2, "name": "e2e-integration", "status": "pending" }
+    { "step": 2, "name": "e2e-integration", "status": "pending" },
+    { "step": 3, "name": "swagger-docs", "status": "pending" }
   ]
 }

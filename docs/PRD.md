@@ -58,7 +58,7 @@
 Eloquent 모델 및 DB 마이그레이션. `Category`, `CategoryEmbedding`, `TranslationCache`, `SearchLog` 4개 모델과 Factory/Seeder 생성. (기존 Phase 1의 모델/마이그레이션 부분)
 
 ### Phase 2: ollama-integration
-Ollama HTTP API 클라이언트(`OllamaClient`), `>` 구분자 기반 텍스트 분할/조립(`TextSplitter`), ADR-003 환각 방어 기반 번역 서비스(`OllamaTranslator`), `nomic-embed-text` 임베딩 생성 서비스(`EmbeddingGenerator`). (기존 Phase 1의 AI 연동 부분)
+Ollama HTTP API 클라이언트(`OllamaClient`), `>` 구분자 기반 텍스트 분할/조립(`TextSplitter`), ADR-003 환각 방어 기반 번역 서비스(`OllamaTranslator`), `bge-m3:567m` 임베딩 생성 서비스(`EmbeddingGenerator`). (기존 Phase 1의 AI 연동 부분)
 
 ### Phase 3: translation-pipeline
 `TranslateAndEmbedJob` (단일 카테고리 단일 언어 번역+임베딩 Job), `Bus::batch()` 기반 `BatchTranslatePipeline`, Reverb WebSocket 진행률 이벤트, Redis `Cache::lock()` 중복 실행 방지. 번역은 언어별로 직렬 실행되며, 하나의 Pipeline은 하나의 언어만 처리한다. (기존 Phase 1의 Queue/파이프라인 부분)
@@ -77,4 +77,4 @@ pgvector `scopeSimilarTo` 최적화, 검색어 캐싱(`EmbeddingCacheService`), 
 
 ## 6. 테스트 및 배포 (CI/CD)
 * **테스트 코드:** 백엔드 핵심 파이프라인(분할 조립, 예외 처리, Chaining, Lock, Rate Limit 방어) 테스트 코드 의무화.
-* **자동화 배포:** GitHub CI/CD 구성(테스트 실행 및 SonarQube 정적 분석). 현재 구동 중인 WSL2 환경 내 내부 러너를 통해 컨테이너(WATCHPACK_POLLING 볼륨 연동) 재시작 및 백그라운드 데몬 구동 자동화.
+* **자동화 배포:** GitHub CI/CD 구성(테스트 실행). 현재 구동 중인 WSL2 환경 내 내부 러너를 통해 컨테이너(WATCHPACK_POLLING 볼륨 연동) 재시작 및 백그라운드 데몬 구동 자동화.

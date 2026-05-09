@@ -57,7 +57,7 @@ class SearchLogRepository
 ```bash
 # Scope 메서드 확인
 docker exec cl_embed_laravel php artisan tinker --execute '
-  $v = array_fill(0, 768, 0.0);
+  $v = array_fill(0, 1024, 0.0);
   echo get_class(App\Models\CategoryEmbedding::similarTo($v, "ko")->limit(5));
 '
 

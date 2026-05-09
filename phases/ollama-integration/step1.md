@@ -82,9 +82,9 @@ target_language는 `zh`(중국어), `en`(영어) 중 하나.
 # TextSplitter 유닛 테스트
 docker exec cl_embed_laravel php artisan tinker --execute '
   $s = new App\Services\TextSplitter;
-  echo json_encode($s->split("디지털/가전>노트북>게이밍")) . "\n";
-  echo $s->join(["Digital/Electronics", "Laptop", "Gaming"]) . "\n";
-  echo $s->shouldSplit("디지털/가전>노트북") ? "true" : "false";
+  echo json_encode($s->split("패션의류>여성의류>원피스")) . "\n";
+  echo $s->join(["Fashion", "Women\'s Clothing", "Dress"]) . "\n";
+  echo $s->shouldSplit("패션의류>여성의류") ? "true" : "false";
 '
 
 # 클래스가 자동으로 resolve되는지 확인

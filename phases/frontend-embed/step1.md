@@ -21,6 +21,8 @@
 
 ## 작업
 
+**시작하기 전에 `ui-ux-pro-max:ui-ux-pro-max` plugin을 활성화하라.** 이는 CLAUDE.md와 UI_GUIDE.md에 명시된 필수 요구사항이다. 모든 UI 구현은 이 plugin의 가이드라인을 따라야 한다.
+
 `/embed` 기술 시연 페이지를 생성하라 (UI_GUIDE.md §6.3 참조).
 
 ### 페이지 구성

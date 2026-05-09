@@ -29,12 +29,13 @@ composer require laravel-pgvector
 - `$fillable` / `$hidden` 대신 PHP 8 Attribute (`#[Fillable(...)]`, `#[Hidden(...)]`) 사용
 - `category_embeddings`와의 `hasMany` 관계 정의
 - `casts()` 메서드로 적절한 타입 캐스팅
+- `public static function generateCode(): string` 정적 메서드 추가 — `CAT_` + 8자리 무작위 영숫자(소문자 a-z + 숫자 0-9) 생성, unique 제약조건 충돌 시 최대 3회 재시도. Controller 등에서 재사용할 수 있도록 static으로 정의한다.
 
 ### CategoryEmbedding 모델 (`app/Models/CategoryEmbedding.php`)
 
 - `HasFactory` 트레이트 사용
 - `category()` — `belongsTo` 관계 정의
-- `embedding` 컬럼은 vector(768) 타입. `laravel-pgvector` 패키지의 `Vector` cast를 사용하라. `casts()` 메서드에 `'embedding' => Vector::class`로 정의.
+- `embedding` 컬럼은 vector(1024) 타입. `laravel-pgvector` 패키지의 `Vector` cast를 사용하라. `casts()` 메서드에 `'embedding' => Vector::class`로 정의.
 
 ### Factory
 
@@ -43,8 +44,9 @@ composer require laravel-pgvector
 **`category_code` 생성 규칙**:
 - 형식: `CAT_` + 8자리 무작위 영숫자 문자열 (소문자 a-z + 숫자 0-9)
 - 예: `CAT_a3f8c9d1`, `CAT_x7k2m9p4`
+- `Category::generateCode()` 정적 메서드로 구현하여 Controller 등에서도 재사용 가능하게 한다.
 - `Str::random(8)` 또는 `bin2hex(random_bytes(4))`로 생성
-- DB unique 제약조건 위반 시 재시도 로직 포함
+- DB unique 제약조건 위반 시 재시도 로직 포함 (최대 3회)
 - 카테고리명과 무관하게 순수 랜덤 생성 (카테고리명 변경 시 코드 불변 보장)
 
 ### Seeder

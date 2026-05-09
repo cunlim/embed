@@ -66,7 +66,7 @@ test('TextSplitter — 단일 텍스트 분할 없음');
 ```php
 test('모든 Job은 ShouldQueue 구현');
 test('모든 Event는 ShouldBroadcast 구현');
-test('모든 Controller 메서드는 FormRequest 사용');
+test('모든 POST/PUT/PATCH Controller 메서드는 FormRequest 사용');
 ```
 
 ### 통합 검증

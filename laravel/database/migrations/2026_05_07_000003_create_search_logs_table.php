@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        DB::statement('ALTER TABLE search_logs ADD COLUMN embedding vector(768)');
+        DB::statement('ALTER TABLE search_logs ADD COLUMN embedding vector(1024)');
     }
 
     public function down(): void

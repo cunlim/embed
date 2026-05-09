@@ -30,7 +30,7 @@
 
 - `HasFactory` 트레이트 사용
 - `user()` — `belongsTo(User::class)` nullable 관계 정의
-- `embedding` 컬럼은 vector(768) 타입. `Vector` cast 정의 (`backend-models/step0`의 CategoryEmbedding과 동일한 패턴)
+- `embedding` 컬럼은 vector(1024) 타입. `Vector` cast 정의 (`backend-models/step0`의 CategoryEmbedding과 동일한 패턴)
 - `session_id`는 UUID 자동 생성 로직을 `boot()` 또는 `creating` 이벤트에 포함
 
 ### Factory
