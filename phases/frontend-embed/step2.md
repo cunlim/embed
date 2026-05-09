@@ -75,7 +75,9 @@ shadcn Form + React Hook Form 사용. 클라이언트 측 유효성 검사:
 
 ### OAuth 흐름
 
-`loginWithOAuth()`는 `/api/auth/{provider}/redirect`로 리다이렉트. 콜백은 `/api/auth/{provider}/callback`에서 처리 후 토큰과 함께 프론트엔드로 리다이렉트.
+`loginWithOAuth()`는 AJAX 호출이 아닌 `window.location.href = '/api/auth/{provider}/redirect'` 방식의 **전체 페이지 이동**으로 구현해야 한다. 이유: OAuth는 Google/GitHub/Naver 인증 페이지로의 HTTP 302 리다이렉트가 필요하며, 이는 XHR로 처리할 수 없다.
+
+콜백(`/api/auth/{provider}/callback`) 처리 후 서버가 발급한 Sanctum 토큰을 쿼리 파라미터로 받아 `localStorage`에 저장하고 `/embed` 페이지로 이동한다.
 
 ## 생성할 파일
 

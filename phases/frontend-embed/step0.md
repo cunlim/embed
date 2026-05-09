@@ -52,6 +52,8 @@ NEXT_PUBLIC_REVERB_APP_KEY=<app-key>
 NEXT_PUBLIC_REVERB_HOST=embed.cunlim.dev
 ```
 
+> **중요**: `NEXT_PUBLIC_REVERB_APP_KEY`는 Laravel `.env`의 `REVERB_APP_KEY`와 동일한 값을 사용해야 한다. Reverb는 앱 키를 공유하므로 Laravel 쪽 설정값을 그대로 복사해 넣어야 한다. 임의의 값을 생성하지 마라.
+
 ### useEcho 훅 (`nextjs/hooks/useEcho.ts`)
 
 싱글톤 Echo 인스턴스를 제공하는 React 커스텀 훅. 컴포넌트 마운트 시 연결, 언마운트 시 disconnect.

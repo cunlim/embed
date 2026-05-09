@@ -30,7 +30,14 @@
 
 ### Factory
 
-두 모델 모두 Factory를 생성하라. `CategoryFactory`는 `category_code`를 자동 생성하는 로직을 포함해야 한다 (예: `대>중>소` → 카테고리명에서 추출).
+두 모델 모두 Factory를 생성하라. `CategoryFactory`는 `category_code`를 자동 생성하는 로직을 포함해야 한다.
+
+**`category_code` 생성 규칙**:
+- 형식: `CAT_` + 8자리 무작위 영숫자 문자열 (소문자 a-z + 숫자 0-9)
+- 예: `CAT_a3f8c9d1`, `CAT_x7k2m9p4`
+- `Str::random(8)` 또는 `bin2hex(random_bytes(4))`로 생성
+- DB unique 제약조건 위반 시 재시도 로직 포함
+- 카테고리명과 무관하게 순수 랜덤 생성 (카테고리명 변경 시 코드 불변 보장)
 
 ### Seeder
 

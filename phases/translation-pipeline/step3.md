@@ -9,9 +9,11 @@
 - `/docs/ADR.md` (ADR-002)
 - `/laravel/CLAUDE.md`
 - `/laravel/config/cache.php` (Redis 캐시 설정 확인)
-- `/laravel/app/Jobs/BatchTranslatePipeline.php` (이전 step에서 생성됨)
+- `/laravel/app/Jobs/BatchTranslatePipeline.php` (이전 step들에서 생성 및 수정됨 — 특히 step2에서 추가한 이벤트 broadcast 콜백이 이미 포함되어 있다)
 
 이전 step에서 만들어진 코드를 꼼꼼히 읽고, 설계 의도를 이해한 뒤 작업하라.
+
+> **주의**: `BatchTranslatePipeline`은 step1에서 생성되고 step2에서 이벤트 broadcast 콜백이 추가되었다. 이 step3에서는 step2가 추가한 `progress()`, `then()`, `catch()` 콜백 내의 이벤트 broadcast 로직을 보존한 채, `handle()` 메서드 시작 부분에 Lock 로직만 추가해야 한다. step2의 콜백을 덮어쓰지 마라.
 
 ## 작업
 

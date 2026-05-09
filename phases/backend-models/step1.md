@@ -24,6 +24,7 @@
 - `HasFactory` 트레이트 사용
 - `source_text` + `target_lang` 조합이 unique (복합 unique 키)
 - PHP 8 Attribute 사용 (`#[Fillable(...)]`)
+- **중요**: 테이블명이 `translation_cache` (복수형 아님)이므로 모델에 `protected $table = 'translation_cache';`를 명시해야 한다. 지정하지 않으면 Laravel은 기본적으로 `translation_caches`를 찾는다.
 
 ### SearchLog 모델 (`app/Models/SearchLog.php`)
 

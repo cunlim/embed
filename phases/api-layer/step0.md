@@ -56,7 +56,7 @@ class CategoryController extends Controller
 핵심 규칙:
 - `index()` — 모든 Category를 `CategoryResource` 컬렉션으로 반환
 - `store()` — 단일 카테고리 생성. 인증 필요 (Sanctum middleware, 다음 task에서 적용).
-  - `category_code` 자동 생성: 카테고리명에서 `>` 구분자 패턴 추출
+  - `category_code` 자동 생성: `CAT_` + 8자리 무작위 영숫자 (`Str::random(8)`). unique 제약조건 충돌 시 최대 3회 재시도.
   - 생성된 Category에 대해 `TranslateAndEmbedJob` dispatch
 - `show()` — 단일 Category 상세
 - `batchTranslate()` — `BatchTranslatePipeline` Job dispatch 후 `202 Accepted` + `batch_id` JSON 응답

@@ -50,14 +50,30 @@
   * **비회원:** 추천 세팅값은 브라우저 `LocalStorage`에 보관하며, 캐시 데이터는 `session_id` 기준으로 적재됩니다.
   * **회원:** 모든 검색 이력과 활동 데이터가 `User ID`에 종속되어 영구적으로 동기화됩니다.
 
-## 5. 다음 개발 마일스톤 (Next Milestones)
-* **Phase 1: Laravel 비동기 백엔드 파이프라인**
-  * 벡터 컬럼 모델/마이그레이션 적용 및 `translategemma:4b` 연동 구현.
-  * 텍스트 Split/Join 클래스, 환각/재시도 방어 및 Progress Update Job 구성.
-* **Phase 2: Next.js 실시간 UI 연동**
-  * `laravel-echo`, `pusher-js` 설치 및 Reverb 구독 처리. UI 언어 선택 및 프로그레스 바 적용.
-* **Phase 3: 검색 로직 완성 및 Integration**
-  * `pgvector` 코사인 언어별 필터링 Raw Query 작성 및 최종 엔드투엔드 통합 연동.
+## 5. 개발 Phase (Harness Task)
+
+`phases/` 디렉토리에 정의된 7개 Harness Phase로 실행된다. 각 Phase는 `scripts/execute.py`로 순차 실행한다.
+
+### Phase 1: backend-models
+Eloquent 모델 및 DB 마이그레이션. `Category`, `CategoryEmbedding`, `TranslationCache`, `SearchLog` 4개 모델과 Factory/Seeder 생성. (기존 Phase 1의 모델/마이그레이션 부분)
+
+### Phase 2: ollama-integration
+Ollama HTTP API 클라이언트(`OllamaClient`), `>` 구분자 기반 텍스트 분할/조립(`TextSplitter`), ADR-003 환각 방어 기반 번역 서비스(`OllamaTranslator`), `nomic-embed-text` 임베딩 생성 서비스(`EmbeddingGenerator`). (기존 Phase 1의 AI 연동 부분)
+
+### Phase 3: translation-pipeline
+`TranslateAndEmbedJob` (단일 카테고리 번역+임베딩 Job), `Bus::batch()` 기반 `BatchTranslatePipeline`, Reverb WebSocket 진행률 이벤트, Redis `Cache::lock()` 중복 실행 방지. (기존 Phase 1의 Queue/파이프라인 부분)
+
+### Phase 4: api-layer
+REST API 라우트(`routes/api.php`) 및 `CategoryController`, `RecommendController`. Form Request 검증, Eloquent Resources, pgvector 코사인 유사도 추천 엔진. (기존 Phase 3의 API 검색 부분)
+
+### Phase 5: auth-system
+Sanctum API Token 인증 + Socialite OAuth (Google, GitHub, Naver). `auth:sanctum` 미들웨어로 쓰기 작업 보호. (기존 Phase 2에 인증 항목 없음 — PRD §4에서 분리)
+
+### Phase 6: frontend-embed
+Next.js Reverb WebSocket 구독 (`laravel-echo` + `pusher-js`), `/embed` 기술 시연 페이지, `/login` 로그인/회원가입 페이지, `/admin` 관리자 페이지. (기존 Phase 2 + `/embed` 페이지)
+
+### Phase 7: search-integration
+pgvector `scopeSimilarTo` 최적화, 검색어 캐싱(`EmbeddingCacheService`), 검색어 정규화(`SearchNormalizer`), E2E 통합 테스트 및 아키텍처 검증. (기존 Phase 3의 최적화/통합 부분)
 
 ## 6. 테스트 및 배포 (CI/CD)
 * **테스트 코드:** 백엔드 핵심 파이프라인(분할 조립, 예외 처리, Chaining, Lock, Rate Limit 방어) 테스트 코드 의무화.

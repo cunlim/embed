@@ -68,11 +68,16 @@ class OAuthController extends Controller
 - `callback()` — OAuth 제공자에서 사용자 정보 획득, `updateOrCreate()`로 User 생성/업데이트, Sanctum token 발급, JSON 응답
 - `provider` 파라미터는 `google`, `github`, `naver` 중 하나
 
-### OAuth 라우트 추가 (`routes/api.php`)
+### OAuth 라우트 추가 (`routes/web.php`)
+
+OAuth 라우트는 **반드시 `routes/web.php`에 등록**해야 한다. 이유: Laravel Socialite는 OAuth state 파라미터를 Session에 저장하여 CSRF를 방지한다. `routes/api.php`는 stateless 미들웨어를 사용하므로 Session이 없어 Socialite가 정상 동작하지 않는다.
+
+`routes/web.php`에 정의하지만 경로는 `/api/auth/...`로 시작하도록 한다. Nginx가 이미 `/api/` 경로를 Laravel로 프록시하므로 추가 설정 없이 동작하며, API URL 체계와의 일관성도 유지된다.
 
 ```php
-Route::get('auth/{provider}/redirect', [OAuthController::class, 'redirect']);
-Route::get('auth/{provider}/callback', [OAuthController::class, 'callback']);
+// routes/web.php 에 추가
+Route::get('/api/auth/{provider}/redirect', [OAuthController::class, 'redirect']);
+Route::get('/api/auth/{provider}/callback', [OAuthController::class, 'callback']);
 ```
 
 ## 생성할 파일
@@ -81,7 +86,7 @@ Route::get('auth/{provider}/callback', [OAuthController::class, 'callback']);
 - `laravel/database/migrations/xxxx_xx_xx_add_oauth_columns_to_users_table.php`
 - `laravel/.env` (수정 — OAuth 환경변수 추가)
 - `laravel/config/services.php` (수정 — OAuth 설정 추가)
-- `laravel/routes/api.php` (수정 — OAuth 라우트 추가)
+- `laravel/routes/web.php` (수정 — OAuth 라우트 추가)
 
 ## Acceptance Criteria
 
@@ -99,8 +104,8 @@ docker exec cl_embed_laravel php artisan tinker --execute '
 # 마이그레이션 확인
 docker exec cl_embed_laravel php artisan migrate:status
 
-# 라우트 확인
-docker exec cl_embed_laravel php artisan route:list --path=api
+# 라우트 확인 (OAuth 라우트는 web.php에 등록되므로 전체 라우트 확인)
+docker exec cl_embed_laravel php artisan route:list
 
 # PHP 코드 포맷팅
 docker exec cl_embed_laravel vendor/bin/pint --format agent
