@@ -219,3 +219,27 @@ docker exec cl_embed_laravel php artisan config:show app.name
 - **API 리소스**: 버저닝과 함께 Eloquent API Resources 사용
 - **Pest 테스트**: `php artisan make:test --pest`로 생성, 기존 테스트 컨벤션 따름
 - **PHP 변경 완료 전** 반드시 `vendor/bin/pint --format agent` 실행 (컨테이너 내부 기준)
+
+### 모델 생성 체크리스트
+
+새 Eloquent 모델 생성 시 다음 항목을 반드시 확인한다:
+
+- **#[Hidden]**: `id`, `created_at`, `updated_at`, `embedding`(Vector) 등 API 응답에 불필요한 컬럼은 Attribute로 숨긴다. 기존 모델(`Category`, `CategoryEmbedding`)을 참고할 것.
+- **#[Fillable]**: mass-assignment 허용 컬럼을 정확히 지정한다. `$guarded = []`는 사용하지 않는다.
+- **casts()**: `embedding` → `Vector::class`, `id` → `integer` 등 모든 특수 타입 캐스팅을 정의한다.
+- **관계 메서드**: `@return BelongsTo<User, $this>` 형식의 제네릭 PHPDoc을 작성한다.
+
+### Factory 생성 체크리스트
+
+- **pgvector Vector 컬럼**: Box-Muller 변환으로 Gaussian 분포에서 샘플링 후 정규화하여 구면 위 균등 분포 벡터를 생성한다. 단순 `randomFloat()` 균등분포는 사용하지 않는다. (`CategoryEmbeddingSeeder::randomUnitVector()` 구현을 그대로 재사용할 것)
+  - 이유: 균등분포로 생성한 벡터는 구면 위에 균등하게 분포하지 않아 코사인 유사도 검색의 신뢰도가 떨어진다. 정규화된 단위 벡터가 pgvector 코사인 유사도 검색에 필요하다.
+
+### 모델 테스트 최소 요건
+
+**CRITICAL** — 모델 생성 시 다음을 검증하는 Pest 테스트를 함께 작성한다:
+
+- Factory로 모델 생성 가능 여부 (`::factory()->create()`)
+- 관계 메서드 반환 타입 (BelongsTo, HasMany 등)
+- 특수 캐스팅 동작 (Vector 등)
+
+TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한다.
