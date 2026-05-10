@@ -7,8 +7,9 @@ use Illuminate\Support\Facades\Http;
 class OllamaClient
 {
     public function __construct(
-        public string $baseUrl,
-        public int $timeout = 300
+        private OllamaRateLimiter $rateLimiter,
+        private string $baseUrl,
+        private int $timeout = 300
     ) {}
 
     /**
@@ -16,6 +17,8 @@ class OllamaClient
      */
     public function chat(string $model, string $prompt, array $options = []): string
     {
+        $this->checkRateLimit();
+
         $payload = [
             'model' => $model,
             'messages' => [
@@ -51,6 +54,8 @@ class OllamaClient
      */
     public function embed(string $model, string $text): array
     {
+        $this->checkRateLimit();
+
         $response = Http::timeout($this->timeout)
             ->post("{$this->baseUrl}/api/embed", [
                 'model' => $model,
@@ -68,5 +73,18 @@ class OllamaClient
         }
 
         return $embedding;
+    }
+
+    /**
+     * Rate Limit 초과 여부를 확인하고 초과 시 예외를 발생시킨다.
+     */
+    private function checkRateLimit(): void
+    {
+        if ($this->rateLimiter->tooManyAttempts()) {
+            $availableIn = $this->rateLimiter->availableIn();
+            throw new \RuntimeException("Ollama rate limit exceeded. Available in {$availableIn}s");
+        }
+
+        $this->rateLimiter->attempt();
     }
 }

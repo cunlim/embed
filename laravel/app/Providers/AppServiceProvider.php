@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\OllamaClient;
+use App\Services\OllamaRateLimiter;
 use App\Services\SettingsService;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -16,6 +17,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(OllamaClient::class, function ($app) {
             return new OllamaClient(
+                rateLimiter: $app->make(OllamaRateLimiter::class),
                 baseUrl: config('services.ollama.host'),
                 timeout: 300
             );
