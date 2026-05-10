@@ -42,10 +42,13 @@ LIMIT :limit
 ```php
 class SearchLogRepository
 {
-    public function findByKeyword(string $keyword): ?SearchLog;
+    public function findByNormalizedKeyword(string $normalizedKeyword, ?int $userId, string $sessionId): ?SearchLog;
     public function createSearchLog(array $data): SearchLog;
 }
 ```
+
+- `findByNormalizedKeyword()` — `normalized_keyword` 컬럼으로 조회. `user_id` 또는 `session_id` 기준으로 필터링.
+- `createSearchLog()` — `search_keyword`(원본)과 `normalized_keyword`(정규화)를 모두 저장.
 
 ## 생성할 파일
 

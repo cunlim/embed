@@ -24,6 +24,8 @@
 
 모든 개발이 완료된 시점에서 Swagger API 문서를 최종 완성하라. `api-layer/step2`에서 설치된 L5-Swagger에 누락된 API 어노테이션을 추가하고, 전체 문서를 검증한다.
 
+> **현재 상태**: L5-Swagger 패키지 설치, Swagger UI 컨테이너(`cl_embed_swagger` at `/swagger/`) 초기화, `api-layer/step2`에서 CategoryController/RecommendController 어노테이션이 완료되어 있다. 이 step에서는 auth 관련 API 어노테이션 추가와 최종 검증에 집중하라.
+
 ### 누락된 API 어노테이션 추가
 
 아래 Controller에 Swagger OA 어노테이션을 추가하라:
@@ -51,6 +53,7 @@
 - `description` ⇒ 최종 설명으로 업데이트
 - `termsOfService` ⇒ 프로젝트 URL
 - `contact` ⇒ 작성자 정보
+- `api-docs` 경로 ⇒ `api/documentation` (Swagger UI 컨테이너가 이 URL에서 JSON을 가져온다)
 
 ### Swagger JSON 생성 및 검증
 
@@ -98,9 +101,9 @@ docker exec cl_embed_laravel php artisan tinker --execute '
 
 1. 위 AC 커맨드를 모두 실행한다.
 2. `l5-swagger:generate`가 에러 없이 완료되는지 확인한다.
-3. Swagger UI(`/swagger`)가 모든 API 엔드포인트를 표시하는지 확인한다.
+3. Swagger UI(`/swagger/`)가 Laravel API + Next.js API 모든 엔드포인트를 표시하는지 확인한다.
 4. 아키텍처 체크리스트를 확인한다:
-   - ARCHITECTURE.md `/swagger/` Swagger UI 요구사항이 완전히 충족되었는가?
+   - ARCHITECTURE.md `/swagger/` Swagger UI + `/api/documentation` JSON 요구사항이 완전히 충족되었는가?
    - 모든 API 엔드포인트가 문서화되었는가?
 5. 결과에 따라 `phases/search-integration/index.json`의 해당 step을 업데이트한다:
    - 성공 → `"status": "completed"`, `"summary": "전체 API Swagger 문서화 완료"`

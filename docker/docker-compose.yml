@@ -59,7 +59,7 @@ services:
     environment:
       BASE_URL: "/swagger"
       URLS: "[
-        { url: '/api/docs', name: 'Laravel API' },
+        { url: '/api/documentation', name: 'Laravel API' },
         { url: '/docs/next-spec.json', name: 'Next.js API' }
       ]"
       TZ: ${TZ}

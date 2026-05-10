@@ -56,10 +56,10 @@ return [
         'routes' => [
             /*
              * Route for accessing parsed swagger annotations.
-             * Nginx /api/ location이 Laravel로 프록시하므로 api/docs 경로 사용.
-             * JSON 파일: /api/docs/api-docs.json
+             * Swagger UI 컨테이너가 /api/documentation 에서 JSON을 가져간다.
+             * JSON 파일: /api/documentation/api-docs.json
              */
-            'docs' => 'api/docs',
+            'docs' => 'api/documentation',
 
             /*
              * Route for Oauth2 authentication callback.

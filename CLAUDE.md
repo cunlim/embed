@@ -18,7 +18,7 @@
 
 AI 기반 다국어 카테고리 추천 시스템 (포트폴리오). 사용자 텍스트를 분석해 네이버 카테고리 체계 기준으로 적합한 카테고리를 추천. 한국어/중국어/영어 지원, pgvector 코사인 유사도 검색 사용.
 
-**현재 상태**: 인프라(Docker 컨테이너 4개, 도메인, CI/CD) 구축 완료. `/` 랜딩 페이지 구현 완료 (shadcn/ui, 화이트/다크 모드, 반응형). 진행 중: Phase 1 (Laravel 비동기 백엔드 파이프라인).
+**현재 상태**: 인프라(Docker 컨테이너 5개, 도메인, CI/CD) 구축 완료. `/` 랜딩 페이지 구현 완료 (shadcn/ui, 화이트/다크 모드, 반응형). Swagger UI (`/swagger/`) 초기화 완료. 진행 중: Phase 1 (Laravel 비동기 백엔드 파이프라인).
 
 ## 레포지토리 구조
 
@@ -27,7 +27,7 @@ cl_embed/
 ├── nextjs/          # 프론트엔드: Next.js 16 + React 19 + Tailwind v4 + TypeScript
 ├── laravel/         # 백엔드: Laravel 13 + PHP 8.5 + Pest 4
 ├── docker/          # Docker Compose + Dockerfiles
-│   ├── docker-compose.yml  # 4개 서비스 (nextjs, laravel, pgvector, redis)
+│   ├── docker-compose.yml  # 5개 서비스 (nextjs, laravel, pgvector, redis, swagger)
 │   ├── laravel/dockerfile
 │   └── nextjs/dockerfile
 ├── docs/            # 설계 문서
@@ -64,7 +64,7 @@ cl_embed/
 | 비동기 | Laravel Queue + Redis + Reverb | `docs/ADR.md` ADR-002 |
 | AI | Ollama 로컬 모델 | `docs/ADR.md` ADR-003 (translategemma:4b, bge-m3:latest) |
 | 인증 | Laravel Sanctum + Socialite | `docs/ADR.md` ADR-004 |
-| 인프라 | Docker 4컨테이너, cloudflared, Nginx | `docs/ARCHITECTURE.md` |
+| 인프라 | Docker 5컨테이너, cloudflared, Nginx | `docs/ARCHITECTURE.md` |
 | 데이터 흐름 | 비동기 파이프라인 + WebSocket | `docs/ARCHITECTURE.md` |
 
 ## 컨테이너 접속

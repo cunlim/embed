@@ -19,8 +19,10 @@
   - `/app/` ➔ Laravel Reverb (WebSocket 전용, Upgrade 헤더 적용 완료)
 * **Server Components 기본**: Next.js App Router 환경에서 실시간 인터랙션(웹소켓 프로그레스 바, 모달)이 필요한 구간만 Client Component 채택.
 * **API 문서 라우팅**:
-  - `/swagger/` ➔ Swagger UI (독립 Docker 컨테이너, `swaggerapi/swagger-ui`). L5-Swagger가 생성한 OpenAPI JSON을 시각화. Nginx가 `/swagger/`를 Swagger UI 컨테이너로 프록시.
-  - `/docs/` ➔ Next.js 프론트엔드에서 제공하는 프로젝트 개발 문서 페이지 (Swagger UI와 무관)
+  - `/docs/` ➔ Next.js 프론트엔드에서 제공하는 프로젝트 개발 문서 페이지. `docs/` 디렉토리의 마크다운 문서를 웹으로 렌더링한다. Swagger UI와는 무관.
+  - `/swagger/` ➔ Swagger UI 페이지 (독립 Docker 컨테이너 `cl_embed_swagger`, `swaggerapi/swagger-ui`). Nginx가 `/swagger/`를 Swagger UI 컨테이너로 프록시. 초기화 완료. Laravel API와 Next.js API 양쪽의 OpenAPI 스펙을 하나의 UI에서 확인할 수 있다.
+  - `/api/documentation` ➔ L5-Swagger가 생성하는 Laravel API의 OpenAPI JSON 엔드포인트. Swagger UI 컨테이너가 이 URL에서 JSON을 가져온다.
+  - `/docs/next-spec.json` ➔ Next.js API의 OpenAPI 스펙 파일. Swagger UI 컨테이너가 이 URL에서 JSON을 가져온다.
 
 ## 페이지 구성 (Next.js 4개 페이지)
 
@@ -40,7 +42,7 @@
 | `categories` | 단일 카테고리 체계 (네이버 기준) | |
 | `category_embeddings` | 다중 언어/모델 임베딩 (1:N) | VECTOR(1024) pgvector |
 | `translation_cache` | 번역 결과 캐시 (중복 방지) | |
-| `search_logs` | 검색어 임베딩 캐시 겸 이력 | 비회원은 `session_id` 식별 |
+| `search_logs` | 검색어 임베딩 캐시 겸 이력 | 비회원은 `session_id` 식별, `normalized_keyword`로 캐시 매칭 |
 | `users` | OAuth 및 이메일 회원 관리 | 추후 `provider`/`provider_id` 컬럼 추가 예정 (OAuth 연동 시) |
 
 ## 데이터 흐름 (비동기 및 웹소켓 파이프라인)

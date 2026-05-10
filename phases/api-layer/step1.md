@@ -12,7 +12,6 @@
 - `/laravel/app/Http/Resources/CategoryResource.php` (이전 step에서 생성됨)
 - `/laravel/routes/api.php` (이전 step에서 생성됨 — 라우트 추가 필요)
 - `/laravel/app/Services/EmbeddingGenerator.php` (이전 task에서 생성됨)
-- `/laravel/app/Models/SearchLog.php` (이전 task에서 생성됨)
 - `/laravel/app/Models/CategoryEmbedding.php`
 
 이전 step에서 만들어진 코드를 꼼꼼히 읽고, 설계 의도를 이해한 뒤 작업하라.
@@ -21,7 +20,7 @@
 
 검색어를 받아 카테고리를 추천하는 RecommendController를 생성하라.
 
-> **중요: 이 step에서 구현하는 추천 로직은 임시 구현이다.** `search-integration/step1`에서 `EmbeddingCacheService` + `scopeSimilarTo` 기반으로 완전히 교체된다. 여기서는 동작하는 기본 구현만 작성하고, 불필요한 최적화나 추상화를 하지 마라.
+> **중요: 이 step에서 구현하는 추천 로직은 임시 구현이다.** `search-integration/step1`에서 `EmbeddingCacheService` + `scopeSimilarTo` 기반으로 완전히 교체된다. 여기서는 동작하는 최소한의 구현만 작성하라. SearchLog 저장, 캐싱 등은 search-integration에서 처리하므로 이 step에서는 하지 않는다.
 
 ### RecommendController (`app/Http/Controllers/Api/RecommendController.php`)
 
@@ -38,9 +37,8 @@ class RecommendController extends Controller
 핵심 규칙:
 1. 요청: `{ "text": "검색어", "target_language": "ko" }`
 2. `EmbeddingGenerator`로 검색어 임베딩 생성
-3. `SearchLog`에 검색어 + 임베딩 + session_id 저장 (비회원은 session_id만)
-4. `CategoryEmbedding`에서 target_language 기준으로 필터링
-5. pgvector 코사인 유사도 Raw Query 실행 (실제 쿼리는 search-integration task에서 최적화, 여기서는 동작하는 기본 쿼리):
+3. `CategoryEmbedding`에서 target_language 기준으로 필터링
+4. pgvector 코사인 유사도 Raw Query 실행 (실제 쿼리는 search-integration task에서 최적화, 여기서는 동작하는 기본 쿼리):
    ```sql
    SELECT category_id, embedding <=> :query_vector AS distance
    FROM category_embeddings
@@ -48,7 +46,9 @@ class RecommendController extends Controller
    ORDER BY distance ASC
    LIMIT 5
    ```
-6. 상위 5개 카테고리 반환
+5. 상위 5개 카테고리 반환
+
+> **SearchLog 저장 하지 마라**: 검색어 캐싱 및 SearchLog 저장은 `search-integration/step1`에서 `EmbeddingCacheService`로 구현한다. 이 step에서는 추천 쿼리만 동작하게 하라.
 
 ### RecommendRequest (`app/Http/Requests/RecommendRequest.php`)
 

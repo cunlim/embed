@@ -22,6 +22,8 @@
 
 Laravel L5-Swagger 패키지를 설치하고, 현재까지 구현된 API에 대한 Swagger 문서를 생성하라. 이 step은 첫 API 개발 완료 시점의 문서화다. 전체 API 문서 완성은 `search-integration/step3`에서 수행한다.
 
+> **현재 상태**: L5-Swagger 패키지 설치 및 Swagger UI 컨테이너(`cl_embed_swagger`) 초기화가 완료되어 있다. 이 step에서는 API 어노테이션 작성과 JSON 생성에 집중하라.
+
 ### L5-Swagger 설치 및 설정
 
 ```bash
@@ -34,15 +36,17 @@ php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"
 - `title` ⇒ `CL Embed API`
 - `version` ⇒ `1.0.0`
 - `description` ⇒ `AI 기반 다국어 카테고리 추천 시스템 API`
-- `api-docs` 경로 ⇒ `swagger` (기본값 `api/documentation` 대신 `/swagger` 사용)
+- `api-docs` 경로 ⇒ `api/documentation` (L5-Swagger 기본값 사용. `/api/documentation`에서 OpenAPI JSON 제공)
 
 ### Swagger UI (독립 Docker 컨테이너)
 
-Swagger UI는 `swaggerapi/swagger-ui` 이미지로 독립 실행된다. L5-Swagger는 OpenAPI JSON 파일만 생성하고, 시각화는 별도 컨테이너가 담당한다.
+Swagger UI는 `swaggerapi/swagger-ui` 이미지로 독립 실행된다 (`cl_embed_swagger` 컨테이너, docker-compose.yml 참조). L5-Swagger는 OpenAPI JSON만 생성하고, 시각화는 별도 컨테이너가 담당한다.
 
-**이 step에서는 L5-Swagger로 JSON 생성까지만 수행한다.** Swagger UI 컨테이너 설정(`docker-compose.yml`, Nginx)은 별도 작업으로 진행한다.
+- **Swagger UI 페이지**: `/swagger/` — Nginx가 `cl_embed_swagger` 컨테이너로 프록시. 초기화 완료. Laravel API + Next.js API 양쪽 스펙을 하나의 UI에서 확인 가능.
+- **Laravel API JSON**: `/api/documentation` — L5-Swagger가 생성하는 JSON 엔드포인트.
+- **Next.js API JSON**: `/docs/next-spec.json` — Next.js의 OpenAPI 스펙 파일.
 
-`config/l5-swagger.php`에서 `generate_docs_path`를 확인하여 JSON이 `storage/api-docs/`에 생성되도록 설정하라. Swagger UI 컨테이너가 이 경로를 볼륨 마운트하여 JSON을 읽는다.
+`config/l5-swagger.php`에서 `generate_docs_path`를 확인하여 JSON이 `storage/api-docs/`에 생성되도록 설정하라.
 
 ### API 어노테이션 작성
 

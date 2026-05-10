@@ -10,6 +10,7 @@
 - `/laravel/CLAUDE.md`
 - `/laravel/app/Repositories/SearchLogRepository.php` (이전 step에서 생성됨)
 - `/laravel/app/Models/SearchLog.php`
+- `/laravel/database/migrations/2026_05_10_000001_add_normalized_keyword_to_search_logs.php` (normalized_keyword 컬럼)
 - `/laravel/app/Http/Controllers/Api/RecommendController.php` (이전 task에서 생성됨 — 이 step에서 캐싱 로직을 추가한다)
 
 이전 step에서 만들어진 코드를 꼼꼼히 읽고, 설계 의도를 이해한 뒤 작업하라.
@@ -27,9 +28,11 @@ class SearchNormalizer
     public function normalize(string $text): string;
     // - 앞뒤 공백 제거
     // - 연속 공백 → 단일 공백
-    // - 소문자화 (영어)
+    // - 소문자화 (영어만, 한글은 변환하지 않음)
 }
 ```
+
+정규화된 결과는 `search_logs.normalized_keyword` 컬럼에 저장된다.
 
 ### EmbeddingCacheService (`app/Services/EmbeddingCacheService.php`)
 
@@ -48,10 +51,10 @@ class EmbeddingCacheService
 ```
 
 핵심 규칙:
-1. 키워드 정규화
-2. 정규화된 키워드로 `search_logs` 테이블 조회 (user_id 또는 session_id 기준)
+1. `SearchNormalizer`로 키워드 정규화
+2. 정규화된 키워드로 `search_logs` 테이블의 `normalized_keyword` 컬럼 조회 (user_id 또는 session_id 기준). `normalized_keyword` 컬럼은 `2026_05_10_000001_add_normalized_keyword_to_search_logs.php` 마이그레이션에 정의되어 있다.
 3. 히트 시: 기존 SearchLog 반환 (임베딩 재생성 없음 — 100ms 이하 달성)
-4. 미스 시: `EmbeddingGenerator`로 새 임베딩 생성 → SearchLog 저장 → 반환
+4. 미스 시: `EmbeddingGenerator`로 새 임베딩 생성 → SearchLog 저장 시 `search_keyword`(원본)과 `normalized_keyword`(정규화) 모두 저장 → 반환
 5. 성능 측정을 위해 `microtime(true)` 기반 로깅 추가
 
 ### RecommendController 수정

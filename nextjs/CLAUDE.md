@@ -2,7 +2,7 @@
 
 ## AGENTS.md (필독)
 
-이 프로젝트의 [`AGENTS.md`](../AGENTS.md)는 Next.js 16의 브레이킹 체인지에 대해 설명합니다.
+이 프로젝트의 [`AGENTS.md`](./AGENTS.md)는 Next.js 16의 브레이킹 체인지에 대해 설명합니다.
 코드 작성 전 반드시 `node_modules/next/dist/docs/`의 관련 가이드를 확인하세요.
 
 ## 프로젝트 개요

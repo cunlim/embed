@@ -9,6 +9,7 @@
 - `/laravel/CLAUDE.md`
 - `/laravel/database/migrations/2026_05_07_000002_create_translation_cache_table.php`
 - `/laravel/database/migrations/2026_05_07_000003_create_search_logs_table.php`
+- `/laravel/database/migrations/2026_05_10_000001_add_normalized_keyword_to_search_logs.php`
 - `/laravel/app/Models/Category.php` (이전 step에서 생성됨 — 패턴 참고)
 - `/laravel/app/Models/CategoryEmbedding.php` (이전 step에서 생성됨 — 패턴 참고)
 - `/laravel/app/Models/User.php` (user_id FK 관계 파악)
@@ -32,6 +33,7 @@
 - `user()` — `belongsTo(User::class)` nullable 관계 정의
 - `embedding` 컬럼은 vector(1024) 타입. `Vector` cast 정의 (`backend-models/step0`의 CategoryEmbedding과 동일한 패턴)
 - `session_id`는 UUID 자동 생성 로직을 `boot()` 또는 `creating` 이벤트에 포함
+- `normalized_keyword` 컬럼은 `fillable`에 포함 (캐시 매칭용 정규화된 키워드)
 
 ### Factory
 
