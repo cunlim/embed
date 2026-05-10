@@ -13,7 +13,9 @@
     {
       "step": 1,
       "name": "translation-service",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-10T20:12:22+0900",
+      "summary": "TextSplitter(분할/조립 유틸리티), OllamaTranslator(캐시 우선, 분할 번역, Unicode 환각 검증, 최대 3회 재시도), config/services.php translation_model 키 추가"
     },
     {
       "step": 2,
