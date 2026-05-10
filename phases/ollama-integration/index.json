@@ -29,7 +29,10 @@
     {
       "step": 3,
       "name": "rate-limiter",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-10T20:26:25+0900",
+      "summary": "OllamaRateLimiter (Laravel RateLimiter 기반, 분당 10회 제한), OllamaClient 생성자에 RateLimiter 주입 및 chat/embed 호출 전 제한 체크, AppServiceProvider 바인딩 수정, 기존 테스트 대응",
+      "completed_at": "2026-05-10T20:42:00+0900"
     }
   ],
   "created_at": "2026-05-10T19:36:14+0900"
