@@ -81,6 +81,24 @@ docker exec -it cl_embed_laravel /bin/bash
 
 컨테이너 내부에서 npm 명령어 실행 시 `--no-bin-links` 플래그가 필요할 수 있습니다.
 
+### 컨테이너별 작업 디렉터리
+
+```bash
+# Laravel 앱 디렉터리 (php artisan, composer 등 실행 위치)
+docker exec cl_embed_laravel bash -c "cd /var/www/html && php artisan ..."
+
+# Next.js 앱 디렉터리
+docker exec cl_embed_nextjs sh -c "cd /app && npm ..."
+```
+
+- Laravel 컨테이너 작업 디렉터리는 `/var/www/html`입니다. 홈 디렉터리(`/var/www`)와 혼동하지 마세요.
+
+## 알려진 이슈
+
+- **tinker 쓰기 권한 오류** — `appuser` 홈(`/var/www`)이 root 소유라 `.config/psysh` 생성 불가. Dockerfile에 이미 패치 완료. 임시 해결: `docker exec -u root cl_embed_laravel bash -c "mkdir -p /var/www/.config/psysh && chown -R appuser:appgroup /var/www/.config"`
+- **Next.js HMR 에러 로그** — `embed_nextjs_error.log`의 "Connection refused"는 dev 서버 재시작 시 정상 발생. 무시.
+- **인라인 PHP 경로** — Laravel 작업 디렉터리는 `/var/www/html`. `/var/www/vendor/...`는 존재하지 않음.
+
 ## 인프라 환경 (WSL2)
 
 - **WSL2 `networkingMode=mirrored`**: Windows 호스트와 WSL2가 동일한 네트워크를 공유. Docker 컨테이너 내부에서 `host.docker.internal`로 Windows 호스트의 Ollama(port 11434)에 접근 가능.
