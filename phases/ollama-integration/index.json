@@ -7,7 +7,8 @@
       "name": "ollama-client",
       "status": "completed",
       "started_at": "2026-05-10T19:36:14+0900",
-      "summary": "Setting 마이그레이션/모델, SettingsService, OllamaClient, config/services.php ollama 섹션, AppServiceProvider 바인딩, SettingsSeeder 생성"
+      "summary": "Setting 마이그레이션/모델, SettingsService, OllamaClient, config/services.php ollama 섹션, AppServiceProvider 바인딩, SettingsSeeder 생성",
+      "completed_at": "2026-05-10T19:59:48+0900"
     },
     {
       "step": 1,
