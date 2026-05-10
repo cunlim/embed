@@ -1,6 +1,6 @@
 {
   "phases": [
-    { "dir": "backend-models", "status": "pending" },
+    { "dir": "backend-models", "status": "completed" },
     { "dir": "ollama-integration", "status": "pending" },
     { "dir": "translation-pipeline", "status": "pending" },
     { "dir": "api-layer", "status": "pending" },
