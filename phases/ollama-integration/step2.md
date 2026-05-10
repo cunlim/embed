@@ -32,7 +32,7 @@ class EmbeddingGenerator
 ```
 
 핵심 규칙:
-- `embed` 메서드는 `bge-m3:latest` 모델을 사용한다 (ADR-003).
+- `embed` 메서드는 `config('services.ollama.embedding_model')`에서 모델명을 읽어 사용한다. 기본값은 `bge-m3:latest` (ADR-003).
 - 반환 타입은 `float[]` — 1024차원 벡터 배열.
 - OllamaClient가 throw하는 모든 예외를 그대로 전파한다 (catch하지 않는다).
 

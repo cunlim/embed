@@ -46,7 +46,16 @@ class OllamaClient
 
 ### Config
 
-`.env`에 `OLLAMA_HOST`가 없으면 기본값을 사용하도록 `config/services.php`에 ollama 설정을 추가하라.
+`config/services.php`에 ollama 설정을 추가하라:
+```php
+'ollama' => [
+    'host' => env('OLLAMA_HOST', 'http://host.docker.internal:11434'),
+    'translation_model' => env('OLLAMA_TRANSLATION_MODEL', 'translategemma:4b'),
+    'embedding_model' => env('OLLAMA_EMBEDDING_MODEL', 'bge-m3:latest'),
+],
+```
+
+`.env`에 각 모델 환경변수를 추가하라 (기본값 명시).
 
 ## 생성할 파일
 
@@ -84,3 +93,5 @@ docker exec cl_embed_laravel php artisan test --compact
 - 이 step에서는 실제 Ollama 호출 테스트를 하지 마라. 클라이언트 클래스 생성 및 DI 설정만 수행한다. 이유: Ollama가 실행 중이 아닐 수 있음.
 - HTTP Client는 Laravel의 `Illuminate\Support\Facades\Http` 파사드를 사용하라. Guzzle을 직접 호출하지 마라.
 - 기존 테스트를 깨뜨리지 마라
+
+> **참고**: `step3`에서 `OllamaRateLimiter`를 생성자에 추가하여 시그니처가 변경된다. 이 step에서는 `OllamaRateLimiter` 없이 구현하고, step3에서 수정한다.

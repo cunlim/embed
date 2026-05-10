@@ -37,10 +37,10 @@
 * 세부 UI 요구사항(하이라이팅, 벡터 모달, 동적 Select Box)은 `UI_GUIDE.md`를 엄격히 준수합니다.
 
 ### 3.3 실시간 처리 및 동시성 제어
-* **중복 검증:** 사용자가 일괄 처리 트리거 시 동일 언어/모델로 작업이 이미 진행 중이라면 락(Lock)을 통해 중복 큐 적재를 막습니다. 진행률은 실시간 웹소켓 이벤트로 프론트엔드에 전달됩니다.
+* **중복 검증:** 사용자가 일괄 처리 트리거 시 동일 언어/모델 조합으로 작업이 이미 진행 중이라면 락(Lock)을 통해 중복 큐 적재를 막습니다. 진행률은 실시간 웹소켓 이벤트로 프론트엔드에 전달됩니다.
 
 ### 3.4 개별 카테고리 추가 기능
-* **권한 제어:** DB 데이터 무결성을 위해 카테고리 추가 기능은 로그인한 사용자 및 관리자에게만 노출됩니다.
+* **권한 제어:** DB 데이터 무결성을 위해 카테고리 추가 기능은 로그인한 사용자에게만 노출됩니다. 여기서 "관리자"란 `/admin` 페이지에 접근 권한이 있는 로그인 사용자를 의미합니다 (별도의 역할 구분 없음).
 * **추가 흐름:** 한국어 카테고리 단일 텍스트 입력 → `category_code` 자동 생성 → 백그라운드 큐에 해당 ID를 넘겨 일괄 처리와 동일한 번역/임베딩 파이프라인을 재사용하여 실행합니다.
 
 ## 4. 로그인 및 사용자 데이터 관리 
@@ -70,7 +70,7 @@ REST API 라우트(`routes/api.php`) 및 `CategoryController`, `RecommendControl
 Sanctum API Token 인증 + Socialite OAuth (Google, GitHub, Naver). `auth:sanctum` 미들웨어로 쓰기 작업 보호.
 
 ### Phase 6: frontend-embed
-Next.js Reverb WebSocket 구독 (`laravel-echo` + `pusher-js`), `/embed` 기술 시연 페이지, `/login` 로그인/회원가입 페이지, `/admin` 관리자 전용 페이지 (로그인 필수). 비로그인 게스트는 `/embed`와 `/`만 접근 가능.
+Next.js Reverb WebSocket 구독 (`laravel-echo` + `pusher-js`), `/embed` 기술 시연 페이지, `/login` 로그인/회원가입 페이지, `/admin` 관리자 전용 페이지 (로그인 필수, "관리자"란 `/admin` 접근 권한이 있는 로그인 사용자를 의미). 비로그인 게스트는 `/embed`와 `/`만 접근 가능.
 
 ### Phase 7: search-integration
 pgvector `scopeSimilarTo` 최적화, 검색어 캐싱(`EmbeddingCacheService`), 검색어 정규화(`SearchNormalizer`), E2E 통합 테스트 및 아키텍처 검증, 전체 API Swagger 문서 완성.

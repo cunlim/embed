@@ -71,6 +71,10 @@ Text: {source_text}
 
 target_language는 `zh`(중국어), `en`(영어) 중 하나.
 
+### 번역 모델 설정
+
+`OllamaTranslator`는 `config('services.ollama.translation_model')`에서 모델명을 읽어 사용한다. 기본값은 `translategemma:4b`. `config/services.php`의 ollama 섹션에 `translation_model` 키를 추가하라.
+
 ## 생성할 파일
 
 - `laravel/app/Services/TextSplitter.php`

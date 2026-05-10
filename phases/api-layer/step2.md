@@ -36,9 +36,13 @@ php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"
 - `description` ⇒ `AI 기반 다국어 카테고리 추천 시스템 API`
 - `api-docs` 경로 ⇒ `swagger` (기본값 `api/documentation` 대신 `/swagger` 사용)
 
-### Swagger UI 라우트 설정
+### Swagger UI (독립 Docker 컨테이너)
 
-L5-Swagger는 `/api/documentation` 경로를 자동 등록한다. 프로젝트에서는 `/swagger/` 경로에서 Swagger UI를 제공한다. Nginx 설정에서 `/swagger/`를 `/api/documentation`로 리다이렉트하도록 구성한다. 이 step에서는 `/swagger` URL이 정상 동작하는 것을 확인한다.
+Swagger UI는 `swaggerapi/swagger-ui` 이미지로 독립 실행된다. L5-Swagger는 OpenAPI JSON 파일만 생성하고, 시각화는 별도 컨테이너가 담당한다.
+
+**이 step에서는 L5-Swagger로 JSON 생성까지만 수행한다.** Swagger UI 컨테이너 설정(`docker-compose.yml`, Nginx)은 별도 작업으로 진행한다.
+
+`config/l5-swagger.php`에서 `generate_docs_path`를 확인하여 JSON이 `storage/api-docs/`에 생성되도록 설정하라. Swagger UI 컨테이너가 이 경로를 볼륨 마운트하여 JSON을 읽는다.
 
 ### API 어노테이션 작성
 
@@ -92,7 +96,7 @@ docker exec cl_embed_laravel php artisan test --compact
 1. 위 AC 커맨드를 실행한다.
 2. `l5-swagger:generate`가 에러 없이 완료되는지 확인한다.
 3. 아키텍처 체크리스트를 확인한다:
-   - ARCHITECTURE.md `/docs/` Swagger UI 라우트 요구사항을 충족하는가?
+   - `storage/api-docs/openapi.json`이 생성되었는가? (Swagger UI 컨테이너가 이 파일을 읽음)
 4. 결과에 따라 `phases/api-layer/index.json`의 해당 step을 업데이트한다:
    - 성공 → `"status": "completed"`, `"summary": "L5-Swagger 설치 및 현재 API 어노테이션 완료"`
    - 수정 3회 시도 후에도 실패 → `"status": "error"`, `"error_message": "구체적 에러 내용"`

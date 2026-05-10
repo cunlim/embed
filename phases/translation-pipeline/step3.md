@@ -51,13 +51,13 @@
 `handle()` 메서드 시작 부분에 중복 실행 검증 로직을 추가:
 
 ```php
-// Lock 키 포맷: "translate-batch:{언어코드}"
-// 예: "translate-batch:zh", "translate-batch:en"
-// Pipeline이 단일 언어만 처리하므로, lock 하나만 획득/실패 여부가 전체 Pipeline 실행 여부를 결정한다
+// Lock 키 포맷: "translate-batch:{언어코드}:{모델명}"
+// 예: "translate-batch:zh:bge-m3:latest", "translate-batch:en:bge-m3:latest"
+// 모델명을 포함하여 향후 다중 모델 지원 시 Lock 충돌을 방지한다
 ```
 
 핵심 규칙:
-1. `Cache::lock("translate-batch:{$targetLanguage}", 600)` — 10분 타임아웃, 단일 lock.
+1. `Cache::lock("translate-batch:{$targetLanguage}:{$embedModelName}", 600)` — 10분 타임아웃, 단일 lock. `$embedModelName`은 `config('services.ollama.embedding_model')`에서 읽는다.
 2. Lock 획득 실패 시 Job을 즉시 종료하고, `AlreadyRunning` 이벤트를 broadcast.
 3. Lock은 batch 완료/실패 콜백에서 자동 해제 (`owner` 기반).
 4. `block()`을 호출하지 마라. 논블로킹으로 즉시 성공/실패를 반환해야 한다.

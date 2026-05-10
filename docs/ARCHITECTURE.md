@@ -19,8 +19,8 @@
   - `/app/` ➔ Laravel Reverb (WebSocket 전용, Upgrade 헤더 적용 완료)
 * **Server Components 기본**: Next.js App Router 환경에서 실시간 인터랙션(웹소켓 프로그레스 바, 모달)이 필요한 구간만 Client Component 채택.
 * **API 문서 라우팅**:
-  - `/swagger/` ➔ Laravel L5-Swagger가 제공하는 Swagger UI (API 명세서). `config/l5-swagger.php`에서 경로 설정.
-  - `/docs/` ➔ Next.js 프론트엔드에서 제공하는 개발 문서 페이지
+  - `/swagger/` ➔ Swagger UI (독립 Docker 컨테이너, `swaggerapi/swagger-ui`). L5-Swagger가 생성한 OpenAPI JSON을 시각화. Nginx가 `/swagger/`를 Swagger UI 컨테이너로 프록시.
+  - `/docs/` ➔ Next.js 프론트엔드에서 제공하는 프로젝트 개발 문서 페이지 (Swagger UI와 무관)
 
 ## 페이지 구성 (Next.js 4개 페이지)
 
@@ -29,7 +29,7 @@
 | `/` | 랜딩 페이지 | 프로젝트 소개, 검색어 입력 및 타겟 언어 선택, 추천 결과 기본 확인 | 불필요 |
 | `/login` | 로그인 페이지 | 이메일/비밀번호 로그인, OAuth (Google, GitHub, Naver) 소셜 로그인, 회원가입 | 불필요 |
 | `/embed` | Embed 기술 시연 페이지 | 검색어 입력, 타겟 언어 선택, 추천 결과 출력, 코사인 유사도 상세, 계층형 Select Box, 벡터 과정 모달 등 모든 기능을 하나의 위젯 형태로 기술 시연 | 불필요 |
-| `/admin` | 관리자 전용 페이지 | 카테고리 CRUD, 일괄 번역 트리거, 시스템 관리 | **필수** (로그인 필수, 비로그인 시 `/login` 리다이렉트) |
+| `/admin` | 관리자 전용 페이지 | 카테고리 CRUD, 일괄 번역 트리거, 시스템 관리 | **필수** (로그인 필수, 비로그인 시 `/login` 리다이렉트. "관리자"란 `/admin` 접근 권한이 있는 로그인 사용자를 의미하며 별도 역할(Role) 구분은 없음) |
 
 ## 데이터베이스 주요 테이블
 
@@ -57,4 +57,4 @@
 ## 상태 관리
 * **서버 상태**: DB에 적재된 다국어 임베딩 벡터 데이터, pgvector 코사인 유사도 연산.
 * **사용자 상태**: 비회원은 브라우저 `LocalStorage` 및 `session_id`로 개인 설정 분리. 회원은 `User ID`에 종속되어 DB 동기화.
-* **동시성 상태**: Redis `Cache::lock()`을 사용하여 동일 언어/모델의 일괄 처리가 진행 중일 경우 Job 적재 생략 및 웹소켓만 구독.
+* **동시성 상태**: Redis `Cache::lock()`을 사용하여 동일 언어/모델 조합의 일괄 처리가 진행 중일 경우 Job 적재 생략 및 웹소켓만 구독. Lock 키 형식: `"translate-batch:{언어코드}:{모델명}"`
