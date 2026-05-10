@@ -47,7 +47,7 @@
 1. 클라이언트 트리거 (일괄 처리 시작) → Nginx → `/api/` (Laravel)
 2. 백엔드는 중복 실행 방지(Redis Cache::lock) 검증 후 즉시 202 Accepted 응답.
 3. Queue Job 적재 → `queue:work` 데몬 실행
-   - [ko: 원문 임베딩 / zh,en: 텍스트 분할(> 기준) → 캐시 확인/번역(translategemma:4b) → 재조립 → 언어별 임베딩 생성(bge-m3:567m, 1024차원)]
+   - [ko: 원문 임베딩 / zh,en: 텍스트 분할(> 기준) → 캐시 확인/번역(translategemma:4b) → 재조립 → 언어별 임베딩 생성(bge-m3:latest, 1024차원)]
 4. Rate Limit 방어: 외부 API 연동 시 `Redis::throttle()` 또는 의도적 Sleep 부여.
 5. 큐 처리 중 이벤트 발생 → Redis Pub/Sub → Laravel Reverb (Port 8080)
 6. Nginx `/app/` 라우팅 → 클라이언트 (프로그레스 바 렌더링)

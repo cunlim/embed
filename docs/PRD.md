@@ -58,7 +58,7 @@
 Eloquent 모델 및 DB 마이그레이션. `Category`, `CategoryEmbedding`, `TranslationCache`, `SearchLog` 4개 모델과 Factory/Seeder 생성. (기존 Phase 1의 모델/마이그레이션 부분)
 
 ### Phase 2: ollama-integration
-Ollama HTTP API 클라이언트(`OllamaClient`), `>` 구분자 기반 텍스트 분할/조립(`TextSplitter`), ADR-003 환각 방어 기반 번역 서비스(`OllamaTranslator`), `bge-m3:567m` 임베딩 생성 서비스(`EmbeddingGenerator`). (기존 Phase 1의 AI 연동 부분)
+Ollama HTTP API 클라이언트(`OllamaClient`), `>` 구분자 기반 텍스트 분할/조립(`TextSplitter`), ADR-003 환각 방어 기반 번역 서비스(`OllamaTranslator`), `bge-m3:latest` 임베딩 생성 서비스(`EmbeddingGenerator`). (기존 Phase 1의 AI 연동 부분)
 
 ### Phase 3: translation-pipeline
 `TranslateAndEmbedJob` (단일 카테고리 단일 언어 번역+임베딩 Job), `Bus::batch()` 기반 `BatchTranslatePipeline`, Reverb WebSocket 진행률 이벤트, Redis `Cache::lock()` 중복 실행 방지. 번역은 언어별로 직렬 실행되며, 하나의 Pipeline은 하나의 언어만 처리한다. (기존 Phase 1의 Queue/파이프라인 부분)
