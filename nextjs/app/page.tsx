@@ -55,7 +55,7 @@ export default function Home() {
   const terminalLines = [
     { prefix: "$", text: "analyze --text '새로운 기술 트렌드 분석'", delay: 0 },
     { prefix: ">", text: "ko → en 번역 완료 (145ms)", delay: 1 },
-    { prefix: ">", text: "벡터 임베딩 생성 (768d)", delay: 2 },
+    { prefix: ">", text: "벡터 임베딩 생성 (1024d)", delay: 2 },
     {
       prefix: ">",
       text: "추천: IT/과학 > 기술일반 (0.94)",
@@ -153,7 +153,7 @@ export default function Home() {
         <div className="mt-12 flex items-center divide-x divide-border">
           {[
             { value: "3", label: "지원 언어" },
-            { value: "768d", label: "벡터 차원" },
+            { value: "1024d", label: "벡터 차원" },
             { value: "실시간", label: "스트리밍" },
           ].map((stat) => (
             <div
