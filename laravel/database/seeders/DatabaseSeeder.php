@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call([
+            SettingsSeeder::class,
             CategorySeeder::class,
             CategoryEmbeddingSeeder::class,
             TranslationCacheSeeder::class,

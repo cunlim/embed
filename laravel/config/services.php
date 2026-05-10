@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'ollama' => [
+        'host' => 'http://host.docker.internal:11434',
+        'translation_model' => 'translategemma:4b',
+        'embedding_model' => 'bge-m3:latest',
+    ],
+
 ];

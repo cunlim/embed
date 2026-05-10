@@ -2,9 +2,28 @@
   "project": "cl_embed",
   "phase": "ollama-integration",
   "steps": [
-    { "step": 0, "name": "ollama-client", "status": "pending" },
-    { "step": 1, "name": "translation-service", "status": "pending" },
-    { "step": 2, "name": "embedding-service", "status": "pending" },
-    { "step": 3, "name": "rate-limiter", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "ollama-client",
+      "status": "completed",
+      "started_at": "2026-05-10T19:36:14+0900",
+      "summary": "Setting 마이그레이션/모델, SettingsService, OllamaClient, config/services.php ollama 섹션, AppServiceProvider 바인딩, SettingsSeeder 생성"
+    },
+    {
+      "step": 1,
+      "name": "translation-service",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "embedding-service",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "rate-limiter",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-05-10T19:36:14+0900"
 }
