@@ -1,0 +1,52 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use OpenApi\Attributes as OA;
+
+#[OA\Info(
+    title: 'CL Embed API',
+    version: '1.0.0',
+    description: 'AI 기반 다국어 카테고리 추천 시스템 API'
+)]
+#[OA\Server(
+    url: 'https://embed.cunlim.dev',
+    description: '프로덕션 서버'
+)]
+#[OA\SecurityScheme(
+    securityScheme: 'sanctum',
+    type: 'apiKey',
+    in: 'header',
+    name: 'Authorization',
+    description: 'Sanctum API Token. 형식: Bearer {token}'
+)]
+class TestController extends Controller
+{
+    #[OA\Get(
+        path: '/api/health',
+        summary: '서버 상태 확인',
+        description: 'API 서버의 정상 동작 여부를 확인합니다.',
+        tags: ['System'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: '서버 정상 동작',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'status', type: 'string', example: 'ok'),
+                        new OA\Property(property: 'timestamp', type: 'string', format: 'date-time'),
+                    ]
+                )
+            ),
+        ]
+    )]
+    public function health(): JsonResponse
+    {
+        return response()->json([
+            'status' => 'ok',
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    }
+}

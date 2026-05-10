@@ -1,0 +1,64 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "CL Embed API",
+        "description": "AI 기반 다국어 카테고리 추천 시스템 API",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://embed.cunlim.dev",
+            "description": "프로덕션 서버"
+        }
+    ],
+    "paths": {
+        "/api/health": {
+            "get": {
+                "tags": [
+                    "System"
+                ],
+                "summary": "서버 상태 확인",
+                "description": "API 서버의 정상 동작 여부를 확인합니다.",
+                "operationId": "3a3e734db091faa42023e2f850253033",
+                "responses": {
+                    "200": {
+                        "description": "서버 정상 동작",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "ok"
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "sanctum": {
+                "type": "apiKey",
+                "description": "Enter token in format: Bearer {token}",
+                "name": "Authorization",
+                "in": "header"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "System",
+            "description": "System"
+        }
+    ]
+}

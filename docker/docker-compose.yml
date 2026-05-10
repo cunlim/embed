@@ -48,3 +48,23 @@ services:
     networks:
       - docker_public_1
       - docker_private_1
+
+  cl_embed_swagger:
+    image: swaggerapi/swagger-ui:latest
+    container_name: cl_embed_swagger
+    hostname: 'cl_embed_swagger'
+    restart: unless-stopped
+    # volumes:
+    #   - ..:/swagger:ro
+    environment:
+      BASE_URL: "/swagger"
+      URLS: "[
+        { url: '/api/docs', name: 'Laravel API' },
+        { url: '/docs/next-spec.json', name: 'Next.js API' }
+      ]"
+      TZ: ${TZ}
+    expose:
+      - "8080"
+    networks:
+      - docker_public_1
+      - docker_private_1
