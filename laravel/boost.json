@@ -1,9 +1,8 @@
 {
     "agents": [
-        "gemini",
-        "claude_code",
-        "opencode"
+        "claude_code"
     ],
+    "cloud": false,
     "guidelines": true,
     "mcp": true,
     "nightwatch_mcp": false,
