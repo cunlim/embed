@@ -5,7 +5,7 @@
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:
 
 - `/docs/ARCHITECTURE.md`
-- `/docs/ADR.md` (특히 ADR-003: bge-m3:567m)
+- `/docs/ADR.md` (특히 ADR-003: bge-m3:latest)
 - `/laravel/CLAUDE.md`
 - `/laravel/app/Services/OllamaClient.php` (이전 step에서 생성됨)
 
@@ -32,7 +32,7 @@ class EmbeddingGenerator
 ```
 
 핵심 규칙:
-- `embed` 메서드는 `bge-m3:567m` 모델을 사용한다 (ADR-003).
+- `embed` 메서드는 `bge-m3:latest` 모델을 사용한다 (ADR-003).
 - 반환 타입은 `float[]` — 1024차원 벡터 배열.
 - OllamaClient가 throw하는 모든 예외를 그대로 전파한다 (catch하지 않는다).
 

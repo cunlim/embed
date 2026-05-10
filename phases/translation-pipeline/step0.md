@@ -45,11 +45,11 @@ class TranslateAndEmbedJob implements ShouldQueue
 핵심 규칙:
 1. `handle()` 메서드에서 Category 모델을 조회한다.
 2. **언어별 분기**:
-   - `ko`: 번역 없이 `category_name_ko` 원문을 그대로 임베딩. `bge-m3:567m`이 다국어를 지원하므로 한국어 텍스트도 고품질 벡터로 변환된다.
+   - `ko`: 번역 없이 `category_name_ko` 원문을 그대로 임베딩. `bge-m3:latest`이 다국어를 지원하므로 한국어 텍스트도 고품질 벡터로 변환된다.
    - `zh` / `en`: `category_name_ko`를 `translator->translate()`로 번역 후 임베딩.
 3. 번역 결과를 Category 모델의 `category_name_zh` / `category_name_en`에 저장 (`ko`는 해당 없음).
 4. `embedder->generate()` 호출하여 1024차원 벡터 생성.
-5. 생성된 임베딩을 `CategoryEmbedding` 모델에 `language` + `embed_model_name`(`bge-m3:567m`)과 함께 저장.
+5. 생성된 임베딩을 `CategoryEmbedding` 모델에 `language` + `embed_model_name`(`bge-m3:latest`)과 함께 저장.
 6. 동일 `(category_id, language, embed_model_name)` 조합이 이미 존재하면 업데이트 (`updateOrCreate`).
 7. 실패 시 `$this->fail($exception)` 호출 — Laravel Queue가 자동으로 `failed_jobs`에 기록.
 8. 하나의 Job은 하나의 언어만 처리한다.
