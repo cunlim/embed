@@ -5,6 +5,7 @@
     { "step": 0, "name": "websocket-setup", "status": "pending" },
     { "step": 1, "name": "embed-page", "status": "pending" },
     { "step": 2, "name": "login-page", "status": "pending" },
-    { "step": 3, "name": "admin-page", "status": "pending" }
+    { "step": 3, "name": "admin-page", "status": "pending" },
+    { "step": 4, "name": "docs-page", "status": "pending" }
   ]
 }

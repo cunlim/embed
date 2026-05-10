@@ -94,4 +94,4 @@ docker exec cl_embed_laravel php artisan test --compact
 - HTTP Client는 Laravel의 `Illuminate\Support\Facades\Http` 파사드를 사용하라. Guzzle을 직접 호출하지 마라.
 - 기존 테스트를 깨뜨리지 마라
 
-> **참고**: `step3`에서 `OllamaRateLimiter`를 생성자에 추가하여 시그니처가 변경된다. 이 step에서는 `OllamaRateLimiter` 없이 구현하고, step3에서 수정한다.
+> **경고**: `step3`에서 `OllamaRateLimiter`를 생성자 **첫 번째 파라미터**로 추가하여 시그니처가 변경된다 (`__construct(OllamaRateLimiter, string, int)`). 이 step에서는 `OllamaRateLimiter` 없이 2-param 생성자로 구현하고, step3에서 생성자와 `chat()`/`embed()` 메서드를 수정한다. `OllamaClient`를 `new` 키워드로 직접 인스턴스화하는 코드가 있다면 step3에서 함께 수정해야 한다.

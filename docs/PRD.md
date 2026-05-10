@@ -66,14 +66,18 @@ Ollama HTTP API 클라이언트(`OllamaClient`), 텍스트 분할/조립(`TextSp
 ### Phase 4: api-layer
 REST API 라우트(`routes/api.php`) 및 `CategoryController`, `RecommendController`. Form Request 검증, Eloquent Resources, pgvector 코사인 유사도 추천 엔진, Swagger 문서.
 
+> **Swagger 전략**: 이 Phase에서 첫 API 문서화를 수행하여 L5-Swagger 설정과 어노테이션 패턴을 검증한다. 문제가 없으면 Phase 7(search-integration)에서 인증 API 등 남은 모든 엔드포인트의 문서화를 일괄 완료한다.
+
 ### Phase 5: auth-system
 Sanctum API Token 인증 + Socialite OAuth (Google, GitHub, Naver). `auth:sanctum` 미들웨어로 쓰기 작업 보호.
 
 ### Phase 6: frontend-embed
-Next.js Reverb WebSocket 구독 (`laravel-echo` + `pusher-js`), `/embed` 기술 시연 페이지, `/login` 로그인/회원가입 페이지, `/admin` 관리자 전용 페이지 (로그인 필수, "관리자"란 `/admin` 접근 권한이 있는 로그인 사용자를 의미). 비로그인 게스트는 `/embed`와 `/`만 접근 가능.
+Next.js Reverb WebSocket 구독 (`laravel-echo` + `pusher-js`), `/embed` 기술 시연 페이지, `/login` 로그인/회원가입 페이지, `/docs` 프로젝트 문서 페이지, `/admin` 관리자 전용 페이지 (로그인 필수, "관리자"란 `/admin` 접근 권한이 있는 로그인 사용자를 의미). 비로그인 게스트는 `/embed`, `/docs`, `/` 접근 가능.
 
 ### Phase 7: search-integration
 pgvector `scopeSimilarTo` 최적화, 검색어 캐싱(`EmbeddingCacheService`), 검색어 정규화(`SearchNormalizer`), E2E 통합 테스트 및 아키텍처 검증, 전체 API Swagger 문서 완성.
+
+> **Swagger 전략**: Phase 4(api-layer)에서 검증된 L5-Swagger 패턴을 바탕으로, 인증 API 등 남은 모든 엔드포인트의 어노테이션을 이 Phase에서 일괄 추가하고 최종 문서를 완성한다.
 
 ## 6. 테스트 및 배포 (CI/CD)
 * **테스트 코드:** 백엔드 핵심 파이프라인(분할 조립, 예외 처리, Chaining, Lock, Rate Limit 방어) 테스트 코드 의무화.

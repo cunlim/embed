@@ -22,7 +22,9 @@
 
 ## 작업
 
-모든 개발이 완료된 시점에서 Swagger API 문서를 최종 완성하라. `api-layer/step2`에서 설치된 L5-Swagger에 누락된 API 어노테이션을 추가하고, 전체 문서를 검증한다.
+모든 개발이 완료된 시점에서 Swagger API 문서를 최종 완성하라. `api-layer/step2`에서 검증된 L5-Swagger 패턴을 바탕으로, 누락된 API 어노테이션을 일괄 추가하고 전체 문서를 검증한다.
+
+> **Swagger 분할 전략**: `api-layer/step2`에서 CategoryController/RecommendController로 L5-Swagger 설정과 어노테이션 패턴을 먼저 검증했다. 이 step에서는 검증된 패턴을 그대로 적용하여 AuthController, OAuthController 등 남은 모든 API의 어노테이션을 한 번에 완성한다.
 
 > **현재 상태**: L5-Swagger 패키지 설치, Swagger UI 컨테이너(`cl_embed_swagger` at `/swagger/`) 초기화, `api-layer/step2`에서 CategoryController/RecommendController 어노테이션이 완료되어 있다. 이 step에서는 auth 관련 API 어노테이션 추가와 최종 검증에 집중하라.
 

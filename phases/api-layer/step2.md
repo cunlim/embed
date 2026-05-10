@@ -20,7 +20,9 @@
 
 ## 작업
 
-Laravel L5-Swagger 패키지를 설치하고, 현재까지 구현된 API에 대한 Swagger 문서를 생성하라. 이 step은 첫 API 개발 완료 시점의 문서화다. 전체 API 문서 완성은 `search-integration/step3`에서 수행한다.
+Laravel L5-Swagger 패키지를 설치하고, 현재까지 구현된 API에 대한 Swagger 문서를 생성하라.
+
+> **Swagger 분할 전략**: 이 step은 첫 API 개발 완료 시점의 문서화로, L5-Swagger 설정과 어노테이션 패턴을 먼저 검증하는 것이 목적이다. CategoryController와 RecommendController의 어노테이션을 작성하여 패턴이 올바르게 동작하는지 확인한다. 패턴 검증이 완료되면, 전체 API 문서 완성은 `search-integration/step3`에서 인증 API 등 남은 모든 엔드포인트를 일괄 추가하여 수행한다.
 
 > **현재 상태**: L5-Swagger 패키지 설치 및 Swagger UI 컨테이너(`cl_embed_swagger`) 초기화가 완료되어 있다. 이 step에서는 API 어노테이션 작성과 JSON 생성에 집중하라.
 

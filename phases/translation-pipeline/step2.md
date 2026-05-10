@@ -47,7 +47,7 @@ class TranslationProgress implements ShouldBroadcast
 
 ### 이벤트 발행 위치 수정
 
-`BatchTranslatePipeline`의 `handle()` 메서드에서 Bus::batch()를 구성할 때 다음 콜백을 등록하라:
+`BatchTranslatePipeline`의 `handle()` 메서드에서 `Bus::batch()` 구성 시 **모든 이벤트 콜백을 이 step에서 등록**한다. step1은 콜백 없이 Batch 구조만 생성했으므로, `then()`, `catch()`, `progress()` 콜백을 모두 이 step에서 추가하라:
 
 1. **batch `progress()` 콜백**: 개별 Job 하나가 완료될 때마다 호출됨. 이 시점에 `TranslationProgress` 이벤트를 broadcast하여 실시간 진행률을 전달한다.
 2. **batch `then()` 콜백**: 모든 Job 완료 시 `BatchCompleted` 이벤트를 broadcast한다.

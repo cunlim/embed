@@ -30,23 +30,27 @@
 1. **네비게이션 바** — 로고 + 테마 토글 (랜딩 페이지와 동일 패턴)
 2. **검색 입력 영역**:
    - 큰 라운드 입력창 (`rounded-full`, `h-12` 이상)
-   - 언어 선택 (ko/zh/en) — 계층형 Select Box 또는 탭 (ARCHITECTURE.md: "계층형 Select Box" 요구사항 반영)
+   - 언어 선택 (ko/zh/en) — 탭 또는 라디오 버튼
    - "분석" CTA 버튼
 3. **추천 결과 영역**:
    - 결과 카드 리스트 (각 카드: 카테고리 코드, 카테고리명, 유사도 점수)
    - 유사도 점수는 `text-accent font-mono text-lg`로 하이라이트
    - 각 결과 카드에서 **코사인 유사도 상세** 정보 표시 (ARCHITECTURE.md: "코사인 유사도 상세" 요구사항)
    - 키워드 매칭 부분 `font-semibold text-accent` 처리
-4. **벡터 과정 모달** (ARCHITECTURE.md, PRD §3.2):
+4. **계층형 Select Box** (ARCHITECTURE.md: "계층형 Select Box"):
+   - 네이버 카테고리 "대>중>소" 계층을 순서대로 선택할 수 있는 Select Box
+   - 첫 번째 Select Box에서 "대" 카테고리 선택 → 두 번째 Select Box에 해당 "중" 카테고리 목록 표시 → 세 번째에 "소" 카테고리 표시
+   - DB의 `category_name_ko` 컬럼값을 `>` 구분자로 분할하여 계층 구조 구성
+5. **벡터 과정 모달** (ARCHITECTURE.md, PRD §3.2):
    - shadcn Dialog 컴포넌트 사용
    - 검색어 → 정규화 → 임베딩 생성 → pgvector 유사도 검색 → 결과 매핑의 각 단계를 시각적으로 표시
    - 결과 카드 클릭 또는 "상세 보기" 버튼으로 열기
-5. **상태 처리**:
+6. **상태 처리**:
    - **로딩**: skeleton 또는 pulse 애니메이션
    - **빈 상태**: `flex flex-col items-center gap-2 py-12` + 아이콘 + 메시지
    - **에러**: 빨간색 경고 + 재시도 버튼
    - **결과 없음**: 아이콘 + "일치하는 카테고리가 없습니다" + 설명
-6. **일괄 번역 진행률**:
+7. **일괄 번역 진행률**:
    - `useBatchProgress` 훅 사용
    - 진행률 바 (shadcn Progress 컴포넌트)
    - 완료/실패 카운트 표시

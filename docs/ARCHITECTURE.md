@@ -19,18 +19,18 @@
   - `/app/` ➔ Laravel Reverb (WebSocket 전용, Upgrade 헤더 적용 완료)
 * **Server Components 기본**: Next.js App Router 환경에서 실시간 인터랙션(웹소켓 프로그레스 바, 모달)이 필요한 구간만 Client Component 채택.
 * **API 문서 라우팅**:
-  - `/docs/` ➔ Next.js 프론트엔드에서 제공하는 프로젝트 개발 문서 페이지. `docs/` 디렉토리의 마크다운 문서를 웹으로 렌더링한다. Swagger UI와는 무관.
-  - `/swagger/` ➔ Swagger UI 페이지 (독립 Docker 컨테이너 `cl_embed_swagger`, `swaggerapi/swagger-ui`). Nginx가 `/swagger/`를 Swagger UI 컨테이너로 프록시. 초기화 완료. Laravel API와 Next.js API 양쪽의 OpenAPI 스펙을 하나의 UI에서 확인할 수 있다.
+  - `/docs/` ➔ Next.js 프론트엔드에서 제공하는 프로젝트 개발 문서 페이지. `docs/` 디렉토리의 마크다운 문서를 웹으로 렌더링한다. Swagger UI와는 무관. MVP에서는 간단한 임시 구현으로 제공한다.
+  - `/swagger/` ➔ Swagger UI 페이지 (독립 Docker 컨테이너 `cl_embed_swagger`, `swaggerapi/swagger-ui`). Nginx가 `/swagger/`를 Swagger UI 컨테이너로 프록시. 초기화 완료. Laravel API의 OpenAPI 스펙을 확인할 수 있다.
   - `/api/documentation` ➔ L5-Swagger가 생성하는 Laravel API의 OpenAPI JSON 엔드포인트. Swagger UI 컨테이너가 이 URL에서 JSON을 가져온다.
-  - `/docs/next-spec.json` ➔ Next.js API의 OpenAPI 스펙 파일. Swagger UI 컨테이너가 이 URL에서 JSON을 가져온다.
 
-## 페이지 구성 (Next.js 4개 페이지)
+## 페이지 구성 (Next.js 5개 페이지)
 
 | 라우트 | 페이지 | 목적 | 인증 |
 |--------|--------|------|------|
 | `/` | 랜딩 페이지 | 프로젝트 소개, 검색어 입력 및 타겟 언어 선택, 추천 결과 기본 확인 | 불필요 |
 | `/login` | 로그인 페이지 | 이메일/비밀번호 로그인, OAuth (Google, GitHub, Naver) 소셜 로그인, 회원가입 | 불필요 |
-| `/embed` | Embed 기술 시연 페이지 | 검색어 입력, 타겟 언어 선택, 추천 결과 출력, 코사인 유사도 상세, 계층형 Select Box, 벡터 과정 모달 등 모든 기능을 하나의 위젯 형태로 기술 시연 | 불필요 |
+| `/embed` | Embed 기술 시연 페이지 | 검색어 입력, 타겟 언어 선택, 추천 결과 출력, 코사인 유사도 상세, 계층형 Select Box (네이버 카테고리 "대>중>소" 계층을 순서대로 선택), 벡터 과정 모달 등 모든 기능을 하나의 위젯 형태로 기술 시연 | 불필요 |
+| `/docs` | 프로젝트 문서 페이지 | `docs/` 디렉토리의 마크다운 문서를 웹으로 렌더링. MVP에서는 간단한 임시 구현 | 불필요 |
 | `/admin` | 관리자 전용 페이지 | 카테고리 CRUD, 일괄 번역 트리거, 시스템 관리 | **필수** (로그인 필수, 비로그인 시 `/login` 리다이렉트. "관리자"란 `/admin` 접근 권한이 있는 로그인 사용자를 의미하며 별도 역할(Role) 구분은 없음) |
 
 ## 데이터베이스 주요 테이블

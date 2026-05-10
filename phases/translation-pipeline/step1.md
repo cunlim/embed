@@ -41,10 +41,10 @@ class BatchTranslatePipeline implements ShouldQueue
 1. `$categoryIds`가 null이면 모든 Category를 대상으로 한다.
 2. 각 Category에 대해 `TranslateAndEmbedJob`을 생성하여 `Bus::batch()`로 묶는다.
 3. **대량 데이터 주의**: 카테고리가 100건을 초과하면 `array_chunk($categories, 100)`으로 분할하여 여러 Batch로 나누어 dispatch하라. 이유: PRD §1.3의 1만 건 이상 처리 시 OOM 방지.
-4. Batch에 `then()` 콜백: 완료 시 `BatchCompleted` 이벤트 dispatch
-5. Batch에 `catch()` 콜백: 실패 시 `BatchFailed` 이벤트 dispatch
-6. Batch에 `allowFailures()` 설정 — 개별 Job 실패가 전체 Batch에 영향을 주지 않도록 (ADR-003: failed_jobs로 이관)
-7. Batch name 설정 → `"translate-embed-{언어}"`
+4. Batch에 `allowFailures()` 설정 — 개별 Job 실패가 전체 Batch에 영향을 주지 않도록 (ADR-003: failed_jobs로 이관)
+5. Batch name 설정 → `"translate-embed-{언어}"`
+
+> **주의**: `then()`, `catch()`, `progress()` 콜백과 이벤트 dispatch는 이 step에서 구현하지 마라. 이벤트 클래스(`BatchCompleted`, `BatchFailed`, `TranslationProgress`)는 step2에서 생성되고, 콜백 등록도 step2에서 일괄 추가한다. 이 step에서는 Batch 구조(dispatch, name, allowFailures, chunking)만 구현하라.
 
 ## 생성할 파일
 
