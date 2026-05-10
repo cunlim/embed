@@ -62,7 +62,7 @@ cl_embed/
 | 프론트엔드 | Next.js 16 + React 19 | `nextjs/CLAUDE.md` 참조 |
 | DB | PostgreSQL 15 + pgvector | `docs/ADR.md` ADR-001 |
 | 비동기 | Laravel Queue + Redis + Reverb | `docs/ADR.md` ADR-002 |
-| AI | Ollama 로컬 모델 | `docs/ADR.md` ADR-003 (translategemma:4b, nomic-embed-text) |
+| AI | Ollama 로컬 모델 | `docs/ADR.md` ADR-003 (translategemma:4b, bge-m3:latest) |
 | 인증 | Laravel Sanctum + Socialite | `docs/ADR.md` ADR-004 |
 | 인프라 | Docker 4컨테이너, cloudflared, Nginx | `docs/ARCHITECTURE.md` |
 | 데이터 흐름 | 비동기 파이프라인 + WebSocket | `docs/ARCHITECTURE.md` |

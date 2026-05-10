@@ -38,7 +38,7 @@ php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"
 
 ### Swagger UI 라우트 설정
 
-L5-Swagger는 `/api/documentation` 경로를 자동 등록한다. 프로젝트에서는 Swagger UI를 `/swagger/` 경로에서 제공한다. `config/l5-swagger.php`에서 `path` 설정을 `swagger`로 변경하거나, Nginx 설정에서 `/swagger/`를 `/api/documentation`로 리다이렉트하도록 구성한다. 이 step에서는 `/swagger` URL이 정상 동작하는 것을 확인한다.
+L5-Swagger는 `/api/documentation` 경로를 자동 등록한다. 프로젝트에서는 `/swagger/` 경로에서 Swagger UI를 제공한다. Nginx 설정에서 `/swagger/`를 `/api/documentation`로 리다이렉트하도록 구성한다. 이 step에서는 `/swagger` URL이 정상 동작하는 것을 확인한다.
 
 ### API 어노테이션 작성
 

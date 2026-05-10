@@ -52,28 +52,28 @@
 
 ## 5. 개발 Phase (Harness Task)
 
-`phases/` 디렉토리에 정의된 7개 Harness Phase로 실행된다. 각 Phase는 `scripts/execute.py`로 순차 실행한다.
+`phases/` 디렉토리에 정의된 7개 Harness Phase로 실행된다. 각 Phase는 `scripts/execute.py`로 순차 실행한다. 각 Phase의 상세 작업 내용은 `phases/{phase-name}/step*.md` 참조.
 
 ### Phase 1: backend-models
-Eloquent 모델 및 DB 마이그레이션. `Category`, `CategoryEmbedding`, `TranslationCache`, `SearchLog` 4개 모델과 Factory/Seeder 생성. (기존 Phase 1의 모델/마이그레이션 부분)
+Eloquent 모델 및 DB 마이그레이션. `Category`, `CategoryEmbedding`, `TranslationCache`, `SearchLog` 4개 모델과 Factory/Seeder 생성.
 
 ### Phase 2: ollama-integration
-Ollama HTTP API 클라이언트(`OllamaClient`), `>` 구분자 기반 텍스트 분할/조립(`TextSplitter`), ADR-003 환각 방어 기반 번역 서비스(`OllamaTranslator`), `bge-m3:latest` 임베딩 생성 서비스(`EmbeddingGenerator`), Redis 기반 Rate Limit 방어(`OllamaRateLimiter` — 번역/임베딩 양쪽 호출에 적용). (기존 Phase 1의 AI 연동 부분)
+Ollama HTTP API 클라이언트(`OllamaClient`), 텍스트 분할/조립(`TextSplitter`), 환각 방어 번역 서비스(`OllamaTranslator`), `bge-m3:latest` 임베딩 생성 서비스(`EmbeddingGenerator`), Redis 기반 Rate Limit 방어(`OllamaRateLimiter`).
 
 ### Phase 3: translation-pipeline
-`TranslateAndEmbedJob` (단일 카테고리 단일 언어 번역+임베딩 Job), `Bus::batch()` 기반 `BatchTranslatePipeline`, Reverb WebSocket 진행률 이벤트, Redis `Cache::lock()` 중복 실행 방지. 번역은 언어별로 직렬 실행되며, 하나의 Pipeline은 하나의 언어만 처리한다. (기존 Phase 1의 Queue/파이프라인 부분)
+`TranslateAndEmbedJob` (단일 카테고리 단일 언어 번역+임베딩), `Bus::batch()` 기반 `BatchTranslatePipeline`, Reverb WebSocket 진행률 이벤트, Redis `Cache::lock()` 중복 실행 방지.
 
 ### Phase 4: api-layer
-REST API 라우트(`routes/api.php`) 및 `CategoryController`, `RecommendController`. Form Request 검증, Eloquent Resources, pgvector 코사인 유사도 추천 엔진. (기존 Phase 3의 API 검색 부분)
+REST API 라우트(`routes/api.php`) 및 `CategoryController`, `RecommendController`. Form Request 검증, Eloquent Resources, pgvector 코사인 유사도 추천 엔진, Swagger 문서.
 
 ### Phase 5: auth-system
-Sanctum API Token 인증 + Socialite OAuth (Google, GitHub, Naver). `auth:sanctum` 미들웨어로 쓰기 작업 보호. (기존 Phase 2에 인증 항목 없음 — PRD §4에서 분리)
+Sanctum API Token 인증 + Socialite OAuth (Google, GitHub, Naver). `auth:sanctum` 미들웨어로 쓰기 작업 보호.
 
 ### Phase 6: frontend-embed
-Next.js Reverb WebSocket 구독 (`laravel-echo` + `pusher-js`), `/embed` 기술 시연 페이지, `/login` 로그인/회원가입 페이지, `/admin` 관리자 페이지. (기존 Phase 2 + `/embed` 페이지)
+Next.js Reverb WebSocket 구독 (`laravel-echo` + `pusher-js`), `/embed` 기술 시연 페이지, `/login` 로그인/회원가입 페이지, `/admin` 관리자 전용 페이지 (로그인 필수). 비로그인 게스트는 `/embed`와 `/`만 접근 가능.
 
 ### Phase 7: search-integration
-pgvector `scopeSimilarTo` 최적화, 검색어 캐싱(`EmbeddingCacheService`), 검색어 정규화(`SearchNormalizer`), E2E 통합 테스트 및 아키텍처 검증. (기존 Phase 3의 최적화/통합 부분)
+pgvector `scopeSimilarTo` 최적화, 검색어 캐싱(`EmbeddingCacheService`), 검색어 정규화(`SearchNormalizer`), E2E 통합 테스트 및 아키텍처 검증, 전체 API Swagger 문서 완성.
 
 ## 6. 테스트 및 배포 (CI/CD)
 * **테스트 코드:** 백엔드 핵심 파이프라인(분할 조립, 예외 처리, Chaining, Lock, Rate Limit 방어) 테스트 코드 의무화.

@@ -187,7 +187,7 @@ export default function Home() {
             <div className="p-4 font-mono text-xs leading-relaxed sm:text-sm">
               <div className="mb-1 text-muted-foreground">
                 <span className="text-emerald-500">$</span> pipeline initialize
-                — model: nomic-embed-text
+                — model: bge-m3
               </div>
               {terminalLines.map((line, idx) => (
                 <div

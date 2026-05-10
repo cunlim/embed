@@ -42,5 +42,5 @@ docker exec cl_embed_nextjs npm run lint
 ## 관련 문서
 
 - 전체 아키텍처: [`/CLAUDE.md`](../CLAUDE.md)
-- 제품 요구사항: [`doc/PRD.md`](../doc/PRD.md)
+- 제품 요구사항: [`docs/PRD.md`](../docs/PRD.md)
 - 백엔드 가이드라인: [`laravel/CLAUDE.md`](../laravel/CLAUDE.md)
