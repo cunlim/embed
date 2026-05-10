@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Database\Factories\CategoryEmbeddingFactory;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Pgvector\Laravel\Vector;
 
+#[Hidden(['id', 'created_at', 'updated_at'])]
 class CategoryEmbedding extends Model
 {
     /** @use HasFactory<CategoryEmbeddingFactory> */
