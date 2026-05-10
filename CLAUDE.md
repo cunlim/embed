@@ -53,6 +53,7 @@ cl_embed/
   - Laravel: Pest 4 (`php artisan test --compact`)
 - 커밋 메시지는 conventional commits 형식을 따를 것 (feat:, fix:, docs:, refactor:)
 - PHP 변경 완료 전 `vendor/bin/pint --format agent` 실행 (컨테이너 내부)
+- **DB 테이블명**은 Laravel 기본 복수형 컨벤션을 따른다 (예: `categories`, `translation_caches`). 명시적 `protected $table` 지정은 불필요.
 
 ## 기술 스택
 

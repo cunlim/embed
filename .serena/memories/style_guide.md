@@ -54,4 +54,4 @@
 ## 데이터베이스
 - PostgreSQL 15 + pgvector 확장
 - VECTOR(1024) 타입 사용 (bge-m3:latest)
-- 주요 테이블: categories, category_embeddings, translation_cache, search_logs, users
+- 주요 테이블: categories, category_embeddings, translation_caches, search_logs, users

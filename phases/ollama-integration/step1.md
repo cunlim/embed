@@ -50,7 +50,7 @@ class OllamaTranslator
 ```
 
 핵심 규칙 (ADR-003 준수):
-1. **캐시 우선**: `translation_cache` 테이블에서 `(source_text, target_lang)` 조회. 히트 시 즉시 반환.
+1. **캐시 우선**: `translation_caches` 테이블에서 `(source_text, target_lang)` 조회. 히트 시 즉시 반환.
 2. **분할 번역**: `TextSplitter::shouldSplit()` → `>` 있으면 분할, 각 세그먼트별로 번역 후 `TextSplitter::join()`.
 3. **환각 검증**: 번역 결과에 대해 아래 기준으로 검증하라:
    - **zh 타겟**: 결과에 한글(U+AC00~U+D7AF)이 2자 이상 연속으로 포함되면 환각 (원문을 그대로 반환한 경우). 단, 단일 한글 자모나 고립된 문자는 무시한다.
@@ -58,7 +58,7 @@ class OllamaTranslator
    - 정규식은 `preg_match()` + Unicode 프로퍼티(`\p{Hangul}`, `\p{Han}`)를 사용하라.
    - **주의**: 이 검증은 휴리스틱이다. 번역 결과에 고유명사로 한글/한자가 자연스럽게 포함될 수 있으므로, 단일 문자보다는 2자 이상 연속 등장을 기준으로 판단하라.
 4. **최대 3회 재시도**: 환각 발생 시 `attempts` 카운터를 증가시키며 재시도. 3회 실패 시 `RuntimeException` throw.
-5. **캐시 저장**: 성공한 번역 결과를 `translation_cache`에 저장.
+5. **캐시 저장**: 성공한 번역 결과를 `translation_caches`에 저장.
 
 ### 번역 프롬프트
 

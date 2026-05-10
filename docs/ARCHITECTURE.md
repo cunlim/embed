@@ -41,7 +41,7 @@
 |--------|------|------|
 | `categories` | 단일 카테고리 체계 (네이버 기준) | |
 | `category_embeddings` | 다중 언어/모델 임베딩 (1:N) | VECTOR(1024) pgvector |
-| `translation_cache` | 번역 결과 캐시 (중복 방지) | |
+| `translation_caches` | 번역 결과 캐시 (중복 방지) | |
 | `search_logs` | 검색어 임베딩 캐시 겸 이력 | 비회원은 `session_id` 식별, `normalized_keyword`로 캐시 매칭 |
 | `users` | OAuth 및 이메일 회원 관리 | 추후 `provider`/`provider_id` 컬럼 추가 예정 (OAuth 연동 시) |
 

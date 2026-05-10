@@ -13,8 +13,6 @@ class TranslationCache extends Model
     /** @use HasFactory<TranslationCacheFactory> */
     use HasFactory;
 
-    protected $table = 'translation_cache';
-
     protected function casts(): array
     {
         return [

@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('translation_cache', function (Blueprint $table) {
+        Schema::create('translation_caches', function (Blueprint $table) {
             $table->id();
             $table->text('source_text');
             $table->string('target_lang', 10);
@@ -20,6 +20,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('translation_cache');
+        Schema::dropIfExists('translation_caches');
     }
 };
