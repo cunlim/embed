@@ -222,11 +222,14 @@ docker exec cl_embed_laravel php artisan config:show app.name
 
 ### 모델 생성 체크리스트
 
+**CRITICAL** — 아래 규칙은 **모든 모델에 예외 없이 적용**한다. API에 노출되지 않는 내부/시스템 모델(예: `Setting`)도 동일한 규칙을 따른다. "내부용이니까 괜찮겠지"라는 판단은 금지한다.
+
 새 Eloquent 모델 생성 시 다음 항목을 반드시 확인한다:
 
-- **#[Hidden]**: `id`, `created_at`, `updated_at`, `embedding`(Vector) 등 API 응답에 불필요한 컬럼은 Attribute로 숨긴다. 기존 모델(`Category`, `CategoryEmbedding`)을 참고할 것.
-- **#[Fillable]**: mass-assignment 허용 컬럼을 정확히 지정한다. `$guarded = []`는 사용하지 않는다.
-- **casts()**: `embedding` → `Vector::class`, `id` → `integer` 등 모든 특수 타입 캐스팅을 정의한다.
+- **`HasFactory` trait**: 모든 모델은 `use HasFactory`를 포함하고 대응하는 Factory를 생성한다. Seeder에서 직접 `::create()`를 호출하는 경우에도 Factory는 반드시 존재해야 한다.
+- **`#[Hidden]`**: `id`, `created_at`, `updated_at`, `embedding`(Vector) 등 API 응답에 불필요한 컬럼은 Attribute로 숨긴다. 기존 모델(`Category`, `CategoryEmbedding`)을 참고할 것.
+- **`#[Fillable]`**: mass-assignment 허용 컬럼을 정확히 지정한다. `$guarded = []`는 사용하지 않는다.
+- **`casts()`**: `embedding` → `Vector::class`, `id` → `integer` 등 모든 특수 타입 캐스팅을 정의한다.
 - **관계 메서드**: `@return BelongsTo<User, $this>` 형식의 제네릭 PHPDoc을 작성한다.
 
 ### Factory 생성 체크리스트
@@ -243,3 +246,10 @@ docker exec cl_embed_laravel php artisan config:show app.name
 - 특수 캐스팅 동작 (Vector 등)
 
 TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한다.
+
+### 서비스 클래스 캐싱 패턴
+
+- **그룹 조회 최적화**: 여러 키를 그룹 단위로 조회하는 메서드(`all()` 등)에서는 개별 키마다 `Cache::remember()`를 호출하지 말고, 그룹 전체를 하나의 캐시 키로 묶어 저장한다. DB 쿼리 1회 + 캐시 호출 1회로 유지한다.
+  - 잘못된 예: `foreach` 루프 안에서 `Cache::remember("settings:{$group}:{$key}", ...)` 개별 호출 → N+1 캐시 문제
+  - 올바른 예: `Cache::remember("settings:{$group}", 3600, fn () => Setting::where('group', $group)->get()->mapWithKeys(...)->all())`
+- **캐시 키 설계**: `get()`은 개별 키 캐시, `all()`은 그룹 캐시로 분리하여 단일 조회 시 불필요한 그룹 전체 로드를 방지한다.

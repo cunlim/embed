@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Setting;
 use App\Services\SettingsService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ beforeEach(function () {
 });
 
 test('get은 DB에서 설정 값을 조회하고 캐시한다', function () {
-    DB::table('settings')->insert([
+    Setting::factory()->create([
         'group' => 'ollama',
         'key' => 'host',
         'value' => 'http://localhost:11434',
@@ -39,7 +40,7 @@ test('get은 DB에서 설정 값을 조회하고 캐시한다', function () {
 });
 
 test('get은 캐시된 값이 있으면 DB 조회를 생략한다', function () {
-    DB::table('settings')->insert([
+    Setting::factory()->create([
         'group' => 'ollama',
         'key' => 'host',
         'value' => 'http://localhost:11434',
@@ -68,7 +69,7 @@ test('get은 값이 없으면 기본값을 반환한다', function () {
 });
 
 test('get은 integer 타입을 int로 캐스팅한다', function () {
-    DB::table('settings')->insert([
+    Setting::factory()->create([
         'group' => 'test',
         'key' => 'timeout',
         'value' => '300',
@@ -83,9 +84,17 @@ test('get은 integer 타입을 int로 캐스팅한다', function () {
 });
 
 test('all은 그룹의 모든 설정을 연관 배열로 반환한다', function () {
-    DB::table('settings')->insert([
-        ['group' => 'ollama', 'key' => 'host', 'value' => 'http://localhost:11434', 'type' => 'string'],
-        ['group' => 'ollama', 'key' => 'translation_model', 'value' => 'translategemma:4b', 'type' => 'string'],
+    Setting::factory()->create([
+        'group' => 'ollama',
+        'key' => 'host',
+        'value' => 'http://localhost:11434',
+        'type' => 'string',
+    ]);
+    Setting::factory()->create([
+        'group' => 'ollama',
+        'key' => 'translation_model',
+        'value' => 'translategemma:4b',
+        'type' => 'string',
     ]);
 
     $service = new SettingsService;
@@ -102,4 +111,21 @@ test('all은 빈 그룹에 대해 빈 배열을 반환한다', function () {
     $result = $service->all('nonexistent');
 
     expect($result)->toBe([]);
+});
+
+test('all은 그룹 전체를 하나의 캐시 키로 저장한다', function () {
+    Setting::factory()->create([
+        'group' => 'ollama',
+        'key' => 'host',
+        'value' => 'http://localhost:11434',
+        'type' => 'string',
+    ]);
+
+    $service = new SettingsService;
+    $service->all('ollama');
+
+    // 그룹 캐시 키로 저장되었는지 확인
+    $cached = Cache::get('settings:ollama');
+    expect($cached)->toBeArray();
+    expect($cached['host'])->toBe('http://localhost:11434');
 });

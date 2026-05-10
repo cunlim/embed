@@ -1,0 +1,23 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Setting;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends Factory<Setting>
+ */
+class SettingFactory extends Factory
+{
+    public function definition(): array
+    {
+        return [
+            'group' => fake()->randomElement(['ollama', 'app']),
+            'key' => fake()->unique()->word(),
+            'value' => fake()->word(),
+            'type' => 'string',
+            'description' => fake()->optional()->sentence(),
+        ];
+    }
+}

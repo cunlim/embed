@@ -31,18 +31,12 @@ class SettingsService
      */
     public function all(string $group): array
     {
-        $dbSettings = Setting::where('group', $group)->get();
-        $result = [];
-
-        foreach ($dbSettings as $setting) {
-            $cacheKey = "settings:{$group}:{$setting->key}";
-            $value = Cache::remember($cacheKey, 3600, function () use ($setting) {
-                return $this->castValue($setting->value, $setting->type);
-            });
-            $result[$setting->key] = $value;
-        }
-
-        return $result;
+        return Cache::remember("settings:{$group}", 3600, function () use ($group) {
+            return Setting::where('group', $group)
+                ->get()
+                ->mapWithKeys(fn (Setting $s) => [$s->key => $this->castValue($s->value, $s->type)])
+                ->all();
+        });
     }
 
     /**
