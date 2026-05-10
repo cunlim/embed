@@ -58,13 +58,14 @@ class StepExecutor:
     CHORE_MSG = "chore({phase}): step {num} output"
     TZ = timezone(timedelta(hours=9))
 
-    def __init__(self, phase_dir_name: str, *, auto_push: bool = False):
+    def __init__(self, phase_dir_name: str, *, auto_push: bool = False, skip_review: bool = False):
         self._root = str(ROOT)
         self._phases_dir = ROOT / "phases"
         self._phase_dir = self._phases_dir / phase_dir_name
         self._phase_dir_name = phase_dir_name
         self._top_index_file = self._phases_dir / "index.json"
         self._auto_push = auto_push
+        self._skip_review = skip_review
 
         if not self._phase_dir.is_dir():
             print(f"ERROR: {self._phase_dir} not found")
@@ -256,6 +257,45 @@ class StepExecutor:
 
         return output
 
+    def _review_step(self, step_num: int, step_name: str) -> None:
+        """Step 완료 후 review.md 기반 리뷰 실행 + 필요시 문서 업데이트."""
+        review_cmd = Path(self._root) / ".claude" / "commands" / "review.md"
+        if not review_cmd.exists():
+            print(f"  ⚠ .claude/commands/review.md not found, skipping review")
+            return
+
+        docs = [
+            "CLAUDE.md", "docs/ADR.md", "docs/ARCHITECTURE.md",
+            "docs/PRD.md", "docs/UI_GUIDE.md",
+            "laravel/CLAUDE.md", "nextjs/CLAUDE.md",
+        ]
+        docs_list = "\n".join(f"- /{d}" for d in docs)
+
+        prompt = (
+            f"당신은 코드 리뷰어입니다. 방금 완료된 step({step_name})의 변경사항을 리뷰하라.\n\n"
+            f"{review_cmd.read_text()}\n\n"
+            f"## 추가 지시: 문서화\n\n"
+            f"리뷰 중 발견된 문제나 주의점 중 **같은 이슈가 재발할 가능성이 있는 것**이 있다면,"
+            f"아래 문서 중 적절한 곳에 해당 내용을 추가하라:\n\n"
+            f"{docs_list}\n\n"
+            f"- 이미 문서에 있는 내용을 중복 추가하지 마라.\n"
+            f"- 문서를 수정한 경우, 수정한 파일과 이유를 최종 응답에 포함하라.\n\n"
+            f"## 주의\n\n"
+            f"- 이 세션은 리뷰 및 문서화 전용이다. Step 작업을 다시 실행하지 마라.\n"
+            f"- 변경사항을 커밋하지 마라. (execute.py가 처리한다)\n"
+            f"- 리뷰 중 발견된 코드 문제는 직접 수정하라."
+        )
+
+        with progress_indicator(f"Reviewing step {step_num}: {step_name}") as pi:
+            result = subprocess.run(
+                ["claude", "-p", "--dangerously-skip-permissions", "--output-format", "json", prompt],
+                cwd=self._root, capture_output=True, text=True, timeout=600,
+            )
+            if result.returncode != 0:
+                print(f"\n  ⚠ Review exited with code {result.returncode}")
+                if result.stderr:
+                    print(f"  stderr: {result.stderr[:300]}")
+
     # --- 헤더 & 검증 ---
 
     def _print_header(self):
@@ -264,6 +304,8 @@ class StepExecutor:
         print(f"  Phase: {self._phase_name} | Steps: {self._total}")
         if self._auto_push:
             print(f"  Auto-push: enabled")
+        if self._skip_review:
+            print(f"  Review: disabled (--skip-review)")
         print(f"{'='*60}")
 
     def _check_blockers(self):
@@ -318,6 +360,8 @@ class StepExecutor:
                     if s["step"] == step_num:
                         s["completed_at"] = ts
                 self._write_json(self._index_file, index)
+                if not self._skip_review:
+                    self._review_step(step_num, step_name)
                 self._commit_step(step_num, step_name)
                 print(f"  ✓ Step {step_num}: {step_name} [{elapsed}s]")
                 return True
@@ -408,9 +452,10 @@ def main():
     parser = argparse.ArgumentParser(description="Harness Step Executor")
     parser.add_argument("phase_dir", help="Phase directory name (e.g. 0-mvp)")
     parser.add_argument("--push", action="store_true", help="Push branch after completion")
+    parser.add_argument("--skip-review", action="store_true", help="Skip review after each step")
     args = parser.parse_args()
 
-    StepExecutor(args.phase_dir, auto_push=args.push).run()
+    StepExecutor(args.phase_dir, auto_push=args.push, skip_review=args.skip_review).run()
 
 
 if __name__ == "__main__":

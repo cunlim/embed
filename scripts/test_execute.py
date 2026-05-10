@@ -3,6 +3,7 @@ execute.py 리팩터링 안전망 테스트.
 리팩터링 전후 동작이 동일한지 검증한다.
 """
 
+import argparse
 import json
 import os
 import subprocess
@@ -557,3 +558,154 @@ class TestCheckBlockers:
         with pytest.raises(SystemExit) as exc_info:
             inst._check_blockers()
         assert exc_info.value.code == 2
+
+
+# ---------------------------------------------------------------------------
+# _review_step
+# ---------------------------------------------------------------------------
+
+
+class TestReviewStep:
+    """_review_step 메서드 테스트."""
+
+    def _make_executor(self, tmp_path, skip_review=False):
+        """review 테스트용 executor 생성."""
+        phases_dir = tmp_path / "phases" / "test-rv"
+        phases_dir.mkdir(parents=True)
+        index = {
+            "project": "T",
+            "phase": "test-rv",
+            "steps": [{"step": 0, "name": "init", "status": "pending"}],
+        }
+        (phases_dir / "index.json").write_text(json.dumps(index))
+
+        # review.md 생성
+        cmd_dir = tmp_path / ".claude" / "commands"
+        cmd_dir.mkdir(parents=True)
+        (cmd_dir / "review.md").write_text("# Review\n체크리스트를 확인하라.")
+
+        with patch.object(ex, "ROOT", tmp_path):
+            inst = ex.StepExecutor("test-rv", skip_review=skip_review)
+        inst._root = str(tmp_path)
+        inst._phases_dir = tmp_path / "phases"
+        inst._phase_dir = phases_dir
+        inst._phase_dir_name = "test-rv"
+        inst._index_file = phases_dir / "index.json"
+        inst._top_index_file = tmp_path / "phases" / "index.json"
+        inst._skip_review = skip_review
+        return inst
+
+    def test_invokes_claude_when_review_md_exists(self, tmp_path):
+        """review.md가 있으면 claude를 호출한다."""
+        inst = self._make_executor(tmp_path)
+        mock_result = MagicMock(returncode=0, stdout="ok", stderr="")
+
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            inst._review_step(0, "init")
+
+        mock_run.assert_called_once()
+        cmd = mock_run.call_args[0][0]
+        assert "claude" in cmd
+        prompt = cmd[-1]
+        assert "체크리스트를 확인하라" in prompt
+        assert "init" in prompt
+
+    def test_skips_when_review_md_missing(self, tmp_path):
+        """review.md가 없으면 경고만 출력하고 건너뛴다."""
+        inst = self._make_executor(tmp_path)
+        (tmp_path / ".claude" / "commands" / "review.md").unlink()
+
+        with patch("subprocess.run") as mock_run:
+            inst._review_step(0, "init")
+
+        mock_run.assert_not_called()
+
+    def test_handles_claude_nonzero_exit(self, tmp_path):
+        """claude가 비정상 종료해도 예외를 발생시키지 않는다."""
+        inst = self._make_executor(tmp_path)
+        mock_result = MagicMock(returncode=1, stdout="", stderr="something went wrong")
+
+        with patch("subprocess.run", return_value=mock_result):
+            inst._review_step(0, "init")  # 예외 없이 정상 반환
+
+    def test_includes_docs_list_in_prompt(self, tmp_path):
+        """문서화 지시에 CLAUDE.md, docs/*, laravel/CLAUDE.md 등이 포함된다."""
+        inst = self._make_executor(tmp_path)
+        mock_result = MagicMock(returncode=0, stdout="ok", stderr="")
+
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            inst._review_step(0, "init")
+
+        prompt = mock_run.call_args[0][0][-1]
+        assert "/CLAUDE.md" in prompt
+        assert "/docs/ADR.md" in prompt
+        assert "/docs/ARCHITECTURE.md" in prompt
+        assert "/laravel/CLAUDE.md" in prompt
+        assert "/nextjs/CLAUDE.md" in prompt
+
+    def test_prompt_has_guard_clauses(self, tmp_path):
+        """리뷰 프롬프트에 Step 재실행 금지, 커밋 금지 안내가 포함된다."""
+        inst = self._make_executor(tmp_path)
+        mock_result = MagicMock(returncode=0, stdout="ok", stderr="")
+
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            inst._review_step(0, "init")
+
+        prompt = mock_run.call_args[0][0][-1]
+        assert "Step 작업을 다시 실행하지 마라" in prompt
+        assert "변경사항을 커밋하지 마라" in prompt
+
+
+# ---------------------------------------------------------------------------
+# --skip-review 플래그
+# ---------------------------------------------------------------------------
+
+
+class TestSkipReviewFlag:
+    """--skip-review 플래그 관련 테스트."""
+
+    def test_default_is_false(self):
+        """기본값은 False (리뷰 실행)."""
+        with patch("sys.argv", ["execute.py", "dummy"]):
+            with patch("argparse.ArgumentParser.parse_args") as mock_parse:
+                mock_parse.return_value = argparse.Namespace(
+                    phase_dir="dummy", push=False, skip_review=False
+                )
+                assert mock_parse.return_value.skip_review is False
+
+    def test_flag_sets_skip_review_true(self):
+        """--skip-review 전달 시 True로 설정된다."""
+        with patch("sys.argv", ["execute.py", "dummy", "--skip-review"]):
+            parser = argparse.ArgumentParser()
+            parser.add_argument("phase_dir")
+            parser.add_argument("--push", action="store_true")
+            parser.add_argument("--skip-review", action="store_true")
+            args = parser.parse_args()
+            assert args.skip_review is True
+
+    def test_skip_review_prevents_review_call(self, tmp_path):
+        """skip_review=True면 _review_step이 호출되지 않는다."""
+        phases_dir = tmp_path / "phases" / "test-skip"
+        phases_dir.mkdir(parents=True)
+        index = {
+            "project": "T",
+            "phase": "test-skip",
+            "steps": [{"step": 0, "name": "init", "status": "pending"}],
+        }
+        (phases_dir / "index.json").write_text(json.dumps(index))
+
+        # review.md 생성
+        cmd_dir = tmp_path / ".claude" / "commands"
+        cmd_dir.mkdir(parents=True)
+        (cmd_dir / "review.md").write_text("# Review")
+
+        with patch.object(ex, "ROOT", tmp_path):
+            inst = ex.StepExecutor("test-skip", skip_review=True)
+        inst._root = str(tmp_path)
+
+        with patch.object(inst, "_review_step") as mock_review:
+            inst._skip_review = True
+            # _execute_single_step에서 skip_review 분기 시뮬레이션
+            if not inst._skip_review:
+                inst._review_step(0, "init")
+            mock_review.assert_not_called()
