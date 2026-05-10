@@ -15,6 +15,33 @@
 
 > **주의**: `BatchTranslatePipeline`은 step1에서 생성되고 step2에서 이벤트 broadcast 콜백이 추가되었다. 이 step3에서는 step2가 추가한 `progress()`, `then()`, `catch()` 콜백 내의 이벤트 broadcast 로직을 보존한 채, `handle()` 메서드 시작 부분에 Lock 로직만 추가해야 한다. step2의 콜백을 덮어쓰지 마라.
 
+> **step2에서 추가한 코드 (반드시 보존할 것)**:
+> ```php
+> // BatchTranslatePipeline::handle() 내 Bus::batch() 구성 시 등록된 콜백:
+> Bus::batch($jobs)
+>     ->name("translate-embed-{$this->targetLanguage}")
+>     ->allowFailures()
+>     ->progress(function (Batch $batch) {
+>         // 개별 Job 완료 시마다 broadcast
+>         broadcast(new TranslationProgress(
+>             batchId: $batch->id,
+>             totalJobs: $batch->totalJobs,
+>             completedJobs: $batch->processedJobs(),
+>             failedJobs: $batch->failedJobs,
+>             status: 'processing',
+>         ));
+>     })
+>     ->then(function (Batch $batch) {
+>         broadcast(new BatchCompleted(batchId: $batch->id));
+>     })
+>     ->catch(function (Batch $batch, Throwable $e) {
+>         broadcast(new BatchFailed(batchId: $batch->id, errorMessage: $e->getMessage()));
+>     })
+>     ->dispatch();
+> ```
+>
+> 위 콜백 코드를 수정하거나 삭제하지 마라. Lock 로직은 `handle()` 메서드 **시작 부분**에만 추가한다.
+
 ## 작업
 
 동일 언어의 중복 실행을 방지하는 Redis Lock 로직을 `BatchTranslatePipeline`에 추가하라.

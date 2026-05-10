@@ -18,7 +18,7 @@
 
 ### BatchTranslatePipeline (`app/Jobs/BatchTranslatePipeline.php`)
 
-ADM-002에 따라 `Bus::batch()`를 사용하여 모든 카테고리에 대한 번역/임베딩 Job을 일괄 dispatch한다. **번역은 언어별로 직렬 실행**되므로, 하나의 Pipeline은 하나의 언어만 처리한다. 여러 언어를 처리하려면 언어별로 Batch를 각각 dispatch해야 한다.
+ADR-002에 따라 `Bus::batch()`를 사용하여 모든 카테고리에 대한 번역/임베딩 Job을 일괄 dispatch한다. **번역은 언어별로 직렬 실행**되므로, 하나의 Pipeline은 하나의 언어만 처리한다. 여러 언어를 처리하려면 언어별로 Batch를 각각 dispatch해야 한다.
 
 시그니처:
 ```php

@@ -34,10 +34,11 @@ php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"
 - `title` ⇒ `CL Embed API`
 - `version` ⇒ `1.0.0`
 - `description` ⇒ `AI 기반 다국어 카테고리 추천 시스템 API`
+- `api-docs` 경로 ⇒ `swagger` (기본값 `api/documentation` 대신 `/swagger` 사용)
 
-### Swagger UI 라우트 확인
+### Swagger UI 라우트 설정
 
-L5-Swagger는 `/api/documentation` 경로를 자동 등록한다. Nginx 설정에서 `/docs/` 경로가 이미 Swagger UI로 프록시되도록 구성되어 있는 경우, 해당 라우트를 `/docs/`로 리다이렉트하거나 Nginx 설정을 업데이트한다. 이 step에서는 `/api/documentation` URL이 정상 동작하는 것만 확인하면 된다.
+L5-Swagger는 `/api/documentation` 경로를 자동 등록한다. 프로젝트에서는 Swagger UI를 `/swagger/` 경로에서 제공한다. `config/l5-swagger.php`에서 `path` 설정을 `swagger`로 변경하거나, Nginx 설정에서 `/swagger/`를 `/api/documentation`로 리다이렉트하도록 구성한다. 이 step에서는 `/swagger` URL이 정상 동작하는 것을 확인한다.
 
 ### API 어노테이션 작성
 

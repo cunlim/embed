@@ -53,6 +53,7 @@ class TranslateAndEmbedJob implements ShouldQueue
 6. 동일 `(category_id, language, embed_model_name)` 조합이 이미 존재하면 업데이트 (`updateOrCreate`).
 7. 실패 시 `$this->fail($exception)` 호출 — Laravel Queue가 자동으로 `failed_jobs`에 기록.
 8. 하나의 Job은 하나의 언어만 처리한다.
+9. **Rate Limit 예외 처리**: `RuntimeException("Ollama rate limit exceeded...")` 메시지를 감지하면 `$this->release(60)`으로 60초 후 재시도한다. 이외의 RuntimeException은 `$this->fail()`로 `failed_jobs`에 기록한다.
 
 ## 생성할 파일
 
@@ -82,5 +83,5 @@ docker exec cl_embed_laravel php artisan test --compact
 ## 금지사항
 
 - Job에서 HTTP 호출을 직접 하지 마라. OllamaTranslator와 EmbeddingGenerator를 DI로 주입받아 사용하라.
-- `$timeout`과 `$tries` 프로퍼티를 설정하지 않은 채로 두지 마라. 이유: Ollama는 응답이 느릴 수 있으므로 timeout=300, tries=3으로 설정하라.
+- `$timeout`과 `$tries` 프로퍼티를 설정하지 않은 채로 두지 마라. 이유: Ollama는 응답이 느릴 수 있으므로 timeout=300, tries=5로 설정하라 (Rate Limit 재시도 포함).
 - 기존 테스트를 깨뜨리지 마라

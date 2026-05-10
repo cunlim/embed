@@ -10,7 +10,6 @@
 - `/laravel/CLAUDE.md`
 - `/laravel/config/cache.php` (Redis 캐시 설정 확인)
 - `/laravel/app/Services/OllamaClient.php` (이전 step에서 생성됨)
-- `/laravel/app/Jobs/TranslateAndEmbedJob.php` (이전 task에서 생성됨)
 
 이전 step에서 만들어진 코드를 꼼꼼히 읽고, 설계 의도를 이해한 뒤 작업하라.
 
@@ -60,17 +59,12 @@ if ($this->rateLimiter->tooManyAttempts()) {
 $this->rateLimiter->attempt();
 ```
 
-### TranslateAndEmbedJob 수정
-
-`TranslateAndEmbedJob`이 Rate Limit 예외를 처리하도록 수정:
-- `RuntimeException("Ollama rate limit exceeded...")` 메시지를 감지하면 `$this->release(60)`으로 60초 후 재시도
-- `$tries = 5`로 증가 (Rate Limit 대기 시간 고려)
-
 ## 생성할 파일
 
 - `laravel/app/Services/OllamaRateLimiter.php`
 - `laravel/app/Services/OllamaClient.php` (수정 — Rate Limiter 체크 추가)
-- `laravel/app/Jobs/TranslateAndEmbedJob.php` (수정 — Rate Limit 예외 처리)
+
+> **참고**: `TranslateAndEmbedJob`의 Rate Limit 예외 처리는 `translation-pipeline/step0`에서 Job 생성 시 함께 구현한다.
 
 ## Acceptance Criteria
 

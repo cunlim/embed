@@ -98,9 +98,9 @@ docker exec cl_embed_laravel php artisan tinker --execute '
 
 1. 위 AC 커맨드를 모두 실행한다.
 2. `l5-swagger:generate`가 에러 없이 완료되는지 확인한다.
-3. Swagger UI(`/api/documentation`)가 모든 API 엔드포인트를 표시하는지 확인한다.
+3. Swagger UI(`/swagger`)가 모든 API 엔드포인트를 표시하는지 확인한다.
 4. 아키텍처 체크리스트를 확인한다:
-   - ARCHITECTURE.md `/docs/` Swagger UI 요구사항이 완전히 충족되었는가?
+   - ARCHITECTURE.md `/swagger/` Swagger UI 요구사항이 완전히 충족되었는가?
    - 모든 API 엔드포인트가 문서화되었는가?
 5. 결과에 따라 `phases/search-integration/index.json`의 해당 step을 업데이트한다:
    - 성공 → `"status": "completed"`, `"summary": "전체 API Swagger 문서화 완료"`
@@ -109,5 +109,5 @@ docker exec cl_embed_laravel php artisan tinker --execute '
 ## 금지사항
 
 - `l5-swagger:generate`가 실패하는 상태로 두지 마라. 모든 어노테이션 문법은 유효해야 한다.
-- OAuth 라우트(`routes/web.php`)를 Swagger 문서에서 누락하지 마라. `api/documentation`에 포함되도록 적절히 설정하라.
+- OAuth 라우트(`routes/web.php`)를 Swagger 문서에서 누락하지 마라. `/swagger`에 포함되도록 적절히 설정하라.
 - 기존 테스트를 깨뜨리지 마라

@@ -19,7 +19,8 @@
   - `/app/` ➔ Laravel Reverb (WebSocket 전용, Upgrade 헤더 적용 완료)
 * **Server Components 기본**: Next.js App Router 환경에서 실시간 인터랙션(웹소켓 프로그레스 바, 모달)이 필요한 구간만 Client Component 채택.
 * **API 문서 라우팅**:
-  - `/docs/` ➔ Swagger UI 컨테이너 또는 Laravel L5-Swagger 뷰 연결 (API 명세서 제공)
+  - `/swagger/` ➔ Swagger UI 컨테이너 또는 Laravel L5-Swagger 뷰 연결 (API 명세서 제공)
+  - `/docs/` ➔ 프로젝트 설계 문서 (PRD, ARCHITECTURE, ADR, UI_GUIDE)
 
 ## 페이지 구성 (Next.js 4개 페이지)
 
