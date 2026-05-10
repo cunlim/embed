@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /*
@@ -14,8 +13,11 @@ use Tests\TestCase;
 |
 */
 
+// RefreshDatabase는 pgvector 마이그레이션(CREATE EXTENSION IF NOT EXISTS vector)이
+// SQLite 인메모리 DB와 호환되지 않아 사용할 수 없다.
+// 대신 각 테스트 파일의 beforeEach/afterEach에서 Schema::create/dropIfExists로
+// 필요한 테이블만 수동 생성한다. 상세: docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md
 pest()->extend(TestCase::class)
- // ->use(RefreshDatabase::class)
     ->in('Feature');
 
 /*

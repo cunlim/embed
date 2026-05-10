@@ -247,9 +247,28 @@ docker exec cl_embed_laravel php artisan config:show app.name
 
 TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한다.
 
+### 테스트 환경 제약 (SQLite + pgvector)
+
+**CRITICAL** — 이 프로젝트의 `phpunit.xml`은 `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`로 설정되어 있다. SQLite는 PostgreSQL 전용 확장(`CREATE EXTENSION IF NOT EXISTS vector`)을 지원하지 않으므로, 마이그레이션을 실행하는 `RefreshDatabase` trait을 사용할 수 없다.
+
+- **`RefreshDatabase` 사용 금지** — pgvector 마이그레이션이 포함되어 있어 SQLite에서 구문 오류 발생
+- **대체 패턴**: `beforeEach`에서 필요한 테이블만 `Schema::create()`로 생성하고 `afterEach`에서 `Schema::dropIfExists()`로 정리한다
+- **DB 불필요한 테스트** (예: `TextSplitter` 같은 순수 유닛)는 테이블 생성 자체가 불필요하다
+- **더 자세한 내용과 예제 코드**: `docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md` 참조
+
 ### 서비스 클래스 캐싱 패턴
 
 - **그룹 조회 최적화**: 여러 키를 그룹 단위로 조회하는 메서드(`all()` 등)에서는 개별 키마다 `Cache::remember()`를 호출하지 말고, 그룹 전체를 하나의 캐시 키로 묶어 저장한다. DB 쿼리 1회 + 캐시 호출 1회로 유지한다.
   - 잘못된 예: `foreach` 루프 안에서 `Cache::remember("settings:{$group}:{$key}", ...)` 개별 호출 → N+1 캐시 문제
   - 올바른 예: `Cache::remember("settings:{$group}", 3600, fn () => Setting::where('group', $group)->get()->mapWithKeys(...)->all())`
 - **캐시 키 설계**: `get()`은 개별 키 캐시, `all()`은 그룹 캐시로 분리하여 단일 조회 시 불필요한 그룹 전체 로드를 방지한다.
+
+### 서비스 클래스 의존성 주입
+
+- **Eloquent 모델을 쿼리 빌더 용도로 생성자 주입하지 않는다.** `private TranslationCache $cache`처럼 모델 인스턴스를 주입받아 `$this->cache->where(...)`로 사용하는 방식은 정적 분석에서 경고를 발생시키고, 모델이 쿼리 빌더 프록시로 사용되는 의도를 불분명하게 만든다.
+  - 잘못된 예: `public function __construct(private TranslationCache $cache) {}` → `$this->cache->where(...)->first()`
+  - 올바른 예: `public function __construct(private OllamaClient $ollama) {}` → `TranslationCache::query()->where(...)->first()`
+- **Unique 제약조건이 있는 테이블에 `create()` 사용 시 동시 실행을 고려한다.** 동시 요청이 동일 키로 `create()`를 호출하면 `UniqueConstraintViolationException`이 발생할 수 있다. 적절한 처리 방식:
+  - (A) `firstOrCreate()` 사용
+  - (B) `create()`를 try-catch로 감싸고 예외 발생 시 재조회
+  - 판단 기준: `firstOrCreate()`는 추가 DB 쿼리가 발생하지만 코드가 단순하다. try-catch는 오버헤드가 적고 예외 상황에만 발동한다.

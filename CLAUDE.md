@@ -34,7 +34,8 @@ cl_embed/
 │   ├── PRD.md           # 제품 요구사항
 │   ├── ARCHITECTURE.md  # 인프라, DB 스키마, 데이터 흐름
 │   ├── ADR.md           # 아키텍처 결정 기록
-│   └── UI_GUIDE.md      # 프론트엔드 디자인 제약 (필독)
+│   ├── UI_GUIDE.md      # 프론트엔드 디자인 제약 (필독)
+│   └── solutions/       # 과거 문제 해결 문서 (YAML frontmatter로 분류, category/module/tags 검색 가능)
 ├── phases/          # Phase별 작업 산출물
 ├── scripts/         # Claude Code Harness 스크립트
 └── .github/workflows/deploy.yml  # CI/CD
@@ -99,6 +100,7 @@ docker exec cl_embed_nextjs sh -c "cd /app && npm ..."
 - **tinker 쓰기 권한 오류** — `appuser` 홈(`/var/www`)이 root 소유라 `.config/psysh` 생성 불가. Dockerfile에 이미 패치 완료. 임시 해결: `docker exec -u root cl_embed_laravel bash -c "mkdir -p /var/www/.config/psysh && chown -R appuser:appgroup /var/www/.config"`
 - **Next.js HMR 에러 로그** — `embed_nextjs_error.log`의 "Connection refused"는 dev 서버 재시작 시 정상 발생. 무시.
 - **인라인 PHP 경로** — Laravel 작업 디렉터리는 `/var/www/html`. `/var/www/vendor/...`는 존재하지 않음.
+- **`RefreshDatabase` 사용 불가** — 테스트 DB가 SQLite 인메모리인데 pgvector 마이그레이션(`CREATE EXTENSION IF NOT EXISTS vector`)이 SQLite와 호환되지 않음. `tests/Pest.php`에서 주석 처리되어 있으며, 대신 `Schema::create()`로 필요한 테이블만 수동 생성한다. 상세: `docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md`
 
 ## 인프라 환경 (WSL2)
 

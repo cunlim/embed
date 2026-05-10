@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\TranslationCache;
+use Illuminate\Database\UniqueConstraintViolationException;
 use RuntimeException;
 
 class OllamaTranslator
@@ -11,7 +12,6 @@ class OllamaTranslator
 
     public function __construct(
         private OllamaClient $ollama,
-        private TranslationCache $cache
     ) {}
 
     /**
@@ -21,7 +21,7 @@ class OllamaTranslator
      */
     public function translate(string $sourceText, string $targetLang): string
     {
-        $cached = $this->cache
+        $cached = TranslationCache::query()
             ->where('source_text', $sourceText)
             ->where('target_lang', $targetLang)
             ->first();
@@ -44,11 +44,20 @@ class OllamaTranslator
             $result = $this->translateSingle($sourceText, $targetLang);
         }
 
-        $this->cache->create([
-            'source_text' => $sourceText,
-            'target_lang' => $targetLang,
-            'translated_text' => $result,
-        ]);
+        try {
+            TranslationCache::create([
+                'source_text' => $sourceText,
+                'target_lang' => $targetLang,
+                'translated_text' => $result,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            // 동시 실행으로 인한 중복 키 → 이미 저장된 결과 반환
+            return TranslationCache::query()
+                ->where('source_text', $sourceText)
+                ->where('target_lang', $targetLang)
+                ->first()
+                ->translated_text;
+        }
 
         return $result;
     }
