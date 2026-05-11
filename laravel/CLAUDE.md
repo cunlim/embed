@@ -256,6 +256,15 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
 - **DB 불필요한 테스트** (예: `TextSplitter` 같은 순수 유닛)는 테이블 생성 자체가 불필요하다
 - **더 자세한 내용과 예제 코드**: `docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md` 참조
 
+### 서비스 클래스 테스트 최소 요건
+
+**CRITICAL** — 서비스 클래스 생성 시 의존성을 mock 하여 위임 동작을 검증하는 테스트를 반드시 함께 작성한다.
+
+- **의존성 mock**: `$this->mock(Dependency::class)`로 의존성을 대체하고, 올바른 파라미터로 호출되는지 `shouldReceive()->with(...)`로 검증한다.
+- **실제 외부 호출 금지 ≠ 테스트 생략**: "실제 Ollama 호출 테스트를 작성하지 마라" 같은 지시는 HTTP 호출을 하지 말라는 의미이지, mock 기반 단위 테스트조차 생략하라는 의미가 아니다. `Http::fake()`나 `$this->mock()`으로 외부 의존성을 대체하면 실제 호출 없이도 위임 동작을 검증할 수 있다.
+- **얇은 래퍼도 예외 없음**: `EmbeddingGenerator`처럼 한 줄짜리 위임 클래스라도 config 값 읽기 → 의존성 호출까지의 위임이 올바른지 검증한다. 래퍼가 얇을수록 테스트 작성 비용도 낮다.
+- 기존 Feature 테스트(`OllamaTranslatorTest`, `EmbeddingGeneratorTest`)의 mock 패턴을 참고할 것.
+
 ### 서비스 클래스 캐싱 패턴
 
 - **그룹 조회 최적화**: 여러 키를 그룹 단위로 조회하는 메서드(`all()` 등)에서는 개별 키마다 `Cache::remember()`를 호출하지 말고, 그룹 전체를 하나의 캐시 키로 묶어 저장한다. DB 쿼리 1회 + 캐시 호출 1회로 유지한다.
