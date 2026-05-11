@@ -4,11 +4,13 @@ FROM node:24.15.0-trixie-slim
 # - openssl, libssl-dev: 추후 Prisma 같은 ORM으로 PostgreSQL 연결 시 필수
 # - postgresql-client: 컨테이너 내부에서 DB 핑(ping) 테스트 등 디버깅 목적
 # - curl: 내부 헬스체크 및 Laravel API 통신 테스트 용도
+# - procps: ps/pgrep/pkill 등 프로세스 관리 유틸리티
 RUN apt-get update && apt-get install -y \
     curl \
     openssl \
     libssl-dev \
     postgresql-client \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # root 권한이 더 이상 필요하지 않으므로 node 사용자로 전환

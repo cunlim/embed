@@ -19,11 +19,12 @@ jobs:
           fetch-depth: 0
 
       # 0. .env 파일 복원 — CI 체크아웃은 gitignore로 인해 .env 누락
-      - name: Restore Environment File
+      - name: Restore Environment Files
         run: |
           if [ -f /var/app/actions-runner/config/cl_embed/.env ]; then
             cp /var/app/actions-runner/config/cl_embed/.env ./laravel/.env
           fi
+          echo "TZ=Asia/Seoul" > ./docker/.env
 
       # 1. 컨테이너 기동 (미실행 상태인 경우)
       - name: Start Containers
