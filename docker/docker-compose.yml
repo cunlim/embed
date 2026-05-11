@@ -38,7 +38,7 @@ services:
     restart: unless-stopped
     volumes:
       - ../laravel:/var/www/html
-      - ./laravel/volume/log:/home/appuser/log/php
+      - ./laravel/volume/log:/var/log/php
     environment:
       TZ: ${TZ}
     expose:

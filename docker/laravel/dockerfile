@@ -16,19 +16,13 @@ procps curl tree nano vim cron wget acl supervisor \
 RUN install-php-extensions intl mbstring zip bcmath gd imagick xdebug pdo_mysql pdo_pgsql redis pcntl
 
 # 전용 사용자 생성 (uid/gid 1000 — 호스트 cunlim 사용자와 일치)
-# -m: 홈 디렉토리 /home/appuser 자동 생성 + 소유권 설정 → chown 불필요
-# supervisord와 모든 데몬이 이 사용자로 실행됨
-RUN groupadd -g 1000 appgroup && useradd -u 1000 -g appgroup -m -d /home/appuser -s /bin/bash appuser
-
-USER appuser
-
-# 홈 디렉토리 내에 필요한 디렉토리 생성 (모두 appuser 소유)
-RUN mkdir -p /home/appuser/.config/psysh \
-    && mkdir -p /home/appuser/log/supervisor \
-    && mkdir -p /home/appuser/log/php
+# -m: /home/appuser 자동 생성 + 소유권 설정 → chown 불필요
+# supervisord는 root, 데몬 프로세스는 appuser로 실행
+RUN groupadd -g 1000 appgroup && useradd -u 1000 -g appgroup -m -d /home/appuser -s /bin/bash appuser \
+    && mkdir -p /home/appuser/.config/psysh && chown -R appuser:appgroup /home/appuser/.config \
+    && mkdir -p /var/log/supervisor
 
 # 프로세스 관리자 supervisord 설정
-COPY --chown=appuser:appgroup supervisord.conf /etc/supervisor/supervisord.conf
+COPY supervisord.conf /etc/supervisor/supervisord.conf
 
 CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
-

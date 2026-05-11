@@ -24,10 +24,11 @@ jobs:
           cd ./docker
           docker compose build --no-cache cl_embed_laravel cl_embed_nextjs
 
-      # 2. 새 이미지로 컨테이너 재생성
+      # 2. 새 이미지로 컨테이너 재생성 (로그 파일 정리 후)
       - name: Recreate Containers
         run: |
           cd ./docker
+          rm -f ./laravel/volume/log/*.log
           docker compose up -d --force-recreate
           sleep 5
 
