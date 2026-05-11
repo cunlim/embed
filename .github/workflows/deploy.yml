@@ -113,17 +113,17 @@ jobs:
           curl -f -m 10 http://localhost/ && echo "OK" || echo "WARN: Nginx health check failed"
 
       # 12. 워크스페이스 정리 — Docker가 root 소유로 생성한 파일 권한 복원
-      #     alpine 컨테이너로 정리 (Docker 데몬이 root 권한 보유)
-      #     vendor/, volume/log/, .env 등이 root 소유가 되어 Runner 정리 실패 방지
+      #     set +e로 개별 실패가 전체를 중단시키지 않도록 방어
       - name: Cleanup Workspace
         if: always()
         run: |
           docker run --rm \
-            -v ./laravel:/laravel \
-            -v ./docker/laravel/volume:/volume \
+            -v "$(pwd)":/ws \
             alpine sh -c "
-              rm -rf /volume/log/*
-              chown -R 1000:1000 /volume
-              chown -R 1000:1000 /laravel/vendor
-              chown 1000:1000 /laravel/.env 2>/dev/null
+              set +e
+              rm -rf /ws/docker/laravel/volume/log/*
+              chown -R 1000:1000 /ws/docker/laravel/volume 2>/dev/null
+              [ -d /ws/laravel/vendor ] && chown -R 1000:1000 /ws/laravel/vendor 2>/dev/null
+              [ -f /ws/laravel/.env ] && chown 1000:1000 /ws/laravel/.env 2>/dev/null
+              exit 0
             "
