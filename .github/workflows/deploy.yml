@@ -18,18 +18,31 @@ jobs:
           docker compose up -d
           sleep 3
 
+      # 0.5 .env 파일 복원 — CI 체크아웃은 gitignore로 인해 .env 누락
+      #      Runner 호스트의 영구 저장소에서 복사, 없으면 .env.example로 폴백
+      - name: Restore Environment File
+        run: |
+          if [ -f /var/app/actions-runner/config/cl_embed/.env ]; then
+            cp /var/app/actions-runner/config/cl_embed/.env ./laravel/.env
+          else
+            cp ./laravel/.env.example ./laravel/.env
+            cd ./docker
+            docker exec cl_embed_laravel php artisan key:generate --force
+          fi
+
       # 1. Laravel 이미지 재빌드 (Dockerfile 변경 시에만 새 레이어 빌드, 캐시 활용)
       - name: Rebuild Laravel Image
         run: |
           cd ./docker
           docker compose build cl_embed_laravel
 
-      # 2. Laravel 컨테이너 재생성 (볼륨 마운트 로그 정리 후)
+      # 2. Laravel 컨테이너 재생성 (이미지 변경 시에만)
+      #    --force-recreate 제거 — Docker Desktop WSL2 바인드 마운트 오류 방지
       - name: Recreate Laravel Container
         run: |
           cd ./docker
           rm -f ./laravel/volume/log/*.log
-          docker compose up -d --force-recreate cl_embed_laravel
+          docker compose up -d cl_embed_laravel
           sleep 5
 
       # 3. PHP 의존성 설치 (dev 의존성 포함 — Pest 테스트 실행에 필요)
@@ -49,13 +62,13 @@ jobs:
       - name: Build Next.js
         run: docker exec cl_embed_nextjs npm run build
 
-      # 7. Next.js 이미지 재빌드 (Dockerfile 변경 시에만) 및 컨테이너 재생성
+      # 7. Next.js 이미지 재빌드 및 컨테이너 재생성
       #    BUILD_ID 존재 → 자동으로 npm start (운영 모드) 실행
       - name: Rebuild and Recreate Next.js Container
         run: |
           cd ./docker
           docker compose build cl_embed_nextjs
-          docker compose up -d --force-recreate cl_embed_nextjs
+          docker compose up -d cl_embed_nextjs
           sleep 5
 
       # 8. Laravel 테스트 실행 — 실패 시 이후 단계 진행 안 함 (fail-fast)
