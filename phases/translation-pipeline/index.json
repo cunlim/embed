@@ -7,13 +7,16 @@
       "name": "translate-embed-job",
       "status": "completed",
       "started_at": "2026-05-12T00:54:58+0900",
-      "completed_at": "2026-05-12T01:10:00+0900",
+      "completed_at": "2026-05-12T01:06:18+0900",
       "summary": "TranslateAndEmbedJob 생성: 단일 카테고리 단일 언어 번역·임베딩 Queue Job (timeout=300, tries=5), ko는 원문 임베딩, zh/en은 번역 후 임베딩, Rate Limit 감지 시 release(60) 재시도"
     },
     {
       "step": 1,
       "name": "batch-pipeline",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-12T01:17:54+0900",
+      "completed_at": "2026-05-12T01:22:00+0900",
+      "summary": "BatchTranslatePipeline 생성: Bus::batch()로 단일 언어 카테고리 일괄 번역·임베딩 dispatch, 100건 초과 시 chunk 분할, allowFailures() 설정, batch name translate-embed-{언어}"
     },
     {
       "step": 2,
