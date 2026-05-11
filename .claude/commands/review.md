@@ -4,7 +4,9 @@
 - `/CLAUDE.md`
 - `/docs/ARCHITECTURE.md`
 - `/docs/ADR.md`
-- 필요시 `/docs/PRD.md`, `/docs/UI_GUIDE.md`
+- `/docs/PRD.md`
+- `/docs/UI_GUIDE.md`
+- `@.claude/commands/harness.md`
 
 그런 다음 변경된 파일들을 확인하고, 아래 체크리스트로 검증하라:
 
