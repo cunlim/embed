@@ -18,37 +18,51 @@ jobs:
           docker compose up -d
           sleep 3
 
-      # 1. 컨테이너 이미지 재빌드 (Dockerfile 변경 반영)
-      - name: Rebuild Container Images
+      # 1. Laravel 이미지 재빌드 (Dockerfile 변경 시에만 새 레이어 빌드, 캐시 활용)
+      - name: Rebuild Laravel Image
         run: |
           cd ./docker
-          docker compose build --no-cache cl_embed_laravel cl_embed_nextjs
+          docker compose build cl_embed_laravel
 
-      # 2. 새 이미지로 컨테이너 재생성 (로그 파일 정리 후)
-      - name: Recreate Containers
+      # 2. Laravel 컨테이너 재생성 (볼륨 마운트 로그 정리 후)
+      - name: Recreate Laravel Container
         run: |
           cd ./docker
           rm -f ./laravel/volume/log/*.log
-          docker compose up -d --force-recreate
+          docker compose up -d --force-recreate cl_embed_laravel
           sleep 5
 
       # 3. PHP 의존성 설치 (dev 의존성 포함 — Pest 테스트 실행에 필요)
       - name: Install PHP Dependencies
         run: docker exec cl_embed_laravel composer install --no-interaction
 
-      # 4. Node 의존성 설치
+      # 4. Next.js dev server 중지 (npm ci 실행 중 모듈 충돌 방지)
+      - name: Stop Next.js Dev Server
+        run: docker exec cl_embed_nextjs sh -c "kill \$(pgrep -f 'next dev')" || true
+        continue-on-error: true
+
+      # 5. Node 의존성 설치
       - name: Install Node Dependencies
         run: docker exec cl_embed_nextjs npm ci
-
-      # 5. Laravel 테스트 실행 — 실패 시 이후 단계 진행 안 함 (fail-fast)
-      - name: Run Laravel Tests
-        run: docker exec cl_embed_laravel php artisan test --compact
 
       # 6. Next.js 프로덕션 빌드
       - name: Build Next.js
         run: docker exec cl_embed_nextjs npm run build
 
-      # 7. DB 마이그레이션 — 실패 시 마지막 배치 롤백 후 중단
+      # 7. Next.js 이미지 재빌드 (Dockerfile 변경 시에만) 및 컨테이너 재생성
+      #    BUILD_ID 존재 → 자동으로 npm start (운영 모드) 실행
+      - name: Rebuild and Recreate Next.js Container
+        run: |
+          cd ./docker
+          docker compose build cl_embed_nextjs
+          docker compose up -d --force-recreate cl_embed_nextjs
+          sleep 5
+
+      # 8. Laravel 테스트 실행 — 실패 시 이후 단계 진행 안 함 (fail-fast)
+      - name: Run Laravel Tests
+        run: docker exec cl_embed_laravel php artisan test --compact
+
+      # 9. DB 마이그레이션 — 실패 시 마지막 배치 롤백 후 중단
       - name: Run Database Migrations
         run: |
           docker exec cl_embed_laravel php artisan migrate --force || {
@@ -58,17 +72,15 @@ jobs:
             exit 1
           }
 
-      # 8. 컨테이너 재시작 — supervisord가 최신 코드와 빌드 결과로 프로세스 재기동
+      # 10. 컨테이너 재시작 — supervisord/Nginx가 최신 코드 반영
       - name: Restart Containers
         run: |
           cd ./docker
-          docker compose restart cl_embed_laravel cl_embed_nextjs
-          sleep 3
-          # 컨테이너 IP 변경으로 인한 502 방지 — Nginx DNS 캐시 갱신
+          docker compose restart cl_embed_laravel
           docker exec docker-nginx-1 nginx -s reload
-          sleep 2
+          sleep 3
 
-      # 9. 헬스체크 — 모든 서비스 정상 응답 확인
+      # 11. 헬스체크 — 모든 서비스 정상 응답 확인
       - name: Health Check
         run: |
           echo "--- Laravel API (port 8000) ---"
