@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Events\AlreadyRunning;
 use App\Events\BatchCompleted;
 use App\Events\BatchFailed;
 use App\Events\TranslationProgress;
@@ -13,6 +14,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 class BatchTranslatePipeline implements ShouldQueue
@@ -26,6 +28,17 @@ class BatchTranslatePipeline implements ShouldQueue
 
     public function handle(): void
     {
+        $embedModelName = config('services.ollama.embedding_model');
+        $lockKey = "translate-batch:{$this->targetLanguage}:{$embedModelName}";
+
+        $lock = Cache::lock($lockKey, 600);
+
+        if (! $lock->get()) {
+            AlreadyRunning::dispatch($this->targetLanguage);
+
+            return;
+        }
+
         $categories = $this->categoryIds !== null
             ? Category::query()->whereIn('id', $this->categoryIds)->get()
             : Category::query()->get();
