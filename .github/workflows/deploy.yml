@@ -53,13 +53,13 @@ jobs:
         run: docker exec cl_embed_nextjs sh -c "kill \$(pgrep -f 'next dev')" || true
         continue-on-error: true
 
-      # 5. Node 의존성 설치
+      # 5. Node 의존성 설치 (메모리 제한 — WSL2 OOM 방지)
       - name: Install Node Dependencies
-        run: docker exec cl_embed_nextjs npm ci
+        run: docker exec -e NODE_OPTIONS="--max-old-space-size=512" cl_embed_nextjs npm ci
 
-      # 6. Next.js 프로덕션 빌드
+      # 6. Next.js 프로덕션 빌드 (메모리 제한 — WSL2 OOM 방지)
       - name: Build Next.js
-        run: docker exec cl_embed_nextjs npm run build
+        run: docker exec -e NODE_OPTIONS="--max-old-space-size=512" cl_embed_nextjs npm run build
 
       # 7. Next.js 이미지 재빌드 및 컨테이너 재생성
       #    BUILD_ID 존재 → 자동으로 npm start (운영 모드) 실행
