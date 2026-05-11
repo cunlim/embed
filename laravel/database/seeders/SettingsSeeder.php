@@ -35,5 +35,23 @@ class SettingsSeeder extends Seeder
                 'description' => '임베딩에 사용할 Ollama 모델명',
             ]
         );
+
+        Setting::firstOrCreate(
+            ['group' => 'ollama', 'key' => 'rate_limit_max_attempts'],
+            [
+                'value' => '60',
+                'type' => 'integer',
+                'description' => 'Rate Limit: 시간 창 내 최대 Ollama API 호출 횟수',
+            ]
+        );
+
+        Setting::firstOrCreate(
+            ['group' => 'ollama', 'key' => 'rate_limit_decay_seconds'],
+            [
+                'value' => '60',
+                'type' => 'integer',
+                'description' => 'Rate Limit: 시간 창(초). 이 시간 동안 max_attempts만큼 허용',
+            ]
+        );
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Services\OllamaClient;
 use App\Services\OllamaRateLimiter;
+use Illuminate\Cache\RateLimiter as CacheRateLimiter;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
@@ -99,3 +100,37 @@ test('chat은 잘못된 응답 형식 시 RuntimeException을 던진다', functi
 
     makeClient()->chat('test', 'prompt');
 })->throws(RuntimeException::class);
+
+test('rate limit 초과 시 RuntimeException을 던진다', function () {
+    Http::fake([
+        'http://ollama:11434/api/chat' => Http::response([
+            'message' => ['content' => 'ok'],
+        ], 200),
+    ]);
+
+    $mock = $this->mock(CacheRateLimiter::class);
+    $mock->shouldReceive('tooManyAttempts')
+        ->once()
+        ->with('ollama', 1000)
+        ->andReturn(true);
+    $mock->shouldReceive('availableIn')
+        ->once()
+        ->with('ollama')
+        ->andReturn(42);
+
+    makeClient()->chat('test', 'prompt');
+})->throws(RuntimeException::class, 'Ollama rate limit exceeded. Available in 42s');
+
+test('embed도 rate limit 초과 시 RuntimeException을 던진다', function () {
+    $mock = $this->mock(CacheRateLimiter::class);
+    $mock->shouldReceive('tooManyAttempts')
+        ->once()
+        ->with('ollama', 1000)
+        ->andReturn(true);
+    $mock->shouldReceive('availableIn')
+        ->once()
+        ->with('ollama')
+        ->andReturn(15);
+
+    makeClient()->embed('test', 'text');
+})->throws(RuntimeException::class, 'Ollama rate limit exceeded. Available in 15s');

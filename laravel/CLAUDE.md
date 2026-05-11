@@ -263,6 +263,9 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
 - **의존성 mock**: `$this->mock(Dependency::class)`로 의존성을 대체하고, 올바른 파라미터로 호출되는지 `shouldReceive()->with(...)`로 검증한다.
 - **실제 외부 호출 금지 ≠ 테스트 생략**: "실제 Ollama 호출 테스트를 작성하지 마라" 같은 지시는 HTTP 호출을 하지 말라는 의미이지, mock 기반 단위 테스트조차 생략하라는 의미가 아니다. `Http::fake()`나 `$this->mock()`으로 외부 의존성을 대체하면 실제 호출 없이도 위임 동작을 검증할 수 있다.
 - **얇은 래퍼도 예외 없음**: `EmbeddingGenerator`처럼 한 줄짜리 위임 클래스라도 config 값 읽기 → 의존성 호출까지의 위임이 올바른지 검증한다. 래퍼가 얇을수록 테스트 작성 비용도 낮다.
+- **실패 경로(failure path)도 필수 검증**: 행복 경로(happy path)뿐 아니라, 의존성이 실패/거부/초과 상황을 반환할 때 서비스가 적절한 예외를 발생시키는지도 테스트해야 한다. 예: rate limit 초과 시 `RuntimeException` 발생, HTTP 오류 시 예외 전파.
+- **테스트 헬퍼가 한계를 우회하면 별도 검증**: `makeClient()` 같은 테스트 헬퍼로 제한을 느슨하게 설정해 일반 테스트를 통과시키는 경우, 별도 테스트에서 실제 제한이 동작하는지 검증해야 한다. 예: `OllamaRateLimiter(1000, 1)`로 대부분 테스트를 통과시키면서, `OllamaRateLimiter(1, 60)`으로 rate limit 초과 시나리오를 별도 검증.
+- **Unit 테스트에서 `$this->mock()` 필요 시 `uses(TestCase::class)` 선언**: `tests/Unit/` 디렉토리의 테스트는 기본적으로 Laravel `TestCase`를 상속하지 않으므로 `$this->mock()`이나 `$this->app`에 접근할 수 없다. 컨테이너 접근이 필요하면 파일 상단에 `use Tests\TestCase;` + `uses(TestCase::class);`를 추가할 것. (`tests/Unit/CategoryEmbeddingTest.php`의 패턴 참고)
 - 기존 Feature 테스트(`OllamaTranslatorTest`, `EmbeddingGeneratorTest`)의 mock 패턴을 참고할 것.
 
 ### 서비스 클래스 캐싱 패턴
@@ -281,3 +284,37 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
   - (A) `firstOrCreate()` 사용
   - (B) `create()`를 try-catch로 감싸고 예외 발생 시 재조회
   - 판단 기준: `firstOrCreate()`는 추가 DB 쿼리가 발생하지만 코드가 단순하다. try-catch는 오버헤드가 적고 예외 상황에만 발동한다.
+
+### 운영 설정 패턴 (Config + Settings Table)
+
+**CRITICAL** — 운영 중 변경 가능성이 있는 설정값은 하드코딩하지 말고 아래 패턴을 따른다.
+
+설정값(API 엔드포인트, 모델명, rate limit 임계값, timeout 등)은 3계층으로 관리한다:
+
+1. **`config/services.php`** — 기본값 정의 (코드에 내장된 폴백)
+2. **`settings` DB 테이블** — 런타임 오버라이드 (`SettingsSeeder`로 초기값 시딩)
+3. **`AppServiceProvider::boot()`** — DB 값을 config에 동기화
+
+```php
+// config/services.php — 기본값
+'ollama' => [
+    'host' => 'http://host.docker.internal:11434',
+    'rate_limit_max_attempts' => 60,
+],
+
+// SettingsSeeder — DB 초기값
+Setting::firstOrCreate(
+    ['group' => 'ollama', 'key' => 'rate_limit_max_attempts'],
+    ['value' => '60', 'type' => 'integer', 'description' => '...'],
+);
+
+// AppServiceProvider::boot() — DB → config 동기화
+config([
+    'services.ollama.rate_limit_max_attempts' =>
+        $settings->get('ollama', 'rate_limit_max_attempts', config('services.ollama.rate_limit_max_attempts', 60)),
+]);
+```
+
+- **새 설정 추가 시 3곳 모두 업데이트**: `config/services.php`, `SettingsSeeder`, `AppServiceProvider::boot()`
+- **생성자에서 config로 주입**: 서비스 클래스는 config 값을 생성자 파라미터로 받고, `AppServiceProvider::register()`에서 주입한다.
+- **이유**: 설정 테이블을 통해 런타임에 값을 변경할 수 있고, DB에 값이 없어도 config 기본값으로 정상 동작한다. 기존 `ollama.host`, `ollama.translation_model`, `ollama.embedding_model`이 이 패턴을 따른다.
