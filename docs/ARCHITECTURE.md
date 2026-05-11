@@ -2,9 +2,10 @@
 
 ## 디렉토리 구조 및 인프라 (멀티 컨테이너)
 ```
-./docker/docker-compose.yml (WSL Ubuntu 기반)
+./docker/docker-compose.yml (WSL Ubuntu 기반) — 5개 컨테이너
 ├── cl_embed_nextjs/    # Next.js (상세 버전/포트/명령어: [`nextjs/CLAUDE.md`](../nextjs/CLAUDE.md))
 ├── cl_embed_laravel/   # Laravel API & Queue 데몬 (상세 버전/명령어: [`laravel/CLAUDE.md`](../laravel/CLAUDE.md))
+├── cl_embed_swagger/   # Swagger UI (swaggerapi/swagger-ui 이미지, `/swagger/` 라우팅)
 ├── pgvector_03/        # PostgreSQL 15+ (pgvector extension)
 └── redis_04/           # Redis (Session, Cache, Queue, Broadcasting)
 ```
@@ -32,6 +33,38 @@
 | `/embed` | Embed 기술 시연 페이지 | 검색어 입력, 타겟 언어 선택, 추천 결과 출력, 코사인 유사도 상세, 계층형 Select Box (네이버 카테고리 "대>중>소" 계층을 순서대로 선택), 벡터 과정 모달 등 모든 기능을 하나의 위젯 형태로 기술 시연 | 불필요 |
 | `/docs` | 프로젝트 문서 페이지 | `docs/` 디렉토리의 마크다운 문서를 웹으로 렌더링. MVP에서는 간단한 임시 구현 | 불필요 |
 | `/admin` | 관리자 전용 페이지 | 카테고리 CRUD, 일괄 번역 트리거, 시스템 관리 | **필수** (로그인 필수, 비로그인 시 `/login` 리다이렉트. "관리자"란 `/admin` 접근 권한이 있는 로그인 사용자를 의미하며 별도 역할(Role) 구분은 없음) |
+
+## Next.js 프론트엔드 구조
+
+```
+nextjs/
+├── app/                    # App Router 페이지
+│   ├── layout.tsx          # 루트 레이아웃 (폰트, next-themes Provider)
+│   ├── page.tsx            # / 랜딩 페이지
+│   └── globals.css         # Tailwind v4 + base-nova CSS 변수
+├── components/
+│   ├── ui/                 # shadcn/ui 컴포넌트 (자동 생성)
+│   ├── theme-provider.tsx  # next-themes Provider
+│   └── theme-toggle.tsx    # 화이트/다크 모드 토글
+├── hooks/                  # 커스텀 훅
+├── lib/
+│   └── utils.ts            # cn() 헬퍼 (clsx + tailwind-merge)
+├── components.json         # shadcn/ui 설정 (base-nova, rsc, tsx)
+├── next.config.ts          # Next.js 16 설정
+└── tsconfig.json           # TypeScript strict, bundler resolution, @/* alias
+```
+
+### 주요 프론트엔드 패키지
+
+| 패키지 | 용도 |
+|--------|------|
+| next 16.2.4 | App Router |
+| react 19.2.4 | RSC + Client Components |
+| tailwindcss v4 | CSS 프레임워크 |
+| shadcn v4.7 | UI 컴포넌트 (base-nova 스타일) |
+| next-themes | 화이트/다크 모드 |
+| lucide-react | 아이콘 |
+| tailwind-merge | 클래스 충돌 방지 |
 
 ## 데이터베이스 주요 테이블
 

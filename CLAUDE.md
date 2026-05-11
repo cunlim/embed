@@ -10,9 +10,9 @@
 - 코드 내 주석은 한국어로 작성합니다.
 
 ## plugin, skills, mcp 사용
-* 모든 프론트엔드 UI 작업은 `ui-ux-pro-max:ui-ux-pro-max` plugin 을 활성화하여 수행한다.
-* 모든 작업량이 큰 작업은 `superpowers` plugin 을 활성화하여 수행한다.
-* 에러, 이슈가 발생하면  `compound-engineering` plugin 으로 잘못을 재발하지 않도록 개선한다.
+* 모든 프론트엔드 UI 작업은 `ui-ux-pro-max:ui-ux-pro-max` plugin을 활성화하여 수행한다.
+* 구현 계획 수립, 코드 리뷰, TDD 등 구조적 접근이 필요한 작업은 `superpowers` plugin을 활성화하여 수행한다.
+* 버그 수정 후 동일 유형의 실수를 방지하려면 `compound-engineering` plugin으로 학습 문서를 갱신한다.
 
 ## 프로젝트 개요
 
@@ -112,6 +112,9 @@ docker exec cl_embed_nextjs sh -c "cd /app && npm ..."
 ```bash
 # 모든 서비스 시작
 cd docker && docker compose up -d
+
+# 모든 서비스 중지
+cd docker && docker compose down
 
 # 단일 서비스 재시작
 docker compose restart cl_embed_laravel

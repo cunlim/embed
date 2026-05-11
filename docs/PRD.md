@@ -22,9 +22,18 @@
   * 로컬 AI 모델(Ollama) 번역 실패 및 타임아웃 발생 시 재시도 성공률 99% 이상 및 `failed_jobs`를 통한 예외 데이터 누수 0%.
   * 대량 데이터(1만 건 이상) 일괄 처리 시 백엔드 병목 현상(OOM 등) 없이 안정적 Queue 처리.
 
-## 2. 현재 진행 상황 (인프라 구축 완료)
-가장 난이도가 높은 멀티 컨테이너 네트워크 세팅이 완료되었습니다.
-* `embed.cunlim.dev` 도메인 연결 및 Next.js, Laravel FPM, Laravel Reverb 데몬 정상 구동 완료. (라우팅 상세는 `ARCHITECTURE.md` 참조)
+## 2. 현재 진행 상황
+
+### 완료
+* 멀티 컨테이너 네트워크 세팅 (Docker 5개 컨테이너)
+* `embed.cunlim.dev` 도메인 연결 (cloudflared tunnel)
+* Nginx 리버스 프록시 라우팅 (`/` → Next.js, `/api/` → Laravel, `/app/` → Reverb WebSocket, `/swagger/` → Swagger UI)
+* `/` 랜딩 페이지 구현 (shadcn/ui, 화이트/다크 모드, 반응형)
+* Swagger UI (`/swagger/`) 초기화 완료
+* CI/CD (셀프호스티드 WSL GitHub Actions 러너)
+
+### 진행 중
+* **Phase 1: backend-models** — Eloquent 모델, DB 마이그레이션, Ollama 통합
 
 ## 3. 핵심 기능 요구사항
 
@@ -72,7 +81,7 @@ REST API 라우트(`routes/api.php`) 및 `CategoryController`, `RecommendControl
 Sanctum API Token 인증 + Socialite OAuth (Google, GitHub, Naver). `auth:sanctum` 미들웨어로 쓰기 작업 보호.
 
 ### Phase 6: frontend-embed
-Next.js Reverb WebSocket 구독 (`laravel-echo` + `pusher-js`), `/embed` 기술 시연 페이지, `/login` 로그인/회원가입 페이지, `/docs` 프로젝트 문서 페이지, `/admin` 관리자 전용 페이지 (로그인 필수, "관리자"란 `/admin` 접근 권한이 있는 로그인 사용자를 의미). 비로그인 게스트는 `/embed`, `/docs`, `/` 접근 가능.
+Next.js Reverb WebSocket 구독 (`laravel-echo` + `pusher-js`), `/embed` 기술 시연 페이지, `/login` 로그인/회원가입 페이지, `/docs` 프로젝트 문서 페이지 (`docs/` 디렉토리의 마크다운 문서를 웹 렌더링. MVP에서는 간단한 임시 구현), `/admin` 관리자 전용 페이지 (로그인 필수, "관리자"란 `/admin` 접근 권한이 있는 로그인 사용자를 의미). 비로그인 게스트는 `/embed`, `/docs`, `/` 접근 가능.
 
 ### Phase 7: search-integration
 pgvector `scopeSimilarTo` 최적화, 검색어 캐싱(`EmbeddingCacheService`), 검색어 정규화(`SearchNormalizer`), E2E 통합 테스트 및 아키텍처 검증, 전체 API Swagger 문서 완성.
