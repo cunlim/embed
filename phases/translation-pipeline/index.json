@@ -23,7 +23,7 @@
       "name": "websocket-events",
       "status": "completed",
       "started_at": "2026-05-12T01:25:28+0900",
-      "completed_at": "2026-05-12T02:10:00+0900",
+      "completed_at": "2026-05-12T01:37:19+0900",
       "summary": "TranslationProgress, BatchCompleted, BatchFailed 3개 ShouldBroadcast 이벤트 생성 및 BatchTranslatePipeline에 progress/then/catch 콜백 등록 — Reverb WebSocket으로 번역 진행률 실시간 브로드캐스트"
     },
     {
