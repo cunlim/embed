@@ -38,4 +38,6 @@ RUN mkdir -p .next
 
 # 개발용 CMD. 운영 시에는 docker-compose 또는 CI/CD에서
 # npm run build 후 CMD를 npm start로 변경
-CMD ["npm", "run", "dev"]
+# .next/BUILD_ID 존재 여부로 개발/운영 모드 자동 감지
+# npm run build 실행 후 컨테이너 재시작 시 자동으로 npm start로 전환
+CMD ["sh", "-c", "if [ -f .next/BUILD_ID ]; then exec npm start; else exec npm run dev; fi"]

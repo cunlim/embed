@@ -11,32 +11,77 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. SonarQube 정적 분석 — 코드 품질 게이트
-      # - name: SonarQube Analysis (10분)
-      #   run: |
-      #     docker run --rm \
-      #       -e SONAR_HOST_URL="${{ secrets.SONAR_HOST_URL }}" \
-      #       -e SONAR_TOKEN="${{ secrets.SONAR_TOKEN }}" \
-      #       -v "$(pwd):/usr/src" \
-      #       sonarsource/sonar-scanner-cli
+      # 0. 모든 컨테이너가 실행 중인지 확인 (선행 조건)
+      - name: Ensure Containers Are Running
+        run: |
+          cd ./docker
+          docker compose up -d
+          sleep 3
 
-      # 2. Laravel 테스트 실행 — 회귀 방지
+      # 1. 컨테이너 이미지 재빌드 (Dockerfile 변경 반영)
+      - name: Rebuild Container Images
+        run: |
+          cd ./docker
+          docker compose build --no-cache cl_embed_laravel cl_embed_nextjs
+
+      # 2. 새 이미지로 컨테이너 재생성
+      - name: Recreate Containers
+        run: |
+          cd ./docker
+          docker compose up -d --force-recreate
+          sleep 5
+
+      # 3. PHP 의존성 설치 (dev 의존성 포함 — Pest 테스트 실행에 필요)
+      - name: Install PHP Dependencies
+        run: docker exec cl_embed_laravel composer install --no-interaction
+
+      # 4. Node 의존성 설치
+      - name: Install Node Dependencies
+        run: docker exec cl_embed_nextjs npm ci
+
+      # 5. Laravel 테스트 실행 — 실패 시 이후 단계 진행 안 함 (fail-fast)
       - name: Run Laravel Tests
         run: docker exec cl_embed_laravel php artisan test --compact
 
-      # 3. DB 마이그레이션 실행 — 스키마 변경 반영
-      - name: Run Database Migrations
-        run: docker exec cl_embed_laravel php artisan migrate --force
+      # 6. Next.js 프로덕션 빌드
+      - name: Build Next.js
+        run: docker exec cl_embed_nextjs npm run build
 
-      # 4. 컨테이너 재시작 및 데몬 재실행
-      - name: Restart Containers and Run Daemons
+      # 7. DB 마이그레이션 — 실패 시 마지막 배치 롤백 후 중단
+      - name: Run Database Migrations
+        run: |
+          docker exec cl_embed_laravel php artisan migrate --force || {
+            echo "Migration failed. Rolling back last batch..."
+            docker exec cl_embed_laravel php artisan migrate:rollback --step=1 --force
+            echo "Rollback completed. Deployment aborted."
+            exit 1
+          }
+
+      # 8. 컨테이너 재시작 — supervisord가 최신 코드와 빌드 결과로 프로세스 재기동
+      - name: Restart Containers
         run: |
           cd ./docker
-          docker compose restart cl_embed_nextjs
-          docker compose restart cl_embed_laravel
+          docker compose restart cl_embed_laravel cl_embed_nextjs
           sleep 3
-          docker exec -d cl_embed_laravel bash -c "
-            nohup php artisan serve --host=0.0.0.0 --port=8000 > logs/serve.log 2>&1 &
-            nohup php artisan reverb:start --host=0.0.0.0 --port=8080 > logs/reverb.log 2>&1 &
-            nohup php artisan queue:work > logs/queue.log 2>&1 &
-          "
+          # 컨테이너 IP 변경으로 인한 502 방지 — Nginx DNS 캐시 갱신
+          docker exec docker-nginx-1 nginx -s reload
+          sleep 2
+
+      # 9. 헬스체크 — 모든 서비스 정상 응답 확인
+      - name: Health Check
+        run: |
+          echo "--- Laravel API (port 8000) ---"
+          docker exec cl_embed_laravel php -r "
+            \$ctx = stream_context_create(['http' => ['timeout' => 5]]);
+            echo file_get_contents('http://localhost:8000/', false, \$ctx) ? 'OK' : 'FAIL';
+          " || echo "WARN: Laravel health check failed"
+          echo ""
+
+          echo "--- Laravel Reverb (port 8080) ---"
+          docker exec cl_embed_laravel bash -c 'echo > /dev/tcp/localhost/8080 && echo "OK"' || echo "WARN: Reverb health check failed"
+
+          echo "--- Next.js (port 3000) ---"
+          docker exec cl_embed_nextjs curl -f -m 10 http://localhost:3000/ && echo "OK" || echo "WARN: Next.js health check failed"
+
+          echo "--- Nginx (port 80) ---"
+          curl -f -m 10 http://localhost/ && echo "OK" || echo "WARN: Nginx health check failed"
