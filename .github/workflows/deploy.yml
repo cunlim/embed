@@ -11,70 +11,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 0. 모든 컨테이너가 실행 중인지 확인 (선행 조건)
-      - name: Ensure Containers Are Running
+      # 0. .env 파일 복원 — CI 체크아웃은 gitignore로 인해 .env 누락
+      - name: Restore Environment File
+        run: |
+          if [ -f /var/app/actions-runner/config/cl_embed/.env ]; then
+            cp /var/app/actions-runner/config/cl_embed/.env ./laravel/.env
+          fi
+
+      # 1. 컨테이너 재빌드 및 재시작
+      - name: Rebuild and Restart Containers
         run: |
           cd ./docker
           docker compose up -d
           sleep 3
 
-      # 0.5 .env 파일 복원 — CI 체크아웃은 gitignore로 인해 .env 누락
-      #      Runner 호스트의 영구 저장소에서 복사, 없으면 .env.example로 폴백
-      - name: Restore Environment File
-        run: |
-          if [ -f /var/app/actions-runner/config/cl_embed/.env ]; then
-            cp /var/app/actions-runner/config/cl_embed/.env ./laravel/.env
-          else
-            cp ./laravel/.env.example ./laravel/.env
-            cd ./docker
-            docker exec cl_embed_laravel php artisan key:generate --force
-          fi
-
-      # 1. Laravel 이미지 재빌드 (Dockerfile 변경 시에만 새 레이어 빌드, 캐시 활용)
-      - name: Rebuild Laravel Image
-        run: |
-          cd ./docker
-          docker compose build cl_embed_laravel
-
-      # 2. Laravel 컨테이너 재생성 (이미지 변경 시에만)
-      #    --force-recreate 제거 — Docker Desktop WSL2 바인드 마운트 오류 방지
-      - name: Recreate Laravel Container
-        run: |
-          cd ./docker
-          docker compose up -d cl_embed_laravel
-          sleep 5
-
-      # 3. PHP 의존성 설치 (dev 의존성 포함 — Pest 테스트 실행에 필요)
+      # 2. PHP 의존성 설치
       - name: Install PHP Dependencies
         run: docker exec cl_embed_laravel composer install --no-interaction
 
-      # 4. Next.js dev server 중지 (npm ci 실행 중 모듈 충돌 방지)
-      - name: Stop Next.js Dev Server
-        run: docker exec cl_embed_nextjs sh -c "kill \$(pgrep -f 'next dev')" || true
-        continue-on-error: true
-
-      # 5. Node 의존성 설치 (메모리 제한 — WSL2 OOM 방지)
-      - name: Install Node Dependencies
-        run: docker exec -e NODE_OPTIONS="--max-old-space-size=512" cl_embed_nextjs npm ci
-
-      # 6. Next.js 프로덕션 빌드 (메모리 제한 — WSL2 OOM 방지)
-      - name: Build Next.js
-        run: docker exec -e NODE_OPTIONS="--max-old-space-size=512" cl_embed_nextjs npm run build
-
-      # 7. Next.js 이미지 재빌드 및 컨테이너 재생성
-      #    BUILD_ID 존재 → 자동으로 npm start (운영 모드) 실행
-      - name: Rebuild and Recreate Next.js Container
-        run: |
-          cd ./docker
-          docker compose build cl_embed_nextjs
-          docker compose up -d cl_embed_nextjs
-          sleep 5
-
-      # 8. Laravel 테스트 실행 — 실패 시 이후 단계 진행 안 함 (fail-fast)
+      # 3. Laravel 테스트 실행
       - name: Run Laravel Tests
         run: docker exec cl_embed_laravel php artisan test --compact
 
-      # 9. DB 마이그레이션 — 실패 시 마지막 배치 롤백 후 중단
+      # 4. DB 마이그레이션 — 실패 시 마지막 배치 롤백 후 중단
       - name: Run Database Migrations
         run: |
           docker exec cl_embed_laravel php artisan migrate --force || {
@@ -84,35 +43,15 @@ jobs:
             exit 1
           }
 
-      # 10. 컨테이너 재시작 — supervisord/Nginx가 최신 코드 반영
+      # 5. 컨테이너 재시작 — supervisord가 최신 코드로 프로세스 재시작
       - name: Restart Containers
         run: |
           cd ./docker
-          docker compose restart cl_embed_laravel
+          docker compose restart cl_embed_laravel cl_embed_nextjs
           docker exec docker-nginx-1 nginx -s reload
           sleep 3
 
-      # 11. 헬스체크 — 모든 서비스 정상 응답 확인
-      - name: Health Check
-        run: |
-          echo "--- Laravel API (port 8000) ---"
-          docker exec cl_embed_laravel php -r "
-            \$ctx = stream_context_create(['http' => ['timeout' => 5]]);
-            echo file_get_contents('http://localhost:8000/', false, \$ctx) ? 'OK' : 'FAIL';
-          " || echo "WARN: Laravel health check failed"
-          echo ""
-
-          echo "--- Laravel Reverb (port 8080) ---"
-          docker exec cl_embed_laravel bash -c 'echo > /dev/tcp/localhost/8080 && echo "OK"' || echo "WARN: Reverb health check failed"
-
-          echo "--- Next.js (port 3000) ---"
-          docker exec cl_embed_nextjs curl -f -m 10 http://localhost:3000/ && echo "OK" || echo "WARN: Next.js health check failed"
-
-          echo "--- Nginx (port 80) ---"
-          curl -f -m 10 http://localhost/ && echo "OK" || echo "WARN: Nginx health check failed"
-
-      # 12. 워크스페이스 정리 — supervisord/appuser 사용으로 vendor/logs는 UID 1000 소유
-      #     set +e로 개별 실패가 전체를 중단시키지 않도록 방어
+      # 6. 워크스페이스 정리 — appuser 실행으로 vendor/logs는 UID 1000 소유
       - name: Cleanup Workspace
         if: always()
         run: |
