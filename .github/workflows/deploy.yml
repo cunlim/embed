@@ -41,7 +41,6 @@ jobs:
       - name: Recreate Laravel Container
         run: |
           cd ./docker
-          rm -f ./laravel/volume/log/*.log
           docker compose up -d cl_embed_laravel
           sleep 5
 
@@ -112,7 +111,7 @@ jobs:
           echo "--- Nginx (port 80) ---"
           curl -f -m 10 http://localhost/ && echo "OK" || echo "WARN: Nginx health check failed"
 
-      # 12. 워크스페이스 정리 — Docker가 root 소유로 생성한 파일 권한 복원
+      # 12. 워크스페이스 정리 — supervisord/appuser 사용으로 vendor/logs는 UID 1000 소유
       #     set +e로 개별 실패가 전체를 중단시키지 않도록 방어
       - name: Cleanup Workspace
         if: always()
@@ -121,8 +120,6 @@ jobs:
             -v "$(pwd)":/ws \
             alpine sh -c "
               set +e
-              rm -rf /ws/docker/laravel/volume/log/*
-              chown -R 1000:1000 /ws/docker/laravel/volume 2>/dev/null
               [ -d /ws/laravel/vendor ] && chown -R 1000:1000 /ws/laravel/vendor 2>/dev/null
               [ -f /ws/laravel/.env ] && chown 1000:1000 /ws/laravel/.env 2>/dev/null
               exit 0
