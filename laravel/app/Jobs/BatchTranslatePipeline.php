@@ -2,13 +2,18 @@
 
 namespace App\Jobs;
 
+use App\Events\BatchCompleted;
+use App\Events\BatchFailed;
+use App\Events\TranslationProgress;
 use App\Models\Category;
+use Illuminate\Bus\Batch;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Bus;
+use Throwable;
 
 class BatchTranslatePipeline implements ShouldQueue
 {
@@ -40,6 +45,21 @@ class BatchTranslatePipeline implements ShouldQueue
             Bus::batch($jobs)
                 ->name("translate-embed-{$this->targetLanguage}")
                 ->allowFailures()
+                ->progress(function (Batch $batch) {
+                    TranslationProgress::dispatch(
+                        $batch->id,
+                        $batch->totalJobs,
+                        $batch->processedJobs(),
+                        $batch->failedJobs,
+                        'processing',
+                    );
+                })
+                ->then(function (Batch $batch) {
+                    BatchCompleted::dispatch($batch->id);
+                })
+                ->catch(function (Batch $batch, Throwable $e) {
+                    BatchFailed::dispatch($batch->id, $e->getMessage());
+                })
                 ->dispatch();
         }
     }
