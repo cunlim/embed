@@ -2,6 +2,11 @@ name: Local CI/CD
 # 브랜치 전략: develop + main
 # - develop: 일상 개발 브랜치 (feature/* → PR → develop)
 # - main:   안정 릴리스 브랜치 (develop → PR → main, CI/CD 자동 배포)
+#
+# 배포 파이프라인:
+#   1. 일반 코드 변경 → composer install → test → migrate → restart (최소 실행)
+#   2. Dockerfile 변경 → docker compose build 포함 (이미지 재빌드)
+#   3. package.json 변경 → npm ci 포함 (Node 의존성 갱신)
 on:
   push:
     branches: [ main ]
@@ -10,6 +15,8 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # 0. .env 파일 복원 — CI 체크아웃은 gitignore로 인해 .env 누락
       - name: Restore Environment File
@@ -18,22 +25,70 @@ jobs:
             cp /var/app/actions-runner/config/cl_embed/.env ./laravel/.env
           fi
 
-      # 1. 컨테이너 재빌드 및 재시작
-      - name: Rebuild and Restart Containers
+      # 1. 컨테이너 기동 (미실행 상태인 경우)
+      - name: Start Containers
         run: |
           cd ./docker
           docker compose up -d
           sleep 3
 
-      # 2. PHP 의존성 설치
+      # 2. Dockerfile 변경 감지 및 이미지 재빌드
+      #     첫 푸시(before=000...000)인 경우도 재빌드 수행
+      - name: Check Dockerfile Changes
+        id: dockerfile_changed
+        run: |
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "First push detected — will rebuild Docker images"
+          elif git diff "$BEFORE" "$AFTER" --name-only | grep -qE 'docker/(nextjs|laravel)/dockerfile'; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Dockerfile changed — will rebuild Docker images"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Rebuild Docker Images
+        if: steps.dockerfile_changed.outputs.changed == 'true'
+        run: |
+          cd ./docker
+          docker compose build
+          docker compose up -d
+          sleep 3
+
+      # 3. PHP 의존성 설치
       - name: Install PHP Dependencies
         run: docker exec cl_embed_laravel composer install --no-interaction
 
-      # 3. Laravel 테스트 실행
+      # 4. package.json 변경 감지 및 npm ci
+      #     Dockerfile 재빌드가 이미 npm ci를 포함하므로 중복 실행 방지
+      - name: Check package.json Changes
+        id: pkg_changed
+        run: |
+          BEFORE="${{ github.event.before }}"
+
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          elif git diff "$BEFORE" "${{ github.event.after }}" --name-only | grep -q 'nextjs/package.json'; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "package.json changed — will install Node dependencies"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Node Dependencies
+        if: steps.pkg_changed.outputs.changed == 'true' && steps.dockerfile_changed.outputs.changed == 'false'
+        run: |
+          docker exec cl_embed_nextjs sh -c "kill \$(pgrep -f 'next dev')" || true
+          docker exec -e NODE_OPTIONS="--max-old-space-size=512" cl_embed_nextjs npm ci
+
+      # 5. Laravel 테스트 실행
       - name: Run Laravel Tests
         run: docker exec cl_embed_laravel php artisan test --compact
 
-      # 4. DB 마이그레이션 — 실패 시 마지막 배치 롤백 후 중단
+      # 6. DB 마이그레이션 — 실패 시 마지막 배치 롤백 후 중단
       - name: Run Database Migrations
         run: |
           docker exec cl_embed_laravel php artisan migrate --force || {
@@ -43,7 +98,7 @@ jobs:
             exit 1
           }
 
-      # 5. 컨테이너 재시작 — supervisord가 최신 코드로 프로세스 재시작
+      # 7. 컨테이너 재시작 — supervisord가 최신 코드로 프로세스 재시작
       - name: Restart Containers
         run: |
           cd ./docker
@@ -51,7 +106,22 @@ jobs:
           docker exec docker-nginx-1 nginx -s reload
           sleep 3
 
-      # 6. 워크스페이스 정리 — appuser 실행으로 vendor/logs는 UID 1000 소유
+      # 8. 헬스체크 — 모든 서비스 정상 응답 확인
+      - name: Health Check
+        run: |
+          echo "--- Laravel API (port 8000) ---"
+          docker exec cl_embed_laravel php -r "
+            echo @file_get_contents('http://localhost:8000/', false, stream_context_create(['http' => ['timeout' => 5]])) ? 'OK' : 'FAIL';
+          " || echo "WARN: Laravel health check failed"
+          echo ""
+
+          echo "--- Next.js (port 3000) ---"
+          docker exec cl_embed_nextjs curl -sf -m 10 http://localhost:3000/ && echo "OK" || echo "WARN: Next.js health check failed"
+
+          echo "--- Nginx (port 80) ---"
+          curl -sf -m 10 http://localhost/ && echo "OK" || echo "WARN: Nginx health check failed"
+
+      # 9. 워크스페이스 정리 — appuser 실행으로 vendor/logs는 UID 1000 소유
       - name: Cleanup Workspace
         if: always()
         run: |
