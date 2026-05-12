@@ -16,7 +16,7 @@
       "status": "completed",
       "started_at": "2026-05-13T01:31:38+0900",
       "summary": "Socialite 설치, OAuth 마이그레이션(provider/provider_id/provider_token/avatar 컬럼 추가, password nullable 변경, 복합 unique 인덱스), OAuthController(redirect/callback), services.php OAuth 설정(Google/GitHub/Naver), web.php OAuth 라우트, .env OAuth 환경변수",
-      "completed_at": "2026-05-13T02:00:00+0900"
+      "completed_at": "2026-05-13T01:36:50+0900"
     }
   ],
   "created_at": "2026-05-13T00:44:01+0900"
