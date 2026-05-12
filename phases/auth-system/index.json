@@ -13,11 +13,10 @@
     {
       "step": 1,
       "name": "socialite-oauth",
-      "status": "blocked",
-      "started_at": "2026-05-13T01:24:26+0900",
-      "summary": "Socialite 설치, OAuthController(redirect/callback), users 마이그레이션(OAuth 컬럼 추가, password nullable), config/services.php OAuth 설정, .env 환경변수, routes/web.php OAuth 라우트 등록, 115개 테스트 통과",
-      "blocked_reason": "OAuth 제공자(Google, GitHub, Naver)의 redirect URI가 올바르게 설정되었는지 실제 콜백 테스트 필요. 현재 .env의 REDIRECT_URI는 https://embed.cunlim.dev/auth/{provider}/callback 이지만 실제 라우트는 /api/auth/{provider}/callback 이므로 불일치 가능성 있음. OAuth 제공자 콘솔에서 redirect URI를 확인 후 필요시 수정 필요.",
-      "completed_at": "2026-05-13T01:40:00+0900"
+      "status": "completed",
+      "started_at": "2026-05-13T01:31:38+0900",
+      "summary": "Socialite 설치, OAuth 마이그레이션(provider/provider_id/provider_token/avatar 컬럼 추가, password nullable 변경, 복합 unique 인덱스), OAuthController(redirect/callback), services.php OAuth 설정(Google/GitHub/Naver), web.php OAuth 라우트, .env OAuth 환경변수",
+      "completed_at": "2026-05-13T02:00:00+0900"
     }
   ],
   "created_at": "2026-05-13T00:44:01+0900"
