@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "socialite-oauth",
-      "status": "pending"
+      "status": "blocked",
+      "started_at": "2026-05-13T01:01:23+0900",
+      "blocked_reason": "OAuth 키 발급 필요: Google/GitHub/Naver OAuth Client ID 및 Secret은 사용자가 직접 발급해야 합니다. 코드 구현(Socialite 설치, config/services.php OAuth 설정, migration, OAuthController, routes/web.php, 테스트)은 완료되었으며 115개 테스트 통과.",
+      "completed_at": "2026-05-13T02:00:00+0900"
     }
   ],
   "created_at": "2026-05-13T00:44:01+0900"
