@@ -2,7 +2,19 @@
   "project": "cl_embed",
   "phase": "auth-system",
   "steps": [
-    { "step": 0, "name": "sanctum-setup", "status": "pending" },
-    { "step": 1, "name": "socialite-oauth", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "sanctum-setup",
+      "status": "completed",
+      "started_at": "2026-05-13T00:44:01+0900",
+      "summary": "Sanctum 설정, AuthController(register/login/logout/user), RegisterRequest, LoginRequest 생성 및 auth 라우트 추가, SANCTUM_STATEFUL_DOMAINS 설정, AuthControllerTest 13개 테스트 통과",
+      "completed_at": "2026-05-13T01:01:23+0900"
+    },
+    {
+      "step": 1,
+      "name": "socialite-oauth",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-05-13T00:44:01+0900"
 }
