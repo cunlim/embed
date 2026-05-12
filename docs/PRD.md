@@ -32,9 +32,6 @@
 * Swagger UI (`/swagger/`) 초기화 완료
 * CI/CD (셀프호스티드 WSL GitHub Actions 러너)
 
-### 진행 중
-* **Phase 1: backend-models** — Eloquent 모델, DB 마이그레이션, Ollama 통합
-
 ## 3. 핵심 기능 요구사항
 
 ### 3.1 일괄 번역 및 임베딩 파이프라인
