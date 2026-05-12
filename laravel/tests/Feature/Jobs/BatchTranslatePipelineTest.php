@@ -38,7 +38,7 @@ test('락이 이미 점유되어 있으면 AlreadyRunning 이벤트를 발생시
     $pipeline->handle();
 
     Event::assertDispatched(AlreadyRunning::class, function (AlreadyRunning $event) {
-        return $event->language === 'en';
+        return $event->language === 'en' && $event->categoryIds === null;
     });
     Bus::assertBatchCount(0);
 });
@@ -99,6 +99,18 @@ test('categoryIds가 빈 배열이면 전체 카테고리를 처리한다', func
     $pipeline->handle();
 
     Bus::assertBatchCount(1);
+});
+
+test('카테고리가 없으면 락을 해제하고 반환한다', function () {
+    Bus::fake();
+
+    $pipeline = new BatchTranslatePipeline('en');
+    $pipeline->handle();
+
+    // 락이 해제되었으므로 새 락을 획득할 수 있어야 한다
+    $lock = Cache::lock('translate-batch:en:bge-m3:latest', 600);
+    expect($lock->get())->toBeTrue();
+    $lock->release();
 });
 
 test('배치 이름은 translate-embed-{언어}-chunk-{인덱스} 형식이다', function () {

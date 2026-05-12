@@ -34,7 +34,7 @@ class BatchTranslatePipeline implements ShouldQueue
         $lock = Cache::lock($lockKey, 600);
 
         if (! $lock->get()) {
-            AlreadyRunning::dispatch($this->targetLanguage);
+            AlreadyRunning::dispatch($this->targetLanguage, $this->categoryIds);
 
             return;
         }
@@ -44,6 +44,8 @@ class BatchTranslatePipeline implements ShouldQueue
             : Category::query()->get();
 
         if ($categories->isEmpty()) {
+            $lock->release();
+
             return;
         }
 

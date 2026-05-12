@@ -14,6 +14,7 @@ class AlreadyRunning implements ShouldBroadcast
 
     public function __construct(
         public string $language,
+        public ?array $categoryIds = null,
     ) {}
 
     public function broadcastOn(): Channel
