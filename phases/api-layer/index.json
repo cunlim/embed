@@ -2,8 +2,23 @@
   "project": "cl_embed",
   "phase": "api-layer",
   "steps": [
-    { "step": 0, "name": "api-routes", "status": "pending" },
-    { "step": 1, "name": "recommend-controller", "status": "pending" },
-    { "step": 2, "name": "swagger-setup", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "api-routes",
+      "status": "completed",
+      "started_at": "2026-05-12T19:01:09+0900",
+      "summary": "routes/api.php 생성, CategoryController + CategoryStoreRequest/BatchTranslateRequest + CategoryResource/CategoryCollection 생성. bootstrap/app.php는 이미 api 라우트 등록 완료."
+    },
+    {
+      "step": 1,
+      "name": "recommend-controller",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "swagger-setup",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-05-12T19:01:09+0900"
 }
