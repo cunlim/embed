@@ -61,6 +61,7 @@ class CategoryController extends Controller
 - `show()` — 단일 Category 상세
 - `batchTranslate()` — `BatchTranslatePipeline` Job dispatch 후 `202 Accepted` + `batch_id` JSON 응답
   - 요청 본문: `{ "target_language": "zh" }` — 단일 언어 문자열. 여러 언어 처리는 언어별로 각각 API를 호출한다.
+  - **중요 — WebSocket 구독 경로**: `POST /api/categories/batch-translate` 응답의 `batch_id`는 Laravel Batch UUID이다. 프론트엔드는 이 `batch_id`를 받아 `translation.{batch_id}` 채널을 Echo로 구독하여 `translation.progress`, `batch.completed`, `batch.failed` 이벤트를 수신해야 한다. 또한 `BatchTranslatePipeline`이 chunking으로 여러 batch를 생성하므로, 여러 batch_id가 반환될 수 있다. API 응답 설계 시 `batch_ids` 배열을 반환할지, 아니면 chunk 전에 래핑 batch를 하나 더 만들어 단일 batch_id를 반환할지 결정할 것.
 
 ### Form Requests
 

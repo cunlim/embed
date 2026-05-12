@@ -253,7 +253,9 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
 ### Bus::fake / Event::fake 사용 시 주의사항
 
 - **`Bus::fake()` + `assertBatched()` 콜백 타입**: `Bus::fake()` 사용 시 `assertBatched(callback)`의 콜백 파라미터는 `Illuminate\Bus\Batch`가 아닌 `Illuminate\Support\Testing\Fakes\PendingBatchFake` 이다. `$batch->name`, `count($batch->jobs)` 등으로 검증한다. `$batch->totalJobs` 속성은 존재하지 않는다.
+- **`Bus::fake()`는 batch 콜백을 실행하지 않는다**: `progress`, `then`, `catch` 콜백은 `Bus::fake()` 환경에서 호출되지 않는다. 이벤트 dispatch 검증이 필요하면 `Event::fake([...])`만 사용하고 실제 batch를 실행하거나, 별도 통합 테스트를 작성한다.
 - **`Event::fake()`는 Eloquent 라이프사이클 이벤트까지 캡처한다**: `Event::fake()` (인자 없는 호출) 시 `eloquent.booting`, `eloquent.booted` 등 Model 생성 시 발생하는 프레임워크 내부 이벤트까지 캡처된다. `Event::assertNothingDispatched()`를 쓰려면 `Event::fake([SpecificEvent::class])`로 감시 대상을 한정해야 한다.
+- **`Bus::batch` `catch` 콜백은 `allowFailures()`와 함께 사용 시 주의**: `allowFailures()` 설정 시 개별 job 실패는 batch 실패로 간주되지 않아 `catch` 콜백이 호출되지 않는다. `catch`는 job을 큐에 넣지 못하는 infrastructure-level 오류에서만 실행된다. 개별 job 실패 정보는 `then` 콜백에서 `$batch->failedJobs`로 확인한다.
 
 ### 테스트 환경 제약 (SQLite + pgvector)
 
