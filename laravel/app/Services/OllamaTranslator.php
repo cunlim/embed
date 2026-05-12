@@ -67,6 +67,15 @@ class OllamaTranslator
      */
     private function translateSingle(string $text, string $targetLang): string
     {
+        $cached = TranslationCache::query()
+            ->where('source_text', $text)
+            ->where('target_lang', $targetLang)
+            ->first();
+
+        if ($cached !== null) {
+            return $cached->translated_text;
+        }
+
         $model = config('services.ollama.translation_model', 'translategemma:4b');
         $attempts = 0;
 
@@ -75,6 +84,20 @@ class OllamaTranslator
             $result = trim($result);
 
             if ($this->isValidTranslation($result, $targetLang)) {
+                try {
+                    TranslationCache::create([
+                        'source_text' => $text,
+                        'target_lang' => $targetLang,
+                        'translated_text' => $result,
+                    ]);
+                } catch (UniqueConstraintViolationException) {
+                    return TranslationCache::query()
+                        ->where('source_text', $text)
+                        ->where('target_lang', $targetLang)
+                        ->first()
+                        ->translated_text;
+                }
+
                 return $result;
             }
 

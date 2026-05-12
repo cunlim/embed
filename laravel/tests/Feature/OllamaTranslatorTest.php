@@ -106,6 +106,44 @@ test('지원하지 않는 언어 코드는 RuntimeException을 던진다', funct
         ->toThrow(RuntimeException::class, '지원하지 않는 번역 언어');
 });
 
+test('분할된 개별 세그먼트는 TranslationCache에 저장되어 후속 번역 시 재사용된다', function () {
+    $mock = $this->mock(OllamaClient::class);
+    $mock->shouldReceive('chat')
+        ->times(3)
+        ->andReturn('Fashion', "Women's Clothing", 'Dress');
+
+    $translator = app(OllamaTranslator::class);
+    $result = $translator->translate('패션의류>여성의류>원피스', 'en');
+
+    expect($result)->toBe("Fashion>Women's Clothing>Dress");
+
+    // 개별 세그먼트가 각각 캐싱되었는지 확인
+    expect(TranslationCache::query()
+        ->where('source_text', '패션의류')
+        ->where('target_lang', 'en')
+        ->exists())->toBeTrue();
+    expect(TranslationCache::query()
+        ->where('source_text', '여성의류')
+        ->where('target_lang', 'en')
+        ->exists())->toBeTrue();
+    expect(TranslationCache::query()
+        ->where('source_text', '원피스')
+        ->where('target_lang', 'en')
+        ->exists())->toBeTrue();
+
+    // 공통 세그먼트("패션의류", "여성의류")는 캐시 히트 → 신규 세그먼트만 Ollama 호출
+    $mock2 = $this->mock(OllamaClient::class);
+    $mock2->shouldReceive('chat')
+        ->once()
+        ->with('translategemma:4b', Mockery::pattern('/블라우스/'))
+        ->andReturn('Blouse');
+
+    $translator2 = app(OllamaTranslator::class);
+    $result2 = $translator2->translate('패션의류>여성의류>블라우스', 'en');
+
+    expect($result2)->toBe("Fashion>Women's Clothing>Blouse");
+});
+
 test('번역 결과의 앞뒤 공백은 trim 처리된다', function () {
     $mock = $this->mock(OllamaClient::class);
     $mock->shouldReceive('chat')

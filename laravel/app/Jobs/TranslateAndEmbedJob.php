@@ -17,8 +17,8 @@ class TranslateAndEmbedJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /** Ollama는 응답이 느릴 수 있으므로 넉넉한 타임아웃 설정 */
-    public int $timeout = 300;
+    /** Ollama cold start 및 과부하를 감안한 넉넉한 타임아웃 */
+    public int $timeout = 600;
 
     /** Rate Limit 재시도 포함 최대 5회 */
     public int $tries = 5;
@@ -50,7 +50,7 @@ class TranslateAndEmbedJob implements ShouldQueue
             );
         } catch (RuntimeException $e) {
             if (str_contains($e->getMessage(), 'Ollama rate limit exceeded')) {
-                $this->release(60);
+                $this->release(120);
 
                 return;
             }
