@@ -91,14 +91,14 @@ test('100건을 초과하면 여러 batch로 분할한다', function () {
     Bus::assertBatchCount(2);
 });
 
-test('categoryIds가 빈 배열이면 배치를 생성하지 않는다', function () {
+test('categoryIds가 빈 배열이면 전체 카테고리를 처리한다', function () {
     Bus::fake();
     Category::factory()->count(3)->create();
 
     $pipeline = new BatchTranslatePipeline('en', []);
     $pipeline->handle();
 
-    Bus::assertBatchCount(0);
+    Bus::assertBatchCount(1);
 });
 
 test('배치 이름은 translate-embed-{언어} 형식이다', function () {

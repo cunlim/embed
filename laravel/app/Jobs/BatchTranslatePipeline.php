@@ -39,7 +39,7 @@ class BatchTranslatePipeline implements ShouldQueue
             return;
         }
 
-        $categories = $this->categoryIds !== null
+        $categories = ! empty($this->categoryIds)
             ? Category::query()->whereIn('id', $this->categoryIds)->get()
             : Category::query()->get();
 
@@ -67,11 +67,13 @@ class BatchTranslatePipeline implements ShouldQueue
                         'processing',
                     );
                 })
-                ->then(function (Batch $batch) {
+                ->then(function (Batch $batch) use ($lock) {
                     BatchCompleted::dispatch($batch->id);
+                    $lock->release();
                 })
-                ->catch(function (Batch $batch, Throwable $e) {
+                ->catch(function (Batch $batch, Throwable $e) use ($lock) {
                     BatchFailed::dispatch($batch->id, $e->getMessage());
+                    $lock->release();
                 })
                 ->dispatch();
         }
