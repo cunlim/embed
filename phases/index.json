@@ -20,7 +20,8 @@
     },
     {
       "dir": "auth-system",
-      "status": "pending"
+      "status": "blocked",
+      "blocked_at": "2026-05-13T01:20:50+0900"
     },
     {
       "dir": "frontend-embed",
