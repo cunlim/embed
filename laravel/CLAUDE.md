@@ -186,6 +186,9 @@ docker exec -d cl_embed_laravel bash -c "
 docker exec cl_embed_laravel php artisan test --compact
 docker exec cl_embed_laravel php artisan test --compact --filter=testName
 
+# 테스트 발견 확인 (바인드 마운트 불일치 진단용)
+docker exec cl_embed_laravel php artisan test --list-tests --filter=TestName
+
 # PHP 코드 포맷팅
 docker exec cl_embed_laravel vendor/bin/pint --format agent
 
