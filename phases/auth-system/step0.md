@@ -1,5 +1,27 @@
 # Step 0: sanctum-setup
 
+## Phase 4 사전 작업 내역 (2026-05-12)
+
+Phase 4 (api-layer) 리뷰 대응 과정에서 아래 항목이 이미 완료되었다. 이 step에서는 해당 항목을 **건너뛰거나** 상태만 확인하고 넘어간다.
+
+| 항목 | 상태 | 비고 |
+|------|------|------|
+| `laravel/sanctum` composer 패키지 설치 | ✅ 완료 | v4.3.2 |
+| `config/sanctum.php` generate | ✅ 완료 | `vendor:publish --tag=sanctum-config` |
+| `User` 모델 `HasApiTokens` trait 추가 | ✅ 완료 | `laravel/app/Models/User.php` |
+| `CategoryController::store()` `auth:sanctum` 미들웨어 | ✅ 완료 | `routes/api.php` |
+| `CategoryController::batchTranslate()` `auth:sanctum` 미들웨어 | ✅ 완료 | `routes/api.php` |
+| `BatchTranslateRequest::authorize()` | ✅ 완료 | 명시적 `return true` (권한 정책은 추후 정의) |
+| `CategoryStoreRequest::authorize()` | ✅ 완료 | 명시적 `return true` (권한 정책은 추후 정의) |
+
+### Phase 5 영향
+
+- **Sanctum config 생성 시**: 이미 존재하는 `config/sanctum.php`를 덮어쓰지 않도록 `--force`를 사용하지 않는다. `vendor:publish`는 config가 존재하면 skip한다.
+- **User 모델 수정 시**: `HasApiTokens`가 이미 추가되어 있으므로 중복 추가하지 않는다.
+- **CategoryController 라우트**: 이미 `auth:sanctum` 미들웨어가 적용되어 있으므로 추가하지 않는다. `index()`, `show()`는 공개 상태 그대로 유지.
+- **RecommendController**: Phase 4 step 1에서 생성된 `POST /api/recommend`는 공개 엔드포인트이므로 미들웨어를 추가하지 않는다 (PRD §4: 추천은 비로그인 사용자도 사용 가능).
+- **`.env`의 `SANCTUM_STATEFUL_DOMAINS`** 및 **`AUTH_GUARD`** 설정은 이 step에서 정상 진행한다.
+
 ## 읽어야 할 파일
 
 먼저 아래 파일들을 읽고 프로젝트의 아키텍처와 설계 의도를 파악하라:

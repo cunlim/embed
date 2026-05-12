@@ -6,6 +6,11 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class BatchTranslateRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        return true;
+    }
+
     /**
      * @return array<string, string>
      */

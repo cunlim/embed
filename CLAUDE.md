@@ -54,9 +54,20 @@ cl_embed/
 
 - **CRITICAL: TDD** — 새 기능 구현 시 반드시 테스트를 먼저 작성하고, 테스트가 통과하는 구현을 작성할 것
   - Laravel: Pest 4 (`php artisan test --compact`)
+  - 테스트 없이 구현 코드만 작성하는 것은 금지된다. "나중에 테스트를 추가하겠다"는 접근도 허용되지 않는다.
+- **TDD 적용 범위** — 다음 항목은 예외 없이 테스트를 작성해야 한다:
+  - 모든 Controller 메서드 (Feature 테스트 — HTTP 응답, mock 검증, DB 단언)
+  - 모든 Form Request (유효성 검증 규칙, 실패 시나리오)
+  - 모든 Eloquent Resource (응답 형식 검증)
+  - 모든 Model (Factory 생성, 관계 반환 타입, 특수 캐스팅 — Unit 테스트)
+  - 모든 Service 클래스 (의존성 mock + 위임 호출 검증 — Unit/Feature 테스트)
+  - 모든 Job/Event (dispatch, broadcast — Feature 테스트)
+  - 모든 Command/Scheduled Task (실행 결과 검증)
+- **Phase step 완료 조건** — step의 모든 파일 생성 후 `php artisan test --compact` 실행하여 **0 failure**를 확인해야 한다. 실패가 있으면 step을 완료할 수 없다.
 - 커밋 메시지는 conventional commits 형식을 따를 것 (feat:, fix:, docs:, refactor:)
 - PHP 변경 완료 전 `vendor/bin/pint --format agent` 실행 (컨테이너 내부)
 - **DB 테이블명**은 Laravel 기본 복수형 컨벤션을 따른다 (예: `categories`, `translation_caches`). 명시적 `protected $table` 지정은 불필요.
+- **Form Request는 항상 명시적 `authorize()` 메서드를 포함**해야 한다. 기본값 `true`라도 명시적으로 선언한다.
 
 ## 기술 스택
 
@@ -101,6 +112,7 @@ docker exec cl_embed_nextjs sh -c "cd /app && npm ..."
 
 - **Docker 바인드 마운트 동기화 불일치 (양방향)** — 호스트↔컨테이너 파일 변경이 즉시 반영되지 않을 수 있다. 파일 수정 후 **반드시 `wc -l`로 양쪽 라인 수를 비교**할 것. 불일치 시 호스트→컨테이너: `cat <host-path> | base64 | docker exec -i bash -c "base64 -d > <container-path>"`, 컨테이너→호스트: `docker exec cat <container-path> > <host-path>`. `laravel/app/` 신규 클래스가 컨테이너에만 존재하면 호스트 `git add`가 실패하므로 컨테이너→호스트 복사 후 커밋한다.
 - **신규 디렉토리는 컨테이너에 수동 생성 필요** — 호스트에서 새 디렉토리(예: `tests/Feature/Events/`)를 만들면 bind mount로 컨테이너에 자동 반영되지 않을 수 있다. `docker exec cl_embed_laravel mkdir -p <path>`로 컨테이너에도 동일 디렉토리를 생성한 후 base64 방식으로 파일을 동기화할 것.
+- **`composer require` / `vendor:publish` 후 파일 동기화** — 컨테이너 내부에서 실행 시 생성/변경된 파일(composer.json, composer.lock, config/*.php 등)은 컨테이너에만 존재한다. `docker exec cl_embed_laravel cat <container-path> > <host-path>`로 호스트에 복사하여 git 트래킹을 유지할 것.
 - **`composer dump-autoload` 필요 시점** — `php artisan make:model` 바깥에서 수동 생성한 클래스(Job, Event 등)는 autoloader 캐시에 반영되지 않는다. `docker exec cl_embed_laravel composer dump-autoload` 실행 후 테스트해야 한다.
 - **tinker 쓰기 권한 오류** — `useradd -m`으로 홈 디렉토리(`/home/appuser`)를 생성하므로 해결됨. 컨테이너가 appuser로 실행되므로 `.config/psysh`는 런타임에 자동으로 올바른 소유권으로 생성된다.
 - **Next.js HMR 에러 로그** — `embed_nextjs_error.log`의 "Connection refused"는 dev 서버 재시작 시 정상 발생. 개발 편의를 위해 dev 모드를 기본으로 사용하며, `npm run build` 후 컨테이너 재시작 시 자동으로 production 모드(`npm start`)로 전환된다.

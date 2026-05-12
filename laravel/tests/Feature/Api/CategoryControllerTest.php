@@ -1,0 +1,166 @@
+<?php
+
+use App\Jobs\BatchTranslatePipeline;
+use App\Jobs\TranslateAndEmbedJob;
+use App\Models\Category;
+use App\Models\User;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Schema;
+
+beforeEach(function () {
+    Schema::create('users', function (Blueprint $table) {
+        $table->id();
+        $table->string('name');
+        $table->string('email')->unique();
+        $table->timestamp('email_verified_at')->nullable();
+        $table->string('password');
+        $table->rememberToken();
+        $table->timestamps();
+    });
+
+    Schema::create('categories', function (Blueprint $table) {
+        $table->id();
+        $table->string('category_code', 50);
+        $table->string('category_name_ko', 255);
+        $table->string('category_name_zh', 255)->nullable();
+        $table->string('category_name_en', 255)->nullable();
+        $table->timestamps();
+    });
+});
+
+afterEach(function () {
+    Schema::dropIfExists('categories');
+    Schema::dropIfExists('users');
+});
+
+test('GET /api/categories — 빈 목록을 반환한다', function () {
+    $response = $this->getJson('/api/categories');
+
+    $response->assertOk()
+        ->assertJsonCount(0, 'data');
+});
+
+test('GET /api/categories — 카테고리 목록을 반환한다', function () {
+    $categories = Category::factory()->count(3)->create();
+
+    $response = $this->getJson('/api/categories');
+
+    $response->assertOk()
+        ->assertJsonCount(3, 'data')
+        ->assertJsonPath('data.0.id', $categories[0]->id)
+        ->assertJsonPath('data.0.category_code', $categories[0]->category_code)
+        ->assertJsonPath('data.0.category_name_ko', $categories[0]->category_name_ko);
+});
+
+test('POST /api/categories — 카테고리를 생성하고 Job을 dispatch한다', function () {
+    Bus::fake();
+
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories', [
+        'category_name_ko' => '패션의류',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.category_name_ko', '패션의류');
+
+    $this->assertDatabaseHas('categories', ['category_name_ko' => '패션의류']);
+
+    Bus::assertDispatched(TranslateAndEmbedJob::class, 2);
+    Bus::assertDispatched(TranslateAndEmbedJob::class, function ($job) {
+        $ref = new ReflectionProperty($job, 'targetLanguage');
+
+        return $ref->getValue($job) === 'zh';
+    });
+    Bus::assertDispatched(TranslateAndEmbedJob::class, function ($job) {
+        $ref = new ReflectionProperty($job, 'targetLanguage');
+
+        return $ref->getValue($job) === 'en';
+    });
+});
+
+test('POST /api/categories — category_name_ko가 없으면 422를 반환한다', function () {
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories', []);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['category_name_ko']);
+});
+
+test('POST /api/categories — category_name_ko가 255자를 초과하면 422를 반환한다', function () {
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories', [
+        'category_name_ko' => str_repeat('가', 256),
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['category_name_ko']);
+});
+
+test('GET /api/categories/{category} — 단일 카테고리를 반환한다', function () {
+    $category = Category::factory()->create();
+
+    $response = $this->getJson("/api/categories/{$category->id}");
+
+    $response->assertOk()
+        ->assertJsonPath('data.id', $category->id)
+        ->assertJsonPath('data.category_code', $category->category_code)
+        ->assertJsonPath('data.category_name_ko', $category->category_name_ko);
+});
+
+test('GET /api/categories/{category} — 존재하지 않으면 404를 반환한다', function () {
+    $response = $this->getJson('/api/categories/99999');
+
+    $response->assertNotFound();
+});
+
+test('POST /api/categories/batch-translate — 일괄 번역을 dispatch하고 202를 반환한다', function () {
+    Bus::fake();
+
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories/batch-translate', [
+        'target_language' => 'zh',
+    ]);
+
+    $response->assertAccepted()
+        ->assertJsonPath('message', '일괄 번역이 시작되었습니다.')
+        ->assertJsonPath('target_language', 'zh');
+
+    Bus::assertDispatched(BatchTranslatePipeline::class, function ($job) {
+        $ref = new ReflectionProperty($job, 'targetLanguage');
+
+        return $ref->getValue($job) === 'zh';
+    });
+});
+
+test('POST /api/categories/batch-translate — target_language가 없으면 422를 반환한다', function () {
+    Bus::fake();
+
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories/batch-translate', []);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['target_language']);
+
+    Bus::assertNothingDispatched();
+});
+
+test('POST /api/categories/batch-translate — 지원하지 않는 언어면 422를 반환한다', function () {
+    Bus::fake();
+
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories/batch-translate', [
+        'target_language' => 'ja',
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['target_language']);
+
+    Bus::assertNothingDispatched();
+});
