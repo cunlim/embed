@@ -289,7 +289,7 @@ class StepExecutor:
         with progress_indicator(f"Reviewing step {step_num}: {step_name}") as pi:
             result = subprocess.run(
                 ["claude", "-p", "--dangerously-skip-permissions", "--output-format", "json", prompt],
-                cwd=self._root, capture_output=True, text=True, timeout=600,
+                cwd=self._root, capture_output=True, text=True, timeout=1800,
             )
             if result.returncode != 0:
                 print(f"\n  ⚠ Review exited with code {result.returncode}")

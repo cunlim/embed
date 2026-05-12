@@ -186,6 +186,9 @@ docker exec -d cl_embed_laravel bash -c "
 docker exec cl_embed_laravel php artisan test --compact
 docker exec cl_embed_laravel php artisan test --compact --filter=testName
 
+# 테스트 발견 확인 (바인드 마운트 불일치 진단용)
+docker exec cl_embed_laravel php artisan test --list-tests --filter=TestName
+
 # PHP 코드 포맷팅
 docker exec cl_embed_laravel vendor/bin/pint --format agent
 
@@ -247,6 +250,18 @@ docker exec cl_embed_laravel php artisan config:show app.name
 
 TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한다.
 
+### Bus::fake / Event::fake 사용 시 주의사항
+
+- **`Bus::fake()` + `assertBatched()` 콜백 타입**: `Bus::fake()` 사용 시 `assertBatched(callback)`의 콜백 파라미터는 `Illuminate\Bus\Batch`가 아닌 `Illuminate\Support\Testing\Fakes\PendingBatchFake` 이다. `$batch->name`, `count($batch->jobs)` 등으로 검증한다. `$batch->totalJobs` 속성은 존재하지 않는다.
+- **`Bus::fake()`는 batch 콜백을 실행하지 않는다**: `progress`, `then`, `catch` 콜백은 `Bus::fake()` 환경에서 호출되지 않는다. 이벤트 dispatch 검증이 필요하면 `Event::fake([...])`만 사용하고 실제 batch를 실행하거나, 별도 통합 테스트를 작성한다.
+- **`Event::fake()`는 Eloquent 라이프사이클 이벤트까지 캡처한다**: `Event::fake()` (인자 없는 호출) 시 `eloquent.booting`, `eloquent.booted` 등 Model 생성 시 발생하는 프레임워크 내부 이벤트까지 캡처된다. `Event::assertNothingDispatched()`를 쓰려면 `Event::fake([SpecificEvent::class])`로 감시 대상을 한정해야 한다.
+- **`Bus::batch` `catch` 콜백은 `allowFailures()`와 함께 사용 시 주의**: `allowFailures()` 설정 시 개별 job 실패는 batch 실패로 간주되지 않아 `catch` 콜백이 호출되지 않는다. `catch`는 job을 큐에 넣지 못하는 infrastructure-level 오류에서만 실행된다. 개별 job 실패 정보는 `then` 콜백에서 `$batch->failedJobs`로 확인한다.
+
+### Cache::lock 사용 시 주의사항
+
+- **모든 early return 경로에서 `$lock->release()` 확인**: `Cache::lock()` 획득 후 `return`하는 모든 분기에서 lock을 해제했는지 확인한다. `then`/`catch` 콜백만 믿고 early return에서 누락하지 않도록 주의.
+- **TTL은 crash 복구용 안전장치로만 의존**: lock TTL에만 의존해 해제를 기대하지 말고, 정상 종료 경로에서는 명시적 `release()`를 호출한다.
+
 ### 테스트 환경 제약 (SQLite + pgvector)
 
 **CRITICAL** — 이 프로젝트의 `phpunit.xml`은 `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`로 설정되어 있다. SQLite는 PostgreSQL 전용 확장(`CREATE EXTENSION IF NOT EXISTS vector`)을 지원하지 않으므로, 마이그레이션을 실행하는 `RefreshDatabase` trait을 사용할 수 없다.
@@ -267,6 +282,22 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
 - **테스트 헬퍼가 한계를 우회하면 별도 검증**: `makeClient()` 같은 테스트 헬퍼로 제한을 느슨하게 설정해 일반 테스트를 통과시키는 경우, 별도 테스트에서 실제 제한이 동작하는지 검증해야 한다. 예: `OllamaRateLimiter(1000, 1)`로 대부분 테스트를 통과시키면서, `OllamaRateLimiter(1, 60)`으로 rate limit 초과 시나리오를 별도 검증.
 - **Unit 테스트에서 `$this->mock()` 필요 시 `uses(TestCase::class)` 선언**: `tests/Unit/` 디렉토리의 테스트는 기본적으로 Laravel `TestCase`를 상속하지 않으므로 `$this->mock()`이나 `$this->app`에 접근할 수 없다. 컨테이너 접근이 필요하면 파일 상단에 `use Tests\TestCase;` + `uses(TestCase::class);`를 추가할 것. (`tests/Unit/CategoryEmbeddingTest.php`의 패턴 참고)
 - 기존 Feature 테스트(`OllamaTranslatorTest`, `EmbeddingGeneratorTest`)의 mock 패턴을 참고할 것.
+
+### ShouldBroadcast 이벤트 테스트 최소 요건
+
+**CRITICAL** — ShouldBroadcast를 구현하는 모든 이벤트는 다음을 검증하는 Pest 테스트를 함께 작성한다:
+
+- `broadcastOn()` 반환 채널 (Channel name 검증)
+- `broadcastAs()` 이벤트명
+- 모든 public 프로퍼티 값 (생성자 주입값이 올바르게 설정되는지)
+- 기본값이 있는 프로퍼티는 기본값 검증도 포함
+
+기존 `tests/Feature/Events/BatchCompletedTest.php`, `TranslationProgressTest.php` 패턴을 참고한다.
+
+### OllamaTranslator 세그먼트 캐싱 검증
+
+- **캐시 재사용은 mock의 호출 횟수로 검증**: `OllamaClient::chat()`을 mock 하고 `->times(N)`으로 Ollama API 호출 횟수를 정량 단언한다. `"A>B>C>D1"` 번역 후 `"A>B>C>D2"` 번역 시 공통 prefix 세그먼트(A,B,C)는 캐시 히트되어 `->once()`만 호출된다.
+- **`andReturnValues([])`로 순차 응답**: 여러 세그먼트의 번역 결과를 순서대로 반환할 때 사용.
 
 ### 서비스 클래스 캐싱 패턴
 

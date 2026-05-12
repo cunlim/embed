@@ -99,6 +99,9 @@ docker exec cl_embed_nextjs sh -c "cd /app && npm ..."
 
 ## 알려진 이슈
 
+- **Docker 바인드 마운트 동기화 불일치 (양방향)** — 호스트↔컨테이너 파일 변경이 즉시 반영되지 않을 수 있다. 파일 수정 후 **반드시 `wc -l`로 양쪽 라인 수를 비교**할 것. 불일치 시 호스트→컨테이너: `cat <host-path> | base64 | docker exec -i bash -c "base64 -d > <container-path>"`, 컨테이너→호스트: `docker exec cat <container-path> > <host-path>`. `laravel/app/` 신규 클래스가 컨테이너에만 존재하면 호스트 `git add`가 실패하므로 컨테이너→호스트 복사 후 커밋한다.
+- **신규 디렉토리는 컨테이너에 수동 생성 필요** — 호스트에서 새 디렉토리(예: `tests/Feature/Events/`)를 만들면 bind mount로 컨테이너에 자동 반영되지 않을 수 있다. `docker exec cl_embed_laravel mkdir -p <path>`로 컨테이너에도 동일 디렉토리를 생성한 후 base64 방식으로 파일을 동기화할 것.
+- **`composer dump-autoload` 필요 시점** — `php artisan make:model` 바깥에서 수동 생성한 클래스(Job, Event 등)는 autoloader 캐시에 반영되지 않는다. `docker exec cl_embed_laravel composer dump-autoload` 실행 후 테스트해야 한다.
 - **tinker 쓰기 권한 오류** — `useradd -m`으로 홈 디렉토리(`/home/appuser`)를 생성하므로 해결됨. 컨테이너가 appuser로 실행되므로 `.config/psysh`는 런타임에 자동으로 올바른 소유권으로 생성된다.
 - **Next.js HMR 에러 로그** — `embed_nextjs_error.log`의 "Connection refused"는 dev 서버 재시작 시 정상 발생. 개발 편의를 위해 dev 모드를 기본으로 사용하며, `npm run build` 후 컨테이너 재시작 시 자동으로 production 모드(`npm start`)로 전환된다.
 - **인라인 PHP 경로** — Laravel 작업 디렉터리는 `/var/www/html`. `/var/www/vendor/...`는 존재하지 않음.
