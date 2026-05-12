@@ -7,7 +7,8 @@
       "name": "api-routes",
       "status": "completed",
       "started_at": "2026-05-12T19:01:09+0900",
-      "summary": "routes/api.php 생성, CategoryController + CategoryStoreRequest/BatchTranslateRequest + CategoryResource/CategoryCollection 생성. bootstrap/app.php는 이미 api 라우트 등록 완료."
+      "summary": "routes/api.php 생성, CategoryController + CategoryStoreRequest/BatchTranslateRequest + CategoryResource/CategoryCollection 생성. bootstrap/app.php는 이미 api 라우트 등록 완료.",
+      "completed_at": "2026-05-12T19:21:40+0900"
     },
     {
       "step": 1,
