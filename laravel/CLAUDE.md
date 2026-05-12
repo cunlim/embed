@@ -247,6 +247,11 @@ docker exec cl_embed_laravel php artisan config:show app.name
 
 TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한다.
 
+### Bus::fake / Event::fake 사용 시 주의사항
+
+- **`Bus::fake()` + `assertBatched()` 콜백 타입**: `Bus::fake()` 사용 시 `assertBatched(callback)`의 콜백 파라미터는 `Illuminate\Bus\Batch`가 아닌 `Illuminate\Support\Testing\Fakes\PendingBatchFake` 이다. `$batch->name`, `count($batch->jobs)` 등으로 검증한다. `$batch->totalJobs` 속성은 존재하지 않는다.
+- **`Event::fake()`는 Eloquent 라이프사이클 이벤트까지 캡처한다**: `Event::fake()` (인자 없는 호출) 시 `eloquent.booting`, `eloquent.booted` 등 Model 생성 시 발생하는 프레임워크 내부 이벤트까지 캡처된다. `Event::assertNothingDispatched()`를 쓰려면 `Event::fake([SpecificEvent::class])`로 감시 대상을 한정해야 한다.
+
 ### 테스트 환경 제약 (SQLite + pgvector)
 
 **CRITICAL** — 이 프로젝트의 `phpunit.xml`은 `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`로 설정되어 있다. SQLite는 PostgreSQL 전용 확장(`CREATE EXTENSION IF NOT EXISTS vector`)을 지원하지 않으므로, 마이그레이션을 실행하는 `RefreshDatabase` trait을 사용할 수 없다.
