@@ -200,6 +200,9 @@ docker exec cl_embed_laravel php artisan make:controller Api/ControllerName
 # 라우트 확인
 docker exec cl_embed_laravel php artisan route:list
 
+# Swagger 문서 생성
+docker exec cl_embed_laravel php artisan l5-swagger:generate
+
 # 설정 확인
 docker exec cl_embed_laravel php artisan config:show app.name
 ```
@@ -222,6 +225,14 @@ docker exec cl_embed_laravel php artisan config:show app.name
 - **API 리소스**: 버저닝과 함께 Eloquent API Resources 사용. `JsonResponse` 반환 시 `response()->json(Resource::collection($items))`가 아닌 `Resource::collection($items)->response()`를 사용해야 `{data: [...]}` 래퍼가 적용된다.
 - **Pest 테스트**: `php artisan make:test --pest`로 생성, 기존 테스트 컨벤션 따름
 - **PHP 변경 완료 전** 반드시 `vendor/bin/pint --format agent` 실행 (컨테이너 내부 기준)
+
+### L5-Swagger OA 어노테이션 컨벤션
+
+- **`OA\JsonContent`는 `type: 'object'`를 명시** — `properties`가 있는 모든 `JsonContent`는 `type: 'object'`를 명시해야 Swagger UI가 올바르게 렌더링한다.
+- **description은 "무엇"을 기술** — API 소비자용 인터페이스 명세이므로 구현 디테일(Job dispatch, pipeline 등)을 배제하고 기능 동작만 기술한다.
+- **enum 값은 FormRequest와 일치** — OA `enum`과 FormRequest validation rule(`in:`)이 불일치하면 문서가 거짓 정보를 제공한다.
+- **숫자 필드는 `example` 추가** — Swagger UI Try-It-Out에서 응답 해석을 돕기 위해 `similarity_score` 등 `number` 타입에 예시값을 제공한다.
+- **OA 변경 후 `l5-swagger:generate`로 검증** — 어노테이션 구문 오류는 generate 시점에 발견된다.
 
 ### 모델 생성 체크리스트
 

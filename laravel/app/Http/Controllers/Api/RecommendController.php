@@ -37,12 +37,13 @@ class RecommendController extends Controller
                 response: 200,
                 description: '추천 결과',
                 content: new OA\JsonContent(
+                    type: 'object',
                     properties: [
                         new OA\Property(property: 'data', type: 'array', items: new OA\Items(
                             properties: [
                                 new OA\Property(property: 'category_code', type: 'string'),
                                 new OA\Property(property: 'category_name', type: 'string'),
-                                new OA\Property(property: 'similarity_score', type: 'number'),
+                                new OA\Property(property: 'similarity_score', type: 'number', example: 0.9876),
                             ]
                         )),
                     ]

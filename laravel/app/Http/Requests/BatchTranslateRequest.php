@@ -17,7 +17,7 @@ class BatchTranslateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'target_language' => ['required', 'string', 'in:ko,zh,en'],
+            'target_language' => ['required', 'string', 'in:zh,en'],
         ];
     }
 }

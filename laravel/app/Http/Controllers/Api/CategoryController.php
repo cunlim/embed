@@ -25,6 +25,7 @@ class CategoryController extends Controller
                 response: 200,
                 description: '카테고리 목록',
                 content: new OA\JsonContent(
+                    type: 'object',
                     properties: [
                         new OA\Property(property: 'data', type: 'array', items: new OA\Items(
                             properties: [
@@ -48,7 +49,7 @@ class CategoryController extends Controller
     #[OA\Post(
         path: '/api/categories',
         summary: '카테고리 생성',
-        description: '새로운 카테고리를 생성하고 zh, en 번역 Job을 디스패치합니다.',
+        description: '카테고리를 생성하고 번역을 예약합니다.',
         tags: ['Categories'],
         security: [['sanctum' => []]],
         requestBody: new OA\RequestBody(
@@ -152,7 +153,7 @@ class CategoryController extends Controller
             content: new OA\JsonContent(
                 required: ['target_language'],
                 properties: [
-                    new OA\Property(property: 'target_language', type: 'string', enum: ['ko', 'zh', 'en']),
+                    new OA\Property(property: 'target_language', type: 'string', enum: ['zh', 'en']),
                 ]
             )
         ),
