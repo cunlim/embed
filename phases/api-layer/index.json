@@ -16,7 +16,7 @@
       "status": "completed",
       "started_at": "2026-05-12T19:32:31+0900",
       "summary": "RecommendController(+RecommendRequest, RecommendResource) 생성 및 POST /api/recommend 라우트 등록. pgvector 코사인 유사도로 상위 5개 카테고리 추천.",
-      "completed_at": "2026-05-12T20:00:00+0900"
+      "completed_at": "2026-05-12T19:41:52+0900"
     },
     {
       "step": 2,
