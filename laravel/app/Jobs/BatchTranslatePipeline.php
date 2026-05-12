@@ -49,14 +49,14 @@ class BatchTranslatePipeline implements ShouldQueue
 
         $chunks = $categories->chunk(100);
 
-        foreach ($chunks as $chunk) {
+        foreach ($chunks as $index => $chunk) {
             $jobs = $chunk->map(fn (Category $category) => new TranslateAndEmbedJob(
                 $category->id,
                 $this->targetLanguage,
             ))->all();
 
             Bus::batch($jobs)
-                ->name("translate-embed-{$this->targetLanguage}")
+                ->name("translate-embed-{$this->targetLanguage}-chunk-{$index}")
                 ->allowFailures()
                 ->progress(function (Batch $batch) {
                     TranslationProgress::dispatch(
@@ -68,7 +68,7 @@ class BatchTranslatePipeline implements ShouldQueue
                     );
                 })
                 ->then(function (Batch $batch) use ($lock) {
-                    BatchCompleted::dispatch($batch->id);
+                    BatchCompleted::dispatch($batch->id, $batch->failedJobs);
                     $lock->release();
                 })
                 ->catch(function (Batch $batch, Throwable $e) use ($lock) {

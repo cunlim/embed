@@ -101,7 +101,7 @@ test('categoryIds가 빈 배열이면 전체 카테고리를 처리한다', func
     Bus::assertBatchCount(1);
 });
 
-test('배치 이름은 translate-embed-{언어} 형식이다', function () {
+test('배치 이름은 translate-embed-{언어}-chunk-{인덱스} 형식이다', function () {
     Bus::fake();
     Category::factory()->create();
 
@@ -109,6 +109,6 @@ test('배치 이름은 translate-embed-{언어} 형식이다', function () {
     $pipeline->handle();
 
     Bus::assertBatched(function (PendingBatchFake $batch) {
-        return $batch->name === 'translate-embed-ko';
+        return $batch->name === 'translate-embed-ko-chunk-0';
     });
 });

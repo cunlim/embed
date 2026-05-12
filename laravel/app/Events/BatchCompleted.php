@@ -14,6 +14,7 @@ class BatchCompleted implements ShouldBroadcast
 
     public function __construct(
         public string $batchId,
+        public int $failedJobs = 0,
     ) {}
 
     public function broadcastOn(): Channel
