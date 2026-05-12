@@ -219,7 +219,7 @@ docker exec cl_embed_laravel php artisan config:show app.name
 - **타입 힌트**: 모든 메서드에 명시적 반환 타입과 파라미터 타입 선언
 - **제어 구조**: 단일 라인이라도 항상 중괄호 사용
 - **URL 생성**: `route()` 헬퍼 함수와 명명된 라우트 사용
-- **API 리소스**: 버저닝과 함께 Eloquent API Resources 사용
+- **API 리소스**: 버저닝과 함께 Eloquent API Resources 사용. `JsonResponse` 반환 시 `response()->json(Resource::collection($items))`가 아닌 `Resource::collection($items)->response()`를 사용해야 `{data: [...]}` 래퍼가 적용된다.
 - **Pest 테스트**: `php artisan make:test --pest`로 생성, 기존 테스트 컨벤션 따름
 - **PHP 변경 완료 전** 반드시 `vendor/bin/pint --format agent` 실행 (컨테이너 내부 기준)
 
@@ -269,6 +269,8 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
 - **`RefreshDatabase` 사용 금지** — pgvector 마이그레이션이 포함되어 있어 SQLite에서 구문 오류 발생
 - **대체 패턴**: `beforeEach`에서 필요한 테이블만 `Schema::create()`로 생성하고 `afterEach`에서 `Schema::dropIfExists()`로 정리한다
 - **DB 불필요한 테스트** (예: `TextSplitter` 같은 순수 유닛)는 테이블 생성 자체가 불필요하다
+- **`DB::shouldReceive()` / `DB::spy()` 사용 금지** — DB 파사드 모킹은 컨테이너의 `db` 바인딩을 교체하여 `Schema::create/drop`과 Eloquent 쿼리까지 차단한다. pgvector raw SQL(`DB::select`)을 호출하는 Controller 테스트는 유효성 검증(HTTP 응답), 모의 검증(`EmbeddingGenerator` mock), Resource 형식(Unit) 등 레이어를 분리하여 작성한다.
+- **pgvector raw SQL 바인딩은 `::vector` 명시적 캐스트 필수** — `DB::select()`에서 `<=>` 연산자에 bound parameter를 사용할 때 PDO는 text로 바인딩한다. `:query_vector::vector`와 같이 명시적 타입 캐스트를 추가해야 한다.
 - **더 자세한 내용과 예제 코드**: `docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md` 참조
 
 ### 서비스 클래스 테스트 최소 요건

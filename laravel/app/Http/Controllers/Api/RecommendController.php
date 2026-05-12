@@ -67,7 +67,7 @@ class RecommendController extends Controller
         $vectorLiteral = '['.implode(',', $queryVector).']';
 
         $results = DB::select(
-            'SELECT ce.category_id, ce.embedding <=> :query_vector AS distance
+            'SELECT ce.category_id, ce.embedding <=> :query_vector::vector AS distance
              FROM category_embeddings ce
              WHERE ce.language = :lang
              ORDER BY distance ASC
@@ -112,8 +112,6 @@ class RecommendController extends Controller
             ];
         }
 
-        return response()->json(
-            RecommendResource::collection($recommendations)
-        );
+        return RecommendResource::collection($recommendations)->response();
     }
 }
