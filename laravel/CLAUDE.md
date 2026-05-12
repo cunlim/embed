@@ -276,6 +276,11 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
 - **Unit 테스트에서 `$this->mock()` 필요 시 `uses(TestCase::class)` 선언**: `tests/Unit/` 디렉토리의 테스트는 기본적으로 Laravel `TestCase`를 상속하지 않으므로 `$this->mock()`이나 `$this->app`에 접근할 수 없다. 컨테이너 접근이 필요하면 파일 상단에 `use Tests\TestCase;` + `uses(TestCase::class);`를 추가할 것. (`tests/Unit/CategoryEmbeddingTest.php`의 패턴 참고)
 - 기존 Feature 테스트(`OllamaTranslatorTest`, `EmbeddingGeneratorTest`)의 mock 패턴을 참고할 것.
 
+### OllamaTranslator 세그먼트 캐싱 검증
+
+- **캐시 재사용은 mock의 호출 횟수로 검증**: `OllamaClient::chat()`을 mock 하고 `->times(N)`으로 Ollama API 호출 횟수를 정량 단언한다. `"A>B>C>D1"` 번역 후 `"A>B>C>D2"` 번역 시 공통 prefix 세그먼트(A,B,C)는 캐시 히트되어 `->once()`만 호출된다.
+- **`andReturnValues([])`로 순차 응답**: 여러 세그먼트의 번역 결과를 순서대로 반환할 때 사용.
+
 ### 서비스 클래스 캐싱 패턴
 
 - **그룹 조회 최적화**: 여러 키를 그룹 단위로 조회하는 메서드(`all()` 등)에서는 개별 키마다 `Cache::remember()`를 호출하지 말고, 그룹 전체를 하나의 캐시 키로 묶어 저장한다. DB 쿼리 1회 + 캐시 호출 1회로 유지한다.
