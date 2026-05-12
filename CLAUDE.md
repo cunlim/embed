@@ -18,7 +18,7 @@
 
 AI 기반 다국어 카테고리 추천 시스템 (포트폴리오). 사용자 텍스트를 분석해 네이버 카테고리 체계 기준으로 적합한 카테고리를 추천. 한국어/중국어/영어 지원, pgvector 코사인 유사도 검색 사용.
 
-**현재 상태**: 인프라(Docker 컨테이너 5개, 도메인, CI/CD) 구축 완료. `/` 랜딩 페이지 구현 완료 (shadcn/ui, 화이트/다크 모드, 반응형). Swagger UI (`/swagger/`) 초기화 완료. 진행 중: Phase 1 (Laravel 비동기 백엔드 파이프라인).
+**현재 상태**: 인프라(Docker 컨테이너 5개, 도메인, CI/CD) 구축 완료. `/` 랜딩 페이지 구현 완료 (shadcn/ui, 화이트/다크 모드, 반응형). Swagger UI (`/swagger/`) 초기화 완료. Phase 3 (번역 파이프라인 — 이벤트/Job/Batch) 구현 완료.
 
 docker container 들은 port 를 개방하지 않으니 localhost 로 접속하지 말고 https://embed.cunlim.dev 로 접속해주세요
 
@@ -106,6 +106,7 @@ docker exec cl_embed_nextjs sh -c "cd /app && npm ..."
 - **Next.js HMR 에러 로그** — `embed_nextjs_error.log`의 "Connection refused"는 dev 서버 재시작 시 정상 발생. 개발 편의를 위해 dev 모드를 기본으로 사용하며, `npm run build` 후 컨테이너 재시작 시 자동으로 production 모드(`npm start`)로 전환된다.
 - **인라인 PHP 경로** — Laravel 작업 디렉터리는 `/var/www/html`. `/var/www/vendor/...`는 존재하지 않음.
 - **`RefreshDatabase` 사용 불가** — 테스트 DB가 SQLite 인메모리인데 pgvector 마이그레이션(`CREATE EXTENSION IF NOT EXISTS vector`)이 SQLite와 호환되지 않음. `tests/Pest.php`에서 주석 처리되어 있으며, 대신 `Schema::create()`로 필요한 테이블만 수동 생성한다. 상세: `docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md`
+- **Docker Desktop WSL2 `restart` 불가** — `docker compose restart` 시 바인드 마운트 경로가 무효화되어 `no such file or directory` 오류 발생. `stop` + `up -d` 조합을 사용할 것. `--force-recreate`도 동일한 문제가 있어 사용 불가.
 
 ## 인프라 환경 (WSL2)
 
@@ -121,9 +122,9 @@ cd docker && docker compose up -d
 # 모든 서비스 중지
 cd docker && docker compose down
 
-# 단일 서비스 재시작
-docker compose restart cl_embed_laravel
-docker compose restart cl_embed_nextjs
+# 단일 서비스 재시작 (WSL2에서는 restart 사용 불가 — 아래 이슈 참조)
+docker compose stop cl_embed_laravel cl_embed_nextjs
+docker compose up -d cl_embed_laravel cl_embed_nextjs
 
 # 로그 확인
 docker compose logs -f cl_embed_laravel
