@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Services\EmbeddingGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use OpenApi\Attributes as OA;
 
 class RecommendController extends Controller
 {
@@ -16,6 +17,43 @@ class RecommendController extends Controller
         private EmbeddingGenerator $embeddingGenerator
     ) {}
 
+    #[OA\Post(
+        path: '/api/recommend',
+        summary: '카테고리 추천',
+        description: '입력 텍스트를 분석하여 pgvector 코사인 유사도 기반으로 가장 적합한 상위 5개 카테고리를 추천합니다.',
+        tags: ['Recommend'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['text', 'target_language'],
+                properties: [
+                    new OA\Property(property: 'text', type: 'string', minLength: 1, maxLength: 500),
+                    new OA\Property(property: 'target_language', type: 'string', enum: ['ko', 'zh', 'en']),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: '추천 결과',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'data', type: 'array', items: new OA\Items(
+                            properties: [
+                                new OA\Property(property: 'category_code', type: 'string'),
+                                new OA\Property(property: 'category_name', type: 'string'),
+                                new OA\Property(property: 'similarity_score', type: 'number'),
+                            ]
+                        )),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: '입력값 검증 실패',
+            ),
+        ]
+    )]
     public function recommend(RecommendRequest $request): JsonResponse
     {
         $validated = $request->validated();
