@@ -103,12 +103,13 @@ jobs:
           }
 
       # 7. 컨테이너 재시작 — supervisord가 최신 코드로 프로세스 재시작
-      #     restart 대신 up -d 사용: Docker Desktop WSL2에서 restart 시 바인드 마운트 경로가
-      #     무효화되어 "no such file or directory" 오류 발생
+      #     restart/force-recreate 대신 stop+up 사용: Docker Desktop WSL2에서
+      #     bind mount 경로가 무효화되어 "no such file or directory" 오류 발생
       - name: Restart Containers
         run: |
           cd ./docker
-          docker compose up -d --force-recreate cl_embed_laravel cl_embed_nextjs
+          docker compose stop cl_embed_laravel cl_embed_nextjs
+          docker compose up -d cl_embed_laravel cl_embed_nextjs
           docker exec docker-nginx-1 nginx -s reload
           sleep 3
 
