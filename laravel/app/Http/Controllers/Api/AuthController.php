@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,12 +25,7 @@ class AuthController extends Controller
 
         return response()->json([
             'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'created_at' => $user->created_at,
-                ],
+                'user' => (new UserResource($user))->resolve(),
                 'token' => $token,
                 'token_type' => 'Bearer',
             ],
@@ -50,11 +46,7 @@ class AuthController extends Controller
 
         return response()->json([
             'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                ],
+                'user' => (new UserResource($user))->resolve(),
                 'token' => $token,
                 'token_type' => 'Bearer',
             ],
@@ -72,14 +64,6 @@ class AuthController extends Controller
 
     public function user(Request $request): JsonResponse
     {
-        $user = $request->user();
-
-        return response()->json([
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ],
-        ]);
+        return (new UserResource($request->user()))->response();
     }
 }

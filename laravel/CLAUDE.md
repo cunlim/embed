@@ -222,7 +222,10 @@ docker exec cl_embed_laravel php artisan config:show app.name
 - **타입 힌트**: 모든 메서드에 명시적 반환 타입과 파라미터 타입 선언
 - **제어 구조**: 단일 라인이라도 항상 중괄호 사용
 - **URL 생성**: `route()` 헬퍼 함수와 명명된 라우트 사용
-- **API 리소스**: 버저닝과 함께 Eloquent API Resources 사용. `JsonResponse` 반환 시 `response()->json(Resource::collection($items))`가 아닌 `Resource::collection($items)->response()`를 사용해야 `{data: [...]}` 래퍼가 적용된다.
+- **API 리소스**: 버저닝과 함께 Eloquent API Resources 사용.
+  - 단독 응답: `(new SomeResource($model))->response()` → `{data: {...}}` 래퍼 자동 적용, 반환 타입 `JsonResponse`와 호환
+  - 복합 응답: `(new SomeResource($model))->resolve()`로 배열 추출 후 다른 키와 함께 `response()->json()`에 임베딩 (예: `'user' => (new UserResource($user))->resolve()`)
+  - 컬렉션: `SomeResource::collection($items)->response()` → `{data: [...]}`
 - **Pest 테스트**: `php artisan make:test --pest`로 생성, 기존 테스트 컨벤션 따름
 - **PHP 변경 완료 전** 반드시 `vendor/bin/pint --format agent` 실행 (컨테이너 내부 기준)
 
