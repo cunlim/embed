@@ -29,7 +29,7 @@
       "name": "admin-page",
       "status": "completed",
       "started_at": "2026-05-13T15:08:11+0900",
-      "completed_at": "2026-05-13T16:30:00+0900",
+      "completed_at": "2026-05-13T15:33:57+0900",
       "summary": "app/admin/page.tsx 생성. 인증 가드, 카테고리 목록 테이블(데스크톱/모바일), 카테고리 추가 폼, 일괄 번역 트리거, 임베딩 재생성 버튼 구현. useCategories 훅 연동"
     },
     {
