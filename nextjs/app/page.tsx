@@ -2,15 +2,20 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ChevronRight, Terminal, Globe, Search, Cpu, LogIn } from "lucide-react";
+import { ChevronRight, Terminal, Globe, Search, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
-import { useAuth, getToken } from "@/hooks/useAuth";
+import { AuthButtons } from "@/components/auth-buttons";
 import { cn } from "@/lib/utils";
 
 export default function Home() {
+  const [mounted, setMounted] = React.useState(false);
   const [typedText, setTypedText] = React.useState("");
   const fullText = "Multilingual Category Intelligence";
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   React.useEffect(() => {
     let i = 0;
@@ -21,15 +26,6 @@ export default function Home() {
     }, 50);
     return () => clearInterval(interval);
   }, []);
-
-  const { user } = useAuth();
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const hasToken = mounted && !!getToken();
-  const isLoggedIn = mounted && !!user;
 
   const features = [
     {
@@ -97,24 +93,7 @@ export default function Home() {
 
       {/* Nav */}
       <SiteHeader>
-        {mounted && !hasToken ? (
-          <Button variant="ghost" size="sm" asChild className="rounded-full">
-            <Link href="/login">
-              <LogIn className="mr-1.5 h-4 w-4" />
-              로그인
-            </Link>
-          </Button>
-        ) : null}
-        {isLoggedIn && (
-          <Button variant="ghost" size="sm" asChild className="rounded-full">
-            <Link href="/admin">
-              <span className="mr-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent/20 text-[10px] font-bold text-accent">
-                {user?.name?.charAt(0) ?? "U"}
-              </span>
-              {user?.name ?? "사용자"}
-            </Link>
-          </Button>
-        )}
+        <AuthButtons />
       </SiteHeader>
 
       {/* Hero */}

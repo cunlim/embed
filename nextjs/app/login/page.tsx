@@ -1,14 +1,44 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { SiteHeader } from "@/components/site-header";
 import { SocialLogin } from "@/components/social-login";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { getToken, setToken } from "@/hooks/useAuth";
 
 function LoginForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const redirectTo = searchParams.get("redirect") || "/embed";
+  const token = searchParams.get("token");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    if (token) {
+      setToken(token);
+      router.replace(redirectTo);
+      return;
+    }
+
+    if (getToken()) {
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        router.replace("/");
+      }
+    }
+  }, [mounted, token, redirectTo, router]);
+
+  if (!mounted || token || getToken()) {
+    return null;
+  }
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">

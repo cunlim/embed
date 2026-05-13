@@ -30,6 +30,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SiteHeader } from "@/components/site-header";
+import { AuthButtons } from "@/components/auth-buttons";
 import { useRecommend } from "@/hooks/useRecommend";
 import { useBatchProgress } from "@/hooks/useBatchProgress";
 import { useAuth, getToken } from "@/hooks/useAuth";
@@ -39,7 +40,6 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
 export default function EmbedPage() {
-  const { user } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -49,10 +49,10 @@ export default function EmbedPage() {
 
   // 인증 가드 — 비로그인 시 /login?redirect=/embed로 리다이렉트
   useEffect(() => {
-    if (mounted && !user && !getToken()) {
+    if (mounted && !getToken()) {
       router.replace("/login?redirect=/embed");
     }
-  }, [mounted, user, router]);
+  }, [mounted, router]);
 
   const [text, setText] = useState("");
   const [language, setLanguage] = useState("ko");
@@ -155,7 +155,9 @@ export default function EmbedPage() {
       <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-blue-500/15 dark:bg-blue-500/10" />
       <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
 
-      <SiteHeader />
+      <SiteHeader>
+        <AuthButtons />
+      </SiteHeader>
 
       {/* Main */}
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-12 sm:px-8">

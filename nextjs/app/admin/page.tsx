@@ -6,7 +6,6 @@ import {
   Plus,
   RefreshCw,
   AlertCircle,
-  LogOut,
   Database,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,11 +22,12 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SiteHeader } from "@/components/site-header";
+import { AuthButtons } from "@/components/auth-buttons";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
 
 export default function AdminPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -75,11 +75,6 @@ export default function AdminPage() {
     setNewCategoryName("");
   }, [newCategoryName, addCategory]);
 
-  const handleLogout = useCallback(async () => {
-    await logout();
-    router.push("/");
-  }, [logout, router]);
-
   if (!mounted) return null;
 
   return (
@@ -90,9 +85,7 @@ export default function AdminPage() {
       <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
 
       <SiteHeader badge="admin">
-        <Button variant="ghost" size="icon" onClick={handleLogout}>
-          <LogOut className="h-4 w-4" />
-        </Button>
+        <AuthButtons />
       </SiteHeader>
 
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-12 sm:px-8">

@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 const oauthProviders = [
   {
     provider: "google" as const,
-    label: "Google로 계속하기",
+    label: "Sign in with Google",
     // biome-ignore lint/a11y/noSvgWithoutTitle: Google icon
     icon: ({ className }: { className?: string }) => (
       <svg
@@ -37,7 +37,7 @@ const oauthProviders = [
   },
   {
     provider: "github" as const,
-    label: "GitHub로 계속하기",
+    label: "Sign in with GitHub",
     // biome-ignore lint/a11y/noSvgWithoutTitle: GitHub icon
     icon: ({ className }: { className?: string }) => (
       <svg
@@ -52,13 +52,13 @@ const oauthProviders = [
   },
   {
     provider: "naver" as const,
-    label: "Naver로 계속하기",
+    label: "Sign in with Naver",
     // biome-ignore lint/a11y/noSvgWithoutTitle: Naver icon
     icon: ({ className }: { className?: string }) => (
       <svg
         className={className}
         viewBox="0 0 24 24"
-        fill="currentColor"
+        fill="#03C75A"
         xmlns="http://www.w3.org/2000/svg"
       >
         <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z" />
@@ -92,7 +92,7 @@ export function SocialLogin({ className }: SocialLoginProps) {
             key={provider}
             variant="outline"
             size="lg"
-            className="w-full cursor-pointer justify-start gap-4 px-6 py-6 transition-all duration-200 hover:border-accent/30 hover:bg-muted hover:text-foreground"
+            className="w-full cursor-pointer justify-center gap-2 px-6 py-6 transition-all duration-200 hover:border-accent/30 hover:bg-muted hover:text-foreground"
             disabled={isLoading}
             onClick={() => {
               setError(null);
@@ -104,7 +104,7 @@ export function SocialLogin({ className }: SocialLoginProps) {
             ) : (
               <Icon className="h-5 w-5 shrink-0" />
             )}
-            <span className="flex-1 text-left text-sm font-medium">
+            <span className="text-sm font-medium">
               {label}
             </span>
           </Button>
