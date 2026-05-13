@@ -1,23 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import {
-  login as apiLogin,
-  register as apiRegister,
-  logout as apiLogout,
-  type User,
-} from "@/lib/api";
+import { logout as apiLogout, type User } from "@/lib/api";
 
 interface UseAuthReturn {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (
-    name: string,
-    email: string,
-    password: string,
-    passwordConfirmation: string
-  ) => Promise<void>;
   logout: () => Promise<void>;
   loginWithOAuth: (provider: "google" | "github" | "naver") => void;
 }
@@ -39,41 +27,6 @@ export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const login = useCallback(async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const data = await apiLogin(email, password);
-      setToken(data.token);
-      setUser(data.user);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const register = useCallback(
-    async (
-      name: string,
-      email: string,
-      password: string,
-      passwordConfirmation: string
-    ) => {
-      setIsLoading(true);
-      try {
-        const data = await apiRegister(
-          name,
-          email,
-          password,
-          passwordConfirmation
-        );
-        setToken(data.token);
-        setUser(data.user);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
-
   const logout = useCallback(async () => {
     const token = getToken();
     try {
@@ -92,7 +45,7 @@ export function useAuth(): UseAuthReturn {
     []
   );
 
-  return { user, isLoading, login, register, logout, loginWithOAuth };
+  return { user, isLoading, logout, loginWithOAuth };
 }
 
 export { getToken, setToken, removeToken };

@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { SiteHeader } from "@/components/site-header";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
 
@@ -89,26 +89,11 @@ export default function AdminPage() {
       <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-blue-500/15 dark:bg-blue-500/10" />
       <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
 
-      {/* Nav */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-4 sm:px-8">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold">
-            CL
-          </div>
-          <span className="font-mono text-sm font-medium text-foreground">
-            CL Embed
-          </span>
-          <span className="ml-2 rounded-full border border-border px-2 py-0.5 font-mono text-xs text-muted-foreground">
-            admin
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={handleLogout}>
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
-      </header>
+      <SiteHeader badge="admin">
+        <Button variant="ghost" size="icon" onClick={handleLogout}>
+          <LogOut className="h-4 w-4" />
+        </Button>
+      </SiteHeader>
 
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-12 sm:px-8">
         <h1 className="mb-8 text-3xl font-bold tracking-tight sm:text-4xl">

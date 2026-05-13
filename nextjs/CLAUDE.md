@@ -19,6 +19,8 @@ nextjs/
 │   ├── page.tsx            # / 랜딩 페이지
 │   └── globals.css         # Tailwind + CSS 변수
 ├── components/
+│   ├── site-header.tsx    # 공통 헤더 (로고→"/" 링크, ThemeToggle 우측 고정, badge/children prop)
+│   ├── social-login.tsx   # 소셜 로그인 버튼 그룹 (페이지/Modal 재사용 가능)
 │   ├── ui/                 # shadcn/ui 컴포넌트 (자동 생성)
 │   ├── theme-provider.tsx  # next-themes Provider
 │   └── theme-toggle.tsx    # 화이트/다크 모드 토글
@@ -164,6 +166,7 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - **`window.Pusher` 타입 선언** — `pusher-js`가 요구하는 `window.Pusher` 할당은 `as never as`로 우회하지 말고 `global.d.ts`에 `interface Window { Pusher: ... }`로 정식 선언할 것.
 - **`createEcho()` 에러 핸들링** — 동적 import 실패나 Echo 생성자 예외에 대비해 `.catch()` 핸들러를 반드시 추가할 것. 미처리 시 영원히 `null` 상태로 남는다.
 - **lucide-react 브랜드 아이콘 없음** — Google, GitHub, Naver 등 OAuth 브랜드 아이콘은 lucide-react에 없다. 인라인 SVG 사용.
+- **outline 버튼 light 모드 hover 텍스트 invisible** — `variant="outline"`은 `hover:text-accent-foreground`를 포함하는데, light 배경에서 accent-foreground는 흰색 계열이므로 텍스트가 보이지 않게 된다. `hover:bg-muted hover:text-foreground`로 덮어쓸 것.
 - **shadcn form 컴포넌트 수동 생성** — `npx shadcn add form`이 조용히 실패할 수 있음. 필요 시 `components/ui/form.tsx`를 수동 작성 (react-hook-form + Controller 통합).
 - **`useSearchParams`는 `<Suspense>` 경계 필수** — `useSearchParams()`를 사용하는 페이지는 반드시 `<Suspense>`로 감싸야 한다. 빌드 시 "useSearchParams() should be wrapped in a suspense boundary" 오류 발생. 패턴: `export default function Page() { return <Suspense><InnerForm /></Suspense>; }` — 내부 컴포넌트에서 `useSearchParams()` 사용.
 - **인증 가드 패턴** — Client Component에서 `useAuth()`, `getToken()`, `mounted`로 2단계 검사. ① 비로그인(`!user && !getToken()`) → `router.replace("/login?redirect=<현재경로>")` — `push` 대신 `replace`를 사용하여 리다이렉트가 브라우저 히스토리에 남지 않게 함(뒤로가기 루프 방지). ② 로그인 + 관리자 아님(`user.id !== 1`) → `alert(...)` + `router.back()`. 관리자 판별은 `id === 1` 기준(DB role 컬럼 없음). 로그인 페이지는 `useSearchParams().get("redirect")`로 복귀 경로 처리. `mounted` 상태로 hydration 전 불필요한 리다이렉트 방지.

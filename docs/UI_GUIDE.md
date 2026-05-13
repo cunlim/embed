@@ -281,17 +281,27 @@ Feature card 패턴:
 - **특수효과**: 그리드 배경, 글로우 오브, 타이핑 애니메이션, 터미널 라인 stagger, 노이즈 오버레이
 - **주의**: height 길게 불필요, 한 화면에 핵심 정보를 컴팩트하게 배치
 
-### 6.2 로그인 페이지 (미구현)
+### 6.2 로그인 페이지
 
-- **목적**: 사용자 인증
+- **목적**: OAuth 소셜 계정 인증 (이메일/비밀번호 로그인 없음)
+- **핵심 요구사항**:
+  - 로그인/회원가입 구분 없음 — 소셜 버튼 클릭 시 미가입자는 자동 회원가입 후 로그인
+  - 이메일·비밀번호 입력 필드 없음, 별도 로그인 제출 버튼 없음
+  - Google, GitHub, Naver 3개 소셜 로그인 버튼만 제공
+- **컴포넌트 구조**:
+  - `components/site-header.tsx` — 공통 헤더. 로고 클릭 시 `/` 이동, ThemeToggle 항상 우측 고정, `badge`/`children` prop
+  - `components/social-login.tsx` — 소셜 로그인 버튼 그룹. 페이지 및 Modal 양쪽에서 재사용 가능
+  - `app/login/page.tsx` — 로그인 전용 페이지 (Card + SocialLogin)
 - **디자인 방향**:
-  - 랜딩 페이지와 동일한 색상 토큰 사용
-  - 중앙 정렬 카드 레이아웃
-  - shadcn Form 컴포넌트 사용
-  - `border-border`, `bg-card` 스타일의 카드에 폼 배치
-  - 소셜 로그인 버튼: `variant="outline"` + 각 서비스 아이콘
-  - 에러 상태: `role="alert"`, 빨간색 텍스트 + 아이콘
-  - 로딩 상태: 버튼 disabled + spinner
+  - 랜딩 페이지와 동일한 색상 토큰, 그리드 배경, 글로우 오브 사용
+  - `SiteHeader` 컴포넌트로 모든 페이지 헤더 일관성 유지
+  - 중앙 정렬 `max-w-sm` 카드 레이아웃, 카드 상단에 "CL Embed" 제목
+  - 소셜 로그인 버튼: `variant="outline"`, `size="lg"`, `cursor-pointer`
+  - 버튼 호버: `hover:border-accent/30 hover:bg-muted hover:text-foreground` + `transition-all duration-200`
+    - `hover:bg-accent/5` 사용 금지 — light 모드에서 `hover:text-accent-foreground`(흰색)과 조합 시 텍스트 invisible
+  - 넉넉한 여백: 카드 `pt-8 pb-8`, 버튼 간 `gap-4`, 버튼 내부 `px-6 py-6`
+  - 에러 상태: `role="alert"`, 빨간색 텍스트 + AlertCircle 아이콘
+  - 로딩 상태: 모든 버튼 disabled + spinner
 
 ### 6.3 `/embed` 기술 시연 페이지 (미구현)
 

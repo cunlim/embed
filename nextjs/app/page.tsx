@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ChevronRight, Terminal, Globe, Search, Cpu, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { SiteHeader } from "@/components/site-header";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -96,37 +96,26 @@ export default function Home() {
       <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
 
       {/* Nav */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-4 sm:px-8">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold">
-            CL
-          </div>
-          <span className="font-mono text-sm font-medium text-foreground">
-            CL Embed
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          {mounted && !hasToken ? (
-            <Button variant="ghost" size="sm" asChild className="rounded-full">
-              <Link href="/login">
-                <LogIn className="mr-1.5 h-4 w-4" />
-                로그인
-              </Link>
-            </Button>
-          ) : null}
-          {isLoggedIn && (
-            <Button variant="ghost" size="sm" asChild className="rounded-full">
-              <Link href="/admin">
-                <span className="mr-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent/20 text-[10px] font-bold text-accent">
-                  {user?.name?.charAt(0) ?? "U"}
-                </span>
-                {user?.name ?? "사용자"}
-              </Link>
-            </Button>
-          )}
-        </div>
-      </header>
+      <SiteHeader>
+        {mounted && !hasToken ? (
+          <Button variant="ghost" size="sm" asChild className="rounded-full">
+            <Link href="/login">
+              <LogIn className="mr-1.5 h-4 w-4" />
+              로그인
+            </Link>
+          </Button>
+        ) : null}
+        {isLoggedIn && (
+          <Button variant="ghost" size="sm" asChild className="rounded-full">
+            <Link href="/admin">
+              <span className="mr-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent/20 text-[10px] font-bold text-accent">
+                {user?.name?.charAt(0) ?? "U"}
+              </span>
+              {user?.name ?? "사용자"}
+            </Link>
+          </Button>
+        )}
+      </SiteHeader>
 
       {/* Hero */}
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-12 sm:px-8">
