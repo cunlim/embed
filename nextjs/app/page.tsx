@@ -4,8 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import { ChevronRight, Terminal, Globe, Search, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SiteHeader } from "@/components/site-header";
-import { AuthButtons } from "@/components/auth-buttons";
 import { cn } from "@/lib/utils";
 
 export default function Home() {
@@ -90,11 +88,6 @@ export default function Home() {
       {/* Glow orbs */}
       <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-blue-500/15 dark:bg-blue-500/10" />
       <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
-
-      {/* Nav */}
-      <SiteHeader>
-        <AuthButtons />
-      </SiteHeader>
 
       {/* Hero */}
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-12 sm:px-8">

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Archivo, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AppHeader } from "@/components/app-header";
 
 const archivo = Archivo({
   variable: "--font-archivo",
@@ -53,6 +54,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <AppHeader />
           {children}
         </ThemeProvider>
       </body>

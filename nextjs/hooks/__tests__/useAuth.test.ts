@@ -1,16 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { useAuth } from "@/hooks/useAuth";
 
 // api 모듈 모킹
 vi.mock("@/lib/api", () => ({
   logout: vi.fn(),
+  getUser: vi.fn(),
 }));
 
 const api = await import("@/lib/api");
 const mockLogout = api.logout as ReturnType<typeof vi.fn>;
+const mockGetUser = api.getUser as ReturnType<typeof vi.fn>;
 
 const mockToken = "auth-token-123";
+const mockUser = { id: 1, name: "관리자", email: "admin@example.com" };
 
 describe("useAuth", () => {
   beforeEach(() => {
@@ -22,12 +25,57 @@ describe("useAuth", () => {
     });
   });
 
+  describe("사용자 로드", () => {
+    it("토큰이 있으면 getUser를 호출하여 사용자 정보를 가져온다", async () => {
+      mockGetUser.mockResolvedValue(mockUser);
+      localStorage.setItem("auth_token", mockToken);
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.user).toEqual(mockUser);
+      });
+
+      expect(mockGetUser).toHaveBeenCalledWith(mockToken);
+    });
+
+    it("토큰이 없으면 user는 null로 유지된다", async () => {
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.user).toBeNull();
+      expect(mockGetUser).not.toHaveBeenCalled();
+    });
+
+    it("getUser 실패 시 토큰을 제거하고 user는 null로 유지된다", async () => {
+      mockGetUser.mockRejectedValue(new Error("인증 실패"));
+      localStorage.setItem("auth_token", mockToken);
+
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.user).toBeNull();
+      expect(localStorage.getItem("auth_token")).toBeNull();
+    });
+  });
+
   describe("logout", () => {
     it("API 호출 후 user를 null로, token을 제거한다", async () => {
+      mockGetUser.mockResolvedValue(mockUser);
       mockLogout.mockResolvedValue(undefined);
       localStorage.setItem("auth_token", mockToken);
 
       const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.user).toEqual(mockUser);
+      });
 
       await act(async () => {
         await result.current.logout();
@@ -39,10 +87,15 @@ describe("useAuth", () => {
     });
 
     it("API 실패 시에도 클라이언트 토큰을 제거한다", async () => {
+      mockGetUser.mockResolvedValue(mockUser);
       mockLogout.mockRejectedValue(new Error("서버 오류"));
       localStorage.setItem("auth_token", mockToken);
 
       const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.user).toEqual(mockUser);
+      });
 
       await act(async () => {
         await result.current.logout();
@@ -54,8 +107,13 @@ describe("useAuth", () => {
   });
 
   describe("loginWithOAuth", () => {
-    it("OAuth 제공자 URL로 리다이렉트한다", () => {
+    it("OAuth 제공자 URL로 리다이렉트한다", async () => {
+      mockGetUser.mockResolvedValue(null);
       const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
 
       act(() => {
         result.current.loginWithOAuth("google");

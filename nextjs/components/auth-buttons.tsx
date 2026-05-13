@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth, getToken } from "@/hooks/useAuth";
 
 export function AuthButtons() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -22,18 +22,25 @@ export function AuthButtons() {
 
   if (hasToken) {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="rounded-full"
-        onClick={async () => {
-          await logout();
-          router.push("/");
-        }}
-      >
-        <LogOut className="mr-1.5 h-4 w-4" />
-        로그아웃
-      </Button>
+      <div className="flex items-center gap-2">
+        {user && (
+          <span className="text-sm font-medium text-foreground">
+            {user.name}
+          </span>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-full"
+          onClick={async () => {
+            await logout();
+            router.push("/");
+          }}
+        >
+          <LogOut className="mr-1.5 h-4 w-4" />
+          로그아웃
+        </Button>
+      </div>
     );
   }
 

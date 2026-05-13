@@ -159,6 +159,7 @@ export function logout(token?: string | null): Promise<void> {
   return request<void>("/auth/logout", { method: "POST", token });
 }
 
-export function getUser(token?: string | null): Promise<User> {
-  return request<User>("/auth/user", { token });
+export async function getUser(token?: string | null): Promise<User> {
+  const res = await request<{ data: User }>("/auth/user", { token });
+  return res.data;
 }

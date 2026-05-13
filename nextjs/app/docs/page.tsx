@@ -6,7 +6,6 @@ import Link from "next/link";
 import { BookOpen, Menu, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 interface DocEntry {
@@ -75,33 +74,20 @@ export default function DocsPage() {
       <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-blue-500/15 dark:bg-blue-500/10" />
       <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
 
-      {/* Nav */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-4 sm:px-8">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold">
-            CL
-          </div>
-          <span className="font-mono text-sm font-medium text-foreground">
-            CL Embed
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          {/* 모바일 사이드바 토글 */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? (
-              <X className="h-4 w-4" />
-            ) : (
-              <Menu className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </header>
+      {/* 모바일 사이드바 토글 */}
+      <div className="relative z-10 flex justify-end px-6 sm:px-8 lg:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          {sidebarOpen ? (
+            <X className="h-4 w-4" />
+          ) : (
+            <Menu className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
 
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 px-6 py-12 sm:px-8">
         <div className="flex w-full gap-8">

@@ -21,15 +21,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SiteHeader } from "@/components/site-header";
-import { AuthButtons } from "@/components/auth-buttons";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
 
 export default function AdminPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -38,19 +37,19 @@ export default function AdminPage() {
   // 인증 가드
   useEffect(() => {
     if (!mounted) return;
+    if (authLoading) return;
 
-    // 비로그인 → /login으로 리다이렉트
-    if (!user && !getToken()) {
+    if (!user) {
       router.replace("/login?redirect=/admin");
       return;
     }
 
-    // 로그인 + 사용자 데이터 로드됨 + 관리자 아님(id !== 1) → 접근 거부
-    if (user && user.id !== 1) {
-      alert("관리자만 접근할 수 있습니다");
+    if (user.id === 3) {
+      setAuthorized(true);
+    } else {
       router.back();
     }
-  }, [mounted, user, router]);
+  }, [mounted, authLoading, user, router]);
 
   const token = mounted ? getToken() : null;
   const {
@@ -75,7 +74,7 @@ export default function AdminPage() {
     setNewCategoryName("");
   }, [newCategoryName, addCategory]);
 
-  if (!mounted) return null;
+  if (!mounted || !authorized) return null;
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
@@ -83,10 +82,6 @@ export default function AdminPage() {
       <div className="absolute inset-0 bg-grid" />
       <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-blue-500/15 dark:bg-blue-500/10" />
       <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
-
-      <SiteHeader badge="admin">
-        <AuthButtons />
-      </SiteHeader>
 
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-12 sm:px-8">
         <h1 className="mb-8 text-3xl font-bold tracking-tight sm:text-4xl">

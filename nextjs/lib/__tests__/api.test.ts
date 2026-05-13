@@ -201,7 +201,7 @@ describe("API 클라이언트", () => {
   describe("getUser", () => {
     it("사용자 정보를 반환한다", async () => {
       const user = { id: 1, name: "Test", email: "test@example.com" };
-      mockResponse(user);
+      mockResponse({ data: user });
 
       const result = await api.getUser("test-token");
 

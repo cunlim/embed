@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { logout as apiLogout, type User } from "@/lib/api";
+import { useState, useCallback, useEffect } from "react";
+import { logout as apiLogout, getUser, type User } from "@/lib/api";
 
 interface UseAuthReturn {
   user: User | null;
@@ -25,7 +25,22 @@ function removeToken() {
 
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+    getUser(token)
+      .then(setUser)
+      .catch(() => {
+        removeToken();
+        setUser(null);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const logout = useCallback(async () => {
     const token = getToken();
