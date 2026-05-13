@@ -41,7 +41,7 @@ export default function AdminPage() {
 
     // 비로그인 → /login으로 리다이렉트
     if (!user && !getToken()) {
-      router.push("/login?redirect=/admin");
+      router.replace("/login?redirect=/admin");
       return;
     }
 

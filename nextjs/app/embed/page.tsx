@@ -50,7 +50,7 @@ export default function EmbedPage() {
   // 인증 가드 — 비로그인 시 /login?redirect=/embed로 리다이렉트
   useEffect(() => {
     if (mounted && !user && !getToken()) {
-      router.push("/login?redirect=/embed");
+      router.replace("/login?redirect=/embed");
     }
   }, [mounted, user, router]);
 
