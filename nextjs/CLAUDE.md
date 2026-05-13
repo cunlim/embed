@@ -163,6 +163,8 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - **`createEcho()` 에러 핸들링** — 동적 import 실패나 Echo 생성자 예외에 대비해 `.catch()` 핸들러를 반드시 추가할 것. 미처리 시 영원히 `null` 상태로 남는다.
 - **lucide-react 브랜드 아이콘 없음** — Google, GitHub, Naver 등 OAuth 브랜드 아이콘은 lucide-react에 없다. 인라인 SVG 사용.
 - **shadcn form 컴포넌트 수동 생성** — `npx shadcn add form`이 조용히 실패할 수 있음. 필요 시 `components/ui/form.tsx`를 수동 작성 (react-hook-form + Controller 통합).
+- **`useSearchParams`는 `<Suspense>` 경계 필수** — `useSearchParams()`를 사용하는 페이지는 반드시 `<Suspense>`로 감싸야 한다. 빌드 시 "useSearchParams() should be wrapped in a suspense boundary" 오류 발생. 패턴: `export default function Page() { return <Suspense><InnerForm /></Suspense>; }` — 내부 컴포넌트에서 `useSearchParams()` 사용.
+- **인증 가드 패턴** — Client Component에서 `useAuth()`, `getToken()`, `mounted`로 2단계 검사. ① 비로그인(`!user && !getToken()`) → `router.push("/login?redirect=<현재경로>")` ② 로그인 + 관리자 아님(`user.id !== 1`) → `alert(...)` + `router.back()`. 관리자 판별은 `id === 1` 기준(DB role 컬럼 없음). 로그인 페이지는 `useSearchParams().get("redirect")`로 복귀 경로 처리. `mounted` 상태로 hydration 전 불필요한 리다이렉트 방지.
 - **`vitest` 바이너리 직접 실행** — `--no-bin-links`로 인해 `node_modules/.bin/vitest`가 생성되지 않음. `package.json` 스크립트는 `node node_modules/vitest/vitest.mjs run`으로 실행. `npx vitest`도 동작하지 않으니 주의.
 
 ## 관련 문서

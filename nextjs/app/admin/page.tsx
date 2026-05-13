@@ -41,10 +41,20 @@ export default function AdminPage() {
     setMounted(true);
   }, []);
 
-  // 인증 가드 — 비로그인 시 /login으로 리다이렉트
+  // 인증 가드
   useEffect(() => {
-    if (mounted && !user && !getToken()) {
-      router.push("/login");
+    if (!mounted) return;
+
+    // 비로그인 → /login으로 리다이렉트
+    if (!user && !getToken()) {
+      router.push("/login?redirect=/admin");
+      return;
+    }
+
+    // 로그인 + 사용자 데이터 로드됨 + 관리자 아님(id !== 1) → 접근 거부
+    if (user && user.id !== 1) {
+      alert("관리자만 접근할 수 있습니다");
+      router.back();
     }
   }, [mounted, user, router]);
 

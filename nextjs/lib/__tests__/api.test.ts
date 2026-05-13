@@ -121,5 +121,94 @@ describe("API 클라이언트", () => {
       expect(result.user.email).toBe("test@example.com");
       expect(result.token).toBe("auth-token");
     });
+
+    it("로그인 실패 시 예외를 throw한다", async () => {
+      mockResponse({ message: "인증 실패" }, false, 401);
+
+      await expect(api.login("wrong@example.com", "wrong")).rejects.toThrow(
+        "인증 실패"
+      );
+    });
+  });
+
+  describe("register", () => {
+    it("회원가입 성공 시 user와 token을 반환한다", async () => {
+      mockResponse({
+        user: { id: 2, name: "New", email: "new@example.com" },
+        token: "new-token",
+      });
+
+      const result = await api.register(
+        "New",
+        "new@example.com",
+        "password",
+        "password"
+      );
+
+      expect(result.user.name).toBe("New");
+      expect(result.token).toBe("new-token");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://embed.cunlim.dev/api/auth/register",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({
+            name: "New",
+            email: "new@example.com",
+            password: "password",
+            password_confirmation: "password",
+          }),
+        })
+      );
+    });
+
+    it("회원가입 실패 시 예외를 throw한다", async () => {
+      mockResponse(
+        { message: "이미 사용 중인 이메일입니다" },
+        false,
+        422
+      );
+
+      await expect(
+        api.register("Test", "dup@example.com", "password", "password")
+      ).rejects.toThrow("이미 사용 중인 이메일입니다");
+    });
+  });
+
+  describe("logout", () => {
+    it("로그아웃 요청을 POST로 보낸다", async () => {
+      mockResponse(null);
+
+      await api.logout("test-token");
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://embed.cunlim.dev/api/auth/logout",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            Authorization: "Bearer test-token",
+          }),
+        })
+      );
+    });
+  });
+
+  describe("getUser", () => {
+    it("사용자 정보를 반환한다", async () => {
+      const user = { id: 1, name: "Test", email: "test@example.com" };
+      mockResponse(user);
+
+      const result = await api.getUser("test-token");
+
+      expect(result).toEqual(user);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://embed.cunlim.dev/api/auth/user",
+        expect.objectContaining({
+          method: "GET",
+          headers: expect.objectContaining({
+            Authorization: "Bearer test-token",
+          }),
+        })
+      );
+    });
   });
 });

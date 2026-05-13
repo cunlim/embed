@@ -32,11 +32,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useRecommend } from "@/hooks/useRecommend";
 import { useBatchProgress } from "@/hooks/useBatchProgress";
+import { useAuth, getToken } from "@/hooks/useAuth";
 import { getCategories, batchTranslate, type Category } from "@/lib/api";
 import { parseHierarchy, type HierarchyLevel } from "@/lib/category";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 export default function EmbedPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 인증 가드 — 비로그인 시 /login?redirect=/embed로 리다이렉트
+  useEffect(() => {
+    if (mounted && !user && !getToken()) {
+      router.push("/login?redirect=/embed");
+    }
+  }, [mounted, user, router]);
+
   const [text, setText] = useState("");
   const [language, setLanguage] = useState("ko");
   const { recommend: doRecommend, results, isLoading, error } = useRecommend();
