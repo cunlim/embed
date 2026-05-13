@@ -137,6 +137,10 @@ open https://embed.cunlim.dev/embed  # 기술 시연 페이지
 - **Next.js HMR 에러 로그** — `embed_nextjs_error.log`의 "Connection refused"는 dev 서버 재시작 시 정상 발생. 무시.
 - **`--no-bin-links`** — Docker 볼륨 마운트 환경에서 npm 패키지 설치 시 심볼릭 링크 생성 불가로 `--no-bin-links` 필요.
 - **Next.js 16 브레이킹 체인지** — `node_modules/next/dist/docs/` 확인 필수. 코드 작성 전 [`AGENTS.md`](./AGENTS.md) 참조.
+- **SSR `window` 참조 오류** — `pusher-js`, `laravel-echo` 등 브라우저 전용 라이브러리는 `import()` 동적 import로 SSR prerender 오류를 방지할 것. 정적 import 시 `ReferenceError: window is not defined`.
+- **`laravel-echo` 제네릭 타입** — 최신 `laravel-echo`의 Echo 클래스는 `Echo<T extends keyof Broadcaster>` 제네릭을 요구한다. Reverb 연결이면 `Echo<"reverb">` 타입 사용.
+- **lucide-react 브랜드 아이콘 없음** — Google, GitHub, Naver 등 OAuth 브랜드 아이콘은 lucide-react에 없다. 인라인 SVG 사용.
+- **shadcn form 컴포넌트 수동 생성** — `npx shadcn add form`이 조용히 실패할 수 있음. 필요 시 `components/ui/form.tsx`를 수동 작성 (react-hook-form + Controller 통합).
 
 ## 관련 문서
 

@@ -110,6 +110,8 @@ docker exec cl_embed_nextjs sh -c "cd /app && npm ..."
 
 ## 알려진 이슈
 
+- **`execute.py` "Step did not update status" 오류** — spawn된 Claude CLI 세션이 `phases/{phase}/index.json`을 업데이트하지 못할 수 있음. 실패 시 직접 step을 처리하고 index.json을 수동 업데이트 + `ce-commit`으로 step별 커밋 수행.
+- **shadcn 컴포넌트 설치 시 confirm** — `npx shadcn@latest add`는 기존 파일이 있을 때 overwrite 확인(y/N)을 요구해 배치 설치가 중단된다. `echo 'y' | npx shadcn@latest add ...`로 회피.
 - **Docker 바인드 마운트 동기화 불일치 (양방향)** — 호스트↔컨테이너 파일 변경이 즉시 반영되지 않을 수 있다. 파일 수정 후 **반드시 `wc -l`로 양쪽 라인 수를 비교**할 것. 불일치 시 호스트→컨테이너: `cat <host-path> | base64 | docker exec -i bash -c "base64 -d > <container-path>"`, 컨테이너→호스트: `docker exec cat <container-path> > <host-path>`. `laravel/app/` 신규 클래스가 컨테이너에만 존재하면 호스트 `git add`가 실패하므로 컨테이너→호스트 복사 후 커밋한다.
 - **신규 디렉토리는 컨테이너에 수동 생성 필요** — 호스트에서 새 디렉토리(예: `tests/Feature/Events/`)를 만들면 bind mount로 컨테이너에 자동 반영되지 않을 수 있다. `docker exec cl_embed_laravel mkdir -p <path>`로 컨테이너에도 동일 디렉토리를 생성한 후 base64 방식으로 파일을 동기화할 것.
 - **`composer require` / `vendor:publish` 후 파일 동기화** — 컨테이너 내부에서 실행 시 생성/변경된 파일(composer.json, composer.lock, config/*.php 등)은 컨테이너에만 존재한다. `docker exec cl_embed_laravel cat <container-path> > <host-path>`로 호스트에 복사하여 git 트래킹을 유지할 것.
