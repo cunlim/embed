@@ -150,6 +150,10 @@ open https://embed.cunlim.dev/embed  # 기술 시연 페이지
 - **Next.js 16 브레이킹 체인지** — `node_modules/next/dist/docs/` 확인 필수. 코드 작성 전 [`AGENTS.md`](./AGENTS.md) 참조.
 - **SSR `window` 참조 오류** — `pusher-js`, `laravel-echo` 등 브라우저 전용 라이브러리는 `import()` 동적 import로 SSR prerender 오류를 방지할 것. 정적 import 시 `ReferenceError: window is not defined`.
 - **`laravel-echo` 제네릭 타입** — 최신 `laravel-echo`의 Echo 클래스는 `Echo<T extends keyof Broadcaster>` 제네릭을 요구한다. Reverb 연결이면 `Echo<"reverb">` 타입 사용.
+- **`NEXT_PUBLIC_REVERB_APP_KEY` 불일치** — `.env.local`의 키가 Laravel `.env`의 `REVERB_APP_KEY`와 다르면 WebSocket 핸드셰이크가 조용히 실패한다. 반드시 동일한 키를 사용할 것.
+- **Broadcast 이벤트 페이로드** — Laravel `ShouldBroadcast` 이벤트의 public 프로퍼티만 클라이언트에 전송된다. `progressPercent` 같은 계산값은 프론트엔드 인터페이스에 포함하지 말고 소비처에서 직접 계산할 것.
+- **`window.Pusher` 타입 선언** — `pusher-js`가 요구하는 `window.Pusher` 할당은 `as never as`로 우회하지 말고 `global.d.ts`에 `interface Window { Pusher: ... }`로 정식 선언할 것.
+- **`createEcho()` 에러 핸들링** — 동적 import 실패나 Echo 생성자 예외에 대비해 `.catch()` 핸들러를 반드시 추가할 것. 미처리 시 영원히 `null` 상태로 남는다.
 - **lucide-react 브랜드 아이콘 없음** — Google, GitHub, Naver 등 OAuth 브랜드 아이콘은 lucide-react에 없다. 인라인 SVG 사용.
 - **shadcn form 컴포넌트 수동 생성** — `npx shadcn add form`이 조용히 실패할 수 있음. 필요 시 `components/ui/form.tsx`를 수동 작성 (react-hook-form + Controller 통합).
 

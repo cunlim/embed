@@ -8,7 +8,7 @@ export async function createEcho(): Promise<ReverbEcho> {
     import("pusher-js"),
   ]);
 
-  (window as never as { Pusher: typeof Pusher }).Pusher = Pusher;
+  window.Pusher = Pusher;
 
   return new EchoClass({
     broadcaster: "reverb",

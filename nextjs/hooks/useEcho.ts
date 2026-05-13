@@ -17,11 +17,17 @@ export function useEcho(): ReverbEcho | null {
     }
 
     let cancelled = false;
-    echoPromise.then((instance) => {
-      if (cancelled) return;
-      echoInstance = instance;
-      setEcho(instance);
-    });
+    echoPromise
+      .then((instance) => {
+        if (cancelled) return;
+        echoInstance = instance;
+        setEcho(instance);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          console.error("Reverb Echo 연결 실패:", err);
+        }
+      });
 
     return () => {
       cancelled = true;

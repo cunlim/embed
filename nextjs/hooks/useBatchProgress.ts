@@ -9,7 +9,6 @@ export interface BatchProgress {
   completedJobs: number;
   failedJobs: number;
   status: "processing" | "completed" | "failed";
-  progressPercent: number;
 }
 
 export function useBatchProgress(batchId: string | null): BatchProgress | null {
