@@ -132,11 +132,12 @@ export default function Home() {
             variant="outline"
             size="lg"
             asChild
-            className="h-11 rounded-full px-6 text-sm font-medium"
+            className="group h-11 rounded-full px-6 text-sm font-medium hover:bg-muted hover:text-foreground"
           >
-            <a href="https://github.com/cunlim" target="_blank" rel="noopener noreferrer">
-              GitHub 저장소
-            </a>
+            <Link href="/docs">
+              문서 보기
+              <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </Link>
           </Button>
         </div>
 

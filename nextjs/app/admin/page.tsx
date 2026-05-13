@@ -23,6 +23,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
+import { isAdmin } from "@/lib/utils";
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -44,7 +45,7 @@ export default function AdminPage() {
       return;
     }
 
-    if (user.id === 3) {
+    if (isAdmin(user.id)) {
       setAuthorized(true);
     } else {
       router.back();
