@@ -35,7 +35,10 @@
     {
       "step": 4,
       "name": "docs-page",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-13T15:33:57+0900",
+      "completed_at": "2026-05-13T15:55:00+0900",
+      "summary": "docs/public/content/*.md 복사, app/docs/page.tsx react-markdown 기반 마크다운 렌더링으로 재작성. 사이드바(데스크톱)+드롭다운(모바일) 문서 선택, 로딩/에러/빈 상태 처리, Link 컴포넌트 사용"
     }
   ],
   "created_at": "2026-05-13T13:51:42+0900"
