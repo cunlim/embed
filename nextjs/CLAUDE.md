@@ -120,6 +120,17 @@ docker exec cl_embed_nextjs npx shadcn@latest add dialog
 - **비회원**: `LocalStorage` + `session_id` 기반
 - **회원**: Laravel Sanctum API Token → `User ID` 종속
 
+## 정적 문서 서빙
+
+- **`public/content/*.md`** — 마크다운 문서를 `public/content/`에 복사해 `fetch('/content/{slug}.md')`로 클라이언트에서 접근.
+- **react-markdown** — ^10.1.0 이미 설치됨. 마크다운 렌더링 시 커스텀 regex 대신 사용.
+
+## ESLint 주요 규칙
+
+- **`@next/next/no-html-link-for-pages`** — 내부 페이지 이동 시 `<a href="/">` 금지, `<Link href="/">` 사용.
+- **`react-hooks/set-state-in-effect`** — useEffect 내 동기적 setState 호출 금지. mounted 패턴은 기존 코드베이스에서 사용 중이나 신규 코드에서는 피할 것.
+- **`@typescript-eslint/no-unused-vars`** — 미사용 import는 오류. 작업 완료 후 확인할 것.
+
 ## 테스트
 
 아직 자동화된 테스트 프레임워크는 미설정 상태입니다. (추후 Vitest + React Testing Library 도입 예정)
