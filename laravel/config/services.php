@@ -61,4 +61,9 @@ return [
         'redirect' => env('NAVER_REDIRECT_URI'),
     ],
 
+    'frontend' => [
+        'login_url' => env('FRONTEND_LOGIN_URL', '/login'),
+        'app_callback_url' => env('APP_CALLBACK_URL', 'myapp://oauth'),
+    ],
+
 ];

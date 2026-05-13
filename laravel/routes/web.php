@@ -8,4 +8,4 @@ Route::get('/', function () {
 });
 
 Route::get('/api/auth/{provider}/redirect', [OAuthController::class, 'redirect']);
-Route::get('/api/auth/{provider}/callback', [OAuthController::class, 'callback']);
+Route::get('/api/auth/{provider}/callback', [OAuthController::class, 'callback'])->middleware('throttle:5,1');

@@ -10,12 +10,11 @@ beforeEach(function () {
     Schema::create('users', function (Blueprint $table) {
         $table->id();
         $table->string('name');
-        $table->string('email')->unique();
+        $table->string('email')->unique()->nullable();
         $table->timestamp('email_verified_at')->nullable();
         $table->string('password')->nullable();
         $table->string('provider')->nullable();
         $table->string('provider_id')->nullable();
-        $table->text('provider_token')->nullable();
         $table->string('avatar')->nullable();
         $table->unique(['provider', 'provider_id'], 'users_provider_provider_id_unique');
         $table->rememberToken();
@@ -42,7 +41,6 @@ afterEach(function () {
 function mockSocialiteUser(): array
 {
     $abstractUser = Mockery::mock();
-    $abstractUser->token = 'mock-provider-token';
     $abstractUser->shouldReceive('getId')->andReturn('12345');
     $abstractUser->shouldReceive('getName')->andReturn('OAuth User');
     $abstractUser->shouldReceive('getNickname')->andReturn(null);
@@ -79,20 +77,28 @@ test('GET /api/auth/{provider}/redirect - handles github provider', function () 
     $response->assertRedirect();
 });
 
+test('GET /api/auth/{provider}/redirect - stores oauth_client in session', function () {
+    $provider = Mockery::mock();
+    $provider->shouldReceive('redirect')->andReturn(redirect('https://accounts.google.com/o/oauth2/auth'));
+
+    Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+    $this->get('/api/auth/google/redirect?client=app');
+
+    expect(session('oauth_client'))->toBe('app');
+});
+
 // ---- callback ----
 
-test('GET /api/auth/{provider}/callback - creates user and returns token for new OAuth user', function () {
+test('GET /api/auth/{provider}/callback - creates user and redirects with token for new OAuth user', function () {
     [$abstractUser, $provider] = mockSocialiteUser();
 
     Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
 
-    $response = $this->get('/api/auth/google/callback');
+    $response = $this->withSession(['oauth_client' => 'web'])->get('/api/auth/google/callback');
 
-    $response->assertOk()
-        ->assertJsonPath('data.user.name', 'OAuth User')
-        ->assertJsonPath('data.user.email', 'oauth@example.com')
-        ->assertJsonPath('data.token_type', 'Bearer')
-        ->assertJsonStructure(['data' => ['user' => ['id', 'name', 'email'], 'token']]);
+    $response->assertRedirect();
+    expect($response->getTargetUrl())->toContain('/login?token=');
 
     $this->assertDatabaseHas('users', [
         'provider' => 'google',
@@ -115,12 +121,24 @@ test('GET /api/auth/{provider}/callback - updates existing OAuth user on re-logi
 
     Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
 
-    $response = $this->get('/api/auth/google/callback');
+    $response = $this->withSession(['oauth_client' => 'web'])->get('/api/auth/google/callback');
 
-    $response->assertOk()
-        ->assertJsonPath('data.user.name', 'OAuth User');
+    $response->assertRedirect();
+    expect($response->getTargetUrl())->toContain('/login?token=');
 
     expect(User::where('provider', 'google')->where('provider_id', '12345')->count())->toBe(1);
+    expect(User::where('provider', 'google')->where('provider_id', '12345')->first()->name)->toBe('OAuth User');
+});
+
+test('GET /api/auth/{provider}/callback - redirects to app url when client is app', function () {
+    [$abstractUser, $provider] = mockSocialiteUser();
+
+    Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+    $response = $this->withSession(['oauth_client' => 'app'])->get('/api/auth/google/callback');
+
+    $response->assertRedirect();
+    expect($response->getTargetUrl())->toContain('myapp://oauth?token=');
 });
 
 test('GET /api/auth/{provider}/callback - returns 500 for unsupported provider', function () {

@@ -365,3 +365,13 @@ config([
 - **새 설정 추가 시 3곳 모두 업데이트**: `config/services.php`, `SettingsSeeder`, `AppServiceProvider::boot()`
 - **생성자에서 config로 주입**: 서비스 클래스는 config 값을 생성자 파라미터로 받고, `AppServiceProvider::register()`에서 주입한다.
 - **이유**: 설정 테이블을 통해 런타임에 값을 변경할 수 있고, DB에 값이 없어도 config 기본값으로 정상 동작한다. 기존 `ollama.host`, `ollama.translation_model`, `ollama.embedding_model`이 이 패턴을 따른다.
+
+### OAuth (Socialite) 패턴
+
+- **OAuth 라우트는 `routes/web.php`에 정의** — Socialite는 세션 기반 state 검증이 필요하므로 `api.php`가 아닌 `web.php`를 사용한다.
+- **callback은 `RedirectResponse` 반환** — 브라우저가 callback URL에 직접 도착하므로 JSON 응답은 사용자에게 노출된다. Sanctum 토큰 발급 후 `redirect("/login?token={$token}")`으로 프론트엔드에 전달한다.
+- **웹/앱 리다이렉트 분기**: `redirect()`에서 `?client=web|app` 쿼리 파라미터를 세션에 저장하고, `callback()`에서 `session()->pull('oauth_client')`로 읽어 리다이렉트 URL을 결정한다 (`config('services.frontend.login_url')` vs `config('services.frontend.app_callback_url')`).
+- **provider_token은 DB 저장 금지** — OAuth access token은 로그인 시점에만 필요하고 이후 인증은 Sanctum token으로 수행하므로 불필요하다. 추후 provider API 호출이 필요해지면 encrypted cast로 추가한다.
+- **마이그레이션 필수 사항**: `email` nullable (provider가 이메일 미제공 가능), `password` nullable (OAuth 전용 유저), `provider` + `provider_id` 복합 unique 인덱스.
+- **Auth 응답은 UserResource로 통일** — `AuthController`와 `OAuthController` 모두 user 데이터 표현에 동일한 Resource를 사용한다.
+- **OAuth 콜백에도 rate limiting** — `->middleware('throttle:5,1')` — 토큰 생성 + DB 쓰기가 수반되므로 다른 auth 라우트와 동일 수준의 보호가 필요하다.
