@@ -368,6 +368,7 @@ config([
 
 ### OAuth (Socialite) 패턴
 
+- **Naver driver는 `socialiteproviders/naver` 패키지 설치 필요** — `composer require socialiteproviders/naver` 설치 후, `EventServiceProvider`에 `SocialiteWasCalled` 이벤트 리스너로 `NaverExtendSocialite::class`를 등록해야 한다. EventServiceProvider는 `bootstrap/providers.php`에 수동 추가.
 - **OAuth 라우트는 `routes/web.php`에 정의** — Socialite는 세션 기반 state 검증이 필요하므로 `api.php`가 아닌 `web.php`를 사용한다.
 - **callback은 `RedirectResponse` 반환** — 브라우저가 callback URL에 직접 도착하므로 JSON 응답은 사용자에게 노출된다. Sanctum 토큰 발급 후 `redirect("/login?token={$token}")`으로 프론트엔드에 전달한다.
 - **웹/앱 리다이렉트 분기**: `redirect()`에서 `?client=web|app` 쿼리 파라미터를 세션에 저장하고, `callback()`에서 `session()->pull('oauth_client')`로 읽어 리다이렉트 URL을 결정한다 (`config('services.frontend.login_url')` vs `config('services.frontend.app_callback_url')`).
@@ -375,3 +376,5 @@ config([
 - **마이그레이션 필수 사항**: `email` nullable (provider가 이메일 미제공 가능), `password` nullable (OAuth 전용 유저), `provider` + `provider_id` 복합 unique 인덱스.
 - **Auth 응답은 UserResource로 통일** — `AuthController`와 `OAuthController` 모두 user 데이터 표현에 동일한 Resource를 사용한다.
 - **OAuth 콜백에도 rate limiting** — `->middleware('throttle:5,1')` — 토큰 생성 + DB 쓰기가 수반되므로 다른 auth 라우트와 동일 수준의 보호가 필요하다.
+- **OAuth 디버깅 — tinker로 config 확인**: `config:clear` 후 `php artisan tinker --execute 'echo config("services.google.client_id");'` 로 컨테이너가 실제 읽는 값 검증. 비어 있으면 `.env` 바인드 마운트 불일치 의심.
+- **OAuth 디버깅 — 리다이렉트 URL 검증**: `curl -sI "https://embed.cunlim.dev/api/auth/{provider}/redirect"` 로 302 Location 헤더의 `client_id`와 `redirect_uri` 파라미터 검증.
