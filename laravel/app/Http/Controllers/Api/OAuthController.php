@@ -20,17 +20,31 @@ class OAuthController extends Controller
     {
         $socialUser = Socialite::driver($provider)->user();
 
-        $user = User::updateOrCreate(
-            [
+        $user = User::where('provider', $provider)
+            ->where('provider_id', $socialUser->getId())
+            ->first();
+
+        if (! $user && $socialUser->getEmail()) {
+            $user = User::where('email', $socialUser->getEmail())->first();
+        }
+
+        if ($user) {
+            $user->update([
                 'provider' => $provider,
                 'provider_id' => $socialUser->getId(),
-            ],
-            [
+                'name' => $socialUser->getName() ?? $socialUser->getNickname() ?? $user->name,
+                'email' => $socialUser->getEmail() ?? $user->email,
+                'avatar' => $socialUser->getAvatar() ?? $user->avatar,
+            ]);
+        } else {
+            $user = User::create([
+                'provider' => $provider,
+                'provider_id' => $socialUser->getId(),
                 'name' => $socialUser->getName() ?? $socialUser->getNickname(),
                 'email' => $socialUser->getEmail(),
                 'avatar' => $socialUser->getAvatar(),
-            ]
-        );
+            ]);
+        }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 

@@ -130,6 +130,32 @@ test('GET /api/auth/{provider}/callback - updates existing OAuth user on re-logi
     expect(User::where('provider', 'google')->where('provider_id', '12345')->first()->name)->toBe('OAuth User');
 });
 
+test('GET /api/auth/{provider}/callback - links existing user by email when different provider', function () {
+    User::factory()->create([
+        'name' => 'GitHub Name',
+        'email' => 'oauth@example.com',
+        'provider' => 'github',
+        'provider_id' => '99999',
+        'password' => null,
+    ]);
+
+    [$abstractUser, $provider] = mockSocialiteUser();
+
+    Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+    $response = $this->withSession(['oauth_client' => 'web'])->get('/api/auth/google/callback');
+
+    $response->assertRedirect();
+    expect($response->getTargetUrl())->toContain('/login?token=');
+
+    // 기존 사용자가 새 제공자 정보로 업데이트되었는지 확인
+    $this->assertEquals(1, User::count());
+    $user = User::first();
+    expect($user->provider)->toBe('google');
+    expect($user->provider_id)->toBe('12345');
+    expect($user->name)->toBe('OAuth User');
+});
+
 test('GET /api/auth/{provider}/callback - redirects to app url when client is app', function () {
     [$abstractUser, $provider] = mockSocialiteUser();
 
