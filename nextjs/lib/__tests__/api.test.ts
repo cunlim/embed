@@ -112,8 +112,11 @@ describe("API 클라이언트", () => {
   describe("login", () => {
     it("로그인 성공 시 user와 token을 반환한다", async () => {
       mockResponse({
-        user: { id: 1, name: "Test", email: "test@example.com" },
-        token: "auth-token",
+        data: {
+          user: { id: 1, name: "Test", email: "test@example.com", created_at: "2025-01-01T00:00:00Z" },
+          token: "auth-token",
+          token_type: "Bearer",
+        },
       });
 
       const result = await api.login("test@example.com", "password");
@@ -134,8 +137,11 @@ describe("API 클라이언트", () => {
   describe("register", () => {
     it("회원가입 성공 시 user와 token을 반환한다", async () => {
       mockResponse({
-        user: { id: 2, name: "New", email: "new@example.com" },
-        token: "new-token",
+        data: {
+          user: { id: 2, name: "New", email: "new@example.com", created_at: "2025-01-01T00:00:00Z" },
+          token: "new-token",
+          token_type: "Bearer",
+        },
       });
 
       const result = await api.register(

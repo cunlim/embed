@@ -118,23 +118,32 @@ export interface AuthResponse {
   token: string;
 }
 
-export function login(
+interface AuthApiResponse {
+  data: {
+    user: User;
+    token: string;
+    token_type: string;
+  };
+}
+
+export async function login(
   email: string,
   password: string
 ): Promise<AuthResponse> {
-  return request<AuthResponse>("/auth/login", {
+  const res = await request<AuthApiResponse>("/auth/login", {
     method: "POST",
     body: { email, password },
   });
+  return { user: res.data.user, token: res.data.token };
 }
 
-export function register(
+export async function register(
   name: string,
   email: string,
   password: string,
   passwordConfirmation: string
 ): Promise<AuthResponse> {
-  return request<AuthResponse>("/auth/register", {
+  const res = await request<AuthApiResponse>("/auth/register", {
     method: "POST",
     body: {
       name,
@@ -143,6 +152,7 @@ export function register(
       password_confirmation: passwordConfirmation,
     },
   });
+  return { user: res.data.user, token: res.data.token };
 }
 
 export function logout(token?: string | null): Promise<void> {
