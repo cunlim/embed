@@ -18,7 +18,7 @@
 
 AI 기반 다국어 카테고리 추천 시스템 (포트폴리오). 사용자 텍스트를 분석해 네이버 카테고리 체계 기준으로 적합한 카테고리를 추천. 한국어/중국어/영어 지원, pgvector 코사인 유사도 검색 사용.
 
-**현재 상태**: 인프라(Docker 컨테이너 5개, 도메인, CI/CD) 구축 완료. `/` 랜딩 페이지 구현 완료 (shadcn/ui, 화이트/다크 모드, 반응형). Swagger UI (`/swagger/`) 초기화 완료. Phase 3 (번역 파이프라인 — 이벤트/Job/Batch) 구현 완료.
+진행 상황은 `phases/` 디렉토리와 `git log`로 확인합니다.
 
 docker container 들은 port 를 개방하지 않으니 localhost 로 접속하지 말고 https://embed.cunlim.dev 로 접속해주세요
 

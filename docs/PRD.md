@@ -22,69 +22,59 @@
   * 로컬 AI 모델(Ollama) 번역 실패 및 타임아웃 발생 시 재시도 성공률 99% 이상 및 `failed_jobs`를 통한 예외 데이터 누수 0%.
   * 대량 데이터(1만 건 이상) 일괄 처리 시 백엔드 병목 현상(OOM 등) 없이 안정적 Queue 처리.
 
-## 2. 현재 진행 상황
+## 2. 핵심 기능 요구사항
 
-### 완료
-* 멀티 컨테이너 네트워크 세팅 (Docker 5개 컨테이너)
-* `embed.cunlim.dev` 도메인 연결 (cloudflared tunnel)
-* Nginx 리버스 프록시 라우팅 (`/` → Next.js, `/api/` → Laravel, `/app/` → Reverb WebSocket, `/swagger/` → Swagger UI)
-* `/` 랜딩 페이지 구현 (shadcn/ui, 화이트/다크 모드, 반응형)
-* Swagger UI (`/swagger/`) 초기화 완료
-* CI/CD (셀프호스티드 WSL GitHub Actions 러너)
-
-## 3. 핵심 기능 요구사항
-
-### 3.1 일괄 번역 및 임베딩 파이프라인
+### 2.1 일괄 번역 및 임베딩 파이프라인
 * **비즈니스 흐름:** DB에 적재된 한국어 원문을 백그라운드에서 지정된 타겟 언어로 번역 후 언어별로 각각 벡터 데이터를 생성하여 저장합니다 (1카테고리 당 언어별 임베딩).
 * **AI 및 예외 대응:** API 응답 지연이나 환각 현상에 대비하여 정규식 검증 및 최대 3회 자동 재시도를 수행하고, 최종 실패 건은 `failed_jobs`에 이관하여 수동 처리합니다. 
 
-### 3.2 검색 및 추천 엔진
+### 2.2 검색 및 추천 엔진
 * **추천 흐름:** 사용자가 상품 텍스트를 입력하면 `search_logs`에서 일치하는 과거 키워드를 조회하여 캐싱된 벡터를 활용하거나, 새로 임베딩 후 저장합니다. 이후 선택한 타겟 언어의 카테고리 임베딩과 코사인 유사도를 계산하여 언어별 맞춤 리스트를 출력합니다.
 * 세부 UI 요구사항(하이라이팅, 벡터 모달, 동적 Select Box)은 `UI_GUIDE.md`를 엄격히 준수합니다.
 
-### 3.3 실시간 처리 및 동시성 제어
+### 2.3 실시간 처리 및 동시성 제어
 * **중복 검증:** 사용자가 일괄 처리 트리거 시 동일 언어/모델 조합으로 작업이 이미 진행 중이라면 락(Lock)을 통해 중복 큐 적재를 막습니다. 진행률은 실시간 웹소켓 이벤트로 프론트엔드에 전달됩니다.
 
-### 3.4 개별 카테고리 추가 기능
+### 2.4 개별 카테고리 추가 기능
 * **권한 제어:** DB 데이터 무결성을 위해 카테고리 추가 기능은 로그인한 사용자에게만 노출됩니다. 여기서 "관리자"란 `/admin` 페이지에 접근 권한이 있는 로그인 사용자를 의미합니다 (별도의 역할 구분 없음).
 * **추가 흐름:** 한국어 카테고리 단일 텍스트 입력 → `category_code` 자동 생성 → 백그라운드 큐에 해당 ID를 넘겨 일괄 처리와 동일한 번역/임베딩 파이프라인을 재사용하여 실행합니다.
 
-## 4. 로그인 및 사용자 데이터 관리 
+## 3. 로그인 및 사용자 데이터 관리 
 * **접근 제어:** 비로그인 게스트도 메인 추천 엔진을 자유롭게 사용 가능합니다. 데이터 쓰기 작업만 권한이 통제됩니다.
 * **인증 방식:** 이메일/비밀번호, Google, GitHub, Naver OAuth 연동.
 * **데이터 관리 이원화:**
   * **비회원:** 추천 세팅값은 브라우저 `LocalStorage`에 보관하며, 캐시 데이터는 `session_id` 기준으로 적재됩니다.
   * **회원:** 모든 검색 이력과 활동 데이터가 `User ID`에 종속되어 영구적으로 동기화됩니다.
 
-## 5. 개발 Phase (Harness Task)
+## 4. 개발 Phase (Harness Task)
 
-`phases/` 디렉토리에 정의된 7개 Harness Phase로 실행된다. 각 Phase는 `scripts/execute.py`로 순차 실행한다. 각 Phase의 상세 작업 내용은 `phases/{phase-name}/step*.md` 참조.
+`phases/` 디렉토리에 정의된 7개 Harness Phase로 실행된다. 상세 작업 내용과 진행 상황은 `phases/{phase-name}/step*.md`와 `phases/index.json` 참조.
 
 ### Phase 1: backend-models
-Eloquent 모델 및 DB 마이그레이션. `Category`, `CategoryEmbedding`, `TranslationCache`, `SearchLog` 4개 모델과 Factory/Seeder 생성.
+Eloquent 모델 및 DB 마이그레이션.
 
 ### Phase 2: ollama-integration
-Ollama HTTP API 클라이언트(`OllamaClient`), 텍스트 분할/조립(`TextSplitter`), 환각 방어 번역 서비스(`OllamaTranslator`), `bge-m3:latest` 임베딩 생성 서비스(`EmbeddingGenerator`), Redis 기반 Rate Limit 방어(`OllamaRateLimiter`).
+Ollama 로컬 모델 연동 — 번역, 임베딩 생성, Rate Limit 방어.
 
 ### Phase 3: translation-pipeline
-`TranslateAndEmbedJob` (단일 카테고리 단일 언어 번역+임베딩), `Bus::batch()` 기반 `BatchTranslatePipeline`, Reverb WebSocket 진행률 이벤트, Redis `Cache::lock()` 중복 실행 방지.
+비동기 큐 기반 번역/임베딩 파이프라인, Reverb WebSocket 진행률 브로드캐스트, 중복 실행 방지.
 
 ### Phase 4: api-layer
-REST API 라우트(`routes/api.php`) 및 `CategoryController`, `RecommendController`. Form Request 검증, Eloquent Resources, pgvector 코사인 유사도 추천 엔진, Swagger 문서.
+REST API 라우트 및 컨트롤러, Form Request 검증, Eloquent Resources, pgvector 코사인 유사도 추천 엔진.
 
 > **Swagger 전략**: 이 Phase에서 첫 API 문서화를 수행하여 L5-Swagger 설정과 어노테이션 패턴을 검증한다. 문제가 없으면 Phase 7(search-integration)에서 인증 API 등 남은 모든 엔드포인트의 문서화를 일괄 완료한다.
 
 ### Phase 5: auth-system
-Sanctum API Token 인증 + Socialite OAuth (Google, GitHub, Naver). `auth:sanctum` 미들웨어로 쓰기 작업 보호.
+Sanctum API Token 인증 + Socialite OAuth (Google, GitHub, Naver). 쓰기 작업 보호.
 
 ### Phase 6: frontend-embed
-Next.js Reverb WebSocket 구독 (`laravel-echo` + `pusher-js`), `/embed` 기술 시연 페이지, `/login` 로그인/회원가입 페이지, `/docs` 프로젝트 문서 페이지 (`docs/` 디렉토리의 마크다운 문서를 웹 렌더링. MVP에서는 간단한 임시 구현), `/admin` 관리자 전용 페이지 (로그인 필수, "관리자"란 `/admin` 접근 권한이 있는 로그인 사용자를 의미). 비로그인 게스트는 `/embed`, `/docs`, `/` 접근 가능.
+Next.js 프론트엔드 — WebSocket 구독, `/embed` 기술 시연, `/login` 로그인, `/docs` 문서, `/admin` 관리자 페이지.
 
 ### Phase 7: search-integration
-pgvector `scopeSimilarTo` 최적화, 검색어 캐싱(`EmbeddingCacheService`), 검색어 정규화(`SearchNormalizer`), E2E 통합 테스트 및 아키텍처 검증, 전체 API Swagger 문서 완성.
+검색 최적화, 캐싱, 정규화, E2E 통합 테스트, 전체 API Swagger 문서 완성.
 
 > **Swagger 전략**: Phase 4(api-layer)에서 검증된 L5-Swagger 패턴을 바탕으로, 인증 API 등 남은 모든 엔드포인트의 어노테이션을 이 Phase에서 일괄 추가하고 최종 문서를 완성한다.
 
-## 6. 테스트 및 배포 (CI/CD)
+## 5. 테스트 및 배포 (CI/CD)
 * **테스트 코드:** 백엔드 핵심 파이프라인(분할 조립, 예외 처리, Chaining, Lock, Rate Limit 방어) 테스트 코드 의무화.
 * **자동화 배포:** GitHub CI/CD 구성(테스트 실행). 현재 구동 중인 WSL2 환경 내 내부 러너를 통해 컨테이너(WATCHPACK_POLLING 볼륨 연동) 재시작 및 백그라운드 데몬 구동 자동화.
