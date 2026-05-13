@@ -2,6 +2,7 @@ export {};
 
 declare global {
   interface Window {
-    Pusher: typeof import("pusher-js").default;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Pusher: any;
   }
 }

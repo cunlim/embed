@@ -102,6 +102,7 @@ docker exec -it cl_embed_laravel /bin/bash
 ```
 
 컨테이너 내부에서 npm 명령어 실행 시 `--no-bin-links` 플래그가 필요할 수 있습니다.
+- 컨테이너에서 `npm install` 실행 후 `package.json`, `package-lock.json`을 호스트로 복사할 것 (`docker exec cl_embed_nextjs cat /app/package.json > nextjs/package.json`). 컨테이너에만 변경이 남으면 git 트래킹이 누락된다.
 
 ### 컨테이너별 작업 디렉터리
 

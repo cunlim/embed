@@ -121,6 +121,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add dialog
 - shadcn/ui의 `base-nova` 스타일 CSS 변수 사용
 - `cn()` 헬퍼 (`clsx` + `tailwind-merge`)로 클래스 병합
 - 반응형: `sm:` (640px+), `md:` (768px+), `lg:` (1024px+), `xl:` (1280px+)
+- **플러그인은 CSS `@plugin` 지시문** — `tailwind.config.js` 불필요. 예: `@plugin "@tailwindcss/typography";`
 
 ### 상태 관리
 - **서버 상태**: RSC에서 직접 DB 쿼리 (Laravel API 호출)
@@ -130,8 +131,9 @@ docker exec cl_embed_nextjs npx shadcn@latest add dialog
 
 ## 정적 문서 서빙
 
-- **`public/content/*.md`** — 마크다운 문서를 `public/content/`에 복사해 `fetch('/content/{slug}.md')`로 클라이언트에서 접근.
+- **`../docs:/app/public/content:ro` bind mount** — `docker-compose.yml`에서 `docs/`를 Next.js `public/content/`에 직접 마운트. 복제 없이 항상 최신 문서 서빙.
 - **react-markdown** — ^10.1.0 이미 설치됨. 마크다운 렌더링 시 커스텀 regex 대신 사용.
+- **`@tailwindcss/typography`** — `prose prose-sm dark:prose-invert max-w-none` 클래스로 headings, code, table 등 대부분 스타일링 처리. 외부 링크 `target="_blank"` 등 필요한 부분만 `components` prop으로 오버라이드.
 
 ## ESLint 주요 규칙
 
@@ -168,6 +170,7 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - **`vitest` 바이너리 직접 실행** — `--no-bin-links`로 인해 `node_modules/.bin/vitest`가 생성되지 않음. `package.json` 스크립트는 `node node_modules/vitest/vitest.mjs run`으로 실행. `npx vitest`도 동작하지 않으니 주의.
 - **훅 메서드 간 호출 시 이중 상태 업데이트** — `addCategory` 내부에서 `loadCategories()`를 호출하면 `setIsLoading(true)`가 이중 호출되어 불필요한 렌더링 발생. 대신 API 함수(`getCategories(token)`)를 직접 호출하고 `setCategories(data.data)`로 상태를 직접 설정할 것.
 - **`renderHook` + `act()` 중간 상태 테스트 불가** — pending Promise로 `isLoading`의 중간 true 상태를 검증하려는 테스트는 `act()`가 Promise 완료까지 대기하여 항상 false가 반환됨. `await act(async () => { await result.current.method(); })` 패턴으로 최종 상태만 검증할 것. 중간 상태 검증이 필요하면 deferred promise 대신 `waitFor` 사용.
+- **컨테이너 재생성 후 타입 재평가** — `docker compose stop` + `up -d`로 컨테이너 재생성 시 npm 의존성 타입이 재평가되어 이전에 통과하던 TypeScript 체크가 실패할 수 있다 (예: `dialog.tsx`의 `size="icon-sm"`, `pusher-js` ↔ `@types/pusher-js` 버전 불일치). 재생성 후 반드시 `npm run build`로 타입 체크를 확인할 것.
 
 ## 관련 문서
 

@@ -3,13 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
-import {
-  FileText,
-  BookOpen,
-  Menu,
-  X,
-  AlertCircle,
-} from "lucide-react";
+import { BookOpen, Menu, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -208,89 +202,23 @@ export default function DocsPage() {
             )}
 
             {/* Content */}
-            {!isLoading && !error && content && (
+            {!isLoading && !error && content !== null && (
               <article className="prose-custom">
                 <div className="mb-6 flex items-center gap-3">
                   <BookOpen className="h-5 w-5 text-accent" />
                   <h1 className="text-2xl font-bold">{activeTitle}</h1>
                 </div>
-                <div className="markdown-body">
+                <div className="prose prose-sm dark:prose-invert max-w-none">
                   <ReactMarkdown
                     components={{
-                      h1: ({ children }) => (
-                        <h1 className="text-2xl font-bold mt-8 mb-4">{children}</h1>
-                      ),
-                      h2: ({ children }) => (
-                        <h2 className="text-xl font-bold mt-8 mb-3 border-b border-border pb-2">
-                          {children}
-                        </h2>
-                      ),
-                      h3: ({ children }) => (
-                        <h3 className="text-lg font-semibold mt-6 mb-2">{children}</h3>
-                      ),
-                      p: ({ children }) => (
-                        <p className="text-sm leading-relaxed my-3">{children}</p>
-                      ),
-                      code: ({ className, children, ...props }) => {
-                        // 인라인 코드 vs 코드 블록
-                        const isInline = !className;
-                        if (isInline) {
-                          return (
-                            <code className="rounded bg-muted px-1 py-0.5 font-mono text-sm">
-                              {children}
-                            </code>
-                          );
-                        }
-                        return (
-                          <pre className="overflow-x-auto rounded-lg border border-border bg-muted/50 p-4 font-mono text-sm my-4">
-                            <code className={className} {...props}>
-                              {children}
-                            </code>
-                          </pre>
-                        );
-                      },
-                      strong: ({ children }) => (
-                        <strong className="font-semibold">{children}</strong>
-                      ),
-                      ul: ({ children }) => (
-                        <ul className="my-2 space-y-1">{children}</ul>
-                      ),
-                      ol: ({ children }) => (
-                        <ol className="my-2 space-y-1 list-decimal pl-5">{children}</ol>
-                      ),
-                      li: ({ children }) => (
-                        <li className="ml-4 list-disc text-sm leading-relaxed">{children}</li>
-                      ),
-                      table: ({ children }) => (
-                        <div className="overflow-x-auto my-4">
-                          <table className="w-full border-collapse border border-border">
-                            {children}
-                          </table>
-                        </div>
-                      ),
-                      th: ({ children }) => (
-                        <th className="border border-border bg-muted/50 px-3 py-2 text-sm font-semibold text-left">
-                          {children}
-                        </th>
-                      ),
-                      td: ({ children }) => (
-                        <td className="border border-border px-3 py-2 text-sm">{children}</td>
-                      ),
                       a: ({ href, children }) => (
                         <a
                           href={href}
-                          className="text-accent underline underline-offset-2 hover:text-accent/80"
                           target={href?.startsWith("http") ? "_blank" : undefined}
                           rel={href?.startsWith("http") ? "noopener noreferrer" : undefined}
                         >
                           {children}
                         </a>
-                      ),
-                      hr: () => <hr className="my-6 border-border" />,
-                      blockquote: ({ children }) => (
-                        <blockquote className="border-l-2 border-accent pl-4 my-4 text-sm text-muted-foreground">
-                          {children}
-                        </blockquote>
                       ),
                     }}
                   >
@@ -300,15 +228,6 @@ export default function DocsPage() {
               </article>
             )}
 
-            {/* Empty state - no doc selected */}
-            {!activeDoc && (
-              <div className="flex flex-col items-center gap-2 py-12">
-                <FileText className="h-10 w-10 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  왼쪽에서 문서를 선택하세요
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </main>
@@ -326,12 +245,12 @@ export default function DocsPage() {
             >
               홈
             </Link>
-            <a
+            <Link
               href="/embed"
               className="text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               기술 시연
-            </a>
+            </Link>
           </div>
         </div>
       </footer>
