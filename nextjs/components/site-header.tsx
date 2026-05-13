@@ -10,7 +10,7 @@ interface SiteHeaderProps {
 
 export function SiteHeader({ badge, children }: SiteHeaderProps) {
   return (
-    <header className="relative z-10 flex items-center justify-between px-6 py-4 sm:px-8">
+    <header className="sticky top-0 z-40 flex items-center justify-between px-6 py-4 sm:px-8 bg-background/80 backdrop-blur-sm">
       <Link
         href="/"
         className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80"
