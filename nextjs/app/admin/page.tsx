@@ -7,9 +7,7 @@ import {
   RefreshCw,
   AlertCircle,
   LogOut,
-  Loader2,
   Database,
-  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,14 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
-import { useBatchProgress } from "@/hooks/useBatchProgress";
-import { batchTranslate } from "@/lib/api";
 
 export default function AdminPage() {
   const { user, logout } = useAuth();
@@ -68,12 +62,6 @@ export default function AdminPage() {
   } = useCategories(token);
 
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [batchLanguage, setBatchLanguage] = useState("zh");
-  const [batchId, setBatchId] = useState<string | null>(null);
-  const [isBatchLoading, setIsBatchLoading] = useState(false);
-  const [batchError, setBatchError] = useState<string | null>(null);
-  const [reembeddingIds, setReembeddingIds] = useState<Set<number>>(new Set());
-  const batchProgress = useBatchProgress(batchId);
 
   useEffect(() => {
     if (mounted && token) {
@@ -86,38 +74,6 @@ export default function AdminPage() {
     await addCategory(newCategoryName.trim());
     setNewCategoryName("");
   }, [newCategoryName, addCategory]);
-
-  const handleBatchTranslate = useCallback(async () => {
-    setIsBatchLoading(true);
-    setBatchError(null);
-    try {
-      const data = await batchTranslate(batchLanguage, token);
-      setBatchId(data.batch_id);
-    } catch (err) {
-      setBatchError(
-        err instanceof Error ? err.message : "일괄 번역 요청에 실패했습니다"
-      );
-    } finally {
-      setIsBatchLoading(false);
-    }
-  }, [batchLanguage, token]);
-
-  const handleReembed = useCallback(
-    async (categoryId: number) => {
-      setReembeddingIds((prev) => new Set(prev).add(categoryId));
-      try {
-        const data = await batchTranslate("zh", token);
-        setBatchId(data.batch_id);
-      } finally {
-        setReembeddingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(categoryId);
-          return next;
-        });
-      }
-    },
-    [token]
-  );
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -160,7 +116,7 @@ export default function AdminPage() {
         </h1>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* 카테고리 추가 + 일괄 번역 (sidebar) */}
+          {/* 카테고리 추가 (sidebar) */}
           <div className="space-y-6">
             {/* 카테고리 추가 폼 */}
             <Card>
@@ -193,51 +149,6 @@ export default function AdminPage() {
                 </Button>
                 {catError && (
                   <p className="text-sm text-destructive">{catError}</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* 일괄 번역 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">일괄 번역</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Tabs value={batchLanguage} onValueChange={setBatchLanguage}>
-                  <TabsList className="w-full">
-                    <TabsTrigger value="zh" className="flex-1">
-                      중국어
-                    </TabsTrigger>
-                    <TabsTrigger value="en" className="flex-1">
-                      영어
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <Button
-                  onClick={handleBatchTranslate}
-                  disabled={isBatchLoading}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {isBatchLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  전체 번역 실행
-                </Button>
-                {batchError && (
-                  <p className="text-sm text-destructive">{batchError}</p>
-                )}
-                {batchProgress && (
-                  <div className="space-y-2">
-                    <Progress value={batchProgress.progressPercent} />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>
-                        {batchProgress.completedJobs}/
-                        {batchProgress.totalJobs} 완료
-                      </span>
-                      <span>{batchProgress.status}</span>
-                    </div>
-                  </div>
                 )}
               </CardContent>
             </Card>
@@ -315,7 +226,6 @@ export default function AdminPage() {
                           <TableHead>한국어</TableHead>
                           <TableHead>중국어</TableHead>
                           <TableHead>영어</TableHead>
-                          <TableHead className="w-[100px]">작업</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -332,21 +242,6 @@ export default function AdminPage() {
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                               {cat.category_name_en || "-"}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleReembed(cat.id)}
-                                disabled={reembeddingIds.has(cat.id)}
-                                aria-label={`${cat.category_name_ko} 임베딩 재생성`}
-                              >
-                                {reembeddingIds.has(cat.id) ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <Zap className="h-3.5 w-3.5" />
-                                )}
-                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -366,20 +261,6 @@ export default function AdminPage() {
                           <span>중: {cat.category_name_zh || "-"}</span>
                           <span>영: {cat.category_name_en || "-"}</span>
                         </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleReembed(cat.id)}
-                            disabled={reembeddingIds.has(cat.id)}
-                            className="shrink-0 ml-auto"
-                            aria-label={`${cat.category_name_ko} 임베딩 재생성`}
-                          >
-                            {reembeddingIds.has(cat.id) ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Zap className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
                       </Card>
                     ))}
                   </div>

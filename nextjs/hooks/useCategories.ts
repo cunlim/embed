@@ -41,7 +41,8 @@ export function useCategories(token?: string | null): UseCategoriesReturn {
       setError(null);
       try {
         await createCategory(categoryNameKo, token);
-        await loadCategories();
+        const data = await getCategories(token);
+        setCategories(data.data);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "카테고리 추가에 실패했습니다"
@@ -50,7 +51,7 @@ export function useCategories(token?: string | null): UseCategoriesReturn {
         setIsLoading(false);
       }
     },
-    [token, loadCategories]
+    [token]
   );
 
   return { categories, isLoading, error, loadCategories, addCategory };

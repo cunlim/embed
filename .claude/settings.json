@@ -26,6 +26,12 @@
           },
           {
             "type": "command",
+            "command": "docker exec cl_embed_nextjs sh -c \"cd /app && node node_modules/vitest/vitest.mjs run --run 2>/dev/null\" || true",
+            "timeout": 120,
+            "statusMessage": "Next.js 테스트 실행 중..."
+          },
+          {
+            "type": "command",
             "command": "docker exec cl_embed_laravel vendor/bin/pint --format agent 2>/dev/null || true",
             "timeout": 60,
             "statusMessage": "Laravel Pint 코드 포맷 중..."
