@@ -19,7 +19,7 @@ nextjs/
 │   ├── page.tsx            # / 랜딩 페이지
 │   └── globals.css         # Tailwind + CSS 변수
 ├── components/
-│   ├── site-header.tsx    # 공통 헤더 (로고→"/" 링크, ThemeToggle 우측 고정, badge/children prop)
+│   ├── site-header.tsx    # 공통 헤더 (로고→"/" 링크, leftChildren 좌측/children 우측, ThemeToggle 우측 고정, badge prop)
 │   ├── social-login.tsx   # 소셜 로그인 버튼 그룹 (페이지/Modal 재사용 가능)
 │   ├── ui/                 # shadcn/ui 컴포넌트 (자동 생성)
 │   ├── theme-provider.tsx  # next-themes Provider
@@ -180,7 +180,7 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - **`renderHook` + `act()` 중간 상태 테스트 불가** — pending Promise로 `isLoading`의 중간 true 상태를 검증하려는 테스트는 `act()`가 Promise 완료까지 대기하여 항상 false가 반환됨. `await act(async () => { await result.current.method(); })` 패턴으로 최종 상태만 검증할 것. 중간 상태 검증이 필요하면 deferred promise 대신 `waitFor` 사용.
 - **컨테이너 재생성 후 타입 재평가** — `docker compose stop` + `up -d`로 컨테이너 재생성 시 npm 의존성 타입이 재평가되어 이전에 통과하던 TypeScript 체크가 실패할 수 있다 (예: `dialog.tsx`의 `size="icon-sm"`, `pusher-js` ↔ `@types/pusher-js` 버전 불일치). 재생성 후 반드시 `npm run build`로 타입 체크를 확인할 것.
 
-- **AppHeader 공통 헤더** — `components/app-header.tsx`가 루트 레이아웃에 배치되어 모든 페이지에서 일관된 헤더 제공. `usePathname()`으로 `/admin` 경로 감지해 badge="admin" 자동 적용. `AuthButtons` 포함. 개별 페이지에서 `<SiteHeader>` 중복 사용 금지.
+- **AppHeader 공통 헤더** — `components/app-header.tsx`가 루트 레이아웃에 배치되어 모든 페이지에서 일관된 헤더 제공. `leftChildren`으로 문서·GitHub 링크 전달, `children`으로 `AuthButtons` 전달. `usePathname()`으로 `/admin` 경로 감지해 badge="admin" 자동 적용. 개별 페이지에서 `<SiteHeader>` 중복 사용 금지.
 - **`useAuth()` 자동 사용자 로드** — 훅이 마운트 시 localStorage 토큰을 읽어 `GET /api/auth/user`를 자동 호출. `user` state가 null에서 시작해 API 응답 후 채워짐. `isLoading`으로 로딩 상태 확인 가능.
 - **`getUser()` 응답 envelope** — `/api/auth/user`는 `{data: {id, name, email, created_at}}` 형식. `lib/api.ts`의 `getUser()`에서 `res.data`로 추출 필요. 로그인/회원가입 응답과 동일한 패턴.
 
