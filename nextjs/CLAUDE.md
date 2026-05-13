@@ -89,7 +89,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add dialog
 
 ## 페이지 구성
 
-5개 페이지 구성은 [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)를 참조. 요약: `/`(랜딩), `/login`(로그인), `/embed`(기술 시연), `/docs`(문서), `/admin`(관리자·인증 필수).
+5개 페이지 구성은 [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)를 참조. 요약: `/`(랜딩), `/login`(로그인), `/embed`(기술 시연·인증 필수), `/docs`(문서), `/admin`(관리자·인증 필수).
 
 ## 디자인 시스템
 

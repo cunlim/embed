@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { ChevronRight, Terminal, Globe, Search, Cpu } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, Terminal, Globe, Search, Cpu, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useAuth, getToken } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
 export default function Home() {
@@ -20,10 +22,14 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  const { user } = useAuth();
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  const hasToken = mounted && !!getToken();
+  const isLoggedIn = mounted && !!user;
 
   const features = [
     {
@@ -101,6 +107,24 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          {mounted && !hasToken ? (
+            <Button variant="ghost" size="sm" asChild className="rounded-full">
+              <Link href="/login">
+                <LogIn className="mr-1.5 h-4 w-4" />
+                로그인
+              </Link>
+            </Button>
+          ) : null}
+          {isLoggedIn && (
+            <Button variant="ghost" size="sm" asChild className="rounded-full">
+              <Link href="/admin">
+                <span className="mr-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent/20 text-[10px] font-bold text-accent">
+                  {user?.name?.charAt(0) ?? "U"}
+                </span>
+                {user?.name ?? "사용자"}
+              </Link>
+            </Button>
+          )}
         </div>
       </header>
 
@@ -135,17 +159,23 @@ export default function Home() {
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
           <Button
             size="lg"
+            asChild
             className="group h-11 rounded-full px-6 text-sm font-medium shadow-lg shadow-accent/20 transition-all duration-300 hover:shadow-xl hover:shadow-accent/30 hover:scale-105"
           >
-            기술 시연 보기
-            <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+            <Link href="/embed">
+              기술 시연 보기
+              <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </Link>
           </Button>
           <Button
             variant="outline"
             size="lg"
+            asChild
             className="h-11 rounded-full px-6 text-sm font-medium"
           >
-            GitHub 저장소
+            <a href="https://github.com/cunlim" target="_blank" rel="noopener noreferrer">
+              GitHub 저장소
+            </a>
           </Button>
         </div>
 
