@@ -368,6 +368,8 @@ config([
 
 ### OAuth (Socialite) 패턴
 
+- **Sanctum 마이그레이션 publish 필수** — Sanctum 4.x 설치 후 `php artisan vendor:publish --tag=sanctum-migrations`를 실행해야 `personal_access_tokens` 테이블이 생성된다. 마이그레이션 publish 전에는 모든 `createToken()` 호출이 실패한다.
+- **크로스-제공자 이메일 연결** — 동일 이메일로 다른 제공자(Google→GitHub) 로그인 시 `updateOrCreate`가 email unique 제약조건 위반을 일으킨다. provider+provider_id로 먼저 찾고, 없으면 email로 찾아 provider 정보를 갱신하는 3단계 로직을 사용할 것 (`OAuthController::callback()` 참고).
 - **Naver driver는 `socialiteproviders/naver` 패키지 설치 필요** — `composer require socialiteproviders/naver` 설치 후, `EventServiceProvider`에 `SocialiteWasCalled` 이벤트 리스너로 `NaverExtendSocialite::class`를 등록해야 한다. EventServiceProvider는 `bootstrap/providers.php`에 수동 추가.
 - **OAuth 라우트는 `routes/web.php`에 정의** — Socialite는 세션 기반 state 검증이 필요하므로 `api.php`가 아닌 `web.php`를 사용한다.
 - **callback은 `RedirectResponse` 반환** — 브라우저가 callback URL에 직접 도착하므로 JSON 응답은 사용자에게 노출된다. Sanctum 토큰 발급 후 `redirect("/login?token={$token}")`으로 프론트엔드에 전달한다.
