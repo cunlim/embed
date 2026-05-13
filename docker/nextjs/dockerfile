@@ -38,8 +38,8 @@ EXPOSE 3000
 # node 사용자로 .next 캐시 디렉토리 생성
 RUN mkdir -p .next
 
-# 개발용 CMD. 운영 시에는 docker-compose 또는 CI/CD에서
-# npm run build 후 CMD를 npm start로 변경
-# .next/BUILD_ID 존재 여부로 개발/운영 모드 자동 감지
-# npm run build 실행 후 컨테이너 재시작 시 자동으로 npm start로 전환
-CMD ["sh", "-c", "if [ -f .next/BUILD_ID ]; then exec npm start; else exec npm run dev; fi"]
+# 개발/운영 모드 감지: .next/production 파일 존재 여부로 판단
+# - .next/production 있음 → npm start (운영 모드, CI/CD 배포 시 생성)
+# - .next/production 없음 → npm run dev (개발 모드)
+# Next.js 16은 next dev도 BUILD_ID를 생성하므로 BUILD_ID로 판단 불가
+CMD ["sh", "-c", "if [ -f .next/production ]; then exec npm start; else exec npm run dev; fi"]

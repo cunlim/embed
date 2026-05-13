@@ -20,9 +20,9 @@
           },
           {
             "type": "command",
-            "command": "docker exec cl_embed_nextjs npm run build 2>/dev/null || true",
-            "timeout": 120,
-            "statusMessage": "Next.js 빌드 중..."
+            "command": "docker exec cl_embed_nextjs npx tsc --noEmit 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "Next.js 타입 체크 중..."
           },
           {
             "type": "command",

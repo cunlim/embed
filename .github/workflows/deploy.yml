@@ -102,9 +102,15 @@ jobs:
             exit 1
           }
 
-      # 7. 컨테이너 재시작 — supervisord가 최신 코드로 프로세스 재시작
-      #     restart/force-recreate 대신 stop+up 사용: Docker Desktop WSL2에서
-      #     bind mount 경로가 무효화되어 "no such file or directory" 오류 발생
+      # 7. Next.js 프로덕션 빌드 및 .next/production 센티널 생성
+      #    (Dockerfile CMD가 이 파일을 감지하여 npm start 운영 모드로 기동)
+      - name: Build Next.js for Production
+        run: |
+          docker exec cl_embed_nextjs sh -c "npm run build && touch .next/production"
+
+      # 8. 컨테이너 재시작 — 최신 코드 + production 빌드로 프로세스 재시작
+      #    (restart/force-recreate 대신 stop+up 사용: Docker Desktop WSL2에서
+      #     bind mount 경로가 무효화되어 "no such file or directory" 오류 방지)
       - name: Restart Containers
         run: |
           cd ./docker
@@ -113,7 +119,7 @@ jobs:
           docker exec docker-nginx-1 nginx -s reload
           sleep 3
 
-      # 8. 헬스체크 — 모든 서비스 정상 응답 확인
+      # 9. 헬스체크 — 모든 서비스 정상 응답 확인
       - name: Health Check
         run: |
           echo "--- Laravel API (port 8000) ---"
@@ -128,7 +134,7 @@ jobs:
           echo "--- Nginx (port 80) ---"
           curl -sf -m 10 http://localhost/ && echo "OK" || echo "WARN: Nginx health check failed"
 
-      # 9. 워크스페이스 정리 — appuser 실행으로 vendor/logs는 UID 1000 소유
+      # 10. 워크스페이스 정리 — appuser 실행으로 vendor/logs는 UID 1000 소유
       - name: Cleanup Workspace
         if: always()
         run: |
