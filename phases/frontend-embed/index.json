@@ -5,20 +5,24 @@
     {
       "step": 0,
       "name": "websocket-setup",
-      "status": "error",
+      "status": "completed",
       "started_at": "2026-05-13T13:51:42+0900",
-      "error_message": "[3회 시도 후 실패] Step did not update status",
-      "failed_at": "2026-05-13T14:20:52+0900"
+      "completed_at": "2026-05-13T14:40:00+0900",
+      "summary": "laravel-echo, pusher-js, @types/pusher-js 설치. lib/echo.ts(ReverbEcho), hooks/useEcho.ts, hooks/useBatchProgress.ts 생성. .env.local에 Reverb 환경변수 설정"
     },
     {
       "step": 1,
       "name": "embed-page",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-13T14:50:00+0900",
+      "summary": "lib/api.ts(API 클라이언트), hooks/useRecommend.ts, app/embed/page.tsx 생성. 검색 입력, 언어 선택, 추천 결과 카드, 계층형 Select Box, 벡터 과정 모달, 일괄 번역 진행률 구현"
     },
     {
       "step": 2,
       "name": "login-page",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-13T15:10:00+0900",
+      "summary": "react-hook-form, @hookform/resolvers, zod 설치. hooks/useAuth.ts(OAuth 로그인 포함), app/login/page.tsx(로그인/회원가입/소셜 로그인) 생성. shadcn form 컴포넌트 수동 생성"
     },
     {
       "step": 3,
