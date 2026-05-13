@@ -50,6 +50,10 @@ nextjs/
 | lucide-react | ^1.14.0 | 아이콘 (이모지 금지) |
 | class-variance-authority | ^0.7.1 | 컴포넌트 변형 |
 | tailwind-merge | ^3.5.0 | 클래스 충돌 방지 |
+| vitest | ^4 | 단위/훅/컴포넌트 테스트 |
+| @testing-library/react | ^16 | React 컴포넌트 테스트 |
+| @testing-library/jest-dom | ^6 | DOM 매처 (toBeInTheDocument 등) |
+| jsdom | ^29 | 브라우저 환경 에뮬레이션 |
 
 ## 명령어
 
@@ -65,6 +69,10 @@ docker exec cl_embed_nextjs npm run build
 
 # ESLint
 docker exec cl_embed_nextjs npm run lint
+
+# 테스트 (Vitest)
+docker exec cl_embed_nextjs npm test
+docker exec cl_embed_nextjs npm run test:watch
 ```
 
 ### shadcn/ui 컴포넌트 추가
@@ -133,15 +141,14 @@ docker exec cl_embed_nextjs npx shadcn@latest add dialog
 
 ## 테스트
 
-아직 자동화된 테스트 프레임워크는 미설정 상태입니다. (추후 Vitest + React Testing Library 도입 예정)
+**CRITICAL: 프론트엔드도 TDD를 적용한다.** 새 훅, 유틸리티 함수, API 클라이언트 추가 시 테스트를 먼저 작성할 것.
 
-현재는 브라우저에서 수동으로 확인합니다:
+Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `@/*` alias, jsdom 환경, CSS 지원 설정됨.
 
-```bash
-# 프로덕션 배포 후
-open https://embed.cunlim.dev       # 랜딩 페이지
-open https://embed.cunlim.dev/embed  # 기술 시연 페이지
-```
+테스트 디렉토리 규칙:
+- `lib/__tests__/*.test.ts` — 순수 함수, API 클라이언트
+- `hooks/__tests__/*.test.ts` — 커스텀 훅 (@testing-library/react의 renderHook 사용)
+- API 호출을 모킹할 때는 `vi.mock("@/lib/api")`로 모듈 전체를 모킹
 
 ## 알려진 이슈
 
@@ -156,6 +163,7 @@ open https://embed.cunlim.dev/embed  # 기술 시연 페이지
 - **`createEcho()` 에러 핸들링** — 동적 import 실패나 Echo 생성자 예외에 대비해 `.catch()` 핸들러를 반드시 추가할 것. 미처리 시 영원히 `null` 상태로 남는다.
 - **lucide-react 브랜드 아이콘 없음** — Google, GitHub, Naver 등 OAuth 브랜드 아이콘은 lucide-react에 없다. 인라인 SVG 사용.
 - **shadcn form 컴포넌트 수동 생성** — `npx shadcn add form`이 조용히 실패할 수 있음. 필요 시 `components/ui/form.tsx`를 수동 작성 (react-hook-form + Controller 통합).
+- **`vitest` 바이너리 직접 실행** — `--no-bin-links`로 인해 `node_modules/.bin/vitest`가 생성되지 않음. `package.json` 스크립트는 `node node_modules/vitest/vitest.mjs run`으로 실행. `npx vitest`도 동작하지 않으니 주의.
 
 ## 관련 문서
 

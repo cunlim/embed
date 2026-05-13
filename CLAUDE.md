@@ -54,8 +54,9 @@ cl_embed/
 
 - **CRITICAL: TDD** — 새 기능 구현 시 반드시 테스트를 먼저 작성하고, 테스트가 통과하는 구현을 작성할 것
   - Laravel: Pest 4 (`php artisan test --compact`)
+  - Next.js: Vitest + React Testing Library (`docker exec cl_embed_nextjs npm test`)
   - 테스트 없이 구현 코드만 작성하는 것은 금지된다. "나중에 테스트를 추가하겠다"는 접근도 허용되지 않는다.
-- **TDD 적용 범위** — 다음 항목은 예외 없이 테스트를 작성해야 한다:
+- **TDD 적용 범위 — Laravel** — 다음 항목은 예외 없이 테스트를 작성해야 한다:
   - 모든 Controller 메서드 (Feature 테스트 — HTTP 응답, mock 검증, DB 단언)
   - 모든 Form Request (유효성 검증 규칙, 실패 시나리오)
   - 모든 Eloquent Resource (응답 형식 검증)
@@ -63,7 +64,13 @@ cl_embed/
   - 모든 Service 클래스 (의존성 mock + 위임 호출 검증 — Unit/Feature 테스트)
   - 모든 Job/Event (dispatch, broadcast — Feature 테스트)
   - 모든 Command/Scheduled Task (실행 결과 검증)
-- **Phase step 완료 조건** — step의 모든 파일 생성 후 `php artisan test --compact` 실행하여 **0 failure**를 확인해야 한다. 실패가 있으면 step을 완료할 수 없다.
+- **TDD 적용 범위 — Next.js** — 다음 항목은 예외 없이 테스트를 작성해야 한다:
+  - 모든 순수 유틸리티 함수 (파싱, 변환, 계산 — Unit 테스트)
+  - 모든 커스텀 훅 (상태 전이, 성공/실패 분기 — Hook 테스트)
+  - 모든 API 클라이언트 함수 (요청/응답, 오류 처리 — Unit 테스트)
+- **Phase step 완료 조건** — step의 모든 파일 생성 후 테스트 실행하여 **0 failure**를 확인해야 한다. 실패가 있으면 step을 완료할 수 없다.
+  - Laravel: `php artisan test --compact`
+  - Next.js: `docker exec cl_embed_nextjs npm test`
 - 커밋 메시지는 conventional commits 형식을 따를 것 (feat:, fix:, docs:, refactor:)
 - PHP 변경 완료 전 `vendor/bin/pint --format agent` 실행 (컨테이너 내부)
 - **DB 테이블명**은 Laravel 기본 복수형 컨벤션을 따른다 (예: `categories`, `translation_caches`). 명시적 `protected $table` 지정은 불필요.

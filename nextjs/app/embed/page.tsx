@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Search,
   ChevronRight,
@@ -26,7 +26,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,33 +33,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useRecommend } from "@/hooks/useRecommend";
 import { useBatchProgress } from "@/hooks/useBatchProgress";
 import { getCategories, batchTranslate, type Category } from "@/lib/api";
+import { parseHierarchy, type HierarchyLevel } from "@/lib/category";
 import { cn } from "@/lib/utils";
-
-interface HierarchyLevel {
-  대: string;
-  중: string;
-  소: string;
-  categoryId: number;
-  categoryCode: string;
-}
-
-function parseHierarchy(categories: Category[]): HierarchyLevel[] {
-  return categories
-    .map((cat) => {
-      const parts = cat.category_name_ko.split(">");
-      if (parts.length >= 3) {
-        return {
-          대: parts[0].trim(),
-          중: parts[1].trim(),
-          소: parts[2].trim(),
-          categoryId: cat.id,
-          categoryCode: cat.category_code,
-        };
-      }
-      return null;
-    })
-    .filter((h): h is HierarchyLevel => h !== null);
-}
 
 export default function EmbedPage() {
   const [text, setText] = useState("");
@@ -71,6 +45,7 @@ export default function EmbedPage() {
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [selected대, setSelected대] = useState<string | null>(null);
   const [selected중, setSelected중] = useState<string | null>(null);
+  const [selected소, setSelected소] = useState<string | null>(null);
 
   const [batchId, setBatchId] = useState<string | null>(null);
   const batchProgress = useBatchProgress(batchId);
@@ -124,6 +99,10 @@ export default function EmbedPage() {
     }
   }, []);
 
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
+
   const handleRecommend = useCallback(() => {
     if (!text.trim()) return;
     doRecommend(text.trim(), language);
@@ -143,13 +122,6 @@ export default function EmbedPage() {
       setIsBatchLoading(false);
     }
   }, [batchLanguage]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") handleRecommend();
-    },
-    [handleRecommend]
-  );
 
   const vectorSteps = [
     { label: "검색어 입력", description: "사용자 텍스트 수신" },
@@ -193,16 +165,28 @@ export default function EmbedPage() {
           </p>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleRecommend();
+              }}
+              className="relative flex-1"
+            >
+              <label htmlFor="search-input" className="sr-only">
+                검색어 입력
+              </label>
+              <Search
+                aria-hidden="true"
+                className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
+              />
               <Input
+                id="search-input"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                onKeyDown={handleKeyDown}
                 placeholder="분석할 텍스트를 입력하세요..."
                 className="h-12 rounded-full pl-12 pr-4 text-base"
               />
-            </div>
+            </form>
           </div>
 
           <div className="mt-4 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
@@ -350,6 +334,7 @@ export default function EmbedPage() {
                     onValueChange={(v) => {
                       setSelected대(v);
                       setSelected중(null);
+                      setSelected소(null);
                     }}
                   >
                     <SelectTrigger>
@@ -381,7 +366,11 @@ export default function EmbedPage() {
                     </SelectContent>
                   </Select>
 
-                  <Select disabled={!selected중}>
+                  <Select
+                    value={selected소 ?? ""}
+                    onValueChange={setSelected소}
+                    disabled={!selected중}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="소분류 선택" />
                     </SelectTrigger>
@@ -428,9 +417,13 @@ export default function EmbedPage() {
                   <p className="text-xs text-destructive">{batchError}</p>
                 )}
 
-                {batchProgress && (
+                {batchProgress && (() => {
+                  const pct = batchProgress.totalJobs > 0
+                    ? Math.round((batchProgress.completedJobs / batchProgress.totalJobs) * 100)
+                    : 0;
+                  return (
                   <div className="space-y-2">
-                    <Progress value={batchProgress.progressPercent} />
+                    <Progress value={pct} />
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>
                         {batchProgress.completedJobs}/
@@ -445,7 +438,8 @@ export default function EmbedPage() {
                       </span>
                     </div>
                   </div>
-                )}
+                  );
+                })()}
               </div>
             </Card>
           </div>

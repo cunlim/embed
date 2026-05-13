@@ -64,9 +64,9 @@ export interface Category {
   category_name_ko: string;
   category_name_zh: string | null;
   category_name_en: string | null;
-  embedding_ko: unknown;
-  embedding_zh: unknown;
-  embedding_en: unknown;
+  embedding_ko: number[] | null;
+  embedding_zh: number[] | null;
+  embedding_en: number[] | null;
 }
 
 export interface CategoryListResponse {
