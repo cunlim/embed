@@ -35,11 +35,4 @@ ENV PORT=3000
 
 EXPOSE 3000
 
-# node 사용자로 .next 캐시 디렉토리 생성
-RUN mkdir -p .next
-
-# 개발/운영 모드 감지: .next/production 파일 존재 여부로 판단
-# - .next/production 있음 → npm start (운영 모드, CI/CD 배포 시 생성)
-# - .next/production 없음 → npm run dev (개발 모드)
-# Next.js 16은 next dev도 BUILD_ID를 생성하므로 BUILD_ID로 판단 불가
-CMD ["sh", "-c", "if [ -f .next/production ]; then exec npm start; else exec npm run dev; fi"]
+CMD ["npm", "run", "dev"]
