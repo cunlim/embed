@@ -4,8 +4,8 @@ name: Local CI/CD
 # - main:   안정 릴리스 브랜치 (develop → PR → main, CI/CD 자동 배포)
 #
 # 배포 파이프라인:
-#   - docker compose build + up → composer install → npm ci (Dockerfile 미변경 시) → test → migrate → restart
-#   - Dockerfile 변경 시 docker compose build에서 npm ci가 실행되므로 별도 npm ci 생략
+#   - docker compose build (npm ci 포함) + up → composer install → test → migrate → restart
+#   - Node 의존성은 Dockerfile RUN npm ci로 설치, anonymous volume으로 보존
 on:
   push:
     branches: [ main ]
@@ -34,51 +34,15 @@ jobs:
           sleep 3
           docker exec cl_embed_nextjs cat /app/package-lock.json > ../nextjs/package-lock.json
 
-      # 2. Dockerfile 변경 감지 — Next.js만 npm ci 스킵 결정에 사용
-      #    (Laravel Dockerfile에는 composer install이 없어 PHP 의존성은 항상 별도 실행)
-      - name: Check Dockerfile Changes
-        id: dockerfile_changed
-        run: |
-          BEFORE="${{ github.event.before }}"
-          AFTER="${{ github.event.after }}"
-
-          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            echo "nextjs_changed=true" >> $GITHUB_OUTPUT
-            echo "laravel_changed=true" >> $GITHUB_OUTPUT
-          else
-            git diff "$BEFORE" "$AFTER" --name-only | grep -qE 'docker/nextjs/dockerfile' \
-              && echo "nextjs_changed=true" >> $GITHUB_OUTPUT \
-              || echo "nextjs_changed=false" >> $GITHUB_OUTPUT
-            git diff "$BEFORE" "$AFTER" --name-only | grep -qE 'docker/laravel/dockerfile' \
-              && echo "laravel_changed=true" >> $GITHUB_OUTPUT \
-              || echo "laravel_changed=false" >> $GITHUB_OUTPUT
-          fi
-
-      # 3. PHP 의존성 설치 — Laravel Dockerfile에 composer install이 없으므로 항상 실행
+      # 2. PHP 의존성 설치 — Laravel Dockerfile에 composer install이 없으므로 항상 실행
       - name: Install PHP Dependencies
         run: docker exec cl_embed_laravel composer install --no-interaction
 
-      # 4. Node 의존성 설치 — Next.js Dockerfile에 RUN npm ci가 포함되어 있으므로
-      #    해당 Dockerfile 변경(build) 시 생략, 그 외에는 항상 실행
-      #    next dev와 메모리 경합을 피하기 위해 정지된 컨테이너의 볼륨을 공유하여 격리 실행
-      - name: Install Node Dependencies
-        if: steps.dockerfile_changed.outputs.nextjs_changed == 'false'
-        run: |
-          cd ./docker
-          docker compose stop cl_embed_nextjs
-          docker run --rm \
-            --volumes-from cl_embed_nextjs \
-            -e NODE_OPTIONS="--max-old-space-size=512" \
-            -w /app \
-            docker-cl_embed_nextjs \
-            npm ci
-          docker compose up -d cl_embed_nextjs
-
-      # 5. Laravel 테스트 실행
+      # 3. Laravel 테스트 실행
       - name: Run Laravel Tests
         run: docker exec cl_embed_laravel php artisan test --compact
 
-      # 6. DB 마이그레이션 — 실패 시 마지막 배치 롤백 후 중단
+      # 4. DB 마이그레이션 — 실패 시 마지막 배치 롤백 후 중단
       - name: Run Database Migrations
         run: |
           docker exec cl_embed_laravel php artisan migrate --force || {
@@ -88,7 +52,7 @@ jobs:
             exit 1
           }
 
-      # 7. 컨테이너 재시작 — 최신 코드로 프로세스 재시작
+      # 5. 컨테이너 재시작 — 최신 코드로 프로세스 재시작
       #    (restart/force-recreate 대신 stop+up 사용: Docker Desktop WSL2에서
       #     bind mount 경로가 무효화되어 "no such file or directory" 오류 방지)
       - name: Restart Containers
@@ -99,7 +63,7 @@ jobs:
           docker exec docker-nginx-1 nginx -s reload
           sleep 3
 
-      # 8. 헬스체크 — 모든 서비스 정상 응답 확인
+      # 6. 헬스체크 — 모든 서비스 정상 응답 확인
       - name: Health Check
         run: |
           echo "--- Laravel API (port 8000) ---"
@@ -114,7 +78,7 @@ jobs:
           echo "--- Nginx (port 80) ---"
           curl -sf -m 10 http://localhost/ && echo "OK" || echo "WARN: Nginx health check failed"
 
-      # 9. 워크스페이스 정리 — appuser 실행으로 vendor/logs는 UID 1000 소유
+      # 7. 워크스페이스 정리 — appuser 실행으로 vendor/logs는 UID 1000 소유
       - name: Cleanup Workspace
         if: always()
         run: |
