@@ -23,4 +23,4 @@ RUN groupadd -g 1000 appgroup && useradd -u 1000 -g appgroup -m -d /home/appuser
 # COPY supervisord.conf /etc/supervisor/supervisord.conf
 
 USER appuser
-CMD ["sh", "-c", "mkdir -p /var/www/html/logs && exec supervisord -c /etc/supervisor/supervisord.conf"]
+CMD ["sh", "-c", "exec supervisord -c /etc/supervisor/supervisord.conf"]
