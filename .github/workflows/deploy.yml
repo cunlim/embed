@@ -67,7 +67,8 @@ jobs:
       - name: Install Node Dependencies
         if: steps.dockerfile_changed.outputs.changed == 'false'
         run: |
-          docker exec cl_embed_nextjs sh -c "kill \$(pgrep -f 'next dev')" || true
+          docker exec cl_embed_nextjs sh -c "pkill -9 -f '[n]ext'" || true
+          sleep 3
           docker exec -e NODE_OPTIONS="--max-old-space-size=512" cl_embed_nextjs npm ci
           docker exec cl_embed_nextjs cat /app/package-lock.json > ./nextjs/package-lock.json
 
