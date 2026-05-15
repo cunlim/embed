@@ -57,6 +57,7 @@ jobs:
           docker compose build
           docker compose up -d
           sleep 3
+          docker exec cl_embed_nextjs cat /app/package-lock.json > ../nextjs/package-lock.json
 
       # 3. PHP 의존성 설치 — 항상 실행 (변경 없으면 composer가 빠르게 통과)
       - name: Install PHP Dependencies
@@ -64,13 +65,19 @@ jobs:
 
       # 4. Node 의존성 설치 — 항상 실행 (변경 없으면 npm ci가 빠르게 통과)
       #     Dockerfile 재빌드가 이미 npm ci를 포함하므로 재빌드 시에는 생략
+      #     next dev와 메모리 경합을 피하기 위해 정지된 컨테이너의 볼륨을 공유하여 격리 실행
       - name: Install Node Dependencies
         if: steps.dockerfile_changed.outputs.changed == 'false'
         run: |
-          docker exec cl_embed_nextjs sh -c "pkill -9 -f '[n]ext'" || true
-          sleep 3
-          docker exec -e NODE_OPTIONS="--max-old-space-size=512" cl_embed_nextjs npm ci
-          docker exec cl_embed_nextjs cat /app/package-lock.json > ./nextjs/package-lock.json
+          cd ./docker
+          docker compose stop cl_embed_nextjs
+          docker run --rm \
+            --volumes-from cl_embed_nextjs \
+            -e NODE_OPTIONS="--max-old-space-size=512" \
+            -w /app \
+            docker-cl_embed_nextjs \
+            npm ci
+          docker compose up -d cl_embed_nextjs
 
       # 5. Laravel 테스트 실행
       - name: Run Laravel Tests
