@@ -3,4 +3,3 @@ node_modules
 out
 build
 .git
-package-lock.json
