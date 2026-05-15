@@ -26,11 +26,8 @@ jobs:
           echo "TZ=Asia/Seoul" > ./docker/.env
 
       # 1. 컨테이너 기동 (미실행 상태인 경우)
-      #     Docker bind mount가 root 소유로 디렉토리를 생성하는 것을 방지하기 위해
-      #     로그 디렉토리를 미리 생성
       - name: Start Containers
         run: |
-          mkdir -p ./docker/laravel/volume/log
           cd ./docker
           docker compose up -d
           sleep 3
@@ -124,6 +121,5 @@ jobs:
               set +e
               [ -d /ws/laravel/vendor ] && chown -R 1000:1000 /ws/laravel/vendor 2>/dev/null
               [ -f /ws/laravel/.env ] && chown 1000:1000 /ws/laravel/.env 2>/dev/null
-              [ -d /ws/docker/laravel/volume/log ] && chown -R 1000:1000 /ws/docker/laravel/volume/log 2>/dev/null
               exit 0
             "

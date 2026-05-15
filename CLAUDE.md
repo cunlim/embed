@@ -129,6 +129,8 @@ docker exec cl_embed_nextjs sh -c "cd /app && npm ..."
 - **인라인 PHP 경로** — Laravel 작업 디렉터리는 `/var/www/html`. `/var/www/vendor/...`는 존재하지 않음.
 - **`RefreshDatabase` 사용 불가** — 테스트 DB가 SQLite 인메모리인데 pgvector 마이그레이션(`CREATE EXTENSION IF NOT EXISTS vector`)이 SQLite와 호환되지 않음. `tests/Pest.php`에서 주석 처리되어 있으며, 대신 `Schema::create()`로 필요한 테이블만 수동 생성한다. 상세: `docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md`
 - **Docker Desktop WSL2 `restart` 불가** — `docker compose restart` 시 바인드 마운트 경로가 무효화되어 `no such file or directory` 오류 발생. `stop` + `up -d` 조합을 사용할 것. `--force-recreate`도 동일한 문제가 있어 사용 불가.
+- **Docker bind mount 디렉토리는 daemon(root)이 생성** — `docker compose up -d` 시 bind mount 소스 디렉토리가 없으면 Docker daemon이 root 소유로 생성. Dockerfile의 `USER` 지시자와 무관. 컨테이너가 appuser로 실행되면 쓰기 권한이 없어 장애 발생. 새 bind mount 추가 시 CI에서 `mkdir -p`로 미리 생성할 것 (CI runner는 UID 1000으로 실행).
+- **`docker/laravel/volume/log`는 사용되지 않음** — `docker-compose.yml`에서 해당 bind mount가 주석 처리되어 있음 (`# - ./laravel/volume/log:/var/log/php`). 로그는 `laravel/logs/`로 통합됨.
 
 ## 인프라 환경 (WSL2)
 
