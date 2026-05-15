@@ -112,11 +112,12 @@ docker exec cl_embed_laravel supervisorctl status
 
 ## 알려진 이슈
 
-- **`execute.py` spawned Claude CLI 멈춤** — spawned Claude CLI가 `--dangerously-skip-permissions`를 사용해도 파일 쓰기 권한을 요청하며 멈출 수 있음 (hang). `ps aux | grep execute.py`로 모니터링하고, 진행이 없으면 `kill` 후 직접 step 구현.
+- **`execute.py` spawned Claude CLI 실패** — spawned Claude CLI가 `--dangerously-skip-permissions`를 사용해도 멈추거나(hang) 컨테이너에만 구현하고 호스트 `index.json`을 갱신하지 못해 "Step did not update status"로 실패할 수 있다. 실패 시 **컨테이너에 코드가 이미 구현되어 있는지 먼저 확인**하고, 있으면 호스트로 동기화 후 index.json을 수동 갱신한다. 진행이 없으면 `kill` 후 직접 step 구현.
 - **shadcn 컴포넌트 설치 시 confirm** — `npx shadcn@latest add`는 기존 파일이 있을 때 overwrite 확인(y/N)을 요구해 배치 설치가 중단된다. `echo 'y' | npx shadcn@latest add ...`로 회피.
 - **Docker 바인드 마운트 주의사항**:
   - **동기화 불일치** — 호스트↔컨테이너 파일 변경이 즉시 반영되지 않을 수 있다. 파일 수정 후 **반드시 `wc -l`로 양쪽 라인 수를 비교**할 것. 불일치 시 호스트→컨테이너: `cat <host-path> | base64 | docker exec -i bash -c "base64 -d > <container-path>"`, 컨테이너→호스트: `docker exec cat <container-path> > <host-path>`.
   - **신규 디렉토리** — 호스트에서 새 디렉토리를 만들면 컨테이너에 자동 반영되지 않을 수 있다. `docker exec cl_embed_laravel mkdir -p <path>`로 컨테이너에도 동일 디렉토리 생성.
+    - **컨테이너→호스트 동기화 시 신규 디렉토리** — spawned Claude 등이 컨테이너에 새 디렉토리를 생성한 경우, 호스트에도 `mkdir -p`로 선행 생성 후 동기화해야 한다.
   - **`composer require` 후 동기화** — 컨테이너 내부에서 실행 시 생성/변경된 파일은 컨테이너에만 존재한다. `docker exec cl_embed_laravel cat <container-path> > <host-path>`로 호스트에 복사.
   - **bind mount 디렉토리는 daemon(root)이 생성** — `docker compose up -d` 시 bind mount 소스 디렉토리가 없으면 Docker daemon이 root 소유로 생성. 새 bind mount 추가 시 CI에서 `mkdir -p`로 미리 생성할 것.
 - **root 소유 경로에 파일 복사** — `/etc/` 등 root 소유 디렉터리에 파일을 쓸 때는 `docker cp <host-path> <container>:/path/to/file`가 가장 간결하다.
