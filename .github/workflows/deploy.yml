@@ -12,6 +12,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: self-hosted
+    env:
+      LIVE_ROOT: ${{ vars.LIVE_ROOT }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,10 +22,8 @@ jobs:
       # 0. .env 파일 복원 — CI 체크아웃은 gitignore로 인해 .env 누락
       - name: Restore Environment Files
         run: |
-          if [ -f /var/app/actions-runner/config/cl_embed/.env ]; then
-            cp /var/app/actions-runner/config/cl_embed/.env ./laravel/.env
-          fi
-          echo "TZ=Asia/Seoul" > ./docker/.env
+          cp $LIVE_ROOT/laravel/.env ./laravel/.env
+          cp $LIVE_ROOT/docker/.env ./docker/.env
 
       # 1. 컨테이너 기동 — Dockerfile 변경 여부와 관계없이 항상 build + up + lockfile 동기화
       - name: Start Containers
