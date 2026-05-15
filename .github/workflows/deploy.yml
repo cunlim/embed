@@ -25,14 +25,13 @@ jobs:
           cp $LIVE_ROOT/laravel/.env ./laravel/.env
           cp $LIVE_ROOT/docker/.env ./docker/.env
 
-      # 1. 컨테이너 기동 — Dockerfile 변경 여부와 관계없이 항상 build + up + lockfile 동기화
+      # 1. 컨테이너 기동 — Dockerfile 변경 여부와 관계없이 항상 build + up
       - name: Start Containers
         run: |
           cd ./docker
           docker compose build
           docker compose up -d
           sleep 3
-          docker exec cl_embed_nextjs cat /app/package-lock.json > ../nextjs/package-lock.json
 
       # 2. PHP 의존성 설치 — Laravel Dockerfile에 composer install이 없으므로 항상 실행
       - name: Install PHP Dependencies
