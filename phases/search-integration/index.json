@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "search-caching",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-16T00:58:50+0900",
+      "completed_at": "2026-05-16T01:34:00+0900",
+      "summary": "SearchNormalizer (키워드 정규화) + EmbeddingCacheService (임베딩 캐싱, 캐시 히트 100ms 이하 달성) + RecommendController 리팩토링"
     },
     {
       "step": 2,
