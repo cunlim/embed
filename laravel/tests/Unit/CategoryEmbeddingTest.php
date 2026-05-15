@@ -44,3 +44,14 @@ test('category 릴레이션은 BelongsTo 인스턴스를 반환한다', function
 
     expect($embedding->category())->toBeInstanceOf(BelongsTo::class);
 });
+
+test('scopeSimilarTo — language 필터와 orderByRaw를 포함한 쿼리를 생성한다', function () {
+    $vector = array_fill(0, 1024, 0.01);
+    $query = CategoryEmbedding::similarTo($vector, 'ko', 5);
+
+    $sql = $query->toSql();
+    expect($sql)->toContain('"language"')
+        ->toContain('<=>')
+        ->toContain('::vector')
+        ->toContain('limit');
+});

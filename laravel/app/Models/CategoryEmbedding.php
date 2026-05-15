@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\CategoryEmbeddingFactory;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,23 @@ class CategoryEmbedding extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * pgvector cosine distance(<=>) 연산자를 사용한 유사 임베딩 검색 스코프.
+     *
+     * @param  float[]  $vector  1024차원 쿼리 벡터
+     * @param  string  $language  언어 코드
+     * @param  int  $limit  결과 제한
+     */
+    public function scopeSimilarTo(Builder $query, array $vector, string $language, int $limit = 5): Builder
+    {
+        $vectorLiteral = '['.implode(',', $vector).']';
+
+        return $query
+            ->where('language', $language)
+            ->orderByRaw('embedding <=> ?::vector', [$vectorLiteral])
+            ->limit($limit);
     }
 
     protected function casts(): array
