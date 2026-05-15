@@ -1,17 +1,12 @@
 # 아키텍처
 
-## 디렉토리 구조 및 인프라 (멀티 컨테이너)
-```
-./docker/docker-compose.yml (WSL Ubuntu 기반) — 5개 컨테이너
-├── cl_embed_nextjs/    # Next.js (상세 버전/포트/명령어: [`nextjs/CLAUDE.md`](../nextjs/CLAUDE.md))
-├── cl_embed_laravel/   # Laravel API & Queue 데몬 (상세 버전/명령어: [`laravel/CLAUDE.md`](../laravel/CLAUDE.md))
-├── cl_embed_swagger/   # Swagger UI (swaggerapi/swagger-ui 이미지, `/swagger/` 라우팅)
-├── pgvector_03/        # PostgreSQL 15+ (pgvector extension)
-└── redis_04/           # Redis (Session, Cache, Queue, Broadcasting)
-```
-* 도메인: `https://embed.cunlim.dev` 호스트 연결 (cloudflared tunnel 사용)
-* **Nginx 로그**: `docker/nginx/volume/log/` — 경로별 분리 기록 (`/api/`, `/app/`, `/`)
-* **Laravel 프로세스 로그**: `laravel/logs/` — `serve.log`, `queue.log`, `reverb.log` (`/var/www/html/logs/`에 기록되며 `../laravel:/var/www/html` bind mount로 호스트에서 확인)
+## 인프라 (멀티 컨테이너)
+
+`docker-compose.yml` 기준 5개 컨테이너: Next.js, Laravel, Swagger UI, PostgreSQL 15+ (pgvector), Redis. 컨테이너명/포트는 `docker/docker-compose.yml` 참조.
+
+- 도메인: `https://embed.cunlim.dev` (cloudflared tunnel)
+- **Nginx 로그**: `docker/nginx/volume/log/` — 경로별 분리
+- **Laravel 로그**: `laravel/logs/` — `serve.log`, `queue.log`, `reverb.log`
 
 ## 패턴
 * **리버스 프록시 트래픽 라우팅 (Nginx)**:
@@ -36,17 +31,9 @@
 
 프론트엔드 디렉토리 구조 및 패키지 상세는 [`nextjs/CLAUDE.md`](../nextjs/CLAUDE.md) 참조.
 
-## 데이터베이스 주요 테이블
+## 데이터베이스
 
-컬럼 상세는 `laravel/database/migrations/`의 각 마이그레이션 파일 참조.
-
-| 테이블 | 목적 | 비고 |
-|--------|------|------|
-| `categories` | 단일 카테고리 체계 (네이버 기준) | |
-| `category_embeddings` | 다중 언어/모델 임베딩 (1:N) | VECTOR(1024) pgvector |
-| `translation_caches` | 번역 결과 캐시 (중복 방지) | |
-| `search_logs` | 검색어 임베딩 캐시 겸 이력 | 비회원은 `session_id` 식별, `normalized_keyword`로 캐시 매칭 |
-| `users` | OAuth 및 이메일 회원 관리 | 추후 `provider`/`provider_id` 컬럼 추가 예정 (OAuth 연동 시) |
+테이블/컬럼 상세는 `laravel/database/migrations/` 참조. 주요 테이블: `categories`, `category_embeddings` (VECTOR(1024)), `translation_caches`, `search_logs`, `users`.
 
 ## 데이터 흐름 (비동기 및 웹소켓 파이프라인)
 ```

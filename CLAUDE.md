@@ -94,59 +94,34 @@ cl_embed/
 Next.js 관련 작업은 호스트에서 직접 실행하지 말고 반드시 `cl_embed_nextjs` 컨테이너 내부에서 실행해야 합니다. (node_modules 권한 문제 방지)
 
 ```bash
-# Next.js 컨테이너 접속
-docker exec -it cl_embed_nextjs /bin/sh
-
-# Laravel 컨테이너 접속
-docker exec -it cl_embed_laravel /bin/bash
+docker exec -it cl_embed_nextjs /bin/sh       # Next.js 컨테이너
+docker exec -it cl_embed_laravel /bin/bash     # Laravel 컨테이너
 ```
 
-컨테이너 내부에서 npm 명령어 실행 시 `--no-bin-links` 플래그가 필요할 수 있습니다.
-- 컨테이너에서 `npm install` 실행 후 `package.json`, `package-lock.json`을 호스트로 복사할 것 (`docker exec cl_embed_nextjs cat /app/package.json > nextjs/package.json`). 컨테이너에만 변경이 남으면 git 트래킹이 누락된다.
-
-### 컨테이너별 작업 디렉터리
-
-```bash
-# Laravel 앱 디렉터리 (php artisan, composer 등 실행 위치)
-docker exec cl_embed_laravel bash -c "cd /var/www/html && php artisan ..."
-
-# Next.js 앱 디렉터리
-docker exec cl_embed_nextjs sh -c "cd /app && npm ..."
-```
-
-- Laravel 컨테이너 작업 디렉터리는 `/var/www/html`입니다. 홈 디렉터리(`/home/appuser`)와 혼동하지 마세요.
+- Laravel 작업 디렉터리: `/var/www/html` (홈 디렉터리 `/home/appuser`와 혼동 금지)
+- Next.js 작업 디렉터리: `/app`
+- 컨테이너명은 `docker compose ps`로 확인 가능
 
 ## supervisord 프로세스 관리
 
-Laravel 컨테이너의 3개 프로세스(serve, reverb, queue)는 supervisord가 관리합니다 (`docker/laravel/supervisord.conf`). `autostart=true`, `autorestart=true`로 컨테이너 시작 시 자동 실행되고, 종료 시 자동 재시작됩니다.
+Laravel 컨테이너의 3개 프로세스(serve, reverb, queue)는 supervisord가 관리합니다 (`docker/laravel/supervisord.conf`). 설정 변경 후 `supervisorctl reread && supervisorctl update`로 반영합니다.
 
 ```bash
-# 프로세스 상태 확인
 docker exec cl_embed_laravel supervisorctl status
-
-# 특정 프로세스 제어
-docker exec cl_embed_laravel supervisorctl stop|restart <program>
 ```
-
-- supervisord.conf는 docker-compose.yml bind mount(`./laravel/supervisord.conf:/etc/supervisor/supervisord.conf`)로 주입되므로, 호스트 파일 수정 후 `supervisorctl reread && supervisorctl update`만 실행하면 바로 반영됩니다.
-- 프로세스 트리 확인: `docker exec cl_embed_laravel ps aux --forest`
 
 ## 알려진 이슈
 
-- **`execute.py` spawned Claude CLI 멈춤** — spawned Claude CLI가 `--dangerously-skip-permissions`를 사용해도 파일 쓰기 권한을 요청하며 멈출 수 있음 (hang). `ps aux | grep execute.py`로 모니터링하고, 진행이 없으면 `kill` 후 직접 step 구현. index.json 수동 업데이트 + 수동 커밋.
+- **`execute.py` spawned Claude CLI 멈춤** — spawned Claude CLI가 `--dangerously-skip-permissions`를 사용해도 파일 쓰기 권한을 요청하며 멈출 수 있음 (hang). `ps aux | grep execute.py`로 모니터링하고, 진행이 없으면 `kill` 후 직접 step 구현.
 - **shadcn 컴포넌트 설치 시 confirm** — `npx shadcn@latest add`는 기존 파일이 있을 때 overwrite 확인(y/N)을 요구해 배치 설치가 중단된다. `echo 'y' | npx shadcn@latest add ...`로 회피.
-- **Docker 바인드 마운트 동기화 불일치 (양방향)** — 호스트↔컨테이너 파일 변경이 즉시 반영되지 않을 수 있다. 파일 수정 후 **반드시 `wc -l`로 양쪽 라인 수를 비교**할 것. 불일치 시 호스트→컨테이너: `cat <host-path> | base64 | docker exec -i bash -c "base64 -d > <container-path>"`, 컨테이너→호스트: `docker exec cat <container-path> > <host-path>`. `laravel/app/` 신규 클래스가 컨테이너에만 존재하면 호스트 `git add`가 실패하므로 컨테이너→호스트 복사 후 커밋한다.
-- **root 소유 경로에 파일 복사** — `/etc/` 등 root 소유 디렉터리에 파일을 쓸 때는 `docker cp <host-path> <container>:/path/to/file`가 가장 간결하다 (Docker API가 root로 실행). `docker exec -u 0`도 동일 효과.
-- **신규 디렉토리는 컨테이너에 수동 생성 필요** — 호스트에서 새 디렉토리(예: `tests/Feature/Events/`)를 만들면 bind mount로 컨테이너에 자동 반영되지 않을 수 있다. `docker exec cl_embed_laravel mkdir -p <path>`로 컨테이너에도 동일 디렉토리를 생성한 후 base64 방식으로 파일을 동기화할 것.
-- **`composer require` / `vendor:publish` 후 파일 동기화** — 컨테이너 내부에서 실행 시 생성/변경된 파일(composer.json, composer.lock, config/*.php 등)은 컨테이너에만 존재한다. `docker exec cl_embed_laravel cat <container-path> > <host-path>`로 호스트에 복사하여 git 트래킹을 유지할 것.
-- **`composer dump-autoload` 필요 시점** — `php artisan make:model` 바깥에서 수동 생성한 클래스(Job, Event 등)는 autoloader 캐시에 반영되지 않는다. `docker exec cl_embed_laravel composer dump-autoload` 실행 후 테스트해야 한다.
-- **tinker 쓰기 권한 오류** — `useradd -m`으로 홈 디렉토리(`/home/appuser`)를 생성하므로 해결됨. 컨테이너가 appuser로 실행되므로 `.config/psysh`는 런타임에 자동으로 올바른 소유권으로 생성된다.
-- **Next.js HMR 에러 로그** — `embed_nextjs_error.log`의 "Connection refused"는 dev 서버 재시작 시 정상 발생. 개발 편의를 위해 dev 모드를 기본으로 사용하며, `npm run build` 후 컨테이너 재시작 시 자동으로 production 모드(`npm start`)로 전환된다. production 모드에서는 WATCHPACK_POLLING이 동작하지 않아 파일 변경이 반영되지 않는다. dev 모드로 복귀: `docker exec cl_embed_nextjs rm -f /app/.next/BUILD_ID` → `docker compose stop cl_embed_nextjs && docker compose up -d cl_embed_nextjs`.
-- **인라인 PHP 경로** — Laravel 작업 디렉터리는 `/var/www/html`. `/var/www/vendor/...`는 존재하지 않음.
-- **`RefreshDatabase` 사용 불가** — 테스트 DB가 SQLite 인메모리인데 pgvector 마이그레이션(`CREATE EXTENSION IF NOT EXISTS vector`)이 SQLite와 호환되지 않음. `tests/Pest.php`에서 주석 처리되어 있으며, 대신 `Schema::create()`로 필요한 테이블만 수동 생성한다. 상세: `docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md`
+- **Docker 바인드 마운트 주의사항**:
+  - **동기화 불일치** — 호스트↔컨테이너 파일 변경이 즉시 반영되지 않을 수 있다. 파일 수정 후 **반드시 `wc -l`로 양쪽 라인 수를 비교**할 것. 불일치 시 호스트→컨테이너: `cat <host-path> | base64 | docker exec -i bash -c "base64 -d > <container-path>"`, 컨테이너→호스트: `docker exec cat <container-path> > <host-path>`.
+  - **신규 디렉토리** — 호스트에서 새 디렉토리를 만들면 컨테이너에 자동 반영되지 않을 수 있다. `docker exec cl_embed_laravel mkdir -p <path>`로 컨테이너에도 동일 디렉토리 생성.
+  - **`composer require` 후 동기화** — 컨테이너 내부에서 실행 시 생성/변경된 파일은 컨테이너에만 존재한다. `docker exec cl_embed_laravel cat <container-path> > <host-path>`로 호스트에 복사.
+  - **bind mount 디렉토리는 daemon(root)이 생성** — `docker compose up -d` 시 bind mount 소스 디렉토리가 없으면 Docker daemon이 root 소유로 생성. 새 bind mount 추가 시 CI에서 `mkdir -p`로 미리 생성할 것.
+- **root 소유 경로에 파일 복사** — `/etc/` 등 root 소유 디렉터리에 파일을 쓸 때는 `docker cp <host-path> <container>:/path/to/file`가 가장 간결하다.
+- **`RefreshDatabase` 사용 불가** — 테스트 DB가 SQLite 인메모리인데 pgvector 마이그레이션(`CREATE EXTENSION IF NOT EXISTS vector`)이 SQLite와 호환되지 않음. 대신 `Schema::create()`로 필요한 테이블만 수동 생성. 상세: `docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md`
 - **Docker Desktop WSL2 `restart` 불가** — `docker compose restart` 시 바인드 마운트 경로가 무효화되어 `no such file or directory` 오류 발생. `stop` + `up -d` 조합을 사용할 것. `--force-recreate`도 동일한 문제가 있어 사용 불가.
-- **Docker bind mount 디렉토리는 daemon(root)이 생성** — `docker compose up -d` 시 bind mount 소스 디렉토리가 없으면 Docker daemon이 root 소유로 생성. Dockerfile의 `USER` 지시자와 무관. 컨테이너가 appuser로 실행되면 쓰기 권한이 없어 장애 발생. 새 bind mount 추가 시 CI에서 `mkdir -p`로 미리 생성할 것 (CI runner는 UID 1000으로 실행).
-- **`docker/laravel/volume/log`는 사용되지 않음** — `docker-compose.yml`에서 해당 bind mount가 주석 처리되어 있음 (`# - ./laravel/volume/log:/var/log/php`). 로그는 `laravel/logs/`로 통합됨.
 
 ## 인프라 환경 (WSL2)
 
@@ -173,30 +148,9 @@ docker compose logs -f cl_embed_nextjs
 
 ## 로깅
 
-### Nginx 로그 (`docker/nginx/volume/log/`)
-
-Nginx 리버스 프록시가 경로별로 별도 로그 파일에 기록합니다.
-
-| 로그 파일 | 내용 |
-|-----------|------|
-| `embed_error.log` / `embed_access.log` | Nginx 전체 요청/오류 |
-| `embed_api_error.log` / `embed_api_access.log` | `/api/` 라우팅 (Laravel API) |
-| `embed_app_error.log` / `embed_app_access.log` | `/app/` 라우팅 (Laravel Reverb WebSocket) |
-| `embed_nextjs_error.log` / `embed_nextjs_access.log` | `/` 라우팅 (Next.js 프론트엔드) |
-
-### Laravel 프로세스 로그 (`laravel/logs/`)
-
-Laravel 컨테이너(`cl_embed_laravel`) 내부에서 실행되는 3개의 프로세스가 각각 별도 파일에 기록합니다. `/var/www/html/logs/`에 기록되며 `../laravel:/var/www/html` bind mount로 호스트 `laravel/logs/`에서 확인 가능합니다.
-
-| 로그 파일 | 프로세스 | 포트 | 목적 |
-|-----------|----------|------|------|
-| `serve.log` | `php artisan serve` | 8000 | Laravel HTTP 요청 처리 |
-| `queue.log` | `php artisan queue:work` | — | 큐 Job (번역/임베딩) 처리 |
-| `reverb.log` | `php artisan reverb:start` | 8080 | WebSocket 실시간 브로드캐스트 |
-
-### Laravel 애플리케이션 로그 (`laravel/storage/logs/laravel.log`)
-
-Laravel 프레임워크가 자체적으로 기록하는 애플리케이션 로그 파일입니다. HTTP 요청 처리 중 발생한 에러, 디버그 메시지, 예외 trace 등이 기록됩니다. 프로세스별 로그(`serve.log`, `queue.log`, `reverb.log`)와 달리 실제 Laravel 애플리케이션 코드 실행 중 발생하는 이벤트가 기록됩니다.
+- **Nginx**: `docker/nginx/volume/log/` — 경로별 분리 기록 (`embed_error.log`, `embed_api_*.log`, `embed_app_*.log`, `embed_nextjs_*.log`)
+- **Laravel 프로세스**: `laravel/logs/` — `serve.log`, `queue.log`, `reverb.log` (bind mount로 호스트에서 확인 가능)
+- **Laravel 앱**: `laravel/storage/logs/laravel.log` — 프레임워크 예외/디버그 로그
 
 ## CI/CD (셀프호스티드 WSL GitHub Actions 러너)
 

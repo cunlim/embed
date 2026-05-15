@@ -46,34 +46,17 @@
   * **비회원:** 추천 세팅값은 브라우저 `LocalStorage`에 보관하며, 캐시 데이터는 `session_id` 기준으로 적재됩니다.
   * **회원:** 모든 검색 이력과 활동 데이터가 `User ID`에 종속되어 영구적으로 동기화됩니다.
 
-## 4. 개발 Phase (Harness Task)
+## 4. 개발 Phase
 
-`phases/` 디렉토리에 정의된 7개 Harness Phase로 실행된다. 상세 작업 내용과 진행 상황은 `phases/{phase-name}/step*.md`와 `phases/index.json` 참조.
+7개 Phase로 구성. 상세 작업 내용과 진행 상황은 `phases/index.json` 및 `phases/{phase-name}/step*.md` 참조.
 
-### Phase 1: backend-models
-Eloquent 모델 및 DB 마이그레이션.
-
-### Phase 2: ollama-integration
-Ollama 로컬 모델 연동 — 번역, 임베딩 생성, Rate Limit 방어.
-
-### Phase 3: translation-pipeline
-비동기 큐 기반 번역/임베딩 파이프라인, Reverb WebSocket 진행률 브로드캐스트, 중복 실행 방지.
-
-### Phase 4: api-layer
-REST API 라우트 및 컨트롤러, Form Request 검증, Eloquent Resources, pgvector 코사인 유사도 추천 엔진.
-
-> **Swagger 전략**: 이 Phase에서 첫 API 문서화를 수행하여 L5-Swagger 설정과 어노테이션 패턴을 검증한다. 문제가 없으면 Phase 7(search-integration)에서 인증 API 등 남은 모든 엔드포인트의 문서화를 일괄 완료한다.
-
-### Phase 5: auth-system
-Sanctum API Token 인증 + Socialite OAuth (Google, GitHub, Naver). 쓰기 작업 보호.
-
-### Phase 6: frontend-embed
-Next.js 프론트엔드 — WebSocket 구독, `/embed` 기술 시연, `/login` 로그인, `/docs` 문서, `/admin` 관리자 페이지.
-
-### Phase 7: search-integration
-검색 최적화, 캐싱, 정규화, E2E 통합 테스트, 전체 API Swagger 문서 완성.
-
-> **Swagger 전략**: Phase 4(api-layer)에서 검증된 L5-Swagger 패턴을 바탕으로, 인증 API 등 남은 모든 엔드포인트의 어노테이션을 이 Phase에서 일괄 추가하고 최종 문서를 완성한다.
+1. **backend-models** — Eloquent 모델 및 DB 마이그레이션
+2. **ollama-integration** — Ollama 로컬 모델 연동 (번역, 임베딩, Rate Limit)
+3. **translation-pipeline** — 비동기 큐 기반 번역/임베딩 파이프라인, Reverb WebSocket
+4. **api-layer** — REST API, pgvector 코사인 유사도 추천 엔진
+5. **auth-system** — Sanctum + Socialite OAuth
+6. **frontend-embed** — Next.js 프론트엔드
+7. **search-integration** — 검색 최적화, E2E 통합 테스트, Swagger 문서 완성
 
 ## 5. 테스트 및 배포 (CI/CD)
 * **테스트 코드:** 백엔드 핵심 파이프라인(분할 조립, 예외 처리, Chaining, Lock, Rate Limit 방어) 테스트 코드 의무화.
