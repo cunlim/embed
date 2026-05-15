@@ -4,8 +4,8 @@ name: Local CI/CD
 # - main:   안정 릴리스 브랜치 (develop → PR → main, CI/CD 자동 배포)
 #
 # 배포 파이프라인:
-#   1. 일반 코드 변경 → composer install → npm ci → test → migrate → restart (최소 실행)
-#   2. Dockerfile 변경 → docker compose build 포함 (이미지 재빌드, npm ci 내장)
+#   - docker compose build + up → composer install → npm ci (Dockerfile 미변경 시) → test → migrate → restart
+#   - Dockerfile 변경 시 docker compose build에서 npm ci가 실행되므로 별도 npm ci 생략
 on:
   push:
     branches: [ main ]
@@ -25,33 +25,8 @@ jobs:
           fi
           echo "TZ=Asia/Seoul" > ./docker/.env
 
-      # 1. 컨테이너 기동 (미실행 상태인 경우)
+      # 1. 컨테이너 기동 — Dockerfile 변경 여부와 관계없이 항상 build + up + lockfile 동기화
       - name: Start Containers
-        run: |
-          cd ./docker
-          docker compose up -d
-          sleep 3
-
-      # 2. Dockerfile 변경 감지 및 이미지 재빌드
-      #     첫 푸시(before=000...000)인 경우도 재빌드 수행
-      - name: Check Dockerfile Changes
-        id: dockerfile_changed
-        run: |
-          BEFORE="${{ github.event.before }}"
-          AFTER="${{ github.event.after }}"
-
-          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "First push detected — will rebuild Docker images"
-          elif git diff "$BEFORE" "$AFTER" --name-only | grep -qE 'docker/(nextjs|laravel)/dockerfile'; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "Dockerfile changed — will rebuild Docker images"
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Rebuild Docker Images
-        if: steps.dockerfile_changed.outputs.changed == 'true'
         run: |
           cd ./docker
           docker compose build
@@ -59,15 +34,35 @@ jobs:
           sleep 3
           docker exec cl_embed_nextjs cat /app/package-lock.json > ../nextjs/package-lock.json
 
-      # 3. PHP 의존성 설치 — 항상 실행 (변경 없으면 composer가 빠르게 통과)
+      # 2. Dockerfile 변경 감지 — Next.js만 npm ci 스킵 결정에 사용
+      #    (Laravel Dockerfile에는 composer install이 없어 PHP 의존성은 항상 별도 실행)
+      - name: Check Dockerfile Changes
+        id: dockerfile_changed
+        run: |
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "nextjs_changed=true" >> $GITHUB_OUTPUT
+            echo "laravel_changed=true" >> $GITHUB_OUTPUT
+          else
+            git diff "$BEFORE" "$AFTER" --name-only | grep -qE 'docker/nextjs/dockerfile' \
+              && echo "nextjs_changed=true" >> $GITHUB_OUTPUT \
+              || echo "nextjs_changed=false" >> $GITHUB_OUTPUT
+            git diff "$BEFORE" "$AFTER" --name-only | grep -qE 'docker/laravel/dockerfile' \
+              && echo "laravel_changed=true" >> $GITHUB_OUTPUT \
+              || echo "laravel_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 3. PHP 의존성 설치 — Laravel Dockerfile에 composer install이 없으므로 항상 실행
       - name: Install PHP Dependencies
         run: docker exec cl_embed_laravel composer install --no-interaction
 
-      # 4. Node 의존성 설치 — 항상 실행 (변경 없으면 npm ci가 빠르게 통과)
-      #     Dockerfile 재빌드가 이미 npm ci를 포함하므로 재빌드 시에는 생략
-      #     next dev와 메모리 경합을 피하기 위해 정지된 컨테이너의 볼륨을 공유하여 격리 실행
+      # 4. Node 의존성 설치 — Next.js Dockerfile에 RUN npm ci가 포함되어 있으므로
+      #    해당 Dockerfile 변경(build) 시 생략, 그 외에는 항상 실행
+      #    next dev와 메모리 경합을 피하기 위해 정지된 컨테이너의 볼륨을 공유하여 격리 실행
       - name: Install Node Dependencies
-        if: steps.dockerfile_changed.outputs.changed == 'false'
+        if: steps.dockerfile_changed.outputs.nextjs_changed == 'false'
         run: |
           cd ./docker
           docker compose stop cl_embed_nextjs
