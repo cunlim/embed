@@ -39,6 +39,7 @@ services:
     restart: unless-stopped
     volumes:
       - ../laravel:/var/www/html
+      - ./laravel/supervisord.conf:/etc/supervisor/supervisord.conf
       # - ./laravel/volume/log:/var/log/php
     environment:
       TZ: ${TZ}

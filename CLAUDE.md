@@ -116,11 +116,27 @@ docker exec cl_embed_nextjs sh -c "cd /app && npm ..."
 
 - Laravel 컨테이너 작업 디렉터리는 `/var/www/html`입니다. 홈 디렉터리(`/home/appuser`)와 혼동하지 마세요.
 
+## supervisord 프로세스 관리
+
+Laravel 컨테이너의 3개 프로세스(serve, reverb, queue)는 supervisord가 관리합니다 (`docker/laravel/supervisord.conf`). `autostart=true`, `autorestart=true`로 컨테이너 시작 시 자동 실행되고, 종료 시 자동 재시작됩니다.
+
+```bash
+# 프로세스 상태 확인
+docker exec cl_embed_laravel supervisorctl status
+
+# 특정 프로세스 제어
+docker exec cl_embed_laravel supervisorctl stop|restart <program>
+```
+
+- supervisord.conf는 docker-compose.yml bind mount(`./laravel/supervisord.conf:/etc/supervisor/supervisord.conf`)로 주입되므로, 호스트 파일 수정 후 `supervisorctl reread && supervisorctl update`만 실행하면 바로 반영됩니다.
+- 프로세스 트리 확인: `docker exec cl_embed_laravel ps aux --forest`
+
 ## 알려진 이슈
 
 - **`execute.py` spawned Claude CLI 멈춤** — spawned Claude CLI가 `--dangerously-skip-permissions`를 사용해도 파일 쓰기 권한을 요청하며 멈출 수 있음 (hang). `ps aux | grep execute.py`로 모니터링하고, 진행이 없으면 `kill` 후 직접 step 구현. index.json 수동 업데이트 + 수동 커밋.
 - **shadcn 컴포넌트 설치 시 confirm** — `npx shadcn@latest add`는 기존 파일이 있을 때 overwrite 확인(y/N)을 요구해 배치 설치가 중단된다. `echo 'y' | npx shadcn@latest add ...`로 회피.
 - **Docker 바인드 마운트 동기화 불일치 (양방향)** — 호스트↔컨테이너 파일 변경이 즉시 반영되지 않을 수 있다. 파일 수정 후 **반드시 `wc -l`로 양쪽 라인 수를 비교**할 것. 불일치 시 호스트→컨테이너: `cat <host-path> | base64 | docker exec -i bash -c "base64 -d > <container-path>"`, 컨테이너→호스트: `docker exec cat <container-path> > <host-path>`. `laravel/app/` 신규 클래스가 컨테이너에만 존재하면 호스트 `git add`가 실패하므로 컨테이너→호스트 복사 후 커밋한다.
+- **root 소유 경로에 파일 복사** — `/etc/` 등 root 소유 디렉터리에 파일을 쓸 때는 `docker cp <host-path> <container>:/path/to/file`가 가장 간결하다 (Docker API가 root로 실행). `docker exec -u 0`도 동일 효과.
 - **신규 디렉토리는 컨테이너에 수동 생성 필요** — 호스트에서 새 디렉토리(예: `tests/Feature/Events/`)를 만들면 bind mount로 컨테이너에 자동 반영되지 않을 수 있다. `docker exec cl_embed_laravel mkdir -p <path>`로 컨테이너에도 동일 디렉토리를 생성한 후 base64 방식으로 파일을 동기화할 것.
 - **`composer require` / `vendor:publish` 후 파일 동기화** — 컨테이너 내부에서 실행 시 생성/변경된 파일(composer.json, composer.lock, config/*.php 등)은 컨테이너에만 존재한다. `docker exec cl_embed_laravel cat <container-path> > <host-path>`로 호스트에 복사하여 git 트래킹을 유지할 것.
 - **`composer dump-autoload` 필요 시점** — `php artisan make:model` 바깥에서 수동 생성한 클래스(Job, Event 등)는 autoloader 캐시에 반영되지 않는다. `docker exec cl_embed_laravel composer dump-autoload` 실행 후 테스트해야 한다.
