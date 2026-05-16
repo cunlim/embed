@@ -6,5 +6,5 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function isAdmin(userId?: number): boolean {
-  return userId === 3;
+  return userId === 1;
 }
