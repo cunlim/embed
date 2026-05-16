@@ -8,9 +8,10 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 beforeEach(function () {
+    // search_logs 테이블 생성 — Unit 테스트이므로 user_id에 외래키 제약 없이 생성
     Schema::create('search_logs', function ($table) {
         $table->id();
-        $table->foreignId('user_id')->nullable()->constrained();
+        $table->unsignedBigInteger('user_id')->nullable();
         $table->string('session_id', 36)->nullable();
         $table->string('search_keyword', 500);
         $table->string('normalized_keyword', 500)->nullable();
@@ -19,19 +20,6 @@ beforeEach(function () {
         $table->timestamps();
         $table->index('normalized_keyword');
     });
-
-    // users 테이블 없으면 생성
-    if (! Schema::hasTable('users')) {
-        Schema::create('users', function ($table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('password')->nullable();
-            $table->string('provider')->nullable();
-            $table->string('provider_id')->nullable();
-            $table->timestamps();
-        });
-    }
 });
 
 afterEach(function () {
