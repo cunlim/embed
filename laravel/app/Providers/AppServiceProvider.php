@@ -36,7 +36,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (! Schema::hasTable('settings')) {
+        if (app()->environment('testing') && config('database.connections.pgsql.database') !== 'cl_embed_test') {
+            config(['database.connections.pgsql.database' => 'cl_embed_test']);
+        }
+
+        try {
+            if (! Schema::hasTable('settings')) {
+                return;
+            }
+        } catch (\PDOException) {
             return;
         }
 
