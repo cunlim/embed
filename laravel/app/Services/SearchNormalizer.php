@@ -14,8 +14,8 @@ class SearchNormalizer
     public function normalize(string $text): string
     {
         $text = trim($text);
-        $text = preg_replace("/\s+/", " ", $text);
-        $text = mb_strtolower($text, "UTF-8");
+        $text = preg_replace("/\s+/", ' ', $text);
+        $text = mb_strtolower($text, 'UTF-8');
 
         return $text;
     }
