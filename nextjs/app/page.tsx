@@ -6,14 +6,22 @@ import { ChevronRight, Terminal, Globe, Search, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export default function Home() {
-  const [mounted, setMounted] = React.useState(false);
-  const [typedText, setTypedText] = React.useState("");
-  const fullText = "Multilingual Category Intelligence";
+const fullText = "Multilingual Category Intelligence";
 
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+const terminalLines = [
+  { prefix: "$", text: "analyze --text '새로운 기술 트렌드 분석'", delay: 0 },
+  { prefix: ">", text: "ko → en 번역 완료 (145ms)", delay: 1 },
+  { prefix: ">", text: "벡터 임베딩 생성 (1024d)", delay: 2 },
+  { prefix: ">", text: "추천: IT/과학 > 기술일반 (0.94)", delay: 3, highlight: true },
+];
+
+export default function Home() {
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+  const [typedText, setTypedText] = React.useState("");
 
   React.useEffect(() => {
     let i = 0;
@@ -49,18 +57,6 @@ export default function Home() {
       title: "Async Pipeline",
       description: "Laravel Queue + Redis로 비동기 번역 및 임베딩 처리",
       gradient: "from-emerald-500/20 to-emerald-600/10",
-    },
-  ];
-
-  const terminalLines = [
-    { prefix: "$", text: "analyze --text '새로운 기술 트렌드 분석'", delay: 0 },
-    { prefix: ">", text: "ko → en 번역 완료 (145ms)", delay: 1 },
-    { prefix: ">", text: "벡터 임베딩 생성 (1024d)", delay: 2 },
-    {
-      prefix: ">",
-      text: "추천: IT/과학 > 기술일반 (0.94)",
-      delay: 3,
-      highlight: true,
     },
   ];
 

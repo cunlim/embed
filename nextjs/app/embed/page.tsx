@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useSyncExternalStore } from "react";
 import {
   Search,
   ChevronRight,
@@ -31,19 +31,20 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRecommend } from "@/hooks/useRecommend";
 import { useBatchProgress } from "@/hooks/useBatchProgress";
-import { useAuth, getToken } from "@/hooks/useAuth";
-import { getCategories, batchTranslate, type Category } from "@/lib/api";
-import { parseHierarchy, type HierarchyLevel } from "@/lib/category";
+import { getToken } from "@/hooks/useAuth";
+import { useCategories } from "@/hooks/useCategories";
+import { batchTranslate } from "@/lib/api";
+import { parseHierarchy } from "@/lib/category";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
 export default function EmbedPage() {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   // 인증 가드 — 비로그인 시 /login?redirect=/embed로 리다이렉트
   useEffect(() => {
@@ -56,8 +57,7 @@ export default function EmbedPage() {
   const [language, setLanguage] = useState("ko");
   const { recommend: doRecommend, results, isLoading, error } = useRecommend();
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+  const { categories, isLoaded: categoriesLoaded, loadCategories } = useCategories(null);
   const [selected대, setSelected대] = useState<string | null>(null);
   const [selected중, setSelected중] = useState<string | null>(null);
   const [selected소, setSelected소] = useState<string | null>(null);
@@ -103,20 +103,6 @@ export default function EmbedPage() {
         .map((h) => ({ 소: h.소, categoryCode: h.categoryCode })),
     [hierarchy, selected대, selected중]
   );
-
-  const loadCategories = useCallback(async () => {
-    try {
-      const data = await getCategories();
-      setCategories(data.data);
-      setCategoriesLoaded(true);
-    } catch {
-      // 카테고리 로드 실패 시 무시 (계층형 Select Box 비활성화)
-    }
-  }, []);
-
-  useEffect(() => {
-    loadCategories();
-  }, [loadCategories]);
 
   const handleRecommend = useCallback(() => {
     if (!text.trim()) return;

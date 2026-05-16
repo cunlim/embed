@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useSyncExternalStore } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { SocialLogin } from "@/components/social-login";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -9,13 +9,13 @@ import { getToken, setToken } from "@/hooks/useAuth";
 function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const redirectTo = searchParams.get("redirect") || "/embed";
   const token = searchParams.get("token");
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!mounted) return;

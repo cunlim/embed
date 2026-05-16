@@ -25,14 +25,11 @@ function removeToken() {
 
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const token = getToken();
+  const [isLoading, setIsLoading] = useState(!!token);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
+    if (!token) return;
     getUser(token)
       .then(setUser)
       .catch(() => {
@@ -40,7 +37,7 @@ export function useAuth(): UseAuthReturn {
         setUser(null);
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [token]);
 
   const logout = useCallback(async () => {
     const token = getToken();

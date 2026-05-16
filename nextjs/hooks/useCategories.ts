@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   getCategories,
   createCategory,
@@ -10,6 +10,7 @@ import {
 interface UseCategoriesReturn {
   categories: Category[];
   isLoading: boolean;
+  isLoaded: boolean;
   error: string | null;
   loadCategories: () => Promise<void>;
   addCategory: (categoryNameKo: string) => Promise<void>;
@@ -18,7 +19,9 @@ interface UseCategoriesReturn {
 export function useCategories(token?: string | null): UseCategoriesReturn {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadedToken = useRef<string | null | undefined>(undefined);
 
   const loadCategories = useCallback(async () => {
     setIsLoading(true);
@@ -26,6 +29,7 @@ export function useCategories(token?: string | null): UseCategoriesReturn {
     try {
       const data = await getCategories(token);
       setCategories(data.data);
+      setIsLoaded(true);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "카테고리 목록을 불러오지 못했습니다"
@@ -34,6 +38,14 @@ export function useCategories(token?: string | null): UseCategoriesReturn {
       setIsLoading(false);
     }
   }, [token]);
+
+  // mount 시 자동 로드, token 변경 시 재로드
+  useEffect(() => {
+    if (loadedToken.current !== token) {
+      loadedToken.current = token;
+      loadCategories();
+    }
+  }, [token, loadCategories]);
 
   const addCategory = useCallback(
     async (categoryNameKo: string) => {
@@ -54,5 +66,5 @@ export function useCategories(token?: string | null): UseCategoriesReturn {
     [token]
   );
 
-  return { categories, isLoading, error, loadCategories, addCategory };
+  return { categories, isLoading, isLoaded, error, loadCategories, addCategory };
 }

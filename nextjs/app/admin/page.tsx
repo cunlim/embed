@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -28,26 +28,20 @@ import { isAdmin } from "@/lib/utils";
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  const [authorized, setAuthorized] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+  const authorized = user ? isAdmin(user.id) : false;
 
   // 인증 가드
   useEffect(() => {
-    if (!mounted) return;
-    if (authLoading) return;
+    if (!mounted || authLoading) return;
 
     if (!user) {
       router.replace("/login?redirect=/admin");
-      return;
-    }
-
-    if (isAdmin(user.id)) {
-      setAuthorized(true);
-    } else {
+    } else if (!isAdmin(user.id)) {
       router.back();
     }
   }, [mounted, authLoading, user, router]);
@@ -62,12 +56,6 @@ export default function AdminPage() {
   } = useCategories(token);
 
   const [newCategoryName, setNewCategoryName] = useState("");
-
-  useEffect(() => {
-    if (mounted && token) {
-      loadCategories();
-    }
-  }, [mounted, token, loadCategories]);
 
   const handleAddCategory = useCallback(async () => {
     if (!newCategoryName.trim()) return;
