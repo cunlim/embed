@@ -118,6 +118,7 @@ docker exec cl_embed_laravel supervisorctl status
 - **pgvector `<=>` distance 컬럼 미선택** — `orderByRaw('embedding <=> ?::vector', ...)`만 사용하면 distance 값이 SELECT 절에 포함되지 않아 모델 속성으로 접근할 수 없다. `selectRaw('*, embedding <=> ?::vector as distance', [...])`를 함께 사용해야 한다. SQLite에서는 `<=>` 쿼리 경로 자체가 실행되지 않아 테스트에서 발견되지 않으므로 주의.
 - **`RefreshDatabase` 사용 불가** — 테스트 DB가 SQLite 인메모리인데 pgvector 마이그레이션(`CREATE EXTENSION IF NOT EXISTS vector`)이 SQLite와 호환되지 않음. 대신 `Schema::create()`로 필요한 테이블만 수동 생성. 상세: `docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md`
 - **Docker Desktop WSL2 `restart` 불가** — `docker compose restart` 시 바인드 마운트 경로가 무효화되어 `no such file or directory` 오류 발생. `stop` + `up -d` 조합을 사용할 것. `--force-recreate`도 동일한 문제가 있어 사용 불가.
+- **Swagger 문서 stale** — CI/CD 배포 후 `storage/api-docs/api-docs.json`이 갱신되지 않아 Swagger UI에 일부 엔드포인트만 표시될 수 있다. `docker exec cl_embed_laravel php artisan l5-swagger:generate`로 재생성. deploy.yml에 자동화되어 있으나 수동 작업 환경에서는 별도 실행 필요.
 
 ## 인프라 환경 (WSL2)
 

@@ -4,7 +4,7 @@ name: Local CI/CD
 # - main:   안정 릴리스 브랜치 (develop → PR → main, CI/CD 자동 배포)
 #
 # 배포 파이프라인:
-#   - docker compose build (npm ci 포함) + up → composer install → test → migrate → restart
+#   - docker compose build (npm ci 포함) + up → composer install → test → migrate → swagger → restart
 #   - Node 의존성은 Dockerfile RUN npm ci로 설치, anonymous volume으로 보존
 on:
   push:
@@ -51,7 +51,11 @@ jobs:
             exit 1
           }
 
-      # 5. 컨테이너 재시작 — 최신 코드로 프로세스 재시작
+      # 5. Swagger 문서 생성 — 프로덕션 API 문서 최신화
+      - name: Generate Swagger Docs
+        run: docker exec cl_embed_laravel php artisan l5-swagger:generate
+
+      # 6. 컨테이너 재시작 — 최신 코드로 프로세스 재시작
       #    (restart/force-recreate 대신 stop+up 사용: Docker Desktop WSL2에서
       #     bind mount 경로가 무효화되어 "no such file or directory" 오류 방지)
       - name: Restart Containers
@@ -62,7 +66,7 @@ jobs:
           docker exec docker-nginx-1 nginx -s reload
           sleep 3
 
-      # 6. 헬스체크 — 모든 서비스 정상 응답 확인
+      # 7. 헬스체크 — 모든 서비스 정상 응답 확인
       - name: Health Check
         run: |
           echo "--- Laravel API (port 8000) ---"
@@ -77,7 +81,7 @@ jobs:
           echo "--- Nginx (port 80) ---"
           curl -sf -m 10 http://localhost/ && echo "OK" || echo "WARN: Nginx health check failed"
 
-      # 7. 워크스페이스 정리 — appuser 실행으로 vendor/logs는 UID 1000 소유
+      # 8. 워크스페이스 정리 — appuser 실행으로 vendor/logs는 UID 1000 소유
       - name: Cleanup Workspace
         if: always()
         run: |
