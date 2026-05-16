@@ -60,6 +60,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **description은 "무엇"을 기술** — API 소비자용 인터페이스 명세이므로 구현 디테일(Job dispatch, pipeline 등)을 배제하고 기능 동작만 기술한다.
 - **enum 값은 FormRequest와 일치** — OA `enum`과 FormRequest validation rule(`in:`)이 불일치하면 문서가 거짓 정보를 제공한다.
 - **숫자 필드는 `example` 추가** — Swagger UI Try-It-Out에서 응답 해석을 돕기 위해 `similarity_score` 등 `number` 타입에 예시값을 제공한다.
+- **`#[OA\Info]`가 OpenAPI info 객체를 제어** — `l5-swagger.php` config의 `documentations.api.api` 섹션(description, termsOfService, contact 등)은 l5-swagger 생성기가 사용하지 않는다. 실제 `info` 객체는 `#[OA\Info]` 어노테이션(현재 `TestController.php`에 위치)이 제어하므로, description·termsOfService·contact 변경은 config가 아닌 어노테이션에 해야 한다.
 - **OA 변경 후 `l5-swagger:generate`로 검증** — 어노테이션 구문 오류는 generate 시점에 발견된다.
 
 ### 모델 생성 체크리스트

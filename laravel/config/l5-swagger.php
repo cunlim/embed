@@ -9,11 +9,11 @@ return [
         'api' => [
             'api' => [
                 'title' => 'CL Embed API',
-                'description' => 'AI 기반 다국어 카테고리 추천 시스템 API.'
-                    .' 사용자 텍스트를 분석하여 네이버 카테고리 체계 기준으로'
-                    .' 적합한 카테고리를 한국어/중국어/영어로 추천합니다.'
-                    .' pgvector 코사인 유사도 검색, Ollama 로컬 모델 번역/임베딩,'
-                    .' Laravel Queue 기반 비동기 파이프라인을 갖추고 있습니다.',
+                'description' => 'AI 기반 다국어 카테고리 추천 시스템 API. '
+                    . '사용자 텍스트를 분석하여 네이버 카테고리 체계 기준으로 '
+                    . '적합한 카테고리를 한국어/중국어/영어로 추천합니다. '
+                    . 'pgvector 코사인 유사도 검색, Ollama 로컬 모델 번역/임베딩, '
+                    . 'Laravel Queue 기반 비동기 파이프라인을 갖추고 있습니다.',
                 'termsOfService' => 'https://embed.cunlim.dev',
                 'contact' => [
                     'name' => 'CL Embed',
