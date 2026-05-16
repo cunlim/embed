@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\TranslationCache;
-use Illuminate\Database\UniqueConstraintViolationException;
 use RuntimeException;
 
 class OllamaTranslator
@@ -44,19 +43,15 @@ class OllamaTranslator
             $result = $this->translateSingle($sourceText, $targetLang);
         }
 
-        try {
-            TranslationCache::create([
-                'source_text' => $sourceText,
-                'target_lang' => $targetLang,
-                'translated_text' => $result,
-            ]);
-        } catch (UniqueConstraintViolationException) {
-            // 동시 실행으로 인한 중복 키 → 이미 저장된 결과 반환
-            return TranslationCache::query()
-                ->where('source_text', $sourceText)
-                ->where('target_lang', $targetLang)
-                ->first()
-                ->translated_text;
+        // firstOrCreate: PostgreSQL에서는 UniqueConstraintViolationException을
+        // catch해도 트랜잭션이 aborted 상태가 되어 후속 쿼리가 실패한다.
+        $cached = TranslationCache::firstOrCreate(
+            ['source_text' => $sourceText, 'target_lang' => $targetLang],
+            ['translated_text' => $result],
+        );
+
+        if ($cached->wasRecentlyCreated === false) {
+            return $cached->translated_text;
         }
 
         return $result;
