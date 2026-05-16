@@ -1,24 +1,12 @@
 <?php
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/*
-|--------------------------------------------------------------------------
-| Test Case
-|--------------------------------------------------------------------------
-|
-| The closure you provide to your test functions is always bound to a specific PHPUnit test
-| case class. By default, that class is "PHPUnit\Framework\TestCase". Of course, you may
-| need to change it using the "pest()" function to bind different classes or traits.
-|
-*/
-
-// RefreshDatabase는 pgvector 마이그레이션(CREATE EXTENSION IF NOT EXISTS vector)이
-// SQLite 인메모리 DB와 호환되지 않아 사용할 수 없다.
-// 대신 각 테스트 파일의 beforeEach/afterEach에서 Schema::create/dropIfExists로
-// 필요한 테이블만 수동 생성한다. 상세: docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md
 pest()->extend(TestCase::class)
     ->in('Feature');
+
+uses(RefreshDatabase::class)->in('Feature');
 
 /*
 |--------------------------------------------------------------------------

@@ -3,24 +3,9 @@
 use App\Models\TranslationCache;
 use App\Services\OllamaClient;
 use App\Services\OllamaTranslator;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 beforeEach(function () {
     config(['services.ollama.translation_model' => 'translategemma:4b']);
-
-    Schema::create('translation_caches', function (Blueprint $table) {
-        $table->id();
-        $table->text('source_text');
-        $table->string('target_lang', 10);
-        $table->text('translated_text');
-        $table->unique(['source_text', 'target_lang']);
-        $table->timestamps();
-    });
-});
-
-afterEach(function () {
-    Schema::dropIfExists('translation_caches');
 });
 
 test('4계층 > 구분자 카테고리: 첫 번째 번역은 모든 세그먼트를 Ollama로 번역 후 개별 캐싱한다', function () {

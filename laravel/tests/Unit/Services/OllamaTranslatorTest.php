@@ -3,27 +3,14 @@
 use App\Models\TranslationCache;
 use App\Services\OllamaClient;
 use App\Services\OllamaTranslator;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 uses(TestCase::class);
+uses(RefreshDatabase::class);
 
 beforeEach(function () {
     config(['services.ollama.translation_model' => 'translategemma:4b']);
-
-    Schema::create('translation_caches', function (Blueprint $table) {
-        $table->id();
-        $table->text('source_text');
-        $table->string('target_lang', 10);
-        $table->text('translated_text');
-        $table->unique(['source_text', 'target_lang']);
-        $table->timestamps();
-    });
-});
-
-afterEach(function () {
-    Schema::dropIfExists('translation_caches');
 });
 
 test('캐시 히트 시 OllamaClient를 호출하지 않는다', function () {

@@ -4,25 +4,9 @@ use App\Models\Setting;
 use App\Services\SettingsService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 beforeEach(function () {
-    // SQLite in-memory DB에 settings 테이블만 생성 (pgvector 회피)
-    if (! Schema::hasTable('settings')) {
-        Schema::create('settings', function ($table) {
-            $table->id();
-            $table->string('group', 50);
-            $table->string('key', 100);
-            $table->text('value');
-            $table->string('type', 20)->default('string');
-            $table->string('description', 255)->nullable();
-            $table->timestamps();
-
-            $table->unique(['group', 'key']);
-        });
-    }
     Cache::flush();
-    DB::table('settings')->truncate();
 });
 
 test('get은 DB에서 설정 값을 조회하고 캐시한다', function () {

@@ -37,7 +37,11 @@ jobs:
       - name: Install PHP Dependencies
         run: docker exec cl_embed_laravel composer install --no-interaction
 
-      # 3. Laravel 테스트 실행
+      # 3. 테스트 DB 준비 및 Laravel 테스트 실행
+      - name: Prepare Test Database
+        run: |
+          docker exec pgvector_03 psql -U dbeaver_lim -d postgres -c "CREATE DATABASE cl_embed_test;" 2>/dev/null || true
+          docker exec pgvector_03 psql -U dbeaver_lim -d cl_embed_test -c "CREATE EXTENSION IF NOT EXISTS vector;" 2>/dev/null || true
       - name: Run Laravel Tests
         run: docker exec cl_embed_laravel php artisan test --compact
 

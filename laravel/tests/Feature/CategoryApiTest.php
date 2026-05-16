@@ -4,35 +4,7 @@ use App\Jobs\BatchTranslatePipeline;
 use App\Jobs\TranslateAndEmbedJob;
 use App\Models\Category;
 use App\Models\User;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Schema;
-
-beforeEach(function () {
-    Schema::create('users', function (Blueprint $table) {
-        $table->id();
-        $table->string('name');
-        $table->string('email')->unique();
-        $table->timestamp('email_verified_at')->nullable();
-        $table->string('password');
-        $table->rememberToken();
-        $table->timestamps();
-    });
-
-    Schema::create('categories', function (Blueprint $table) {
-        $table->id();
-        $table->string('category_code', 50);
-        $table->string('category_name_ko', 255);
-        $table->string('category_name_zh', 255)->nullable();
-        $table->string('category_name_en', 255)->nullable();
-        $table->timestamps();
-    });
-});
-
-afterEach(function () {
-    Schema::dropIfExists('categories');
-    Schema::dropIfExists('users');
-});
 
 test('GET /api/categories — 카테고리 목록을 반환한다', function () {
     Category::factory()->count(3)->create();

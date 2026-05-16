@@ -6,47 +6,11 @@ use App\Models\CategoryEmbedding;
 use App\Services\EmbeddingGenerator;
 use App\Services\OllamaTranslator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Pgvector\Laravel\Vector;
 
 beforeEach(function () {
-    Schema::create('categories', function (Blueprint $table) {
-        $table->id();
-        $table->string('category_code', 50);
-        $table->string('category_name_ko', 255);
-        $table->string('category_name_zh', 255)->nullable();
-        $table->string('category_name_en', 255)->nullable();
-        $table->timestamps();
-    });
-
-    Schema::create('category_embeddings', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('category_id');
-        $table->string('language', 10);
-        $table->string('embed_model_name', 100);
-        $table->text('embedding');
-        $table->unique(['category_id', 'language', 'embed_model_name']);
-        $table->timestamps();
-    });
-
-    Schema::create('translation_caches', function (Blueprint $table) {
-        $table->id();
-        $table->text('source_text');
-        $table->string('target_lang', 10);
-        $table->text('translated_text');
-        $table->unique(['source_text', 'target_lang']);
-        $table->timestamps();
-    });
-
     config(['services.ollama.embedding_model' => 'bge-m3:latest']);
     config(['services.ollama.translation_model' => 'translategemma:4b']);
-});
-
-afterEach(function () {
-    Schema::dropIfExists('category_embeddings');
-    Schema::dropIfExists('categories');
-    Schema::dropIfExists('translation_caches');
 });
 
 test('ko 언어는 원문 category_name_ko를 번역 없이 임베딩한다', function () {

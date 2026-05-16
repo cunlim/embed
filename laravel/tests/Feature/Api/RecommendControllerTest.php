@@ -3,23 +3,6 @@
 use App\Http\Resources\RecommendResource;
 use App\Models\SearchLog;
 use App\Services\EmbeddingCacheService;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-
-beforeEach(function () {
-    Schema::create('categories', function (Blueprint $table) {
-        $table->id();
-        $table->string('category_code', 50);
-        $table->string('category_name_ko', 255);
-        $table->string('category_name_zh', 255)->nullable();
-        $table->string('category_name_en', 255)->nullable();
-        $table->timestamps();
-    });
-});
-
-afterEach(function () {
-    Schema::dropIfExists('categories');
-});
 
 test('POST /api/recommend — text가 없으면 422를 반환한다', function () {
     $response = $this->postJson('/api/recommend', [

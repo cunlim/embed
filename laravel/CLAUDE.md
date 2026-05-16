@@ -83,17 +83,14 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
 - **모든 early return 경로에서 `$lock->release()` 확인**: `Cache::lock()` 획득 후 `return`하는 모든 분기에서 lock을 해제했는지 확인한다. `then`/`catch` 콜백만 믿고 early return에서 누락하지 않도록 주의.
 - **TTL은 crash 복구용 안전장치로만 의존**: lock TTL에만 의존해 해제를 기대하지 말고, 정상 종료 경로에서는 명시적 `release()`를 호출한다.
 
-### 테스트 환경 제약 (SQLite + pgvector)
+### 테스트 환경 (PostgreSQL + pgvector)
 
-**CRITICAL** — 이 프로젝트의 `phpunit.xml`은 `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`로 설정되어 있다. SQLite는 PostgreSQL 전용 확장(`CREATE EXTENSION IF NOT EXISTS vector`)을 지원하지 않으므로, 마이그레이션을 실행하는 `RefreshDatabase` trait을 사용할 수 없다.
+테스트 DB는 실제 PostgreSQL(`cl_embed_test` 데이터베이스, `pgvector_03` 컨테이너)을 사용한다. 모든 Feature/Unit 테스트는 `RefreshDatabase` trait으로 마이그레이션된 DB를 트랜잭션으로 감싸 실행한다.
 
-- **`RefreshDatabase` 사용 금지** — pgvector 마이그레이션이 포함되어 있어 SQLite에서 구문 오류 발생
-- **대체 패턴**: `beforeEach`에서 필요한 테이블만 `Schema::create()`로 생성하고 `afterEach`에서 `Schema::dropIfExists()`로 정리한다
-- **DB 불필요한 테스트** (예: `TextSplitter` 같은 순수 유닛)는 테이블 생성 자체가 불필요하다
-- **`DB::shouldReceive()` / `DB::spy()` 사용 금지** — DB 파사드 모킹은 컨테이너의 `db` 바인딩을 교체하여 `Schema::create/drop`과 Eloquent 쿼리까지 차단한다. pgvector raw SQL(`DB::select`)을 호출하는 Controller 테스트는 유효성 검증(HTTP 응답), 모의 검증(`EmbeddingGenerator` mock), Resource 형식(Unit) 등 레이어를 분리하여 작성한다.
+- **`RefreshDatabase` 사용** — 모든 Feature 테스트는 `Pest.php`에 의해 자동으로 `RefreshDatabase`가 적용된다. Unit 테스트 중 DB 접근이 필요한 경우 `uses(RefreshDatabase::class)`를 명시적으로 추가한다.
+- **PostgreSQL 트랜잭션 abort 주의** — PostgreSQL에서는 쿼리 오류(제약조건 위반 등)가 발생하면 트랜잭션이 aborted 상태가 되어 후속 쿼리가 모두 실패한다. `create()` + catch 패턴 대신 `firstOrCreate()`를 사용해야 한다.
 - **pgvector raw SQL 바인딩은 `::vector` 명시적 캐스트 필수** — `DB::select()`에서 `<=>` 연산자에 bound parameter를 사용할 때 PDO는 text로 바인딩한다. `:query_vector::vector`와 같이 명시적 타입 캐스트를 추가해야 한다.
-- **pgvector 쿼리를 호출하는 컨트롤러는 Service mock으로 격리** — 컨트롤러가 직접 `CategoryEmbedding::similarTo()` 등 pgvector 스코프를 호출하면 SQLite 테스트에서 500이 발생한다. `RecommendationService`처럼 Service로 추출하고, Feature 테스트에서는 `Mockery::mock(Service::class)` + `app()->instance()`로 교체하여 HTTP 레이어(요청/응답/JSON 구조)만 검증한다. Service의 순수 로직(nameFieldFor, 거리→유사도 점수 변환 등)은 Unit 테스트에서 검증한다. 기존 `RecommendationTest`, `RecommendationServiceTest`를 참고할 것.
-- **더 자세한 내용과 예제 코드**: `docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md` 참조
+- **pgvector 쿼리를 호출하는 컨트롤러는 Service mock으로 격리** — 컨트롤러가 직접 `CategoryEmbedding::similarTo()` 등 pgvector 스코프를 호출하면 테스트 복잡도가 증가한다. `RecommendationService`처럼 Service로 추출하고, Feature 테스트에서는 `Mockery::mock(Service::class)` + `app()->instance()`로 교체하여 HTTP 레이어(요청/응답/JSON 구조)만 검증한다.
 
 ### 서비스 클래스 테스트 최소 요건
 

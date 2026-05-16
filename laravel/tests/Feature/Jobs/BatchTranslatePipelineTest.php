@@ -3,28 +3,13 @@
 use App\Events\AlreadyRunning;
 use App\Jobs\BatchTranslatePipeline;
 use App\Models\Category;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Testing\Fakes\PendingBatchFake;
 
 beforeEach(function () {
-    Schema::create('categories', function (Blueprint $table) {
-        $table->id();
-        $table->string('category_code', 50);
-        $table->string('category_name_ko', 255);
-        $table->string('category_name_zh', 255)->nullable();
-        $table->string('category_name_en', 255)->nullable();
-        $table->timestamps();
-    });
-
     config(['services.ollama.embedding_model' => 'bge-m3:latest']);
-});
-
-afterEach(function () {
-    Schema::dropIfExists('categories');
 });
 
 test('락이 이미 점유되어 있으면 AlreadyRunning 이벤트를 발생시키고 배치를 생성하지 않는다', function () {

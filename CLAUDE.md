@@ -115,8 +115,8 @@ docker exec cl_embed_laravel supervisorctl status
   - **bind mount 디렉토리는 daemon(root)이 생성** — `docker compose up -d` 시 bind mount 소스 디렉토리가 없으면 Docker daemon이 root 소유로 생성. 새 bind mount 추가 시 CI에서 `mkdir -p`로 미리 생성할 것.
 - **API 라우트에는 세션 미들웨어 없음** — `routes/api.php`는 `StartSession` 미들웨어가 기본 포함되지 않는다. API 컨트롤러에서 `$request->session()` 호출 시 `RuntimeException: Session store not set on request.`이 발생한다. `$request->hasSession()`으로 사전 체크하고 없으면 `Str::uuid()` 등으로 대체할 것.
 - **root 소유 경로에 파일 복사** — `/etc/` 등 root 소유 디렉터리에 파일을 쓸 때는 `docker cp <host-path> <container>:/path/to/file`가 가장 간결하다.
-- **pgvector `<=>` distance 컬럼 미선택** — `orderByRaw('embedding <=> ?::vector', ...)`만 사용하면 distance 값이 SELECT 절에 포함되지 않아 모델 속성으로 접근할 수 없다. `selectRaw('*, embedding <=> ?::vector as distance', [...])`를 함께 사용해야 한다. SQLite에서는 `<=>` 쿼리 경로 자체가 실행되지 않아 테스트에서 발견되지 않으므로 주의.
-- **`RefreshDatabase` 사용 불가** — 테스트 DB가 SQLite 인메모리인데 pgvector 마이그레이션(`CREATE EXTENSION IF NOT EXISTS vector`)이 SQLite와 호환되지 않음. 대신 `Schema::create()`로 필요한 테이블만 수동 생성. 상세: `docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md`
+- **pgvector `<=>` distance 컬럼 미선택** — `orderByRaw('embedding <=> ?::vector', ...)`만 사용하면 distance 값이 SELECT 절에 포함되지 않아 모델 속성으로 접근할 수 없다. `selectRaw('*, embedding <=> ?::vector as distance', [...])`를 함께 사용해야 한다.
+- **PostgreSQL 트랜잭션 abort 전파** — PostgreSQL에서는 UniqueConstraintViolationException을 catch해도 트랜잭션이 aborted 상태가 되어 후속 쿼리가 실패한다. `create()` + catch로 중복 키를 처리하는 대신 `firstOrCreate()`를 사용해야 한다. SQLite에서는 이 패턴이 정상 동작하므로 로컬 테스트에서 발견되지 않을 수 있다.
 - **Docker Desktop WSL2 `restart` 불가** — `docker compose restart` 시 바인드 마운트 경로가 무효화되어 `no such file or directory` 오류 발생. `stop` + `up -d` 조합을 사용할 것. `--force-recreate`도 동일한 문제가 있어 사용 불가.
 - **Swagger 문서 stale** — CI/CD 배포 후 `storage/api-docs/api-docs.json`이 갱신되지 않아 Swagger UI에 일부 엔드포인트만 표시될 수 있다. `docker exec cl_embed_laravel php artisan l5-swagger:generate`로 재생성. deploy.yml에 자동화되어 있으나 수동 작업 환경에서는 별도 실행 필요.
 

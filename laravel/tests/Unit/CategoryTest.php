@@ -2,23 +2,11 @@
 
 use App\Models\Category;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 uses(TestCase::class);
-
-beforeEach(function () {
-    if (! Schema::hasTable('categories')) {
-        Schema::create('categories', function ($table) {
-            $table->id();
-            $table->string('category_code', 50)->unique();
-            $table->string('category_name_ko', 255);
-            $table->string('category_name_zh', 255)->nullable();
-            $table->string('category_name_en', 255)->nullable();
-            $table->timestamps();
-        });
-    }
-});
+uses(RefreshDatabase::class);
 
 test('generateCode는 CAT_ 접두사와 12자리 문자열을 반환한다', function () {
     $code = Category::generateCode();

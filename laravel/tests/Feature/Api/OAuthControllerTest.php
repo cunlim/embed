@@ -1,42 +1,8 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
-
-beforeEach(function () {
-    Schema::create('users', function (Blueprint $table) {
-        $table->id();
-        $table->string('name');
-        $table->string('email')->unique()->nullable();
-        $table->timestamp('email_verified_at')->nullable();
-        $table->string('password')->nullable();
-        $table->string('provider')->nullable();
-        $table->string('provider_id')->nullable();
-        $table->string('avatar')->nullable();
-        $table->unique(['provider', 'provider_id'], 'users_provider_provider_id_unique');
-        $table->rememberToken();
-        $table->timestamps();
-    });
-
-    Schema::create('personal_access_tokens', function (Blueprint $table) {
-        $table->id();
-        $table->morphs('tokenable');
-        $table->string('name');
-        $table->string('token', 64)->unique();
-        $table->text('abilities')->nullable();
-        $table->timestamp('last_used_at')->nullable();
-        $table->timestamp('expires_at')->nullable();
-        $table->timestamps();
-    });
-});
-
-afterEach(function () {
-    Schema::dropIfExists('personal_access_tokens');
-    Schema::dropIfExists('users');
-});
 
 function mockSocialiteUser(): array
 {
