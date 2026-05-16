@@ -38,7 +38,7 @@ describe("useRecommend", () => {
 
   it("추천 성공 시 results가 채워진다", async () => {
     const mockResults = {
-      recommendations: [
+      data: [
         {
           category_code: "50000001",
           category_name: "패션의류",
@@ -56,7 +56,7 @@ describe("useRecommend", () => {
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
-    expect(result.current.results).toEqual(mockResults.recommendations);
+    expect(result.current.results).toEqual(mockResults.data);
   });
 
   it("추천 실패 시 error 메시지가 설정된다", async () => {

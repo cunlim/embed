@@ -22,7 +22,7 @@ export function useRecommend(): UseRecommendReturn {
 
       try {
         const data = await recommend(text, targetLanguage);
-        setResults(data.recommendations);
+        setResults(data.data);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "추천 요청에 실패했습니다";

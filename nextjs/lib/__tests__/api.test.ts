@@ -25,7 +25,7 @@ describe("API 클라이언트", () => {
 
   describe("recommend", () => {
     it("추천 API를 POST로 호출한다", async () => {
-      mockResponse({ recommendations: [] });
+      mockResponse({ data: [] });
 
       await api.recommend("테스트", "ko");
 
@@ -40,7 +40,7 @@ describe("API 클라이언트", () => {
 
     it("추천 결과를 반환한다", async () => {
       const expected = {
-        recommendations: [
+        data: [
           {
             category_code: "50000001",
             category_name: "패션의류 > 여성의류 > 원피스",
@@ -56,7 +56,7 @@ describe("API 클라이언트", () => {
     });
 
     it("인증 토큰을 전달한다", async () => {
-      mockResponse({ recommendations: [] });
+      mockResponse({ data: [] });
 
       await api.recommend("테스트", "ko", "test-token");
 

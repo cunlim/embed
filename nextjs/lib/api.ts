@@ -41,7 +41,7 @@ export interface Recommendation {
 }
 
 export interface RecommendResponse {
-  recommendations: Recommendation[];
+  data: Recommendation[];
 }
 
 export function recommend(
