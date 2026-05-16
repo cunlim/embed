@@ -27,7 +27,7 @@
 | `/login` | 로그인 페이지 [계획] | 이메일/비밀번호 로그인, OAuth (Google, GitHub, Naver) 소셜 로그인, 회원가입 | 불필요 |
 | `/embed` | Embed 기술 시연 페이지 [계획] | 검색어 입력, 타겟 언어 선택, 추천 결과 출력, 코사인 유사도 상세, 계층형 Select Box (네이버 카테고리 "대>중>소" 계층을 순서대로 선택), 벡터 과정 모달 등 모든 기능을 하나의 위젯 형태로 기술 시연 | **필수** (로그인 필수, 비로그인 시 `/login` 리다이렉트) |
 | `/docs` | 프로젝트 문서 페이지 [계획] | `docs/` 디렉토리의 마크다운 문서를 웹으로 렌더링. MVP에서는 간단한 임시 구현 | 불필요 |
-| `/admin` | 관리자 전용 페이지 [계획] | 카테고리 CRUD, 일괄 번역 트리거, 시스템 관리 | **필수** (로그인 필수, 비로그인 시 `/login` 리다이렉트. "관리자"란 `/admin` 접근 권한이 있는 로그인 사용자를 의미하며 별도 역할(Role) 구분은 없음) |
+| `/admin` | 관리자 전용 페이지 [계획] | 카테고리 CRUD, 카테고리별 개별 번역/임베딩 실행 (5단계 WebSocket 프로그레스), 일괄 번역 트리거, 시스템 관리 | **필수** (로그인 필수, 비로그인 시 `/login` 리다이렉트. "관리자"란 `/admin` 접근 권한이 있는 로그인 사용자를 의미하며 별도 역할(Role) 구분은 없음) |
 
 프론트엔드 디렉토리 구조 및 패키지 상세는 [`nextjs/CLAUDE.md`](../nextjs/CLAUDE.md) 참조.
 
@@ -36,6 +36,8 @@
 테이블/컬럼 상세는 `laravel/database/migrations/` 참조. 주요 테이블: `categories`, `category_embeddings` (VECTOR(1024)), `translation_caches`, `search_logs`, `users`.
 
 ## 데이터 흐름 (비동기 및 웹소켓 파이프라인)
+
+### 일괄 처리 (Batch)
 ```
 1. 클라이언트 트리거 (일괄 처리 시작) → Nginx → `/api/` (Laravel)
 2. 백엔드는 중복 실행 방지(Redis Cache::lock) 검증 후 즉시 202 Accepted 응답.
@@ -44,6 +46,18 @@
 4. Rate Limit 방어: 외부 API 연동 시 `Redis::throttle()` 또는 의도적 Sleep 부여.
 5. 큐 처리 중 이벤트 발생 → Redis Pub/Sub → Laravel Reverb (Port 8080)
 6. Nginx `/app/` 라우팅 → 클라이언트 (프로그레스 바 렌더링)
+```
+
+### 개별 카테고리 처리 (Per-Category)
+```
+1. 클라이언트가 카테고리 행의 "번역 실행" 버튼 클릭 → POST /api/categories/{id}/translate-embed → Laravel
+2. 백엔드는 카테고리 ID 수신 → 202 Accepted + {batch_id: "uuid"} 즉시 응답.
+3. 단일 카테고리에 대해 5단계 Sequential Job Chain 실행 (중복 방지 lock 키: "category-translate:{categoryId}"):
+   단계1: zh 번역 (translategemma:4b) → 단계2: en 번역 → 단계3: ko 임베딩 (bge-m3:latest) → 단계4: zh 임베딩 → 단계5: en 임베딩
+4. 각 단계 완료 시 category.{categoryId}.progress 이벤트 발생 → Reverb → 클라이언트.
+   - 페이로드: {step: 1~5, stepName: "translation.zh"|"translation.en"|"embedding.ko"|"embedding.zh"|"embedding.en", status: "pending"|"running"|"completed"|"failed", categoryId: N}
+5. 최종 단계 완료 시 category.{categoryId}.completed 이벤트 발생.
+6. 클라이언트는 5단계 각각의 상태를 아이콘(체크/스피너/회색점/X)으로 실시간 표시.
 ```
 
 ## 상태 관리

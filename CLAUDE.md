@@ -70,6 +70,11 @@ cl_embed/
 - **Form Request는 항상 명시적 `authorize()` 메서드를 포함**해야 한다. 기본값 `true`라도 명시적으로 선언한다.
 - **버그 수정 패턴은 파일 내 모든 발생 지점에 적용** — `create()`→`firstOrCreate()` 같은 패턴 변경 시 public 메서드만 수정하고 private 메서드를 누락하지 않도록 `grep`으로 파일 전체를 확인한다.
 
+## Phase 운영 규칙
+
+- **완료된 phase는 수정하지 않는다** — 모든 phase가 `completed`인 상태에서 새 기능이 여러 레이어(API+Job+Frontend)에 걸쳐 있다면 신규 phase로 생성한다. 기존 phase에 step을 추가하거나 기존 step을 수정하지 않는다.
+- **신규 phase 설계 전 `phases/*/index.json` 전체 확인** — 각 phase의 step summary를 읽고 기존 구현 범위를 파악한 후 새 phase의 step을 설계할 것
+
 ## 기술 스택
 
 | 영역 | 스택 | 상세 |
@@ -181,7 +186,8 @@ docker compose logs -f cl_embed_nextjs
 - [`laravel/CLAUDE.md`](laravel/CLAUDE.md) — 백엔드 명령어, 데몬 실행, 코드 컨벤션, 패키지
 - [`nextjs/CLAUDE.md`](nextjs/CLAUDE.md) — 프론트엔드 명령어, 패키지
 - [`nextjs/AGENTS.md`](nextjs/AGENTS.md) — Next.js 16 브레이킹 체인지 (필독)
-- [`docs/PRD.md`](docs/PRD.md) — 제품 요구사항, Phase 정의, 성능 목표
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — 인프라, DB 스키마, 데이터 흐름
+- **Feature Spec 3축** — 새 기능 구현 전 이 3개 문서의 요구사항 일관성을 반드시 확인한다:
+  - [`docs/PRD.md`](docs/PRD.md) — 제품 요구사항 (Why), Phase 정의, 성능 목표
+  - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — 인프라·데이터 흐름 (How), 페이지 구성, 이벤트 페이로드
+  - [`docs/UI_GUIDE.md`](docs/UI_GUIDE.md) — UI 명세 (What), 컴포넌트·버튼·상태·아이콘 구체 스펙
 - [`docs/ADR.md`](docs/ADR.md) — 아키텍처 결정 기록 (pgvector, Reverb, Ollama, Sanctum)
-- [`docs/UI_GUIDE.md`](docs/UI_GUIDE.md) — 프론트엔드 디자인 제약 (AI 슬롭 안티패턴, 색상, 컴포넌트)
