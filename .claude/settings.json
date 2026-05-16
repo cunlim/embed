@@ -14,33 +14,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "docker exec cl_embed_nextjs npm run lint 2>/dev/null || true",
-            "timeout": 60,
-            "statusMessage": "Next.js 린트 검사 중..."
-          },
-          {
-            "type": "command",
-            "command": "docker exec cl_embed_nextjs npx tsc --noEmit 2>/dev/null || true",
-            "timeout": 60,
-            "statusMessage": "Next.js 타입 체크 중..."
-          },
-          {
-            "type": "command",
-            "command": "docker exec cl_embed_nextjs sh -c \"cd /app && node node_modules/vitest/vitest.mjs run --run 2>/dev/null\" || true",
-            "timeout": 120,
-            "statusMessage": "Next.js 테스트 실행 중..."
-          },
-          {
-            "type": "command",
-            "command": "docker exec cl_embed_laravel vendor/bin/pint --format agent 2>/dev/null || true",
-            "timeout": 60,
-            "statusMessage": "Laravel Pint 코드 포맷 중..."
-          },
-          {
-            "type": "command",
-            "command": "docker exec cl_embed_laravel php artisan test --compact 2>/dev/null || true",
-            "timeout": 120,
-            "statusMessage": "Laravel 테스트 실행 중..."
+            "command": ".claude/hooks/run-all-checks.sh",
+            "timeout": 360,
+            "statusMessage": "테스트 및 린트 검사 중..."
           }
         ]
       }
