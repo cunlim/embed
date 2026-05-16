@@ -170,9 +170,9 @@ docker compose logs -f cl_embed_nextjs
 - `main` 브랜치 푸시 시 컨테이너 재시작 및 데몬 재실행.
 - 러너 상태 확인: `pgrep -a runsvc` 또는 `/var/app/actions-runner/svc.sh status`
 - **CI 재실행** — `gh run rerun`이 토큰 권한 부족으로 실패할 경우, 빈 커밋을 main에 푸시하여 CI/CD 트리거 (`git commit --allow-empty -m "chore(ci): CI 트리거"` → `git push origin main`). 완료 후 `git checkout develop && git merge main && git push origin develop`로 동기화.
-- **`.env` 파일** — gitignore 대상이므로 CI/CD에서 라이브 디렉터리(`$LIVE_ROOT/*/.env`)의 파일을 체크아웃 워크스페이스로 직접 복사. `LIVE_ROOT`는 GitHub Repository Variables에 설정 (절대 경로 노출 방지).
+- **`.env`/`.env.local` 파일** — gitignore 대상이므로 CI/CD "Restore Environment Files" 단계에서 `laravel/.env`, `docker/.env`, `nextjs/.env.local`을 라이브 디렉터리에서 체크아웃 워크스페이스로 복사. `LIVE_ROOT`는 GitHub Repository Variables에 설정 (절대 경로 노출 방지).
 - **Node 의존성** — `docker compose build`의 `RUN npm ci`로 설치, `/app/node_modules` 익명 볼륨이 bind mount보다 우선해 보존. COPY 레이어 체크섬 변경(package.json 등)만으로 캐시 무효화되므로 별도 npm ci 불필요.
-- **CI 종료 후 bind mount 경로 차이** — CI/CD가 컨테이너를 띄우면 bind mount가 러너 workspace(`/var/app/actions-runner/_work/embed/embed/`)를 가리켜, 로컬 작업 디렉토리(`/var/app/www/cl_embed/`)의 파일 변경이 컨테이너에 반영되지 않는다. CI 실행 후 수동 작업이 필요하면 `docker compose stop && docker compose up -d`로 컨테이너를 재시작하여 bind mount를 로컬 경로로 전환할 것.
+- **CI 종료 후 bind mount 경로 차이** — CI/CD "Restart Containers" 단계가 `$LIVE_ROOT/docker`에서 실행되므로 bind mount는 자동 로컬 경로로 복귀한다. 문제 발생 시 `docker inspect cl_embed_nextjs --format '{{range .Mounts}}{{if eq .Destination "/app"}}Source: {{.Source}}{{end}}{{end}}'`로 bind mount 소스를 확인하고, CI workspace를 가리키면 `docker compose stop && docker compose up -d`로 수동 복구한다.
 
 ## 관련 문서
 

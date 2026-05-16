@@ -24,6 +24,7 @@ jobs:
         run: |
           cp $LIVE_ROOT/laravel/.env ./laravel/.env
           cp $LIVE_ROOT/docker/.env ./docker/.env
+          cp $LIVE_ROOT/nextjs/.env.local ./nextjs/.env.local
 
       # 1. 컨테이너 기동 — Dockerfile 변경 여부와 관계없이 항상 build + up
       - name: Start Containers
@@ -64,7 +65,7 @@ jobs:
       #     bind mount 경로가 무효화되어 "no such file or directory" 오류 방지)
       - name: Restart Containers
         run: |
-          cd ./docker
+          cd $LIVE_ROOT/docker
           docker compose stop cl_embed_laravel cl_embed_nextjs
           docker compose up -d cl_embed_laravel cl_embed_nextjs
           docker exec docker-nginx-1 nginx -s reload
