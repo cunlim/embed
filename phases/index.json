@@ -33,6 +33,10 @@
       "status": "completed",
       "failed_at": "2026-05-16T00:16:14+0900",
       "completed_at": "2026-05-16T14:03:07+0900"
+    },
+    {
+      "dir": "category-translate-embed",
+      "status": "pending"
     }
   ]
 }
