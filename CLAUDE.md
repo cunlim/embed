@@ -68,6 +68,7 @@ cl_embed/
 - PHP 변경 완료 전 `vendor/bin/pint --format agent` 실행 (컨테이너 내부)
 - **DB 테이블명**은 Laravel 기본 복수형 컨벤션을 따른다 (예: `categories`, `translation_caches`). 명시적 `protected $table` 지정은 불필요.
 - **Form Request는 항상 명시적 `authorize()` 메서드를 포함**해야 한다. 기본값 `true`라도 명시적으로 선언한다.
+- **버그 수정 패턴은 파일 내 모든 발생 지점에 적용** — `create()`→`firstOrCreate()` 같은 패턴 변경 시 public 메서드만 수정하고 private 메서드를 누락하지 않도록 `grep`으로 파일 전체를 확인한다.
 
 ## 기술 스택
 

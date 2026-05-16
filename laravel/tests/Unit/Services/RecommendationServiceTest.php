@@ -52,9 +52,7 @@ test('recommend — 유사도 점수는 1.0 - distance로 계산된다', functio
     ]);
     $searchLog->embedding = array_fill(0, 1024, 0.05);
 
-    // SQLite에서 pgvector <=> 연산자는 지원되지 않으므로,
-    // 수동으로 distance를 설정한 embedding을 whereIn으로 직접 조회하는
-    // 로직과 nameFieldFor()의 조합을 통해 매핑 로직을 검증한다.
+    // 수동으로 distance를 설정한 embedding을 통해 매핑 로직을 검증한다.
     $service = new RecommendationService;
     $nameField = $service->nameFieldFor('ko');
 

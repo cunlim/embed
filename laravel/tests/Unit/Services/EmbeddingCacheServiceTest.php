@@ -1,10 +1,10 @@
 <?php
 
 use App\Models\SearchLog;
+use App\Models\User;
 use App\Services\EmbeddingCacheService;
 use App\Services\EmbeddingGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Pgvector\Laravel\Vector;
 use Tests\TestCase;
@@ -16,14 +16,13 @@ test('getOrCreateEmbedding — 캐시 히트 시 임베딩을 재생성하지 �
     $embedding = array_fill(0, 1024, 0.1);
     $sid = Str::uuid()->toString();
 
-    DB::table('users')->insert([
-        'id' => 1,
+    $user = User::factory()->create([
         'name' => 'Test User',
         'email' => 'test@example.com',
     ]);
 
     SearchLog::create([
-        'user_id' => 1,
+        'user_id' => $user->id,
         'session_id' => $sid,
         'search_keyword' => 'NIKE Shoes',
         'normalized_keyword' => 'nike shoes',
@@ -35,7 +34,7 @@ test('getOrCreateEmbedding — 캐시 히트 시 임베딩을 재생성하지 �
     $mockGenerator->shouldReceive('generate')->never();
 
     $service = app(EmbeddingCacheService::class);
-    $result = $service->getOrCreateEmbedding('  NIKE   SHOES  ', 'bge-m3:latest', 1, $sid);
+    $result = $service->getOrCreateEmbedding('  NIKE   SHOES  ', 'bge-m3:latest', $user->id, $sid);
 
     expect($result)->toBeInstanceOf(SearchLog::class);
     expect($result->search_keyword)->toBe('NIKE Shoes');
@@ -97,19 +96,17 @@ test('getOrCreateEmbedding — 같은 키워드라도 userId가 다르면 다른
     $sid1 = Str::uuid()->toString();
     $sid2 = Str::uuid()->toString();
 
-    DB::table('users')->insert([
-        'id' => 1,
+    $user1 = User::factory()->create([
         'name' => 'User 1',
         'email' => 'user1@example.com',
     ]);
-    DB::table('users')->insert([
-        'id' => 2,
+    $user2 = User::factory()->create([
         'name' => 'User 2',
         'email' => 'user2@example.com',
     ]);
 
     SearchLog::create([
-        'user_id' => 1,
+        'user_id' => $user1->id,
         'session_id' => $sid1,
         'search_keyword' => '운동화',
         'normalized_keyword' => '운동화',
@@ -124,9 +121,9 @@ test('getOrCreateEmbedding — 같은 키워드라도 userId가 다르면 다른
         ->andReturn($user2Embedding);
 
     $service = app(EmbeddingCacheService::class);
-    $result = $service->getOrCreateEmbedding('운동화', 'bge-m3:latest', 2, $sid2);
+    $result = $service->getOrCreateEmbedding('운동화', 'bge-m3:latest', $user2->id, $sid2);
 
-    expect($result->user_id)->toBe(2);
+    expect($result->user_id)->toBe($user2->id);
     expect($result->embedding)->toBeInstanceOf(Vector::class);
     expect($result->embedding->toArray())->toBe($user2Embedding);
 });

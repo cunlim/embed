@@ -79,21 +79,12 @@ class OllamaTranslator
             $result = trim($result);
 
             if ($this->isValidTranslation($result, $targetLang)) {
-                try {
-                    TranslationCache::create([
-                        'source_text' => $text,
-                        'target_lang' => $targetLang,
-                        'translated_text' => $result,
-                    ]);
-                } catch (UniqueConstraintViolationException) {
-                    return TranslationCache::query()
-                        ->where('source_text', $text)
-                        ->where('target_lang', $targetLang)
-                        ->first()
-                        ->translated_text;
-                }
+                $cached = TranslationCache::firstOrCreate(
+                    ['source_text' => $text, 'target_lang' => $targetLang],
+                    ['translated_text' => $result],
+                );
 
-                return $result;
+                return $cached->translated_text;
             }
 
             $attempts++;
