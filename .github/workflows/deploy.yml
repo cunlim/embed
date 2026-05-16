@@ -23,6 +23,7 @@ jobs:
       - name: Restore Environment Files
         run: |
           cp $LIVE_ROOT/laravel/.env ./laravel/.env
+          cp $LIVE_ROOT/laravel/.env.testing ./laravel/.env.testing
           cp $LIVE_ROOT/docker/.env ./docker/.env
           cp $LIVE_ROOT/nextjs/.env.local ./nextjs/.env.local
 
@@ -46,12 +47,17 @@ jobs:
       - name: Run Laravel Tests
         run: docker exec cl_embed_laravel php artisan test --compact
 
-      # 4. DB 마이그레이션 — 실패 시 마지막 배치 롤백 후 중단
+      # 4. DB 마이그레이션 — 실패 시 해당 batch만 롤백 후 중단
       - name: Run Database Migrations
         run: |
+          # 현재 마지막 batch 번호를 기록 (없으면 0)
+          LAST_BATCH=$(docker exec pgvector_03 psql -U dbeaver_lim -d cl_embed -t -A -c "SELECT COALESCE(MAX(batch), 0) FROM migrations;" 2>/dev/null || echo 0)
+          echo "Current last batch: $LAST_BATCH"
           docker exec cl_embed_laravel php artisan migrate --force || {
-            echo "Migration failed. Rolling back last batch..."
-            docker exec cl_embed_laravel php artisan migrate:rollback --step=1 --force
+            echo "Migration failed. Rolling back batch $((LAST_BATCH + 1))..."
+            # 새로 생성된 batch만 정확히 롤백
+            NEW_BATCH=$((LAST_BATCH + 1))
+            docker exec cl_embed_laravel php artisan migrate:rollback --batch=$NEW_BATCH --force 2>/dev/null || true
             echo "Rollback completed. Deployment aborted."
             exit 1
           }
