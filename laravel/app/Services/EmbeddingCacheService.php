@@ -41,9 +41,8 @@ class EmbeddingCacheService
             'search_keyword' => $keyword,
             'normalized_keyword' => $normalized,
             'embed_model_name' => $modelName,
+            'embedding' => $embedding,
         ]);
-
-        $searchLog->update(['embedding' => $embedding]);
 
         $elapsed = (microtime(true) - $start) * 1000;
         Log::info('EmbeddingCacheService: cache miss', [
@@ -52,6 +51,6 @@ class EmbeddingCacheService
             'elapsed_ms' => round($elapsed, 2),
         ]);
 
-        return $searchLog->refresh();
+        return $searchLog;
     }
 }

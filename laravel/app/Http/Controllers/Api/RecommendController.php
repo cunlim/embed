@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\CategoryEmbedding;
 use App\Services\EmbeddingCacheService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 use OpenApi\Attributes as OA;
 
 class RecommendController extends Controller
@@ -17,15 +18,55 @@ class RecommendController extends Controller
         private EmbeddingCacheService $embeddingCache,
     ) {}
 
+    #[OA\Post(
+        path: '/api/recommend',
+        summary: '카테고리 추천',
+        description: '입력 텍스트를 분석하여 pgvector 코사인 유사도 기반으로 가장 적합한 상위 5개 카테고리를 추천합니다.',
+        tags: ['Recommend'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['text', 'target_language'],
+                properties: [
+                    new OA\Property(property: 'text', type: 'string', minLength: 1, maxLength: 500),
+                    new OA\Property(property: 'target_language', type: 'string', enum: ['ko', 'zh', 'en']),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: '추천 결과',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'data', type: 'array', items: new OA\Items(
+                            properties: [
+                                new OA\Property(property: 'category_code', type: 'string'),
+                                new OA\Property(property: 'category_name', type: 'string'),
+                                new OA\Property(property: 'similarity_score', type: 'number', example: 0.9876),
+                            ]
+                        )),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: '입력값 검증 실패',
+            ),
+        ]
+    )]
     public function recommend(RecommendRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $text = $validated["text"];
-        $targetLanguage = $validated["target_language"];
+        $text = $validated['text'];
+        $targetLanguage = $validated['target_language'];
 
-        $sessionId = $request->session()->getId();
+        $sessionId = $request->hasSession()
+            ? $request->session()->getId()
+            : (string) Str::uuid();
         $userId = auth()->id();
-        $modelName = config("services.ollama.embedding_model", "bge-m3:latest");
+        $modelName = config('services.ollama.embedding_model', 'bge-m3:latest');
 
         $searchLog = $this->embeddingCache->getOrCreateEmbedding(
             $text, $modelName, $userId, $sessionId
@@ -35,12 +76,12 @@ class RecommendController extends Controller
             $searchLog->embedding->toArray(), $targetLanguage, 5
         )->get();
 
-        $categoryIds = $embeddings->pluck("category_id")->all();
+        $categoryIds = $embeddings->pluck('category_id')->all();
 
         $categories = Category::query()
-            ->whereIn("id", $categoryIds)
+            ->whereIn('id', $categoryIds)
             ->get()
-            ->keyBy("id");
+            ->keyBy('id');
 
         $recommendations = [];
         foreach ($embeddings as $embedding) {
@@ -50,17 +91,17 @@ class RecommendController extends Controller
             }
 
             $nameField = match ($targetLanguage) {
-                "zh" => "category_name_zh",
-                "en" => "category_name_en",
-                default => "category_name_ko",
+                'zh' => 'category_name_zh',
+                'en' => 'category_name_en',
+                default => 'category_name_ko',
             };
 
-            $distance = $embedding->getAttribute("distance");
+            $distance = $embedding->getAttribute('distance');
 
             $recommendations[] = (object) [
-                "category_code" => $category->category_code,
-                "category_name" => $category->{$nameField},
-                "similarity_score" => 1.0 - (float) $distance,
+                'category_code' => $category->category_code,
+                'category_name' => $category->{$nameField},
+                'similarity_score' => 1.0 - (float) $distance,
             ];
         }
 

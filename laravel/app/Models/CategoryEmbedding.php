@@ -43,6 +43,7 @@ class CategoryEmbedding extends Model
         $vectorLiteral = '['.implode(',', $vector).']';
 
         return $query
+            ->selectRaw('*, embedding <=> ?::vector as distance', [$vectorLiteral])
             ->where('language', $language)
             ->orderByRaw('embedding <=> ?::vector', [$vectorLiteral])
             ->limit($limit);
