@@ -29,7 +29,10 @@
     {
       "step": 3,
       "name": "swagger-docs",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-05-16T13:47:32+0900",
+      "completed_at": "2026-05-16T14:00:00+0900",
+      "summary": "전체 API Swagger 문서화 완료: AuthController(4), OAuthController(2), CategoryController(4), RecommendController(1), TestController(1) 총 12개 엔드포인트 OA 어노테이션 적용 및 l5-swagger 설정 최종화"
     }
   ],
   "created_at": "2026-05-15T23:53:49+0900"
