@@ -120,6 +120,8 @@ docker exec cl_embed_laravel supervisorctl status
 - **PostgreSQL 트랜잭션 abort 전파** — PostgreSQL에서는 UniqueConstraintViolationException을 catch해도 트랜잭션이 aborted 상태가 되어 후속 쿼리가 실패한다. `create()` + catch로 중복 키를 처리하는 대신 `firstOrCreate()`를 사용해야 한다. SQLite에서는 이 패턴이 정상 동작하므로 로컬 테스트에서 발견되지 않을 수 있다.
 - **Docker Desktop WSL2 `restart` 불가** — `docker compose restart` 시 바인드 마운트 경로가 무효화되어 `no such file or directory` 오류 발생. `stop` + `up -d` 조합을 사용할 것. `--force-recreate`도 동일한 문제가 있어 사용 불가.
 - **Swagger 문서 stale** — CI/CD 배포 후 `storage/api-docs/api-docs.json`이 갱신되지 않아 Swagger UI에 일부 엔드포인트만 표시될 수 있다. `docker exec cl_embed_laravel php artisan l5-swagger:generate`로 재생성. deploy.yml에 자동화되어 있으나 수동 작업 환경에서는 별도 실행 필요.
+- **컨테이너 파일 변경 후 HMR 미감지** — `docker exec cl_embed_nextjs touch <container-path>`로 Turbopack Fast Refresh를 트리거할 수 있다.
+- **Playwright 인증 페이지 테스트** — `docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::first()->createToken("debug")->plainTextToken;'`로 Sanctum 토큰을 생성한 뒤, Playwright에서 `localStorage.setItem("auth_token", token)`으로 주입하고 `/embed`로 이동한다.
 
 ## 인프라 환경 (WSL2)
 

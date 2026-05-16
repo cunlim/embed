@@ -108,6 +108,7 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 
 ## 알려진 이슈
 
+- **Laravel API 응답 형식과 프론트엔드 타입 불일치** — Laravel `Resource::collection()`은 `{data: [...]}`, 단일 `Resource`는 `{data: {...}}` 형식으로 응답한다. TypeScript 인터페이스 정의 시 실제 응답 형식을 curl이나 브라우저 Network 탭으로 확인하고 가정하지 말 것.
 - **Next.js HMR 에러 로그** — `embed_nextjs_error.log`의 "Connection refused"는 dev 서버 재시작 시 정상 발생. 무시.
 - **`next dev`(Turbopack)도 BUILD_ID 생성** — Dockerfile CMD가 `.next/BUILD_ID`로 모드를 감지하면 dev 서버 실행만으로도 다음 재시작 시 production 모드로 전환된다. `.next/production` 센티널 파일을 대신 사용한다 (CI/CD 배포 시 `npm run build && touch .next/production`으로 생성). **감지:** `docker exec cl_embed_nextjs ps aux | grep "next start"` — `next start`가 보이면 production 모드. **복구:** `docker compose stop cl_embed_nextjs && docker exec $(docker ps -a --filter "name=cl_embed_nextjs$" --format "{{.ID}}" | head -1) rm -f /app/.next/BUILD_ID 2>/dev/null; docker compose -f /var/app/www/cl_embed/docker/docker-compose.yml up -d cl_embed_nextjs`
 - **`.claude/settings.json` Stop hook에 `npm run build` 금지** — production build가 BUILD_ID를 생성해 dev 모드 이탈을 유발한다. 타입 체크만 필요하면 `npx tsc --noEmit`을 대신 사용한다.
