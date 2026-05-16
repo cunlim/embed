@@ -20,6 +20,20 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 
 기타 Artisan 명령어는 `php artisan list` 및 `php artisan [command] --help`로 확인합니다.
 
+### TDD 적용 범위
+
+다음 항목은 예외 없이 테스트를 작성한다. 상세 요건은 아래 해당 섹션 참조.
+
+| 대상 | 테스트 유형 | 상세 섹션 |
+|------|------------|-----------|
+| Controller | Feature (HTTP 응답, mock, DB 단언) | — |
+| Form Request | Feature (유효성 검증, 실패 시나리오) | — |
+| Eloquent Resource | Feature (응답 형식 검증) | — |
+| Model | Unit (Factory, 관계, 캐스팅) | [모델 테스트 최소 요건](#모델-테스트-최소-요건) |
+| Service | Unit/Feature (의존성 mock + 위임 검증) | [서비스 클래스 테스트 최소 요건](#서비스-클래스-테스트-최소-요건) |
+| Job/Event | Feature (dispatch, broadcast) | [ShouldBroadcast 이벤트 테스트](#shouldbroadcast-이벤트-테스트-최소-요건) |
+| Command/Scheduled Task | Feature (실행 결과 검증) | — |
+
 ### Laravel 코드 컨벤션
 
 - **PHP 8 속성(Attribute) 사용**: `$fillable`/`$hidden` 프로퍼티 대신 `#[Fillable([...])]`와 `#[Hidden([...])]` 사용

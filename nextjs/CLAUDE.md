@@ -72,10 +72,8 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component>
 - **`@/*` import alias**: `@/components/ui/button`, `@/lib/utils` 등
 
 ### Tailwind CSS v4
-- shadcn/ui의 `base-nova` 스타일 CSS 변수 사용
 - `cn()` 헬퍼 (`clsx` + `tailwind-merge`)로 클래스 병합
-- 반응형: `sm:` (640px+), `md:` (768px+), `lg:` (1024px+), `xl:` (1280px+)
-- **플러그인은 CSS `@plugin` 지시문** — `tailwind.config.js` 불필요. 예: `@plugin "@tailwindcss/typography";`
+- 플러그인은 CSS `@plugin` 지시문 사용 (`tailwind.config.js` 불필요)
 
 ### 상태 관리
 - **서버 상태**: RSC에서 직접 DB 쿼리 (Laravel API 호출)
@@ -85,9 +83,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component>
 
 ## 정적 문서 서빙
 
-- **`../docs:/app/public/content:ro` bind mount** — `docker-compose.yml`에서 `docs/`를 Next.js `public/content/`에 직접 마운트. 복제 없이 항상 최신 문서 서빙.
-- **react-markdown** — ^10.1.0 이미 설치됨. 마크다운 렌더링 시 커스텀 regex 대신 사용.
-- **`@tailwindcss/typography`** — `prose prose-sm dark:prose-invert max-w-none` 클래스로 headings, code, table 등 대부분 스타일링 처리. 외부 링크 `target="_blank"` 등 필요한 부분만 `components` prop으로 오버라이드.
+`docs/` 디렉토리를 `public/content/`에 bind mount하여 마크다운 문서를 서빙한다. 마크다운 렌더링은 `react-markdown` + `@tailwindcss/typography` 사용. 외부 링크 `target="_blank"` 등 필요한 부분만 `components` prop으로 오버라이드.
 
 ## ESLint 주요 규칙
 

@@ -45,25 +45,11 @@ cl_embed/
 
 ## 개발 프로세스
 
-- **CRITICAL: TDD** — 새 기능 구현 시 반드시 테스트를 먼저 작성하고, 테스트가 통과하는 구현을 작성할 것
+- **CRITICAL: TDD** — 새 기능 구현 시 반드시 테스트를 먼저 작성하고, 테스트가 통과하는 구현을 작성할 것. "나중에 테스트를 추가하겠다"는 접근은 허용되지 않는다.
+  - TDD 적용 범위와 테스트 최소 요건은 [`laravel/CLAUDE.md`](laravel/CLAUDE.md)와 [`nextjs/CLAUDE.md`](nextjs/CLAUDE.md) 참조
   - Laravel: Pest 4 (`php artisan test --compact`)
   - Next.js: Vitest + React Testing Library (`docker exec cl_embed_nextjs npm test`)
-  - 테스트 없이 구현 코드만 작성하는 것은 금지된다. "나중에 테스트를 추가하겠다"는 접근도 허용되지 않는다.
-- **TDD 적용 범위 — Laravel** — 다음 항목은 예외 없이 테스트를 작성해야 한다:
-  - 모든 Controller 메서드 (Feature 테스트 — HTTP 응답, mock 검증, DB 단언)
-  - 모든 Form Request (유효성 검증 규칙, 실패 시나리오)
-  - 모든 Eloquent Resource (응답 형식 검증)
-  - 모든 Model (Factory 생성, 관계 반환 타입, 특수 캐스팅 — Unit 테스트)
-  - 모든 Service 클래스 (의존성 mock + 위임 호출 검증 — Unit/Feature 테스트)
-  - 모든 Job/Event (dispatch, broadcast — Feature 테스트)
-  - 모든 Command/Scheduled Task (실행 결과 검증)
-- **TDD 적용 범위 — Next.js** — 다음 항목은 예외 없이 테스트를 작성해야 한다:
-  - 모든 순수 유틸리티 함수 (파싱, 변환, 계산 — Unit 테스트)
-  - 모든 커스텀 훅 (상태 전이, 성공/실패 분기 — Hook 테스트)
-  - 모든 API 클라이언트 함수 (요청/응답, 오류 처리 — Unit 테스트)
 - **Phase step 완료 조건** — step의 모든 파일 생성 후 테스트 실행하여 **0 failure**를 확인해야 한다. 실패가 있으면 step을 완료할 수 없다.
-  - Laravel: `php artisan test --compact`
-  - Next.js: `docker exec cl_embed_nextjs npm test`
 - 커밋 메시지는 conventional commits 형식을 따를 것 (feat:, fix:, docs:, refactor:)
 - PHP 변경 완료 전 `vendor/bin/pint --format agent` 실행 (컨테이너 내부)
 - **DB 테이블명**은 Laravel 기본 복수형 컨벤션을 따른다 (예: `categories`, `translation_caches`). 명시적 `protected $table` 지정은 불필요.
@@ -81,12 +67,7 @@ cl_embed/
 |------|------|------|
 | 백엔드 | Laravel 13 + PHP 8.5 | `laravel/CLAUDE.md` 참조 |
 | 프론트엔드 | Next.js 16 + React 19 | `nextjs/CLAUDE.md` 참조 |
-| DB | PostgreSQL 15 + pgvector | `docs/ADR.md` ADR-001 |
-| 비동기 | Laravel Queue + Redis + Reverb | `docs/ADR.md` ADR-002 |
-| AI | Ollama 로컬 모델 | `docs/ADR.md` ADR-003 (translategemma:4b, bge-m3:latest) |
-| 인증 | Laravel Sanctum + Socialite | `docs/ADR.md` ADR-004 |
-| 인프라 | Docker 5컨테이너, cloudflared, Nginx | `docs/ARCHITECTURE.md` |
-| 데이터 흐름 | 비동기 파이프라인 + WebSocket | `docs/ARCHITECTURE.md` |
+| 인프라 | PostgreSQL 15 + pgvector, Redis, Ollama, Docker | `docs/ADR.md`, `docs/ARCHITECTURE.md` 참조 |
 
 ## 컨테이너 접속
 
@@ -132,7 +113,6 @@ docker exec cl_embed_laravel supervisorctl status
 - **API 라우트에는 세션 미들웨어 없음** — `routes/api.php`는 `StartSession` 미들웨어가 기본 포함되지 않는다. API 컨트롤러에서 `$request->session()` 호출 시 `RuntimeException: Session store not set on request.`이 발생한다. `$request->hasSession()`으로 사전 체크하고 없으면 `Str::uuid()` 등으로 대체할 것.
 - **root 소유 경로에 파일 복사** — `/etc/` 등 root 소유 디렉터리에 파일을 쓸 때는 `docker cp <host-path> <container>:/path/to/file`가 가장 간결하다.
 - **pgvector `<=>` distance 컬럼 미선택** — `orderByRaw('embedding <=> ?::vector', ...)`만 사용하면 distance 값이 SELECT 절에 포함되지 않아 모델 속성으로 접근할 수 없다. `selectRaw('*, embedding <=> ?::vector as distance', [...])`를 함께 사용해야 한다.
-- **PostgreSQL 트랜잭션 abort 전파** — PostgreSQL에서는 UniqueConstraintViolationException을 catch해도 트랜잭션이 aborted 상태가 되어 후속 쿼리가 실패한다. `create()` + catch로 중복 키를 처리하는 대신 `firstOrCreate()`를 사용해야 한다. SQLite에서는 이 패턴이 정상 동작하므로 로컬 테스트에서 발견되지 않을 수 있다.
 - **Docker Desktop WSL2 `restart` 불가** — `docker compose restart` 시 바인드 마운트 경로가 무효화되어 `no such file or directory` 오류 발생. `stop` + `up -d` 조합을 사용할 것. `--force-recreate`도 동일한 문제가 있어 사용 불가.
 - **Swagger 문서 stale** — CI/CD 배포 후 `storage/api-docs/api-docs.json`이 갱신되지 않아 Swagger UI에 일부 엔드포인트만 표시될 수 있다. `docker exec cl_embed_laravel php artisan l5-swagger:generate`로 재생성. deploy.yml에 자동화되어 있으나 수동 작업 환경에서는 별도 실행 필요.
 - **컨테이너 파일 변경 후 HMR 미감지** — `docker exec cl_embed_nextjs touch <container-path>`로 Turbopack Fast Refresh를 트리거할 수 있다.
@@ -167,8 +147,7 @@ docker compose logs -f cl_embed_nextjs
 
 ## 로깅
 
-- **Nginx**: `docker/nginx/volume/log/` — 경로별 분리 기록 (`embed_error.log`, `embed_api_*.log`, `embed_app_*.log`, `embed_nextjs_*.log`)
-- **Laravel**: `laravel/storage/logs/` — `supervisord.log`, `serve.log`, `queue.log`, `reverb.log`, `laravel.log` 통합 (supervisord 크기 기반 로테이션 적용)
+로그 경로 상세는 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) 참조.
 
 ## CI/CD (셀프호스티드 WSL GitHub Actions 러너)
 
