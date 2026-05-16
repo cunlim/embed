@@ -23,7 +23,7 @@
       "name": "e2e-integration",
       "status": "completed",
       "started_at": "2026-05-16T13:29:27+0900",
-      "completed_at": "2026-05-16T14:10:00+0900",
+      "completed_at": "2026-05-16T13:47:32+0900",
       "summary": "E2E 통합 완료: RecommendationTest(3), CategoryApiTest(7), BatchTranslateTest(3), TranslationTest(6), ArchitectureTest(4) — 전체 159 tests/376 assertions 통과, migrate:fresh --seed 정상, Next.js 빌드 성공"
     },
     {
