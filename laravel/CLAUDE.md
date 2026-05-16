@@ -2,25 +2,6 @@
 
 Laravel Boost MCP 도구 사용 가능: `database-query`(읽기 전용 SQL), `database-schema`(테이블 구조), `search-docs`(버전별 문서 검색). 코드 변경 전 `search-docs`를 항상 먼저 실행합니다.
 
-### Laravel 데몬 실행
-
-`cl_embed_laravel` 컨테이너 내부에서 실행해야 하는 데몬들입니다.
-호스트에서 실행 시 반드시 `docker exec`를 사용하세요.
-
-```bash
-# 컨테이너 접속 후 직접 실행
-php artisan serve --host=0.0.0.0 --port=8000
-php artisan reverb:start --host=0.0.0.0 --port=8080
-php artisan queue:work
-
-# 호스트에서 docker exec 로 일괄 실행
-docker exec -d cl_embed_laravel bash -c "
-  nohup php artisan serve --host=0.0.0.0 --port=8000 > logs/serve.log 2>&1 &
-  nohup php artisan reverb:start --host=0.0.0.0 --port=8080 > logs/reverb.log 2>&1 &
-  nohup php artisan queue:work > logs/queue.log 2>&1 &
-"
-```
-
 ### 자주 사용하는 명령어
 
 모든 명령어는 `cl_embed_laravel` 컨테이너 대상으로 `docker exec`를 통해 실행합니다.

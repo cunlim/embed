@@ -12,17 +12,7 @@ Next.js 16 (App Router), React 19, TypeScript 5, Tailwind CSS v4, shadcn/ui (`ba
 
 ## 디렉토리 구조
 
-`app/` (App Router), `components/` (ui/는 shadcn 자동 생성), `hooks/`, `lib/`. 디렉토리 상세는 `find nextjs/app nextjs/components -type f`로 확인.
-
-## 컨테이너 정보
-
-- **컨테이너명:** `cl_embed_nextjs`
-- **내부 포트:** 3000
-- WATCHPACK_POLLING 적용 (Docker 볼륨 핫리로드)
-
-## 주요 패키지
-
-Next.js 16 (App Router), React 19, TypeScript 5, Tailwind CSS v4, shadcn/ui (`base-nova`), next-themes, lucide-react, vitest + React Testing Library. 버전은 `package.json` 참조.
+`app/` (App Router), `components/` (ui/는 shadcn 자동 생성), `hooks/`, `lib/`.
 
 ## 명령어
 
@@ -48,9 +38,7 @@ docker exec cl_embed_nextjs npm run test:watch
 
 ```bash
 # 컴포넌트 추가
-docker exec cl_embed_nextjs npx shadcn@latest add button
-docker exec cl_embed_nextjs npx shadcn@latest add card
-docker exec cl_embed_nextjs npx shadcn@latest add dialog
+docker exec cl_embed_nextjs npx shadcn@latest add <component>
 
 # shadcn MCP 서버로 사용 가능한 컴포넌트 검색
 # (search_components 도구 사용)
@@ -75,10 +63,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add dialog
 
 ## 코드 컨벤션
 
-> **Next.js 16 주요 함정** — [AGENTS.md](./AGENTS.md) 전체 목록을 함께 참고할 것.
-> 1. **App Router만 사용** — `pages/` 디렉토리 기반 Pages Router 금지. 모든 페이지는 `app/` 내 `page.tsx`.
-> 2. **기본값 Server Components** — `"use client"` 없으면 `useState`, `useEffect`, `onClick` 사용 불가.
-> 3. **fetch 캐싱 안 함** — Next.js 16은 `fetch`를 기본적으로 캐시하지 않는다. 필요 시 `cache: "force-cache"` 명시.
+> **Next.js 16 주요 함정** — [AGENTS.md](./AGENTS.md) 필독. App Router 전용, Server Components 기본, fetch 캐싱 없음 등 브레이킹 체인지 전체 목록 참조.
 
 ### React / Next.js
 - **Server Components 기본**: 실시간 인터랙션(WebSocket, 모달)이 필요한 구간만 `"use client"` 지시문 추가
