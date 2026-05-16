@@ -1,63 +1,21 @@
 <?php
 
-use App\Models\Category;
-use App\Models\CategoryEmbedding;
 use App\Models\SearchLog;
 use App\Services\EmbeddingCacheService;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-use Pgvector\Laravel\Vector;
+use App\Services\RecommendationService;
 
 beforeEach(function () {
-    Schema::create('categories', function (Blueprint $table) {
-        $table->id();
-        $table->string('category_code', 50);
-        $table->string('category_name_ko', 255);
-        $table->string('category_name_zh', 255)->nullable();
-        $table->string('category_name_en', 255)->nullable();
-        $table->timestamps();
-    });
-
-    Schema::create('category_embeddings', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('category_id');
-        $table->string('language', 10);
-        $table->string('embed_model_name', 100);
-        $table->text('embedding');
-        $table->unique(['category_id', 'language', 'embed_model_name']);
-        $table->timestamps();
-    });
+    // RecommendationService mock을 사용하므로 DB 테이블은 불필요
 });
 
-afterEach(function () {
-    Schema::dropIfExists('category_embeddings');
-    Schema::dropIfExists('categories');
-});
-
-test('POST /api/recommend — 유효한 검색어는 유효성 검증을 통과하고 EmbeddingCacheService를 호출한다', function () {
-    $category = Category::factory()->create([
-        'category_name_ko' => '패션의류',
-        'category_name_zh' => '时尚服装',
-        'category_name_en' => 'Fashion Clothing',
-    ]);
-
-    $embedding = array_fill(0, 1024, 0.05);
-
-    // pgvector Vector 저장
-    $categoryEmbedding = new CategoryEmbedding;
-    $categoryEmbedding->category_id = $category->id;
-    $categoryEmbedding->language = 'ko';
-    $categoryEmbedding->embed_model_name = 'bge-m3:latest';
-    $categoryEmbedding->embedding = new Vector($embedding);
-    $categoryEmbedding->save();
-
+test('POST /api/recommend — 유효한 검색어는 RecommendationService를 호출하고 결과를 반환한다', function () {
     $searchLog = new SearchLog([
         'search_keyword' => '청바지',
         'normalized_keyword' => '청바지',
         'embed_model_name' => 'bge-m3:latest',
         'session_id' => 'test-session',
     ]);
-    $searchLog->embedding = $embedding;
+    $searchLog->embedding = array_fill(0, 1024, 0.05);
 
     $mockCache = Mockery::mock(EmbeddingCacheService::class);
     $mockCache->shouldReceive('getOrCreateEmbedding')
@@ -66,14 +24,39 @@ test('POST /api/recommend — 유효한 검색어는 유효성 검증을 통과�
         ->andReturn($searchLog);
     app()->instance(EmbeddingCacheService::class, $mockCache);
 
+    $recommendations = [
+        (object) [
+            'category_code' => '50000000',
+            'category_name' => '패션의류',
+            'similarity_score' => 0.95,
+        ],
+        (object) [
+            'category_code' => '50000001',
+            'category_name' => '여성의류',
+            'similarity_score' => 0.87,
+        ],
+    ];
+
+    $mockRecommend = Mockery::mock(RecommendationService::class);
+    $mockRecommend->shouldReceive('recommend')
+        ->once()
+        ->with(Mockery::type(SearchLog::class), 'ko')
+        ->andReturn($recommendations);
+    app()->instance(RecommendationService::class, $mockRecommend);
+
     $response = $this->postJson('/api/recommend', [
         'text' => '청바지',
         'target_language' => 'ko',
     ]);
 
-    // SQLite는 pgvector <=> 연산자를 지원하지 않으므로 500이 발생할 수 있다.
-    // 유효성 검증 통과 여부(422 아님)와 mock 호출 여부로 검증한다.
-    expect($response->status())->not->toBe(422);
+    $response->assertOk()
+        ->assertJsonCount(2, 'data')
+        ->assertJsonPath('data.0.category_code', '50000000')
+        ->assertJsonPath('data.0.category_name', '패션의류')
+        ->assertJsonPath('data.0.similarity_score', 0.95);
+
+    $mockCache->shouldHaveReceived('getOrCreateEmbedding')->once();
+    $mockRecommend->shouldHaveReceived('recommend')->once();
 });
 
 test('POST /api/recommend — 빈 검색어는 422 에러를 반환한다', function () {

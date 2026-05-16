@@ -50,6 +50,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
   - 단독 응답: `(new SomeResource($model))->response()` → `{data: {...}}` 래퍼 자동 적용, 반환 타입 `JsonResponse`와 호환
   - 복합 응답: `(new SomeResource($model))->resolve()`로 배열 추출 후 다른 키와 함께 `response()->json()`에 임베딩 (예: `'user' => (new UserResource($user))->resolve()`)
   - 컬렉션: `SomeResource::collection($items)->response()` → `{data: [...]}`
+  - **Resource collection에 전달되는 각 항목은 객체여야 한다** — `JsonResource::toArray()`에서 `$this->property`로 접근하므로, Service가 반환하는 각 item은 `(object) [...]` 또는 Eloquent Model이어야 한다. 연관 배열을 전달하면 `Attempt to read property on array` 에러가 발생한다.
 - **Pest 테스트**: `php artisan make:test --pest`로 생성, 기존 테스트 컨벤션 따름
 - **PHP 변경 완료 전** 반드시 `vendor/bin/pint --format agent` 실행 (컨테이너 내부 기준)
 
@@ -109,6 +110,7 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
 - **DB 불필요한 테스트** (예: `TextSplitter` 같은 순수 유닛)는 테이블 생성 자체가 불필요하다
 - **`DB::shouldReceive()` / `DB::spy()` 사용 금지** — DB 파사드 모킹은 컨테이너의 `db` 바인딩을 교체하여 `Schema::create/drop`과 Eloquent 쿼리까지 차단한다. pgvector raw SQL(`DB::select`)을 호출하는 Controller 테스트는 유효성 검증(HTTP 응답), 모의 검증(`EmbeddingGenerator` mock), Resource 형식(Unit) 등 레이어를 분리하여 작성한다.
 - **pgvector raw SQL 바인딩은 `::vector` 명시적 캐스트 필수** — `DB::select()`에서 `<=>` 연산자에 bound parameter를 사용할 때 PDO는 text로 바인딩한다. `:query_vector::vector`와 같이 명시적 타입 캐스트를 추가해야 한다.
+- **pgvector 쿼리를 호출하는 컨트롤러는 Service mock으로 격리** — 컨트롤러가 직접 `CategoryEmbedding::similarTo()` 등 pgvector 스코프를 호출하면 SQLite 테스트에서 500이 발생한다. `RecommendationService`처럼 Service로 추출하고, Feature 테스트에서는 `Mockery::mock(Service::class)` + `app()->instance()`로 교체하여 HTTP 레이어(요청/응답/JSON 구조)만 검증한다. Service의 순수 로직(nameFieldFor, 거리→유사도 점수 변환 등)은 Unit 테스트에서 검증한다. 기존 `RecommendationTest`, `RecommendationServiceTest`를 참고할 것.
 - **더 자세한 내용과 예제 코드**: `docs/solutions/test-failures/sqlite-pgvector-refresh-database-incompatibility-2026-05-10.md` 참조
 
 ### 서비스 클래스 테스트 최소 요건

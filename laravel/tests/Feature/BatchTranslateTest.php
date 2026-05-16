@@ -6,6 +6,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Testing\Fakes\PendingBatchFake;
 
 beforeEach(function () {
     Schema::create('categories', function (Blueprint $table) {
@@ -58,8 +59,13 @@ test('BatchTranslatePipeline — 100건 초과 시 여러 배치로 분할한다
         ]);
     }
 
-    $pipeline = new BatchTranslatePipeline('ko');
+    $pipeline = new BatchTranslatePipeline('zh');
     $pipeline->handle();
 
     Bus::assertBatchCount(2);
+
+    Bus::assertBatched(function (PendingBatchFake $batch) {
+        return str_contains($batch->name, 'translate-embed-zh-chunk-')
+            && count($batch->jobs) > 0;
+    });
 });
