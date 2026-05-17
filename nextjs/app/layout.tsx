@@ -3,6 +3,7 @@ import { Archivo, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppHeader } from "@/components/app-header";
+import { Toaster } from "@/components/ui/sonner";
 
 const archivo = Archivo({
   variable: "--font-archivo",
@@ -56,6 +57,7 @@ export default function RootLayout({
         >
           <AppHeader />
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
