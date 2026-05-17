@@ -126,10 +126,19 @@ export default function CategoryModal({
     for (const lang of LANGUAGES) {
       if (lang.hasTranslation) {
         const tl = data.languages[lang.key];
-        if (!tl.translation_text) steps.push(`translation.${lang.key}` as StepName);
-        if (tl.embedding.status !== "completed") steps.push(`embedding.${lang.key}` as StepName);
+        const transKey = `translation.${lang.key}` as StepName;
+        const embedKey = `embedding.${lang.key}` as StepName;
+        if (!tl.translation_text && !completedSteps.has(transKey) && !stepResults.has(transKey)) {
+          steps.push(transKey);
+        }
+        if (tl.embedding.status !== "completed" && !completedSteps.has(embedKey) && !stepResults.has(embedKey)) {
+          steps.push(embedKey);
+        }
       } else {
-        if (data.languages[lang.key].embedding.status !== "completed") steps.push(`embedding.${lang.key}` as StepName);
+        const embedKey = `embedding.${lang.key}` as StepName;
+        if (data.languages[lang.key].embedding.status !== "completed" && !completedSteps.has(embedKey) && !stepResults.has(embedKey)) {
+          steps.push(embedKey);
+        }
       }
     }
     if (steps.length === 0) return;
