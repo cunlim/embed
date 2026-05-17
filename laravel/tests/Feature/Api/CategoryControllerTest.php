@@ -1,10 +1,13 @@
 <?php
 
 use App\Jobs\BatchTranslatePipeline;
+use App\Jobs\CategoryTranslateEmbedPipeline;
 use App\Jobs\TranslateAndEmbedJob;
 use App\Models\Category;
 use App\Models\User;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Queue;
 
 test('GET /api/categories — 빈 목록을 반환한다', function () {
     $response = $this->getJson('/api/categories');
@@ -135,4 +138,47 @@ test('POST /api/categories/batch-translate — 지원하지 않는 언어면 422
         ->assertJsonValidationErrors(['target_language']);
 
     Bus::assertNothingDispatched();
+});
+
+test('POST /api/categories/{category}/translate-embed — Job을 dispatch하고 202를 반환한다', function () {
+    Queue::fake();
+    $category = Category::factory()->create();
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user, 'sanctum')
+        ->postJson("/api/categories/{$category->id}/translate-embed");
+
+    $response->assertAccepted()
+        ->assertJsonPath('category_id', $category->id)
+        ->assertJsonPath('message', '카테고리 번역·임베딩이 시작되었습니다.');
+
+    Queue::assertPushed(CategoryTranslateEmbedPipeline::class, function ($job) use ($category) {
+        $ref = new ReflectionProperty($job, 'categoryId');
+
+        return $ref->getValue($job) === $category->id;
+    });
+});
+
+test('POST /api/categories/{category}/translate-embed — 인증되지 않은 요청은 401', function () {
+    $category = Category::factory()->create();
+
+    $this
+        ->postJson("/api/categories/{$category->id}/translate-embed")
+        ->assertUnauthorized();
+});
+
+test('POST /api/categories/{category}/translate-embed/cancel — cancel flag를 설정하고 200을 반환한다', function () {
+    $category = Category::factory()->create();
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user, 'sanctum')
+        ->postJson("/api/categories/{$category->id}/translate-embed/cancel");
+
+    $response->assertOk()
+        ->assertJsonPath('category_id', $category->id)
+        ->assertJsonPath('message', '카테고리 번역·임베딩 중단이 요청되었습니다.');
+
+    expect(Cache::get("category-translate-cancel:{$category->id}"))->toBeTrue();
 });
