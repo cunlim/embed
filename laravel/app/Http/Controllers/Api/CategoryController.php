@@ -13,6 +13,7 @@ use App\Jobs\CategoryTranslateEmbedPipeline;
 use App\Jobs\TranslateAndEmbedJob;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use OpenApi\Attributes as OA;
 
@@ -271,9 +272,14 @@ class CategoryController extends Controller
             ),
         ]
     )]
-    public function translateEmbed(Category $category): JsonResponse
+    public function translateEmbed(Request $request, Category $category): JsonResponse
     {
-        CategoryTranslateEmbedPipeline::dispatch($category->id);
+        $request->validate([
+            'steps' => ['nullable', 'array'],
+            'steps.*' => ['string', 'in:translation.zh,translation.en,embedding.ko,embedding.zh,embedding.en'],
+        ]);
+        $steps = $request->input('steps');
+        CategoryTranslateEmbedPipeline::dispatch($category->id, $steps);
 
         return response()->json([
             'message' => '카테고리 번역·임베딩이 시작되었습니다.',

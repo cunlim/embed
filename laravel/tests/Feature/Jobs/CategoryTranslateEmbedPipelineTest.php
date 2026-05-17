@@ -171,3 +171,58 @@ test('이미 완료된 단계는 건너뛴다 (smart resume)', function () {
         return $event->stepName === 'translation.en' && $event->status === 'completed';
     });
 });
+
+test('onlySteps가 null이면 전체 5단계를 실행한다 (하위 호환)', function () {
+    $category = Category::factory()->create();
+    $translator = mock(OllamaTranslator::class);
+    $embedder = mock(EmbeddingGenerator::class);
+
+    $translator->shouldReceive('translate')
+        ->times(2)
+        ->andReturn('번역됨');
+    $embedder->shouldReceive('generate')
+        ->times(3)
+        ->andReturn(array_fill(0, 1024, 0.01));
+
+    $job = new CategoryTranslateEmbedPipeline($category->id, null);
+    $job->handle($translator, $embedder);
+
+    Event::assertDispatched(CategoryProgress::class, 10); // running + completed for 5 steps
+    Event::assertDispatched(CategoryPipelineCompleted::class, function (CategoryPipelineCompleted $event) {
+        return $event->allSuccess === true && $event->failedStep === 0;
+    });
+});
+
+test('onlySteps가 지정되면 해당 단계만 실행하고 step 번호를 1부터 다시 매긴다', function () {
+    $category = Category::factory()->create([
+        'category_name_en' => 'pre-translated',
+    ]);
+    $translator = mock(OllamaTranslator::class);
+    $embedder = mock(EmbeddingGenerator::class);
+
+    // translation은 호출되지 않고 embedding.ko, embedding.en만 호출
+    $translator->shouldReceive('translate')->never();
+    $embedder->shouldReceive('generate')
+        ->times(2)
+        ->andReturn(array_fill(0, 1024, 0.01));
+
+    $job = new CategoryTranslateEmbedPipeline($category->id, ['embedding.ko', 'embedding.en']);
+    $job->handle($translator, $embedder);
+
+    // running + completed for 2 steps = 4회
+    Event::assertDispatched(CategoryProgress::class, 4);
+
+    // embedding.ko → step 1, embedding.en → step 2 로 재매김
+    Event::assertDispatched(CategoryProgress::class, function (CategoryProgress $event) {
+        return $event->stepName === 'embedding.ko' && $event->step === 1 && $event->status === 'running';
+    });
+    Event::assertDispatched(CategoryProgress::class, function (CategoryProgress $event) {
+        return $event->stepName === 'embedding.ko' && $event->step === 1 && $event->status === 'completed';
+    });
+    Event::assertDispatched(CategoryProgress::class, function (CategoryProgress $event) {
+        return $event->stepName === 'embedding.en' && $event->step === 2 && $event->status === 'running';
+    });
+    Event::assertDispatched(CategoryProgress::class, function (CategoryProgress $event) {
+        return $event->stepName === 'embedding.en' && $event->step === 2 && $event->status === 'completed';
+    });
+});

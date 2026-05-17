@@ -28,6 +28,7 @@ class CategoryTranslateEmbedPipeline implements ShouldQueue
 
     public function __construct(
         private int $categoryId,
+        private ?array $onlySteps = null,
     ) {}
 
     public function handle(
@@ -49,13 +50,17 @@ class CategoryTranslateEmbedPipeline implements ShouldQueue
             $embedModelName = config('services.ollama.embedding_model');
 
             // 5단계 정의
-            $steps = [
+            $allSteps = [
                 ['step' => 1, 'name' => 'translation.zh', 'language' => 'zh', 'type' => 'translation'],
                 ['step' => 2, 'name' => 'translation.en', 'language' => 'en', 'type' => 'translation'],
                 ['step' => 3, 'name' => 'embedding.ko', 'language' => 'ko', 'type' => 'embedding'],
                 ['step' => 4, 'name' => 'embedding.zh', 'language' => 'zh', 'type' => 'embedding'],
                 ['step' => 5, 'name' => 'embedding.en', 'language' => 'en', 'type' => 'embedding'],
             ];
+
+            $steps = $this->onlySteps !== null
+                ? array_values(array_map(fn ($s, $i) => [...$s, 'step' => $i + 1], $filtered = array_values(array_filter($allSteps, fn ($s) => in_array($s['name'], $this->onlySteps, true))), array_keys($filtered)))
+                : $allSteps;
 
             $failedStep = 0;
             $cancelled = false;
