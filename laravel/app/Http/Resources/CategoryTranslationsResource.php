@@ -50,7 +50,7 @@ class CategoryTranslationsResource extends JsonResource
 
         return [
             'status' => 'completed',
-            'preview' => $vector !== [] ? array_slice($vector, 0, 5) : null,
+            'preview' => $vector !== [] ? array_map(fn($v) => (float) $v, $vector) : null,
         ];
     }
 
