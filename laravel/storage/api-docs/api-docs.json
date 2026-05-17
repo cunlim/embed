@@ -330,6 +330,14 @@
                                                     "category_name_en": {
                                                         "type": "string",
                                                         "nullable": true
+                                                    },
+                                                    "translation_status": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "completed",
+                                                            "partial",
+                                                            "pending"
+                                                        ]
                                                     }
                                                 },
                                                 "type": "object"
@@ -477,6 +485,72 @@
                 }
             }
         },
+        "/api/categories/{category}/translations": {
+            "get": {
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "카테고리별 번역·임베딩 상태 조회",
+                "description": "특정 카테고리의 언어별 번역 텍스트와 임베딩 상태를 조회합니다.",
+                "operationId": "5b400f4bfc55b2a12fac486f084c3794",
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "카테고리 번역·임베딩 상태",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "category_code": {
+                                                    "type": "string"
+                                                },
+                                                "category_name_ko": {
+                                                    "type": "string"
+                                                },
+                                                "embedding_dimensions": {
+                                                    "type": "integer",
+                                                    "nullable": true
+                                                },
+                                                "languages": {
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "인증 필요"
+                    },
+                    "404": {
+                        "description": "카테고리를 찾을 수 없음"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/categories/batch-translate": {
             "post": {
                 "tags": [
@@ -558,6 +632,31 @@
                         }
                     }
                 ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "steps": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "enum": [
+                                                "translation.zh",
+                                                "translation.en",
+                                                "embedding.ko",
+                                                "embedding.zh",
+                                                "embedding.en"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "202": {
                         "description": "파이프라인 실행 시작됨",

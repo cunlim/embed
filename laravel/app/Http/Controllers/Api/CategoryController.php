@@ -38,6 +38,7 @@ class CategoryController extends Controller
                                 new OA\Property(property: 'category_name_ko', type: 'string'),
                                 new OA\Property(property: 'category_name_zh', type: 'string', nullable: true),
                                 new OA\Property(property: 'category_name_en', type: 'string', nullable: true),
+                                new OA\Property(property: 'translation_status', type: 'string', enum: ['completed', 'partial', 'pending']),
                             ]
                         )),
                     ]
@@ -150,8 +151,8 @@ class CategoryController extends Controller
 
     #[OA\Get(
         path: '/api/categories/{category}/translations',
-        summary: '카테고리 번역/임베딩 상태 조회',
-        description: '특정 카테고리의 번역과 임베딩 상태를 조회합니다.',
+        summary: '카테고리별 번역·임베딩 상태 조회',
+        description: '특정 카테고리의 언어별 번역 텍스트와 임베딩 상태를 조회합니다.',
         tags: ['Categories'],
         security: [['sanctum' => []]],
         parameters: [
@@ -165,11 +166,17 @@ class CategoryController extends Controller
         responses: [
             new OA\Response(
                 response: 200,
-                description: '카테고리 번역/임베딩 상태',
+                description: '카테고리 번역·임베딩 상태',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
-                        new OA\Property(property: 'data', type: 'object'),
+                        new OA\Property(property: 'data', type: 'object', properties: [
+                            new OA\Property(property: 'id', type: 'integer'),
+                            new OA\Property(property: 'category_code', type: 'string'),
+                            new OA\Property(property: 'category_name_ko', type: 'string'),
+                            new OA\Property(property: 'embedding_dimensions', type: 'integer', nullable: true),
+                            new OA\Property(property: 'languages', type: 'object'),
+                        ]),
                     ]
                 )
             ),
@@ -250,6 +257,19 @@ class CategoryController extends Controller
                 schema: new OA\Schema(type: 'integer')
             ),
         ],
+        requestBody: new OA\RequestBody(
+            required: false,
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(
+                        property: 'steps',
+                        type: 'array',
+                        items: new OA\Items(type: 'string', enum: ['translation.zh', 'translation.en', 'embedding.ko', 'embedding.zh', 'embedding.en'])
+                    ),
+                ]
+            )
+        ),
         responses: [
             new OA\Response(
                 response: 202,
