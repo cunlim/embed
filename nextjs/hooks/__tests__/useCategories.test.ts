@@ -22,7 +22,23 @@ const mockCategory = {
   embedding_en: null,
 };
 
-const mockCategoryList = { data: [mockCategory] };
+const mockCategoryList = {
+  data: [mockCategory],
+  meta: {
+    current_page: 1,
+    last_page: 1,
+    per_page: 20,
+    total: 1,
+    from: 1,
+    to: 1,
+  },
+  links: {
+    first: null,
+    last: null,
+    prev: null,
+    next: null,
+  },
+};
 
 describe("useCategories", () => {
   beforeEach(() => {
@@ -30,19 +46,20 @@ describe("useCategories", () => {
   });
 
   describe("초기 상태", () => {
-    it("token이 있으면 mount 시 자동 로드가 시작되어 isLoading이 true다", () => {
+    it("token이 있으면 mount 시 isLoading이 true다 (자동 로드 준비 상태)", () => {
       const { result } = renderHook(() => useCategories("token"));
 
       expect(result.current.categories).toEqual([]);
       expect(result.current.isLoading).toBe(true);
       expect(result.current.error).toBeNull();
+      expect(mockGetCategories).not.toHaveBeenCalled();
     });
 
-    it("token이 null이어도 mount 시 자동 로드가 시작된다", () => {
+    it("token이 null이면 isLoading은 false다", () => {
       const { result } = renderHook(() => useCategories(null));
 
       expect(result.current.categories).toEqual([]);
-      expect(result.current.isLoading).toBe(true);
+      expect(result.current.isLoading).toBe(false);
     });
   });
 
@@ -59,7 +76,23 @@ describe("useCategories", () => {
       expect(result.current.categories).toEqual([mockCategory]);
       expect(result.current.isLoading).toBe(false);
       expect(result.current.error).toBeNull();
-      expect(mockGetCategories).toHaveBeenCalledWith("token");
+      expect(mockGetCategories).toHaveBeenCalledWith("token", 1);
+    });
+
+    it("성공 시 meta와 categories를 반환한다", async () => {
+      mockGetCategories.mockResolvedValue(mockCategoryList);
+
+      const { result } = renderHook(() => useCategories("token"));
+
+      await act(async () => {
+        await result.current.loadCategories();
+      });
+
+      expect(result.current.categories).toEqual([mockCategory]);
+      expect(result.current.meta).toEqual(mockCategoryList.meta);
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.error).toBeNull();
+      expect(mockGetCategories).toHaveBeenCalledWith("token", 1);
     });
 
     it("실패 시 error 메시지가 설정되고 isLoading은 false다", async () => {
@@ -109,8 +142,8 @@ describe("useCategories", () => {
       mockCreateCategory.mockRejectedValue(new Error("중복된 카테고리"));
 
       const { result } = renderHook(() => useCategories("token"));
-      // auto-load가 mount 시 getCategories를 1회 호출
-      expect(mockGetCategories).toHaveBeenCalledTimes(1);
+      // auto-load 없음 — mount 시 getCategories 호출 안 함
+      expect(mockGetCategories).not.toHaveBeenCalled();
 
       await act(async () => {
         await result.current.addCategory("중복");
@@ -119,7 +152,7 @@ describe("useCategories", () => {
       expect(result.current.error).toBe("중복된 카테고리");
       expect(result.current.isLoading).toBe(false);
       // addCategory 실패 시 getCategories 추가 호출 없음
-      expect(mockGetCategories).toHaveBeenCalledTimes(1);
+      expect(mockGetCategories).not.toHaveBeenCalled();
     });
 
     it("createCategory 성공 후 getCategories 실패 시 error가 설정된다", async () => {

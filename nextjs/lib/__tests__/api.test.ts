@@ -86,7 +86,7 @@ describe("API 클라이언트", () => {
       await api.getCategories();
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://embed.cunlim.dev/api/categories",
+        "https://embed.cunlim.dev/api/categories?per_page=20",
         expect.objectContaining({ method: "GET" })
       );
     });

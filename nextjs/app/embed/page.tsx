@@ -301,7 +301,7 @@ export default function EmbedPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={loadCategories}
+                  onClick={() => loadCategories()}
                   className="w-full"
                 >
                   카테고리 목록 불러오기

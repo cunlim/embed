@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useSyncExternalStore, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
   RefreshCw,
   AlertCircle,
   Database,
   Eye,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+} from "@/components/ui/pagination";
 import CategoryModal from "@/components/admin/category-modal";
 import StatusBadge from "@/components/admin/status-badge";
 import { useAuth, getToken } from "@/hooks/useAuth";
@@ -30,14 +38,28 @@ import { useCategoryDetail } from "@/hooks/useCategoryDetail";
 import { isAdmin } from "@/lib/utils";
 
 export default function AdminPage() {
+  return (
+    <Suspense>
+      <AdminPageInner />
+    </Suspense>
+  );
+}
+
+function AdminPageInner() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false,
   );
   const authorized = user ? isAdmin(user.id) : false;
+
+  // Parse page from URL
+  const pageParam = searchParams.get("page");
+  const urlPage = parseInt(pageParam ?? "1", 10);
+  const page = Number.isNaN(urlPage) || urlPage < 1 ? 1 : urlPage;
 
   // 인증 가드
   useEffect(() => {
@@ -53,11 +75,18 @@ export default function AdminPage() {
   const token = mounted ? getToken() : null;
   const {
     categories,
+    meta,
     isLoading: catLoading,
     error: catError,
     loadCategories,
     addCategory,
   } = useCategories(token);
+
+  // URL page 동기화
+  useEffect(() => {
+    if (!mounted) return;
+    loadCategories(page);
+  }, [mounted, page, loadCategories]);
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [modalCategoryId, setModalCategoryId] = useState<number | null>(null);
@@ -69,6 +98,10 @@ export default function AdminPage() {
     await addCategory(newCategoryName.trim());
     setNewCategoryName("");
   }, [newCategoryName, addCategory]);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    router.push(`/admin?page=${newPage}`);
+  }, [router]);
 
   if (!mounted || !authorized) return null;
 
@@ -129,7 +162,7 @@ export default function AdminPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={loadCategories}
+                onClick={() => loadCategories(page)}
                 disabled={catLoading}
               >
                 <RefreshCw
@@ -162,7 +195,7 @@ export default function AdminPage() {
                       variant="outline"
                       size="sm"
                       className="mt-3"
-                      onClick={loadCategories}
+                      onClick={() => loadCategories(page)}
                     >
                       <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                       재시도
@@ -246,6 +279,48 @@ export default function AdminPage() {
                       </Card>
                     ))}
                   </div>
+
+                  {/* 페이지네이션 */}
+                  {meta && meta.last_page > 1 && (
+                    <div className="mt-4">
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePageChange(meta.current_page - 1)}
+                              disabled={meta.current_page <= 1}
+                            >
+                              <ChevronLeft className="mr-1 h-4 w-4" />
+                              이전
+                            </Button>
+                          </PaginationItem>
+                          {Array.from({ length: meta.last_page }, (_, i) => i + 1).map((p) => (
+                            <PaginationItem key={p}>
+                              <PaginationLink
+                                isActive={p === meta.current_page}
+                                onClick={() => handlePageChange(p)}
+                              >
+                                {p}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePageChange(meta.current_page + 1)}
+                              disabled={meta.current_page >= meta.last_page}
+                            >
+                              다음
+                              <ChevronRight className="ml-1 h-4 w-4" />
+                            </Button>
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -264,7 +339,7 @@ export default function AdminPage() {
         error={detailError}
         token={token}
         onReload={reload}
-        onListRefresh={loadCategories}
+        onListRefresh={() => loadCategories(page)}
       />
     </div>
   );

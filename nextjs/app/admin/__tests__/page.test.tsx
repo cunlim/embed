@@ -21,7 +21,8 @@ vi.mock("@/hooks/useCategoryDetail", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: vi.fn(() => ({ replace: vi.fn(), back: vi.fn() })),
+  useRouter: vi.fn(() => ({ replace: vi.fn(), back: vi.fn(), push: vi.fn() })),
+  useSearchParams: vi.fn(() => new URLSearchParams()),
 }));
 
 import { useAuth } from "@/hooks/useAuth";

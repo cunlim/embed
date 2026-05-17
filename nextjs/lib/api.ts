@@ -105,12 +105,35 @@ export interface Category {
   translation_status: "completed" | "partial" | "pending";
 }
 
-export interface CategoryListResponse {
-  data: Category[];
+export interface PaginationMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  from: number;
+  to: number;
 }
 
-export function getCategories(token?: string | null): Promise<CategoryListResponse> {
-  return request<CategoryListResponse>("/categories", { token });
+export interface CategoryListResponse {
+  data: Category[];
+  meta: PaginationMeta;
+  links: {
+    first: string | null;
+    last: string | null;
+    prev: string | null;
+    next: string | null;
+  };
+}
+
+export function getCategories(
+  token?: string | null,
+  page?: number,
+): Promise<CategoryListResponse> {
+  const params = new URLSearchParams();
+  if (page && page > 1) params.set("page", String(page));
+  params.set("per_page", "20");
+  const qs = params.toString();
+  return request<CategoryListResponse>(`/categories?${qs}`, { token });
 }
 
 export function createCategory(
