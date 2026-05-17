@@ -142,6 +142,9 @@ export default function CategoryModal({
     const isRunningThis = stepName ? runningSteps.has(stepName) || activeStep === stepName : false;
     const isCompleted = hasValue || (stepName ? completedSteps.has(stepName) : false);
     const isFailed = stepName ? failedSteps.has(stepName) : false;
+    const hasResult = stepName ? stepResults.has(stepName) : false;
+    const effectiveCopyValue = copyValue
+      ?? ((stepName && hasResult && !stepName.startsWith("embedding")) ? stepResults.get(stepName)! : null);
 
     return (
       <div className="grid grid-cols-[80px_1fr_40px] gap-3 items-center py-1.5">
@@ -164,11 +167,11 @@ export default function CategoryModal({
             </Button>
           ) : isFailed ? (
             <AlertCircle className="size-4 text-destructive" />
-          ) : isCompleted && copyValue ? (
-            <Button variant="ghost" size="icon" onClick={() => copyToClipboard(copyValue)} title="복사">
+          ) : (isCompleted || hasResult) && effectiveCopyValue ? (
+            <Button variant="ghost" size="icon" onClick={() => copyToClipboard(effectiveCopyValue)} title="복사">
               <Copy className="size-3" />
             </Button>
-          ) : stepName ? (
+          ) : (isCompleted || hasResult) ? null : stepName ? (
             <Button
               variant="ghost"
               size="icon"
