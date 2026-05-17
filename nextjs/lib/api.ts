@@ -88,6 +88,33 @@ export function createCategory(
   });
 }
 
+// --- 개별 카테고리 번역·임베딩 ---
+
+export interface TranslateEmbedResponse {
+  message: string;
+  category_id: number;
+}
+
+export function translateEmbedCategory(
+  categoryId: number,
+  token?: string | null,
+): Promise<TranslateEmbedResponse> {
+  return request<TranslateEmbedResponse>(`/categories/${categoryId}/translate-embed`, {
+    method: "POST",
+    token,
+  });
+}
+
+export function cancelTranslateEmbed(
+  categoryId: number,
+  token?: string | null,
+): Promise<TranslateEmbedResponse> {
+  return request<TranslateEmbedResponse>(`/categories/${categoryId}/translate-embed/cancel`, {
+    method: "POST",
+    token,
+  });
+}
+
 // --- 배치 번역 ---
 
 export interface BatchTranslateResponse {
