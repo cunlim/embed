@@ -264,6 +264,7 @@ export default function AdminPage() {
         error={detailError}
         token={token}
         onReload={reload}
+        onListRefresh={loadCategories}
       />
     </div>
   );
