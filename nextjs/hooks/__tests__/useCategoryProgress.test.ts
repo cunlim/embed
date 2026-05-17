@@ -2,19 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useCategoryProgress } from "@/hooks/useCategoryProgress";
 
-// API mock
 vi.mock("@/lib/api", () => ({
   translateEmbedCategory: vi.fn(),
-  cancelTranslateEmbed: vi.fn(),
+  cancelTranslateEmbed: vi.fn().mockResolvedValue({ message: "취소됨", category_id: 1 }),
 }));
 
-// Echo mock
 const mockListen = vi.fn();
-const mockStopListening = vi.fn();
 const mockLeaveChannel = vi.fn();
 const mockChannel = vi.fn(() => ({
   listen: mockListen,
-  stopListening: mockStopListening,
+  stopListening: vi.fn(),
 }));
 
 const mockEcho = {
@@ -22,16 +19,13 @@ const mockEcho = {
   leaveChannel: mockLeaveChannel,
 };
 
-// useEcho mock
 vi.mock("@/hooks/useEcho", () => ({
   useEcho: vi.fn(() => mockEcho),
 }));
 
-import { translateEmbedCategory, cancelTranslateEmbed } from "@/lib/api";
-import { useEcho } from "@/hooks/useEcho";
+import { translateEmbedCategory } from "@/lib/api";
 
 const mockedTranslateEmbed = translateEmbedCategory as ReturnType<typeof vi.fn>;
-const mockedCancelTranslateEmbed = cancelTranslateEmbed as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -39,41 +33,36 @@ beforeEach(() => {
     message: "시작됨",
     category_id: 1,
   });
-  mockedCancelTranslateEmbed.mockResolvedValue({
-    message: "취소됨",
-    category_id: 1,
-  });
 });
 
 describe("useCategoryProgress", () => {
-  it("초기 상태는 progress null, isRunning false", () => {
+  it("초기 상태는 progress null, isRunning false, activeStep null", () => {
     const { result } = renderHook(() => useCategoryProgress());
 
     expect(result.current.progress).toBeNull();
     expect(result.current.isRunning).toBe(false);
+    expect(result.current.activeStep).toBeNull();
   });
 
-  it("startTranslation 호출 시 API를 호출하고 Echo 채널을 구독한다", async () => {
+  it("subscribeProgress 호출 시 isRunning true, Echo 채널을 구독한다", () => {
     const { result } = renderHook(() => useCategoryProgress());
 
-    await act(async () => {
-      await result.current.startTranslation(1, "test-token");
+    act(() => {
+      result.current.subscribeProgress(1);
     });
 
-    expect(mockedTranslateEmbed).toHaveBeenCalledWith(1, "test-token", undefined);
     expect(mockChannel).toHaveBeenCalledWith("category.1");
-    expect(mockListen).toHaveBeenCalledTimes(2); // .category.progress + .category.completed
+    expect(mockListen).toHaveBeenCalledTimes(2);
     expect(result.current.isRunning).toBe(true);
   });
 
-  it("progress 이벤트 수신 시 progress 상태를 업데이트한다", async () => {
+  it("progress 이벤트 수신 시 progress + activeStep 상태를 업데이트한다", () => {
     const { result } = renderHook(() => useCategoryProgress());
 
-    await act(async () => {
-      await result.current.startTranslation(1);
+    act(() => {
+      result.current.subscribeProgress(1);
     });
 
-    // progress 리스너 추출해서 호출
     const progressCallback = mockListen.mock.calls.find(
       ([event]) => event === ".category.progress",
     )?.[1];
@@ -93,13 +82,15 @@ describe("useCategoryProgress", () => {
       stepName: "translation.zh",
       status: "running",
     });
+    expect(result.current.activeStep).toBe("translation.zh");
   });
 
-  it("completed 이벤트 수신 시 isRunning이 false가 된다", async () => {
-    const { result } = renderHook(() => useCategoryProgress());
+  it("completed 이벤트 수신 시 isRunning false, activeStep null, onUpdate 호출", () => {
+    const onUpdate = vi.fn();
+    const { result } = renderHook(() => useCategoryProgress(onUpdate));
 
-    await act(async () => {
-      await result.current.startTranslation(1);
+    act(() => {
+      result.current.subscribeProgress(1);
     });
 
     const completedCallback = mockListen.mock.calls.find(
@@ -115,22 +106,25 @@ describe("useCategoryProgress", () => {
     });
 
     expect(result.current.isRunning).toBe(false);
+    expect(result.current.activeStep).toBeNull();
+    expect(onUpdate).toHaveBeenCalled();
   });
 
-  it("cancel 호출 시 채널 leave + 상태 초기화, API cancel 호출", async () => {
-    const { result } = renderHook(() => useCategoryProgress());
+  it("cancel 호출 시 채널 leave + 상태 초기화", async () => {
+    const onUpdate = vi.fn();
+    const { result } = renderHook(() => useCategoryProgress(onUpdate));
 
-    await act(async () => {
-      await result.current.startTranslation(1, "test-token");
+    act(() => {
+      result.current.subscribeProgress(1);
     });
 
-    await act(async () => {
+    act(() => {
       result.current.cancel();
     });
 
-    expect(mockedCancelTranslateEmbed).toHaveBeenCalledWith(1, "test-token");
     expect(mockLeaveChannel).toHaveBeenCalledWith("category.1");
     expect(result.current.progress).toBeNull();
     expect(result.current.isRunning).toBe(false);
+    expect(result.current.activeStep).toBeNull();
   });
 });

@@ -33,20 +33,22 @@ export interface CategoryPipelineCompleted {
 export interface UseCategoryProgressReturn {
   progress: CategoryProgress | null;
   isRunning: boolean;
-  /** WebSocket 구독 + API 호출 (기존 호환) */
+  activeStep: StepName | null;
   startTranslation: (categoryId: number, token?: string | null, steps?: string[]) => Promise<void>;
-  /** WebSocket 구독만 먼저 수행 */
   subscribeProgress: (categoryId: number) => void;
   cancel: () => void;
 }
 
-export function useCategoryProgress(): UseCategoryProgressReturn {
+export function useCategoryProgress(onUpdate?: () => void): UseCategoryProgressReturn {
   const echo = useEcho();
   const [progress, setProgress] = useState<CategoryProgress | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [activeStep, setActiveStep] = useState<StepName | null>(null);
   const channelRef = useRef<string | null>(null);
   const tokenRef = useRef<string | null>(null);
   const categoryIdRef = useRef<number | null>(null);
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
 
   const subscribeProgress = useCallback(
     (categoryId: number) => {
@@ -64,9 +66,12 @@ export function useCategoryProgress(): UseCategoryProgressReturn {
       const channel = echo.channel(channelName);
       channel.listen(".category.progress", (data: CategoryProgress) => {
         setProgress(data);
+        setActiveStep(data.stepName);
       });
       channel.listen(".category.completed", (_data: CategoryPipelineCompleted) => {
         setIsRunning(false);
+        setActiveStep(null);
+        onUpdateRef.current?.();
       });
     },
     [echo],
@@ -81,7 +86,6 @@ export function useCategoryProgress(): UseCategoryProgressReturn {
 
       tokenRef.current = token ?? null;
 
-      // 아직 구독 안 되어 있으면 WebSocket 구독 먼저
       if (categoryIdRef.current !== categoryId) {
         subscribeProgress(categoryId);
       }
@@ -91,9 +95,11 @@ export function useCategoryProgress(): UseCategoryProgressReturn {
       } catch (err) {
         console.error("API 호출 실패:", err);
         setIsRunning(false);
+        setActiveStep(null);
         if (channelRef.current) {
           echo.leaveChannel(channelRef.current);
         }
+        throw err;
       }
     },
     [echo, subscribeProgress],
@@ -118,7 +124,8 @@ export function useCategoryProgress(): UseCategoryProgressReturn {
     tokenRef.current = null;
     setProgress(null);
     setIsRunning(false);
+    setActiveStep(null);
   }, [echo]);
 
-  return { progress, isRunning, startTranslation, subscribeProgress, cancel };
+  return { progress, isRunning, activeStep, startTranslation, subscribeProgress, cancel };
 }
