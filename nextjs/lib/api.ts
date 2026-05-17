@@ -32,6 +32,44 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return res.json();
 }
 
+// --- 카테고리 상세 (번역·임베딩 상태) ---
+
+export type EmbeddingStatus = "completed" | "pending" | "failed" | "running";
+
+export interface LanguageDetail {
+  translation_text: string | null;
+  embedding: {
+    status: EmbeddingStatus;
+    preview: number[] | null;
+  };
+}
+
+export interface CategoryTranslations {
+  id: number;
+  category_code: string;
+  category_name_ko: string;
+  embedding_dimensions: number | null;
+  languages: {
+    ko: LanguageDetail;
+    en: LanguageDetail;
+    zh: LanguageDetail;
+  };
+}
+
+export interface CategoryTranslationsResponse {
+  data: CategoryTranslations;
+}
+
+export function fetchCategoryTranslations(
+  categoryId: number,
+  token?: string | null
+): Promise<CategoryTranslationsResponse> {
+  return request<CategoryTranslationsResponse>(
+    `/categories/${categoryId}/translations`,
+    { token }
+  );
+}
+
 // --- 추천 ---
 
 export interface Recommendation {
@@ -64,9 +102,7 @@ export interface Category {
   category_name_ko: string;
   category_name_zh: string | null;
   category_name_en: string | null;
-  embedding_ko: number[] | null;
-  embedding_zh: number[] | null;
-  embedding_en: number[] | null;
+  translation_status: "completed" | "partial" | "pending";
 }
 
 export interface CategoryListResponse {
@@ -98,9 +134,11 @@ export interface TranslateEmbedResponse {
 export function translateEmbedCategory(
   categoryId: number,
   token?: string | null,
+  steps?: string[]
 ): Promise<TranslateEmbedResponse> {
   return request<TranslateEmbedResponse>(`/categories/${categoryId}/translate-embed`, {
     method: "POST",
+    body: steps ? { steps } : undefined,
     token,
   });
 }

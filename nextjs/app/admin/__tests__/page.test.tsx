@@ -16,6 +16,10 @@ vi.mock("@/hooks/useCategoryProgress", () => ({
   useCategoryProgress: vi.fn(),
 }));
 
+vi.mock("@/hooks/useCategoryDetail", () => ({
+  useCategoryDetail: vi.fn(),
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ replace: vi.fn(), back: vi.fn() })),
 }));
@@ -23,12 +27,12 @@ vi.mock("next/navigation", () => ({
 import { useAuth } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
 import { useCategoryProgress } from "@/hooks/useCategoryProgress";
+import { useCategoryDetail } from "@/hooks/useCategoryDetail";
 
 const mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
 const mockUseCategories = useCategories as ReturnType<typeof vi.fn>;
 const mockUseCategoryProgress = useCategoryProgress as ReturnType<typeof vi.fn>;
-
-const mockStartTranslation = vi.fn();
+const mockUseCategoryDetail = useCategoryDetail as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -44,6 +48,7 @@ beforeEach(() => {
         category_name_ko: "의류",
         category_name_zh: "服装",
         category_name_en: "Clothing",
+        translation_status: "completed",
       },
       {
         id: 2,
@@ -51,6 +56,7 @@ beforeEach(() => {
         category_name_ko: "식품",
         category_name_zh: null,
         category_name_en: null,
+        translation_status: "pending",
       },
     ],
     isLoading: false,
@@ -62,45 +68,95 @@ beforeEach(() => {
   mockUseCategoryProgress.mockReturnValue({
     progress: null,
     isRunning: false,
-    startTranslation: mockStartTranslation,
+    startTranslation: vi.fn(),
+    subscribeProgress: vi.fn(),
     cancel: vi.fn(),
+  });
+  mockUseCategoryDetail.mockReturnValue({
+    data: null,
+    isLoading: false,
+    error: null,
+    reload: vi.fn(),
   });
 });
 
-describe("AdminPage 카테고리별 번역 실행", () => {
-  it("각 카테고리 행에 번역 실행 버튼이 렌더링된다", () => {
+describe("AdminPage 재설계", () => {
+  it("카테고리 목록에 한국어 카테고리명이 표시된다", () => {
     render(<AdminPage />);
-    const buttons = screen.getAllByRole("button", { name: /번역 실행/ });
-    // 데스크톱 테이블 2개 + 모바일 카드 2개 = 4개 (한쪽은 CSS로 숨김)
-    expect(buttons).toHaveLength(4);
+    // 데스크톱 테이블 + 모바일 카드 모두 렌더링되므로 2개씩 표시됨
+    const items = screen.getAllByText("의류");
+    expect(items.length).toBe(2);
   });
 
-  it("실행 중이 아닐 때 버튼이 활성화된다", () => {
+  it("각 카테고리 행에 상세 보기 버튼이 렌더링된다", () => {
     render(<AdminPage />);
-    const button = screen.getAllByRole("button", { name: /번역 실행/ })[0];
-    expect(button).not.toBeDisabled();
+    const buttons = screen.getAllByRole("button", { name: "상세 보기" });
+    expect(buttons.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("번역 실행 버튼 클릭 시 startTranslation을 호출하고 모달이 열린다", () => {
+  it("상세 보기 버튼 클릭 시 모달이 열린다", () => {
     render(<AdminPage />);
-    const button = screen.getAllByRole("button", { name: /번역 실행/ })[0];
-    fireEvent.click(button);
+    const buttons = screen.getAllByRole("button", { name: "상세 보기" });
+    fireEvent.click(buttons[0]);
 
-    expect(mockStartTranslation).toHaveBeenCalledWith(1, "test-token");
-    expect(screen.getByText("번역·임베딩 진행 상황")).toBeInTheDocument();
+    expect(screen.getByText("카테고리 상세")).toBeInTheDocument();
   });
 
-  it("isRunning 상태일 때 번역 실행 버튼이 존재한다", () => {
-    mockUseCategoryProgress.mockReturnValue({
-      progress: { categoryId: 1, step: 2, stepName: "translation.en", status: "running" },
-      isRunning: true,
-      startTranslation: vi.fn(),
-      cancel: vi.fn(),
+  it("처리완료 상태가 표시된다", () => {
+    render(<AdminPage />);
+    const items = screen.getAllByText("처리완료");
+    expect(items.length).toBeGreaterThan(0);
+  });
+
+  it("처리안됨 상태가 표시된다", () => {
+    render(<AdminPage />);
+    const items = screen.getAllByText("처리안됨");
+    expect(items.length).toBeGreaterThan(0);
+  });
+
+  it("카테고리가 없을 때 빈 상태를 표시한다", () => {
+    mockUseCategories.mockReturnValue({
+      categories: [],
+      isLoading: false,
+      isLoaded: true,
+      error: null,
+      loadCategories: vi.fn(),
+      addCategory: vi.fn(),
     });
 
     render(<AdminPage />);
-    // isRunning=true 이면 모든 버튼이 "번역 실행" label + disabled 상태로 존재
-    const buttons = screen.getAllByRole("button", { name: /번역 실행/ });
-    expect(buttons.length).toBeGreaterThan(0);
+    expect(screen.getByText("등록된 카테고리가 없습니다")).toBeInTheDocument();
+  });
+
+  it("로딩 중 스켈레톤을 표시한다", () => {
+    mockUseCategories.mockReturnValue({
+      categories: [],
+      isLoading: true,
+      isLoaded: false,
+      error: null,
+      loadCategories: vi.fn(),
+      addCategory: vi.fn(),
+    });
+
+    render(<AdminPage />);
+    const skeletons = document.querySelectorAll('[data-slot="skeleton"]');
+    expect(skeletons.length).toBeGreaterThan(0);
+  });
+
+  it("에러 발생 시 재시도 버튼을 표시한다", () => {
+    mockUseCategories.mockReturnValue({
+      categories: [],
+      isLoading: false,
+      isLoaded: true,
+      error: "서버 오류",
+      loadCategories: vi.fn(),
+      addCategory: vi.fn(),
+    });
+
+    render(<AdminPage />);
+    // catError는 카테고리 추가 카드 + 카테고리 목록 양쪽에 표시됨
+    const errorMessages = screen.getAllByText("서버 오류");
+    expect(errorMessages.length).toBe(2);
+    expect(screen.getByText("재시도")).toBeInTheDocument();
   });
 });

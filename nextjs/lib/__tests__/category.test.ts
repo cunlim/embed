@@ -9,9 +9,7 @@ function makeCategory(overrides: Partial<Category> = {}): Category {
     category_name_ko: "대분류 > 중분류 > 소분류",
     category_name_zh: null,
     category_name_en: null,
-    embedding_ko: null,
-    embedding_zh: null,
-    embedding_en: null,
+    translation_status: "pending" as const,
     ...overrides,
   };
 }
