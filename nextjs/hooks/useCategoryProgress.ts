@@ -13,6 +13,7 @@ export interface CategoryProgress {
   stepName: StepName;
   status: StepStatus;
   error?: string;
+  result?: string | null;
 }
 
 export type StepName =
