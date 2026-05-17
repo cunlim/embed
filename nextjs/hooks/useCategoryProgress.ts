@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useEcho } from "@/hooks/useEcho";
 import {
   translateEmbedCategory,
@@ -48,7 +48,9 @@ export function useCategoryProgress(onUpdate?: () => void): UseCategoryProgressR
   const tokenRef = useRef<string | null>(null);
   const categoryIdRef = useRef<number | null>(null);
   const onUpdateRef = useRef(onUpdate);
-  onUpdateRef.current = onUpdate;
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  });
 
   const subscribeProgress = useCallback(
     (categoryId: number) => {
@@ -68,7 +70,7 @@ export function useCategoryProgress(onUpdate?: () => void): UseCategoryProgressR
         setProgress(data);
         setActiveStep(data.stepName);
       });
-      channel.listen(".category.completed", (_data: CategoryPipelineCompleted) => {
+      channel.listen(".category.completed", () => {
         setIsRunning(false);
         setActiveStep(null);
         onUpdateRef.current?.();

@@ -61,7 +61,7 @@ export default function AdminPage() {
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [modalCategoryId, setModalCategoryId] = useState<number | null>(null);
-  const { data: detailData, isLoading: detailLoading, error: detailError } =
+  const { data: detailData, isLoading: detailLoading, error: detailError, reload } =
     useCategoryDetail(modalCategoryId, token);
 
   const handleAddCategory = useCallback(async () => {
@@ -263,6 +263,7 @@ export default function AdminPage() {
         isLoading={detailLoading}
         error={detailError}
         token={token}
+        onReload={reload}
       />
     </div>
   );
