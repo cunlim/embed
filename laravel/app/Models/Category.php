@@ -20,7 +20,7 @@ class Category extends Model
     /**
      * @return HasMany<CategoryEmbedding>
      */
-    public function categoryEmbeddings(): HasMany
+    public function embeddings(): HasMany
     {
         return $this->hasMany(CategoryEmbedding::class);
     }

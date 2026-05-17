@@ -45,7 +45,7 @@ class CategoryController extends Controller
     )]
     public function index(): CategoryCollection
     {
-        return new CategoryCollection(Category::query()->get());
+        return new CategoryCollection(Category::query()->with('embeddings')->get());
     }
 
     #[OA\Post(
@@ -141,6 +141,8 @@ class CategoryController extends Controller
     )]
     public function show(Category $category): CategoryResource
     {
+        $category->load('embeddings');
+
         return new CategoryResource($category);
     }
 

@@ -25,7 +25,8 @@ test('GET /api/categories — 카테고리 목록을 반환한다', function () 
         ->assertJsonCount(3, 'data')
         ->assertJsonPath('data.0.id', $categories[0]->id)
         ->assertJsonPath('data.0.category_code', $categories[0]->category_code)
-        ->assertJsonPath('data.0.category_name_ko', $categories[0]->category_name_ko);
+        ->assertJsonPath('data.0.category_name_ko', $categories[0]->category_name_ko)
+        ->assertJsonPath('data.0.translation_status', 'pending');
 });
 
 test('POST /api/categories — 카테고리를 생성하고 Job을 dispatch한다', function () {

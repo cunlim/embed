@@ -20,8 +20,8 @@ test('generateCode는 고유한 코드를 생성한다', function () {
     expect($codes)->toHaveCount(count(array_unique($codes)));
 });
 
-test('categoryEmbeddings 릴레이션은 HasMany 인스턴스를 반환한다', function () {
+test('embeddings 릴레이션은 HasMany 인스턴스를 반환한다', function () {
     $category = Category::factory()->create();
 
-    expect($category->categoryEmbeddings())->toBeInstanceOf(HasMany::class);
+    expect($category->embeddings())->toBeInstanceOf(HasMany::class);
 });
