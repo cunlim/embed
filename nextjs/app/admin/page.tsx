@@ -7,6 +7,11 @@ import {
   RefreshCw,
   AlertCircle,
   Database,
+  Play,
+  Loader2,
+  Circle,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,9 +26,57 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
+import type { Category } from "@/lib/api";
+import {
+  useCategoryProgress,
+  type CategoryProgress,
+  type StepName,
+} from "@/hooks/useCategoryProgress";
 import { isAdmin } from "@/lib/utils";
+
+const STEP_LABELS: Record<StepName, string> = {
+  "translation.zh": "중국어 번역",
+  "translation.en": "영어 번역",
+  "embedding.ko": "한국어 임베딩",
+  "embedding.zh": "중국어 임베딩",
+  "embedding.en": "영어 임베딩",
+};
+
+const ALL_STEPS: { step: number; name: StepName }[] = [
+  { step: 1, name: "translation.zh" },
+  { step: 2, name: "translation.en" },
+  { step: 3, name: "embedding.ko" },
+  { step: 4, name: "embedding.zh" },
+  { step: 5, name: "embedding.en" },
+];
+
+function progressForStep(progress: CategoryProgress | null, stepName: StepName): CategoryProgress | null {
+  if (progress && progress.stepName === stepName) return progress;
+  return null;
+}
+
+function StepIcon({ status }: { status: "pending" | "running" | "completed" | "failed" }) {
+  switch (status) {
+    case "completed":
+      return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+    case "running":
+      return <Loader2 className="h-5 w-5 animate-spin text-blue-500" />;
+    case "failed":
+      return <XCircle className="h-5 w-5 text-red-500" />;
+    case "pending":
+    default:
+      return <Circle className="h-5 w-5 text-muted-foreground" />;
+  }
+}
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -31,7 +84,7 @@ export default function AdminPage() {
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
-    () => false
+    () => false,
   );
   const authorized = user ? isAdmin(user.id) : false;
 
@@ -56,12 +109,40 @@ export default function AdminPage() {
   } = useCategories(token);
 
   const [newCategoryName, setNewCategoryName] = useState("");
+  const { progress, isRunning, startTranslation, cancel } = useCategoryProgress();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
 
   const handleAddCategory = useCallback(async () => {
     if (!newCategoryName.trim()) return;
     await addCategory(newCategoryName.trim());
     setNewCategoryName("");
   }, [newCategoryName, addCategory]);
+
+  const handleStartTranslation = useCallback(
+    async (category: Category) => {
+      setActiveCategoryId(category.id);
+      setModalOpen(true);
+      await startTranslation(category.id, token);
+    },
+    [startTranslation, token],
+  );
+
+  const handleCancel = useCallback(() => {
+    cancel();
+    setModalOpen(false);
+    setActiveCategoryId(null);
+  }, [cancel]);
+
+  // 단계별 상태 도출 (진행 정보가 없으면 pending)
+  const stepStatuses = ALL_STEPS.map(({ name }) => {
+    const p = progressForStep(progress, name);
+    if (!p) return "pending" as const;
+    return p.status;
+  });
+
+  // progress와 일치하는 step의 index (진행 중인 단계 하이라이트)
+  const currentStepIndex = progress ? ALL_STEPS.findIndex((s) => s.name === progress.stepName) : -1;
 
   if (!mounted || !authorized) return null;
 
@@ -80,7 +161,6 @@ export default function AdminPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* 카테고리 추가 (sidebar) */}
           <div className="space-y-6">
-            {/* 카테고리 추가 폼 */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">카테고리 추가</CardTitle>
@@ -188,43 +268,88 @@ export default function AdminPage() {
                           <TableHead>한국어</TableHead>
                           <TableHead>중국어</TableHead>
                           <TableHead>영어</TableHead>
+                          <TableHead className="w-[60px]">작업</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {categories.map((cat) => (
-                          <TableRow key={cat.id}>
-                            <TableCell className="font-mono text-xs text-muted-foreground">
-                              {cat.category_code}
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {cat.category_name_ko}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {cat.category_name_zh || "-"}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {cat.category_name_en || "-"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {categories.map((cat) => {
+                          const isActive = isRunning && activeCategoryId === cat.id;
+                          const isOtherRunning = isRunning && activeCategoryId !== cat.id;
+
+                          return (
+                            <TableRow key={cat.id}>
+                              <TableCell className="font-mono text-xs text-muted-foreground">
+                                {cat.category_code}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {cat.category_name_ko}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {cat.category_name_zh || "-"}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {cat.category_name_en || "-"}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title={isActive ? "실행 중" : "번역 실행"}
+                                  disabled={isOtherRunning}
+                                  onClick={() => handleStartTranslation(cat)}
+                                  aria-label={isActive ? "실행 중" : "번역 실행"}
+                                >
+                                  {isActive ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Play className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
 
                   {/* 카드 레이아웃 - 모바일 */}
                   <div className="space-y-2 md:hidden">
-                    {categories.map((cat) => (
-                      <Card key={cat.id} className="p-3">
-                        <p className="font-mono text-xs text-muted-foreground">
-                          {cat.category_code}
-                        </p>
-                        <p className="font-medium">{cat.category_name_ko}</p>
-                        <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-muted-foreground">
-                          <span>중: {cat.category_name_zh || "-"}</span>
-                          <span>영: {cat.category_name_en || "-"}</span>
-                        </div>
-                      </Card>
-                    ))}
+                    {categories.map((cat) => {
+                      const isActive = isRunning && activeCategoryId === cat.id;
+                      const isOtherRunning = isRunning && activeCategoryId !== cat.id;
+
+                      return (
+                        <Card key={cat.id} className="p-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-mono text-xs text-muted-foreground">
+                                {cat.category_code}
+                              </p>
+                              <p className="font-medium">{cat.category_name_ko}</p>
+                              <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-muted-foreground">
+                                <span>중: {cat.category_name_zh || "-"}</span>
+                                <span>영: {cat.category_name_en || "-"}</span>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title={isActive ? "실행 중" : "번역 실행"}
+                              disabled={isOtherRunning}
+                              onClick={() => handleStartTranslation(cat)}
+                              aria-label={isActive ? "실행 중" : "번역 실행"}
+                            >
+                              {isActive ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -232,6 +357,59 @@ export default function AdminPage() {
           </Card>
         </div>
       </main>
+
+      {/* 프로그레스 모달 */}
+      <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) handleCancel(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>번역·임베딩 진행 상황</DialogTitle>
+            <DialogDescription>
+              5단계 파이프라인이 순차적으로 실행됩니다. 모달을 닫으면 중단됩니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            {ALL_STEPS.map(({ name }, index) => {
+              const status = stepStatuses[index];
+              const isCurrentStep = index === currentStepIndex;
+              const failedProgress = status === "failed" ? progressForStep(progress, name) : null;
+
+              return (
+                <div
+                  key={name}
+                  className={`flex items-center gap-3 rounded-md border p-3 ${
+                    isCurrentStep ? "border-blue-500 bg-blue-500/5" : "border-border"
+                  }`}
+                >
+                  <StepIcon status={status} />
+                  <span className="flex-1 text-sm font-medium">
+                    {STEP_LABELS[name]}
+                  </span>
+                  {status === "failed" && failedProgress?.error && (
+                    <span className="text-xs text-destructive">
+                      {failedProgress.error}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {!isRunning && stepStatuses.some((s) => s === "failed") && (
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (activeCategoryId !== null) {
+                    handleStartTranslation({ id: activeCategoryId } as Category);
+                  }
+                }}
+              >
+                재시도
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
