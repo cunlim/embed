@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Copy, Loader2, AlertCircle, Play } from "lucide-react";
+import { Copy, Loader2, AlertCircle, Play, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
@@ -171,7 +171,11 @@ export default function CategoryModal({
             <Button variant="ghost" size="icon" onClick={() => copyToClipboard(effectiveCopyValue)} title="복사">
               <Copy className="size-3" />
             </Button>
-          ) : (isCompleted || hasResult) ? null : stepName ? (
+          ) : (isCompleted || hasResult) ? (
+            <Button variant="ghost" size="icon" disabled title="완료됨">
+              <Check className="size-3 text-muted-foreground" />
+            </Button>
+          ) : stepName ? (
             <Button
               variant="ghost"
               size="icon"
@@ -269,11 +273,28 @@ export default function CategoryModal({
           </div>
         )}
 
-        <div className="flex justify-end">
-          <Button onClick={handleRunAll} disabled={isRunning}>
-            전체 실행
-          </Button>
-        </div>
+        {(() => {
+          const ALL_STEPS: StepName[] = ["translation.zh", "translation.en", "embedding.ko", "embedding.zh", "embedding.en"];
+          const isStepDone = (step: StepName): boolean => {
+            if (!data) return false;
+            if (completedSteps.has(step)) return true;
+            if (step.startsWith("translation")) {
+              const lang = step.split(".")[1] as "en" | "zh";
+              return data.languages[lang].translation_text !== null;
+            }
+            const lang = step.split(".")[1] as "ko" | "en" | "zh";
+            return data.languages[lang].embedding.status === "completed";
+          };
+          const allCompleted = data ? ALL_STEPS.every(isStepDone) : false;
+
+          return (
+            <div className="flex justify-end">
+              <Button onClick={handleRunAll} disabled={isRunning || allCompleted}>
+                전체 실행
+              </Button>
+            </div>
+          );
+        })()}
       </DialogContent>
     </Dialog>
   );
