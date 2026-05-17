@@ -18,6 +18,7 @@ class CategoryProgress implements ShouldBroadcast
         public string $stepName,
         public string $status,
         public ?string $error = null,
+        public ?string $result = null,
     ) {}
 
     public function broadcastOn(): Channel

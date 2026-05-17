@@ -36,3 +36,15 @@ test('CategoryProgress error property can be set', function () {
 
     expect($event->error)->toBe('Ollama timeout');
 });
+
+test('CategoryProgress result property defaults to null', function () {
+    $event = new CategoryProgress(1, 1, 'translation.zh', 'running');
+
+    expect($event->result)->toBeNull();
+});
+
+test('CategoryProgress result property can be set', function () {
+    $event = new CategoryProgress(1, 2, 'translation.en', 'completed', null, 'Sports/Leisure>Tennis>Tennis ball');
+
+    expect($event->result)->toBe('Sports/Leisure>Tennis>Tennis ball');
+});
