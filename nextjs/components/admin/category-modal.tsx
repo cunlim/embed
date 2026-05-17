@@ -48,6 +48,7 @@ export default function CategoryModal({
   const [stepResults, setStepResults] = useState<Map<StepName, string>>(new Map());
   const [copyableSteps, setCopyableSteps] = useState<Set<StepName>>(new Set());
   const [embeddingFullData, setEmbeddingFullData] = useState<Map<StepName, string>>(new Map());
+  const [flashSteps, setFlashSteps] = useState<Set<StepName>>(new Set());
 
   const handleProgressUpdate = useCallback((progress?: CategoryProgress) => {
     if (progress) {
@@ -60,8 +61,9 @@ export default function CategoryModal({
         });
         if (progress.result) {
           setStepResults((prev) => new Map(prev).set(progress.stepName, progress.result));
-          if (progress.stepName.startsWith("embedding")) {
-            const stepName = progress.stepName;
+          const stepName = progress.stepName;
+          const isEmbedding = stepName.startsWith("embedding");
+          if (isEmbedding) {
             const categoryId = data?.id;
             const authToken = token;
             setTimeout(async () => {
@@ -76,6 +78,10 @@ export default function CategoryModal({
                   }
                 } catch { /* fetch 실패 시 copyableSteps만 설정 */ }
               }
+              setCopyableSteps((prev) => new Set(prev).add(stepName));
+            }, 2000);
+          } else {
+            setTimeout(() => {
               setCopyableSteps((prev) => new Set(prev).add(stepName));
             }, 2000);
           }
@@ -167,9 +173,10 @@ export default function CategoryModal({
     const hasResult = stepName ? stepResults.has(stepName) : false;
     const isEmbedding = stepName?.startsWith("embedding") ?? false;
     const canCopy = stepName ? copyableSteps.has(stepName) : false;
+    const isJustCopied = stepName ? flashSteps.has(stepName) : false;
     const effectiveCopyValue = isEmbedding
       ? (copyValue ?? (canCopy ? embeddingFullData.get(stepName!) ?? null : null))
-      : (copyValue ?? (hasResult ? stepResults.get(stepName!) ?? null : null));
+      : (copyValue ?? (canCopy ? stepResults.get(stepName!) ?? null : null));
 
     return (
       <div className="grid grid-cols-[80px_1fr_40px] gap-3 items-center py-1.5">
@@ -198,12 +205,29 @@ export default function CategoryModal({
             </Button>
           ) : isFailed ? (
             <AlertCircle className="size-4 text-destructive" />
-          ) : (isCompleted || hasResult) && effectiveCopyValue ? (
-            <Button variant="ghost" size="icon" onClick={() => copyToClipboard(effectiveCopyValue)} title="복사">
+          ) : (isCompleted || hasResult) && effectiveCopyValue && !isJustCopied ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                copyToClipboard(effectiveCopyValue);
+                if (stepName) {
+                  setFlashSteps((prev) => new Set(prev).add(stepName));
+                  setTimeout(() => {
+                    setFlashSteps((prev) => {
+                      const next = new Set(prev);
+                      next.delete(stepName);
+                      return next;
+                    });
+                  }, 1500);
+                }
+              }}
+              title="복사"
+            >
               <Copy className="size-3" />
             </Button>
           ) : (isCompleted || hasResult) ? (
-            <Button variant="ghost" size="icon" disabled title="완료됨">
+            <Button variant="ghost" size="icon" disabled title={flashSteps.has(stepName!) ? "복사됨" : "완료됨"}>
               <Check className="size-3 text-muted-foreground" />
             </Button>
           ) : stepName ? (
@@ -232,6 +256,7 @@ export default function CategoryModal({
       setStepResults(new Map());
       setCopyableSteps(new Set());
       setEmbeddingFullData(new Map());
+      setFlashSteps(new Set());
     }
     onOpenChange(open);
   };
