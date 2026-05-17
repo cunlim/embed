@@ -31,7 +31,6 @@ vi.mock("@/lib/api", () => ({
   translateEmbedCategory: vi.fn().mockResolvedValue({}),
 }));
 
-import { useCategoryProgress } from "@/hooks/useCategoryProgress";
 
 const pendingData = {
   id: 4,

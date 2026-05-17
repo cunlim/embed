@@ -130,7 +130,7 @@ describe("useCategoryProgress", () => {
   });
 
   it("echo가 null이어도 subscribeProgress 호출 시 isRunning이 true가 된다", () => {
-    vi.mocked(useEcho).mockReturnValue(null as any);
+    vi.mocked(useEcho).mockReturnValue(null as unknown as ReturnType<typeof useEcho>);
 
     try {
       const { result } = renderHook(() => useCategoryProgress());
@@ -141,7 +141,7 @@ describe("useCategoryProgress", () => {
 
       expect(result.current.isRunning).toBe(true);
     } finally {
-      vi.mocked(useEcho).mockReturnValue(mockEcho as any);
+      vi.mocked(useEcho).mockReturnValue(mockEcho as unknown as ReturnType<typeof useEcho>);
     }
   });
 
