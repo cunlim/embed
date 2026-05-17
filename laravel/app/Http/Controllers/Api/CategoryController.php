@@ -7,6 +7,7 @@ use App\Http\Requests\BatchTranslateRequest;
 use App\Http\Requests\CategoryStoreRequest;
 use App\Http\Resources\CategoryCollection;
 use App\Http\Resources\CategoryResource;
+use App\Http\Resources\CategoryTranslationsResource;
 use App\Jobs\BatchTranslatePipeline;
 use App\Jobs\CategoryTranslateEmbedPipeline;
 use App\Jobs\TranslateAndEmbedJob;
@@ -144,6 +145,48 @@ class CategoryController extends Controller
         $category->load('embeddings');
 
         return new CategoryResource($category);
+    }
+
+    #[OA\Get(
+        path: '/api/categories/{category}/translations',
+        summary: '카테고리 번역/임베딩 상태 조회',
+        description: '특정 카테고리의 번역과 임베딩 상태를 조회합니다.',
+        tags: ['Categories'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'category',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'integer')
+            ),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: '카테고리 번역/임베딩 상태',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'data', type: 'object'),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: '인증 필요',
+            ),
+            new OA\Response(
+                response: 404,
+                description: '카테고리를 찾을 수 없음',
+            ),
+        ]
+    )]
+    public function translations(Category $category): CategoryTranslationsResource
+    {
+        $category->load('embeddings');
+
+        return new CategoryTranslationsResource($category);
     }
 
     #[OA\Post(

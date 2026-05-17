@@ -23,6 +23,10 @@ Route::get('categories/{category}', [CategoryController::class, 'show']);
 Route::post('categories/batch-translate', [CategoryController::class, 'batchTranslate'])->middleware('auth:sanctum');
 
 // 개별 카테고리 번역/임베딩
+// 개별 카테고리 번역/임베딩 조회
+Route::get('categories/{category}/translations', [CategoryController::class, 'translations'])->middleware('auth:sanctum');
+
+// 개별 카테고리 번역/임베딩
 Route::post('categories/{category}/translate-embed', [CategoryController::class, 'translateEmbed'])->middleware('auth:sanctum');
 Route::post('categories/{category}/translate-embed/cancel', [CategoryController::class, 'cancelTranslateEmbed'])->middleware('auth:sanctum');
 
