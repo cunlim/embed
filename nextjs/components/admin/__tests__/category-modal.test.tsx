@@ -329,4 +329,24 @@ describe("CategoryModal", () => {
 
     expect(screen.getByText("한국어 (ko)")).toBeInTheDocument();
   });
+
+  it("전체실행 클릭 시 첫 번째 step만 running 상태가 된다", () => {
+    render(
+      <CategoryModal
+        open={true}
+        onOpenChange={vi.fn()}
+        data={pendingData}
+        isLoading={false}
+        error={null}
+        token="token"
+      />,
+    );
+
+    const runAllButton = screen.getByRole("button", { name: "전체 실행" });
+    fireEvent.click(runAllButton);
+
+    // 전체실행 클릭 후 첫 step만 Loader2(spinner) — 나머지는 Play 아이콘이어야 함
+    const loaderIcons = document.querySelectorAll(".animate-spin");
+    expect(loaderIcons.length).toBe(1);
+  });
 });

@@ -43,6 +43,7 @@ export default function CategoryModal({
 }: Props) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [runningSteps, setRunningSteps] = useState<Set<StepName>>(new Set());
+  const [pendingSteps, setPendingSteps] = useState<StepName[]>([]);
   const [completedSteps, setCompletedSteps] = useState<Set<StepName>>(new Set());
   const [failedSteps, setFailedSteps] = useState<Set<StepName>>(new Set());
   const [stepResults, setStepResults] = useState<Map<StepName, string>>(new Map());
@@ -86,6 +87,13 @@ export default function CategoryModal({
             }, 2000);
           }
         }
+        // 완료된 step 제거 후 다음 pending step을 running으로 이동
+        setPendingSteps((prev) => {
+          if (prev.length === 0) return prev;
+          const [nextStep, ...remaining] = prev;
+          setRunningSteps((running) => new Set(running).add(nextStep));
+          return remaining;
+        });
       } else if (progress.status === "failed") {
         setFailedSteps((prev) => new Set(prev).add(progress.stepName));
         setRunningSteps((prev) => {
@@ -93,6 +101,7 @@ export default function CategoryModal({
           next.delete(progress.stepName);
           return next;
         });
+        setPendingSteps([]);  // 실패 시 나머지 step 진행 중단
         if (progress.error) {
           setActionError(progress.error);
         }
@@ -148,7 +157,12 @@ export default function CategoryModal({
       }
     }
     if (steps.length === 0) return;
-    setRunningSteps(new Set(steps));
+
+    // 첫 step만 running, 나머지는 pending
+    const firstStep = steps[0];
+    const rest = steps.slice(1);
+    setRunningSteps(new Set(firstStep ? [firstStep] : []));
+    setPendingSteps(rest);
     subscribeProgress(data.id);
     try {
       await translateEmbedCategory(data.id, token, steps);
@@ -156,6 +170,7 @@ export default function CategoryModal({
       const msg = err instanceof Error ? err.message : "실행 실패";
       setActionError(msg);
       setRunningSteps(new Set());
+      setPendingSteps([]);
       cancel();
     }
   };
@@ -237,7 +252,7 @@ export default function CategoryModal({
               size="icon"
               onClick={() => handleSingleAction(stepName)}
               title={label + " 실행"}
-              disabled={isRunning || translationDone === false}
+              disabled={isRunning || translationDone === false || (stepName ? pendingSteps.includes(stepName) : false)}
             >
               <Play className="size-3" />
             </Button>
@@ -252,6 +267,7 @@ export default function CategoryModal({
     if (!open) {
       setActionError(null);
       setRunningSteps(new Set());
+      setPendingSteps([]);
       setCompletedSteps(new Set());
       setFailedSteps(new Set());
       setStepResults(new Map());
@@ -368,7 +384,7 @@ export default function CategoryModal({
 
           return (
             <div className="flex justify-end">
-              <Button onClick={handleRunAll} disabled={isRunning || allCompleted}>
+              <Button onClick={handleRunAll} disabled={isRunning || pendingSteps.length > 0 || allCompleted}>
                 전체 실행
               </Button>
             </div>
