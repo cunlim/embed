@@ -63,9 +63,21 @@ test('5단계 순서대로 진행 이벤트를 broadcast 한다', function () {
                 && $event->status === 'running';
         });
         Event::assertDispatched(CategoryProgress::class, function (CategoryProgress $event) use ($expected) {
-            return $event->stepName === $expected['stepName']
+            $isCompleted = $event->stepName === $expected['stepName']
                 && $event->step === $expected['step']
                 && $event->status === 'completed';
+
+            if ($isCompleted) {
+                if (str_starts_with($expected['stepName'], 'translation')) {
+                    return $event->result === '번역됨';
+                }
+                // embedding: result는 첫 10개 값의 JSON 배열
+                $parsed = json_decode($event->result, true);
+
+                return is_array($parsed) && count($parsed) === 10;
+            }
+
+            return false;
         });
     }
 });

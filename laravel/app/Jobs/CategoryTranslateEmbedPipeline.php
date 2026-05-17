@@ -98,6 +98,16 @@ class CategoryTranslateEmbedPipeline implements ShouldQueue
                         $translated = $translator->translate($categoryNameKo, $stepDef['language']);
                         $category->{$column} = $translated;
                         $category->save();
+
+                        // 단계 완료 broadcast + 번역 결과
+                        CategoryProgress::dispatch(
+                            $this->categoryId,
+                            $stepDef['step'],
+                            $stepDef['name'],
+                            'completed',
+                            null,
+                            $translated,
+                        );
                     } else {
                         $textForEmbedding = match ($stepDef['language']) {
                             'ko' => $category->category_name_ko,
@@ -117,15 +127,17 @@ class CategoryTranslateEmbedPipeline implements ShouldQueue
                                 'embedding' => $vector,
                             ]
                         );
-                    }
 
-                    // 단계 완료 broadcast
-                    CategoryProgress::dispatch(
-                        $this->categoryId,
-                        $stepDef['step'],
-                        $stepDef['name'],
-                        'completed',
-                    );
+                        // 단계 완료 broadcast + 임베딩 preview (첫 10개 값)
+                        CategoryProgress::dispatch(
+                            $this->categoryId,
+                            $stepDef['step'],
+                            $stepDef['name'],
+                            'completed',
+                            null,
+                            json_encode(array_slice($vector, 0, 10)),
+                        );
+                    }
                 } catch (RuntimeException $e) {
                     $failedStep = $stepDef['step'];
                     $errorMsg = $e->getMessage();
