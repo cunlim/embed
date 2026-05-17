@@ -45,6 +45,7 @@ export default function CategoryModal({
   const [runningSteps, setRunningSteps] = useState<Set<StepName>>(new Set());
   const [completedSteps, setCompletedSteps] = useState<Set<StepName>>(new Set());
   const [failedSteps, setFailedSteps] = useState<Set<StepName>>(new Set());
+  const [stepResults, setStepResults] = useState<Map<StepName, string>>(new Map());
 
   const handleProgressUpdate = useCallback((progress?: CategoryProgress) => {
     if (progress) {
@@ -55,6 +56,17 @@ export default function CategoryModal({
           next.delete(progress.stepName);
           return next;
         });
+        if (progress.result) {
+          let displayResult = progress.result;
+          if (progress.stepName.startsWith("embedding")) {
+            try {
+              const arr = JSON.parse(progress.result) as number[];
+              const dims = data?.embedding_dimensions ?? 1024;
+              displayResult = `[${arr.map((v) => v.toFixed(3)).join(", ")}…${dims}차원]`;
+            } catch { /* 파싱 실패 시 원본 저장 */ }
+          }
+          setStepResults((prev) => new Map(prev).set(progress.stepName, displayResult));
+        }
       } else if (progress.status === "failed") {
         setFailedSteps((prev) => new Set(prev).add(progress.stepName));
         setRunningSteps((prev) => {
@@ -66,14 +78,12 @@ export default function CategoryModal({
           setActionError(progress.error);
         }
       }
-      onReload?.();
       onListRefresh?.();
     } else {
-      // 전체 완료
       onReload?.();
       onListRefresh?.();
     }
-  }, [onReload, onListRefresh]);
+  }, [onReload, onListRefresh, data]);
 
   const { isRunning, activeStep, subscribeProgress, cancel } = useCategoryProgress(handleProgressUpdate);
 
@@ -140,8 +150,8 @@ export default function CategoryModal({
         <span className="text-sm truncate font-mono">
           {hasValue ? (
             displayValue
-          ) : isRunning ? (
-            <Loader2 className="size-3 animate-spin inline" />
+          ) : stepName && stepResults.has(stepName) ? (
+            stepResults.get(stepName)
           ) : isFailed ? (
             <span className="text-destructive italic">실패</span>
           ) : (
@@ -150,7 +160,9 @@ export default function CategoryModal({
         </span>
         <div>
           {isRunningThis ? (
-            <Loader2 className="size-4 animate-spin text-muted-foreground" />
+            <Button variant="ghost" size="icon" disabled title={label + " 실행 중"}>
+              <Loader2 className="size-3 animate-spin" />
+            </Button>
           ) : isFailed ? (
             <AlertCircle className="size-4 text-destructive" />
           ) : isCompleted && copyValue ? (
@@ -180,6 +192,7 @@ export default function CategoryModal({
       setRunningSteps(new Set());
       setCompletedSteps(new Set());
       setFailedSteps(new Set());
+      setStepResults(new Map());
     }
     onOpenChange(open);
   };

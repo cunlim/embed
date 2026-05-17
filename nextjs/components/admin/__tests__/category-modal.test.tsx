@@ -102,7 +102,7 @@ describe("CategoryModal", () => {
     playButtons.forEach((btn) => expect(btn).toBeDisabled());
   });
 
-  it("activeStep이 설정되면 해당 버튼 영역에 Loader2가 표시된다", () => {
+  it("activeStep이 설정되면 버튼이 유지되고 내부 아이콘이 Loader2로 변경된다", () => {
     mockProgressDefault.isRunning = true;
     mockProgressDefault.activeStep = "translation.en";
 
@@ -117,8 +117,33 @@ describe("CategoryModal", () => {
       />,
     );
 
+    // 버튼은 여전히 존재해야 함 (사라지지 않음)
+    const playButtons = screen.getAllByRole("button", { name: "번역 실행" });
+    expect(playButtons.length).toBeGreaterThanOrEqual(1);
+
+    // Loader2 아이콘이 버튼 내부에 존재 (animate-spin)
     const loaderIcons = document.querySelectorAll(".animate-spin");
     expect(loaderIcons.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("isRunning일 때 데이터 컬럼에는 spinner 대신 '처리전' 텍스트가 표시된다", () => {
+    mockProgressDefault.isRunning = true;
+    mockProgressDefault.activeStep = "translation.en";
+
+    render(
+      <CategoryModal
+        open={true}
+        onOpenChange={vi.fn()}
+        data={pendingData}
+        isLoading={false}
+        error={null}
+        token="token"
+      />,
+    );
+
+    // 데이터 컬럼에 "처리전" 텍스트가 여전히 표시됨 (spinner로 대체되지 않음)
+    const pendingTexts = screen.getAllByText("처리전");
+    expect(pendingTexts.length).toBeGreaterThanOrEqual(1);
   });
 
   it("완료된 항목에 복사 버튼이 표시된다", () => {
