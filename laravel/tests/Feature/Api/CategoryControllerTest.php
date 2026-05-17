@@ -29,6 +29,46 @@ test('GET /api/categories — 카테고리 목록을 반환한다', function () 
         ->assertJsonPath('data.0.translation_status', 'pending');
 });
 
+test('GET /api/categories — id 오름차순으로 정렬된 카테고리 목록을 반환한다', function () {
+    $cat3 = Category::factory()->create(['id' => 3, 'category_name_ko' => 'C']);
+    $cat2 = Category::factory()->create(['id' => 2, 'category_name_ko' => 'B']);
+    $cat1 = Category::factory()->create(['id' => 1, 'category_name_ko' => 'A']);
+
+    $response = $this->getJson('/api/categories');
+
+    $response->assertOk()
+        ->assertJsonPath('data.0.id', 1)
+        ->assertJsonPath('data.1.id', 2)
+        ->assertJsonPath('data.2.id', 3);
+});
+
+test('GET /api/categories — 페이지네이션 응답에 meta와 links가 포함된다', function () {
+    Category::factory()->count(25)->create();
+
+    $response = $this->getJson('/api/categories');
+
+    $response->assertOk()
+        ->assertJsonCount(20, 'data')
+        ->assertJsonStructure([
+            'data',
+            'meta' => ['current_page', 'last_page', 'per_page', 'total'],
+            'links' => ['first', 'last', 'prev', 'next'],
+        ])
+        ->assertJsonPath('meta.per_page', 20)
+        ->assertJsonPath('meta.total', 25);
+});
+
+test('GET /api/categories — page 파라미터로 다른 페이지 조회', function () {
+    Category::factory()->count(25)->create();
+
+    $response = $this->getJson('/api/categories?page=2');
+
+    $response->assertOk()
+        ->assertJsonCount(5, 'data')
+        ->assertJsonPath('meta.current_page', 2)
+        ->assertJsonPath('meta.last_page', 2);
+});
+
 test('POST /api/categories — 카테고리를 생성하고 Job을 dispatch한다', function () {
     Bus::fake();
 

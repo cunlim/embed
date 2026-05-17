@@ -22,7 +22,7 @@ class CategoryController extends Controller
     #[OA\Get(
         path: '/api/categories',
         summary: '카테고리 목록 조회',
-        description: '등록된 모든 카테고리를 조회합니다.',
+        description: '등록된 모든 카테고리를 조회합니다. 20개씩 페이지네이션됩니다.',
         tags: ['Categories'],
         responses: [
             new OA\Response(
@@ -41,6 +41,20 @@ class CategoryController extends Controller
                                 new OA\Property(property: 'translation_status', type: 'string', enum: ['completed', 'partial', 'pending']),
                             ]
                         )),
+                        new OA\Property(property: 'meta', type: 'object', properties: [
+                            new OA\Property(property: 'current_page', type: 'integer'),
+                            new OA\Property(property: 'last_page', type: 'integer'),
+                            new OA\Property(property: 'per_page', type: 'integer'),
+                            new OA\Property(property: 'total', type: 'integer'),
+                            new OA\Property(property: 'from', type: 'integer'),
+                            new OA\Property(property: 'to', type: 'integer'),
+                        ]),
+                        new OA\Property(property: 'links', type: 'object', properties: [
+                            new OA\Property(property: 'first', type: 'string', nullable: true),
+                            new OA\Property(property: 'last', type: 'string', nullable: true),
+                            new OA\Property(property: 'prev', type: 'string', nullable: true),
+                            new OA\Property(property: 'next', type: 'string', nullable: true),
+                        ]),
                     ]
                 )
             ),
@@ -48,7 +62,9 @@ class CategoryController extends Controller
     )]
     public function index(): CategoryCollection
     {
-        return new CategoryCollection(Category::query()->with('embeddings')->get());
+        return new CategoryCollection(
+            Category::query()->with('embeddings')->orderBy('id')->paginate(20)
+        );
     }
 
     #[OA\Post(
