@@ -60,7 +60,7 @@ describe("useCategoryProgress", () => {
       await result.current.startTranslation(1, "test-token");
     });
 
-    expect(mockedTranslateEmbed).toHaveBeenCalledWith(1, "test-token");
+    expect(mockedTranslateEmbed).toHaveBeenCalledWith(1, "test-token", undefined);
     expect(mockChannel).toHaveBeenCalledWith("category.1");
     expect(mockListen).toHaveBeenCalledTimes(2); // .category.progress + .category.completed
     expect(result.current.isRunning).toBe(true);

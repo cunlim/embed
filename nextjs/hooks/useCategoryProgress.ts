@@ -33,7 +33,10 @@ export interface CategoryPipelineCompleted {
 export interface UseCategoryProgressReturn {
   progress: CategoryProgress | null;
   isRunning: boolean;
-  startTranslation: (categoryId: number, token?: string | null) => Promise<void>;
+  /** WebSocket 구독 + API 호출 (기존 호환) */
+  startTranslation: (categoryId: number, token?: string | null, steps?: string[]) => Promise<void>;
+  /** WebSocket 구독만 먼저 수행 */
+  subscribeProgress: (categoryId: number) => void;
   cancel: () => void;
 }
 
@@ -45,24 +48,15 @@ export function useCategoryProgress(): UseCategoryProgressReturn {
   const tokenRef = useRef<string | null>(null);
   const categoryIdRef = useRef<number | null>(null);
 
-  const startTranslation = useCallback(
-    async (categoryId: number, token?: string | null) => {
+  const subscribeProgress = useCallback(
+    (categoryId: number) => {
       if (!echo) {
         console.warn("Echo 연결이 없습니다.");
         return;
       }
 
       setIsRunning(true);
-      tokenRef.current = token ?? null;
       categoryIdRef.current = categoryId;
-
-      try {
-        await translateEmbedCategory(categoryId, token);
-      } catch (err) {
-        console.error("API 호출 실패:", err);
-        setIsRunning(false);
-        return;
-      }
 
       const channelName = `category.${categoryId}`;
       channelRef.current = channelName;
@@ -76,6 +70,33 @@ export function useCategoryProgress(): UseCategoryProgressReturn {
       });
     },
     [echo],
+  );
+
+  const startTranslation = useCallback(
+    async (categoryId: number, token?: string | null, steps?: string[]) => {
+      if (!echo) {
+        console.warn("Echo 연결이 없습니다.");
+        return;
+      }
+
+      tokenRef.current = token ?? null;
+
+      // 아직 구독 안 되어 있으면 WebSocket 구독 먼저
+      if (categoryIdRef.current !== categoryId) {
+        subscribeProgress(categoryId);
+      }
+
+      try {
+        await translateEmbedCategory(categoryId, token, steps);
+      } catch (err) {
+        console.error("API 호출 실패:", err);
+        setIsRunning(false);
+        if (channelRef.current) {
+          echo.leaveChannel(channelRef.current);
+        }
+      }
+    },
+    [echo, subscribeProgress],
   );
 
   const cancel = useCallback(() => {
@@ -99,5 +120,5 @@ export function useCategoryProgress(): UseCategoryProgressReturn {
     setIsRunning(false);
   }, [echo]);
 
-  return { progress, isRunning, startTranslation, cancel };
+  return { progress, isRunning, startTranslation, subscribeProgress, cancel };
 }
