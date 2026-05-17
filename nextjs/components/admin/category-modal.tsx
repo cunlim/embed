@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Copy, Loader2, AlertCircle, Play } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -11,8 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { CategoryTranslations } from "@/lib/api";
 import { translateEmbedCategory } from "@/lib/api";
-import { useCategoryProgress } from "@/hooks/useCategoryProgress";
-import type { StepName } from "@/hooks/useCategoryProgress";
+import { useCategoryProgress, type StepName, type CategoryProgress } from "@/hooks/useCategoryProgress";
 
 interface Props {
   open: boolean;
@@ -22,6 +21,7 @@ interface Props {
   error: string | null;
   token?: string | null;
   onReload?: () => void;
+  onListRefresh?: () => void;
 }
 
 const LANGUAGES: { key: "ko" | "en" | "zh"; label: string; hasTranslation: boolean }[] = [
@@ -38,21 +38,61 @@ function copyToClipboard(text: string) {
   });
 }
 
-export default function CategoryModal({ open, onOpenChange, data, isLoading, error, token, onReload }: Props) {
+export default function CategoryModal({
+  open, onOpenChange, data, isLoading, error, token, onReload, onListRefresh,
+}: Props) {
   const [actionError, setActionError] = useState<string | null>(null);
-  const { isRunning, activeStep, subscribeProgress, cancel } = useCategoryProgress(() => {
-    onReload?.();
-  });
+  const [runningSteps, setRunningSteps] = useState<Set<StepName>>(new Set());
+  const [completedSteps, setCompletedSteps] = useState<Set<StepName>>(new Set());
+  const [failedSteps, setFailedSteps] = useState<Set<StepName>>(new Set());
+
+  const handleProgressUpdate = useCallback((progress?: CategoryProgress) => {
+    if (progress) {
+      if (progress.status === "completed") {
+        setCompletedSteps((prev) => new Set(prev).add(progress.stepName));
+        setRunningSteps((prev) => {
+          const next = new Set(prev);
+          next.delete(progress.stepName);
+          return next;
+        });
+      } else if (progress.status === "failed") {
+        setFailedSteps((prev) => new Set(prev).add(progress.stepName));
+        setRunningSteps((prev) => {
+          const next = new Set(prev);
+          next.delete(progress.stepName);
+          return next;
+        });
+        if (progress.error) {
+          setActionError(progress.error);
+        }
+      }
+      onReload?.();
+      onListRefresh?.();
+    } else {
+      // 전체 완료
+      onReload?.();
+      onListRefresh?.();
+    }
+  }, [onReload, onListRefresh]);
+
+  const { isRunning, activeStep, subscribeProgress, cancel } = useCategoryProgress(handleProgressUpdate);
 
   const handleSingleAction = async (stepName: StepName) => {
     if (!data) return;
     setActionError(null);
+    setRunningSteps((prev) => new Set(prev).add(stepName));
     subscribeProgress(data.id);
     try {
       await translateEmbedCategory(data.id, token, [stepName]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "실행 실패";
       setActionError(msg);
+      setRunningSteps((prev) => {
+        const next = new Set(prev);
+        next.delete(stepName);
+        return next;
+      });
+      setFailedSteps((prev) => new Set(prev).add(stepName));
       cancel();
     }
   };
@@ -71,39 +111,60 @@ export default function CategoryModal({ open, onOpenChange, data, isLoading, err
       }
     }
     if (steps.length === 0) return;
+    setRunningSteps(new Set(steps));
     subscribeProgress(data.id);
     try {
       await translateEmbedCategory(data.id, token, steps);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "실행 실패";
       setActionError(msg);
+      setRunningSteps(new Set());
       cancel();
     }
   };
 
-  const renderRow = (label: string, displayValue: string | null, copyValue: string | null, stepName: StepName | null) => {
+  const renderRow = (
+    label: string,
+    displayValue: string | null,
+    copyValue: string | null,
+    stepName: StepName | null,
+  ) => {
     const hasValue = displayValue !== null;
+    const isRunningThis = stepName ? runningSteps.has(stepName) || activeStep === stepName : false;
+    const isCompleted = hasValue || (stepName ? completedSteps.has(stepName) : false);
+    const isFailed = stepName ? failedSteps.has(stepName) : false;
+
     return (
       <div className="grid grid-cols-[80px_1fr_40px] gap-3 items-center py-1.5">
         <span className="text-sm text-muted-foreground">{label}</span>
         <span className="text-sm truncate font-mono">
           {hasValue ? (
             displayValue
-          ) : activeStep && stepName && activeStep === stepName ? (
+          ) : isRunning ? (
             <Loader2 className="size-3 animate-spin inline" />
+          ) : isFailed ? (
+            <span className="text-destructive italic">실패</span>
           ) : (
             <span className="text-muted-foreground italic">처리전</span>
           )}
         </span>
         <div>
-          {activeStep && stepName && activeStep === stepName ? (
+          {isRunningThis ? (
             <Loader2 className="size-4 animate-spin text-muted-foreground" />
-          ) : hasValue && copyValue ? (
+          ) : isFailed ? (
+            <AlertCircle className="size-4 text-destructive" />
+          ) : isCompleted && copyValue ? (
             <Button variant="ghost" size="icon" onClick={() => copyToClipboard(copyValue)} title="복사">
               <Copy className="size-3" />
             </Button>
           ) : stepName ? (
-            <Button variant="ghost" size="icon" onClick={() => handleSingleAction(stepName)} title={label + " 실행"}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleSingleAction(stepName)}
+              title={label + " 실행"}
+              disabled={isRunning}
+            >
               <Play className="size-3" />
             </Button>
           ) : null}
@@ -114,7 +175,12 @@ export default function CategoryModal({ open, onOpenChange, data, isLoading, err
 
   const handleOpenChange = (open: boolean) => {
     if (!open && isRunning) cancel();
-    if (!open) setActionError(null);
+    if (!open) {
+      setActionError(null);
+      setRunningSteps(new Set());
+      setCompletedSteps(new Set());
+      setFailedSteps(new Set());
+    }
     onOpenChange(open);
   };
 
@@ -124,7 +190,11 @@ export default function CategoryModal({ open, onOpenChange, data, isLoading, err
         <DialogHeader>
           <DialogTitle>카테고리 상세</DialogTitle>
           <DialogDescription className="font-mono text-xs">
-            {data ? `코드: ${data.category_code}` : <span className="inline-block h-4 w-24 animate-pulse rounded-md bg-muted" />}
+            {data ? (
+              `코드: ${data.category_code}`
+            ) : (
+              <span className="inline-block h-4 w-24 animate-pulse rounded-md bg-muted" />
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -170,10 +240,10 @@ export default function CategoryModal({ open, onOpenChange, data, isLoading, err
                     {renderRow(
                       "임베딩",
                       detail.embedding.preview
-                        ? `[${detail.embedding.preview.slice(0, 5).map(v => v.toFixed(3)).join(", ")}]…`
+                        ? `[${detail.embedding.preview.slice(0, 10).map((v) => v.toFixed(3)).join(", ")}…1024차원]`
                         : null,
                       detail.embedding.preview
-                        ? JSON.stringify(detail.embedding.preview.map(v => Number(v.toFixed(6))))
+                        ? JSON.stringify(detail.embedding.preview)
                         : null,
                       `embedding.${lang.key}` as StepName,
                     )}
