@@ -92,6 +92,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component>
   - **Mount 감지**: `useState`+`useEffect` 대신 `useSyncExternalStore(() => () => {}, () => true, () => false)` 사용
   - **파생 상태**: effect에서 `setState` 대신 기존 state에서 직접 도출 (예: `const authorized = user ? isAdmin(user.id) : false`)
   - **Data fetch**: `useCategories`/`useAuth` 훅이 mount 시 자동 로드 — 컴포넌트 effect에서 수동 호출 금지
+- **`react-hooks/refs`** — `useRef`의 `.current`를 render 중에 쓰기 금지. 콜백 ref 동기화는 `useEffect(() => { ref.current = callback })` 사용 (의존성 배열 없음 — 매 렌더링 후 갱신이 의도된 패턴).
 - **`@typescript-eslint/no-unused-vars`** — 미사용 import는 오류. 작업 완료 후 확인할 것.
 
 ## 테스트

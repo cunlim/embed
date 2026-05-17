@@ -115,6 +115,7 @@ docker exec cl_embed_laravel supervisorctl status
   - **신규 디렉토리** — 호스트에서 새 디렉토리를 만들면 컨테이너에 자동 반영되지 않을 수 있다. `docker exec cl_embed_laravel mkdir -p <path>`로 컨테이너에도 동일 디렉토리 생성.
     - **컨테이너→호스트 동기화 시 신규 디렉토리** — spawned Claude 등이 컨테이너에 새 디렉토리를 생성한 경우, 호스트에도 `mkdir -p`로 선행 생성 후 동기화해야 한다.
   - **`composer require` 후 동기화** — 컨테이너 내부에서 실행 시 생성/변경된 파일은 컨테이너에만 존재한다. `docker exec cl_embed_laravel cat <container-path> > <host-path>`로 호스트에 복사.
+- **`npx shadcn add` 후 `package.json`/`package-lock.json` 확인** — shadcn 컴포넌트 추가 시 의존성 변경이 발생하면 두 파일이 수정된다. `git diff --stat`으로 누락 없이 커밋되었는지 확인할 것.
   - **bind mount 디렉토리는 daemon(root)이 생성** — `docker compose up -d` 시 bind mount 소스 디렉토리가 없으면 Docker daemon이 root 소유로 생성. 새 bind mount 추가 시 CI에서 `mkdir -p`로 미리 생성할 것.
 - **API 라우트에는 세션 미들웨어 없음** — `routes/api.php`는 `StartSession` 미들웨어가 기본 포함되지 않는다. API 컨트롤러에서 `$request->session()` 호출 시 `RuntimeException: Session store not set on request.`이 발생한다. `$request->hasSession()`으로 사전 체크하고 없으면 `Str::uuid()` 등으로 대체할 것.
 - **root 소유 경로에 파일 복사** — `/etc/` 등 root 소유 디렉터리에 파일을 쓸 때는 `docker cp <host-path> <container>:/path/to/file`가 가장 간결하다.
