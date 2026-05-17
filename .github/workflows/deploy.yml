@@ -15,6 +15,10 @@ jobs:
     env:
       LIVE_ROOT: ${{ vars.LIVE_ROOT }}
     steps:
+      # 배포 세마포어 — Stop 훅이 동시 실행되어도 체크를 건너뛰도록 함
+      - name: Set Deploy Flag
+        run: touch /tmp/cl_embed_deploying
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -96,6 +100,7 @@ jobs:
       - name: Cleanup Workspace
         if: always()
         run: |
+          rm -f /tmp/cl_embed_deploying
           docker run --rm \
             -v "$(pwd)":/ws \
             alpine sh -c "

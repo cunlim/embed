@@ -5,24 +5,12 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 RESULT_DIR="$SCRIPT_DIR/test-results"
 
-# ── 컨테이너 준비 대기 ──────────────────────────────────────────
-# CI/CD 재시작 등으로 컨테이너가 잠시 응답 불가한 상태를 흡수
-wait_for_container() {
-  local container=$1 max_wait=${2:-30} waited=0
-  while [ $waited -lt $max_wait ]; do
-    if docker exec "$container" echo ok >/dev/null 2>&1; then
-      echo "$container 준비 완료 (${waited}s)"
-      return 0
-    fi
-    sleep 1
-    waited=$((waited + 1))
-  done
-  echo "$container 응답 없음 (${max_wait}s 대기 후 포기)" >&2
-  return 1
-}
-
-wait_for_container cl_embed_nextjs 30 || true
-wait_for_container cl_embed_laravel 30 || true
+# ── CI/CD 배포 중이면 전체 체크 건너뛰기 ────────────────────────────
+DEPLOY_FLAG="/tmp/cl_embed_deploying"
+if [ -f "$DEPLOY_FLAG" ]; then
+  echo "CI/CD 배포 진행 중 — 모든 체크 건너뜁니다"
+  exit 0
+fi
 
 # ── Next.js Lint ──────────────────────────────────────────────
 OUTPUT=$(docker exec cl_embed_nextjs npm run lint 2>&1); EXIT=$?
