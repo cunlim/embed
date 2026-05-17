@@ -127,6 +127,7 @@ docker exec cl_embed_laravel supervisorctl status
 - **테스트 DB 오염 (duplicate table/migration)** — PostgreSQL 테스트 DB에 `migration`/`users` 테이블이 이미 존재한다는 오류 발생 시 `docker exec cl_embed_laravel php artisan migrate:fresh --env=testing --force`로 초기화.
 - **Playwright 인증 페이지 테스트** — `docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::first()->createToken("debug")->plainTextToken;'`로 Sanctum 토큰을 생성한 뒤, Playwright에서 `localStorage.setItem("auth_token", token)`으로 주입하고 `/embed`로 이동한다.
 - **`deploy.yml` `migrate:rollback --step=1` 위험** — 모든 migration이 batch 1일 때 `--step=1`은 전체 rollback을 유발할 수 있다. migration 전 batch 번호를 기록하고 `--batch=N`으로 특정 batch만 롤백할 것.
+- **큐 워커 코드 갱신** — `ShouldBroadcast` 이벤트나 Job 클래스 변경 시 supervisor queue 워커가 이전 코드를 실행 중일 수 있다. `docker exec cl_embed_laravel supervisorctl restart queue`로 재시작하여 새 코드를 반영할 것. 단순 `php artisan queue:restart`는 supervisor 환경에서 동작하지 않는다.
 - **테스트 DB 사용자 격리** — `dbeaver_lim_test`는 `cl_embed`에 CONNECT 권한이 없다. `.env.testing`(`DB_USERNAME=dbeaver_lim_test`)이 적용된 환경에서는 실수로 `migrate:fresh`를 실행해도 PostgreSQL이 `permission denied`를 반환하여 운영DB가 보호된다. `.env.testing`은 gitignore, `.env.testing.example`만 커밋, CI에서 `$LIVE_ROOT`로부터 복사한다.
 
 ## 인프라 환경 (WSL2)
