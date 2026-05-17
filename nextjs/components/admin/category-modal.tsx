@@ -59,18 +59,18 @@ export default function CategoryModal({
           next.delete(progress.stepName);
           return next;
         });
-        if (progress.result) {
-          setStepResults((prev) => new Map(prev).set(progress.stepName, progress.result));
+        const result = progress.result;
+        if (result) {
+          setStepResults((prev) => new Map(prev).set(progress.stepName, result));
           const stepName = progress.stepName;
           const isEmbedding = stepName.startsWith("embedding");
           if (isEmbedding) {
             const categoryId = data?.id;
-            const authToken = token;
             setTimeout(async () => {
               if (categoryId) {
                 const { fetchCategoryTranslations } = await import("@/lib/api");
                 try {
-                  const res = await fetchCategoryTranslations(categoryId, authToken);
+                  const res = await fetchCategoryTranslations(categoryId, token ?? null);
                   const lang = stepName.split(".")[1] as "ko" | "en" | "zh";
                   const emb = res.data.languages[lang].embedding;
                   if (emb.preview) {
@@ -165,6 +165,7 @@ export default function CategoryModal({
     displayValue: string | null,
     copyValue: string | null,
     stepName: StepName | null,
+    translationDone?: boolean,
   ) => {
     const hasValue = displayValue !== null;
     const isRunningThis = stepName ? runningSteps.has(stepName) || activeStep === stepName : false;
@@ -236,7 +237,7 @@ export default function CategoryModal({
               size="icon"
               onClick={() => handleSingleAction(stepName)}
               title={label + " 실행"}
-              disabled={isRunning}
+              disabled={isRunning || translationDone === false}
             >
               <Play className="size-3" />
             </Button>
@@ -301,29 +302,49 @@ export default function CategoryModal({
                   </div>
                   <div className="space-y-0.5">
                     {lang.hasTranslation
-                      ? renderRow(
-                          "번역",
-                          detail.translation_text,
-                          detail.translation_text,
-                          `translation.${lang.key}` as StepName,
-                        )
-                      : renderRow(
-                          "원본",
-                          detail.translation_text,
-                          detail.translation_text,
-                          null,
-                        )
+                      ? (
+                        <>
+                          {renderRow(
+                            "번역",
+                            detail.translation_text,
+                            detail.translation_text,
+                            `translation.${lang.key}` as StepName,
+                          )}
+                          {renderRow(
+                            "임베딩",
+                            detail.embedding.preview
+                              ? `[${detail.embedding.preview.slice(0, 10).map((v) => v.toFixed(3)).join(", ")}…1024차원]`
+                              : null,
+                            detail.embedding.preview
+                              ? JSON.stringify(detail.embedding.preview)
+                              : null,
+                            `embedding.${lang.key}` as StepName,
+                            detail.translation_text !== null,
+                          )}
+                        </>
+                      )
+                      : (
+                        <>
+                          {renderRow(
+                            "원본",
+                            detail.translation_text,
+                            detail.translation_text,
+                            null,
+                          )}
+                          {renderRow(
+                            "임베딩",
+                            detail.embedding.preview
+                              ? `[${detail.embedding.preview.slice(0, 10).map((v) => v.toFixed(3)).join(", ")}…1024차원]`
+                              : null,
+                            detail.embedding.preview
+                              ? JSON.stringify(detail.embedding.preview)
+                              : null,
+                            `embedding.${lang.key}` as StepName,
+                            true,
+                          )}
+                        </>
+                      )
                     }
-                    {renderRow(
-                      "임베딩",
-                      detail.embedding.preview
-                        ? `[${detail.embedding.preview.slice(0, 10).map((v) => v.toFixed(3)).join(", ")}…1024차원]`
-                        : null,
-                      detail.embedding.preview
-                        ? JSON.stringify(detail.embedding.preview)
-                        : null,
-                      `embedding.${lang.key}` as StepName,
-                    )}
                   </div>
                 </div>
               );

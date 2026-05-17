@@ -264,6 +264,55 @@ describe("CategoryModal", () => {
     expect(screen.getByText("번역 API 호출 실패")).toBeInTheDocument();
   });
 
+  it("번역이 완료되지 않은 언어의 임베딩 실행 버튼은 disabled 된다", () => {
+    render(
+      <CategoryModal
+        open={true}
+        onOpenChange={vi.fn()}
+        data={pendingData}
+        isLoading={false}
+        error={null}
+        token="token"
+      />,
+    );
+
+    // en, zh 번역이 null → 임베딩 버튼은 disabled
+    const embeddingButtons = screen.getAllByRole("button", { name: "임베딩 실행" });
+    // ko의 임베딩 버튼은 활성화 (번역 불필요)
+    // en, zh의 임베딩 버튼은 disabled (번역 미완료)
+    const disabledEmbeds = embeddingButtons.filter((btn) => (btn as HTMLButtonElement).disabled);
+    expect(disabledEmbeds.length).toBe(2); // en, zh
+  });
+
+  it("번역이 완료된 언어의 임베딩 실행 버튼은 활성화된다", () => {
+    const partialData = {
+      ...pendingData,
+      languages: {
+        ...pendingData.languages,
+        en: {
+          translation_text: "Life/Health>Laundry>Ironing Board",
+          embedding: { status: "pending" as const, preview: null },
+        },
+      },
+    };
+
+    render(
+      <CategoryModal
+        open={true}
+        onOpenChange={vi.fn()}
+        data={partialData}
+        isLoading={false}
+        error={null}
+        token="token"
+      />,
+    );
+
+    const embeddingButtons = screen.getAllByRole("button", { name: "임베딩 실행" });
+    // ko: 활성화, en: 활성화 (번역 완료), zh: disabled (번역 미완료)
+    const enabledEmbeds = embeddingButtons.filter((btn) => !(btn as HTMLButtonElement).disabled);
+    expect(enabledEmbeds.length).toBe(2); // ko, en
+  });
+
   it("onListRefresh prop이 전달되면 모달이 정상 렌더링된다", () => {
     const onListRefresh = vi.fn();
     render(
