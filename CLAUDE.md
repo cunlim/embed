@@ -14,6 +14,12 @@
 * 구현 계획 수립, 코드 리뷰, TDD 등 구조적 접근이 필요한 작업은 `superpowers` plugin을 활성화하여 수행한다.
 * 버그 수정 후 동일 유형의 실수를 방지하려면 `compound-engineering` plugin으로 학습 문서를 갱신한다.
 
+## Subagent-Driven Development worktree 주의사항
+
+- **worktree agent가 수정한 파일은 메인 워크트리에 "local changes"로 표시됨** — 공유 파일시스템으로 인해 worktree agent의 변경사항이 메인 워크트리에서 수정된 파일로 나타난다. `git merge <worktree-branch>` 전에 `git stash && git merge <worktree-branch> --no-edit && git stash pop`으로 머지한다.
+- **worktree agent의 git commit 실패** — 서브에이전트는 권한 문제로 `git commit`에 실패하는 경우가 많다. 컨트롤러가 머지 후 직접 커밋해야 한다.
+- **머지 후 worktree branch 삭제 실패** — `git branch -d <branch>`가 worktree 디렉토리 잔존으로 실패할 수 있다. `.claude/worktrees/` 디렉토리를 수동 정리한다.
+
 ## 프로젝트 개요
 
 AI 기반 다국어 카테고리 추천 시스템 (포트폴리오). 사용자 텍스트를 분석해 네이버 카테고리 체계 기준으로 적합한 카테고리를 추천. 한국어/중국어/영어 지원, pgvector 코사인 유사도 검색 사용.
