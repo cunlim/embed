@@ -46,6 +46,8 @@ export default function CategoryModal({
   const [completedSteps, setCompletedSteps] = useState<Set<StepName>>(new Set());
   const [failedSteps, setFailedSteps] = useState<Set<StepName>>(new Set());
   const [stepResults, setStepResults] = useState<Map<StepName, string>>(new Map());
+  const [copyableSteps, setCopyableSteps] = useState<Set<StepName>>(new Set());
+  const [embeddingFullData, setEmbeddingFullData] = useState<Map<StepName, string>>(new Map());
 
   const handleProgressUpdate = useCallback((progress?: CategoryProgress) => {
     if (progress) {
@@ -57,15 +59,26 @@ export default function CategoryModal({
           return next;
         });
         if (progress.result) {
-          let displayResult = progress.result;
+          setStepResults((prev) => new Map(prev).set(progress.stepName, progress.result));
           if (progress.stepName.startsWith("embedding")) {
-            try {
-              const arr = JSON.parse(progress.result) as number[];
-              const dims = data?.embedding_dimensions ?? 1024;
-              displayResult = `[${arr.map((v) => v.toFixed(3)).join(", ")}…${dims}차원]`;
-            } catch { /* 파싱 실패 시 원본 저장 */ }
+            const stepName = progress.stepName;
+            const categoryId = data?.id;
+            const authToken = token;
+            setTimeout(async () => {
+              if (categoryId) {
+                const { fetchCategoryTranslations } = await import("@/lib/api");
+                try {
+                  const res = await fetchCategoryTranslations(categoryId, authToken);
+                  const lang = stepName.split(".")[1] as "ko" | "en" | "zh";
+                  const emb = res.data.languages[lang].embedding;
+                  if (emb.preview) {
+                    setEmbeddingFullData((prev) => new Map(prev).set(stepName, JSON.stringify(emb.preview)));
+                  }
+                } catch { /* fetch 실패 시 copyableSteps만 설정 */ }
+              }
+              setCopyableSteps((prev) => new Set(prev).add(stepName));
+            }, 2000);
           }
-          setStepResults((prev) => new Map(prev).set(progress.stepName, displayResult));
         }
       } else if (progress.status === "failed") {
         setFailedSteps((prev) => new Set(prev).add(progress.stepName));
@@ -82,7 +95,7 @@ export default function CategoryModal({
     } else {
       onListRefresh?.();
     }
-  }, [onListRefresh, data]);
+  }, [onListRefresh, data?.id, token]);
 
   const { isRunning, activeStep, subscribeProgress, cancel } = useCategoryProgress(handleProgressUpdate);
 
@@ -143,8 +156,11 @@ export default function CategoryModal({
     const isCompleted = hasValue || (stepName ? completedSteps.has(stepName) : false);
     const isFailed = stepName ? failedSteps.has(stepName) : false;
     const hasResult = stepName ? stepResults.has(stepName) : false;
-    const effectiveCopyValue = copyValue
-      ?? ((stepName && hasResult && !stepName.startsWith("embedding")) ? stepResults.get(stepName)! : null);
+    const isEmbedding = stepName?.startsWith("embedding") ?? false;
+    const canCopy = stepName ? copyableSteps.has(stepName) : false;
+    const effectiveCopyValue = isEmbedding
+      ? (copyValue ?? (canCopy ? embeddingFullData.get(stepName!) ?? null : null))
+      : (copyValue ?? (hasResult ? stepResults.get(stepName!) ?? null : null));
 
     return (
       <div className="grid grid-cols-[80px_1fr_40px] gap-3 items-center py-1.5">
@@ -153,7 +169,13 @@ export default function CategoryModal({
           {hasValue ? (
             displayValue
           ) : stepName && stepResults.has(stepName) ? (
-            stepResults.get(stepName)
+            isEmbedding ? (() => {
+              try {
+                const arr = JSON.parse(stepResults.get(stepName)!) as number[];
+                const dims = data?.embedding_dimensions ?? 1024;
+                return `[${arr.slice(0, 10).map((v) => v.toFixed(3)).join(", ")}…${dims}차원]`;
+              } catch { return stepResults.get(stepName); }
+            })() : stepResults.get(stepName)
           ) : isFailed ? (
             <span className="text-destructive italic">실패</span>
           ) : (
@@ -199,6 +221,8 @@ export default function CategoryModal({
       setCompletedSteps(new Set());
       setFailedSteps(new Set());
       setStepResults(new Map());
+      setCopyableSteps(new Set());
+      setEmbeddingFullData(new Map());
     }
     onOpenChange(open);
   };

@@ -128,7 +128,7 @@ class CategoryTranslateEmbedPipeline implements ShouldQueue
                             ]
                         );
 
-                        // 단계 완료 broadcast + 임베딩 preview (첫 10개 값)
+                        // 단계 완료 broadcast + 임베딩 preview (첫 10개 값, payload limit 대응)
                         CategoryProgress::dispatch(
                             $this->categoryId,
                             $stepDef['step'],
