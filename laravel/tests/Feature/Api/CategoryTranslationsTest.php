@@ -17,7 +17,8 @@ test('GET /api/categories/{id}/translations returns translations and embeddings'
     ]);
 
     // 1024-dim 벡터 생성 (pgvector 컬럼 제약조건 충족)
-    $embedding = array_fill(0, 1024, 0.0);
+    // JSON 인코딩/디코딩 시 0.0은 0이 되므로 int 0 사용
+    $embedding = array_fill(0, 1024, 0);
     $embedding[0] = 0.022;
     $embedding[1] = -0.056;
     $embedding[2] = 0.091;
@@ -40,7 +41,7 @@ test('GET /api/categories/{id}/translations returns translations and embeddings'
         ->assertJsonPath('data.embedding_dimensions', 1024)
         ->assertJsonPath('data.languages.ko.translation_text', '테스트>카테고리')
         ->assertJsonPath('data.languages.ko.embedding.status', 'completed')
-        ->assertJsonPath('data.languages.ko.embedding.preview', array_slice($embedding, 0, 5))
+        ->assertJsonPath('data.languages.ko.embedding.preview', $embedding)
         ->assertJsonPath('data.languages.en.translation_text', 'Test>Category')
         ->assertJsonPath('data.languages.en.embedding.status', 'pending')
         ->assertJsonPath('data.languages.zh.translation_text', '测试>类别')
