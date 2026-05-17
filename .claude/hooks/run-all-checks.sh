@@ -5,11 +5,24 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 RESULT_DIR="$SCRIPT_DIR/test-results"
 
-# ── Sync host → container (bind mount 불일치 방지) ──────────────
-# 코드 수정 후 수동 실행 시에도 최신 코드로 테스트하기 위해
-# node_modules, vendor, .git 등 불필요한 디렉토리는 제외
-# tar -C /var/app/www/cl_embed/nextjs --exclude='node_modules' --exclude='.next' --exclude='.git' --exclude='public/content' -cf - . 2>/dev/null | docker exec -i cl_embed_nextjs tar -C /app -xf - 2>/dev/null
-# tar -C /var/app/www/cl_embed/laravel --exclude='vendor' --exclude='node_modules' --exclude='.git' --exclude='storage/logs' --exclude='.phpunit.cache' -cf - . 2>/dev/null | docker exec -i cl_embed_laravel tar -C /var/www/html -xf -
+# ── 컨테이너 준비 대기 ──────────────────────────────────────────
+# CI/CD 재시작 등으로 컨테이너가 잠시 응답 불가한 상태를 흡수
+wait_for_container() {
+  local container=$1 max_wait=${2:-30} waited=0
+  while [ $waited -lt $max_wait ]; do
+    if docker exec "$container" echo ok >/dev/null 2>&1; then
+      echo "$container 준비 완료 (${waited}s)"
+      return 0
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  echo "$container 응답 없음 (${max_wait}s 대기 후 포기)" >&2
+  return 1
+}
+
+wait_for_container cl_embed_nextjs 30 || true
+wait_for_container cl_embed_laravel 30 || true
 
 # ── Next.js Lint ──────────────────────────────────────────────
 OUTPUT=$(docker exec cl_embed_nextjs npm run lint 2>&1); EXIT=$?
