@@ -39,7 +39,9 @@ export interface UseCategoryProgressReturn {
   cancel: () => void;
 }
 
-export function useCategoryProgress(onUpdate?: () => void): UseCategoryProgressReturn {
+export function useCategoryProgress(
+  onUpdate?: (progress?: CategoryProgress) => void,
+): UseCategoryProgressReturn {
   const echo = useEcho();
   const [progress, setProgress] = useState<CategoryProgress | null>(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -54,13 +56,13 @@ export function useCategoryProgress(onUpdate?: () => void): UseCategoryProgressR
 
   const subscribeProgress = useCallback(
     (categoryId: number) => {
-      if (!echo) {
-        console.warn("Echo 연결이 없습니다.");
-        return;
-      }
-
       setIsRunning(true);
       categoryIdRef.current = categoryId;
+
+      if (!echo) {
+        console.warn("Echo 연결이 없습니다. WebSocket 진행 상황을 수신할 수 없습니다.");
+        return;
+      }
 
       const channelName = `category.${categoryId}`;
       channelRef.current = channelName;
@@ -69,6 +71,9 @@ export function useCategoryProgress(onUpdate?: () => void): UseCategoryProgressR
       channel.listen(".category.progress", (data: CategoryProgress) => {
         setProgress(data);
         setActiveStep(data.stepName);
+        if (data.status === "completed" || data.status === "failed") {
+          onUpdateRef.current?.(data);
+        }
       });
       channel.listen(".category.completed", () => {
         setIsRunning(false);

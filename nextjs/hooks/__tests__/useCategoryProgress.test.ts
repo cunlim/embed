@@ -23,6 +23,7 @@ vi.mock("@/hooks/useEcho", () => ({
   useEcho: vi.fn(() => mockEcho),
 }));
 
+import { useEcho } from "@/hooks/useEcho";
 import { translateEmbedCategory } from "@/lib/api";
 
 const mockedTranslateEmbed = translateEmbedCategory as ReturnType<typeof vi.fn>;
@@ -126,5 +127,100 @@ describe("useCategoryProgress", () => {
     expect(result.current.progress).toBeNull();
     expect(result.current.isRunning).toBe(false);
     expect(result.current.activeStep).toBeNull();
+  });
+
+  it("echo가 null이어도 subscribeProgress 호출 시 isRunning이 true가 된다", () => {
+    vi.mocked(useEcho).mockReturnValue(null as any);
+
+    try {
+      const { result } = renderHook(() => useCategoryProgress());
+
+      act(() => {
+        result.current.subscribeProgress(1);
+      });
+
+      expect(result.current.isRunning).toBe(true);
+    } finally {
+      vi.mocked(useEcho).mockReturnValue(mockEcho as any);
+    }
+  });
+
+  it("category.progress completed 이벤트 수신 시 onUpdate 콜백이 progress 데이터와 함께 호출된다", () => {
+    const onUpdate = vi.fn();
+    const { result } = renderHook(() => useCategoryProgress(onUpdate));
+
+    act(() => {
+      result.current.subscribeProgress(1);
+    });
+
+    const progressCallback = mockListen.mock.calls.find(
+      ([event]) => event === ".category.progress",
+    )?.[1];
+
+    act(() => {
+      progressCallback({
+        categoryId: 1,
+        step: 1,
+        stepName: "translation.zh",
+        status: "completed",
+      });
+    });
+
+    expect(onUpdate).toHaveBeenCalledWith({
+      categoryId: 1,
+      step: 1,
+      stepName: "translation.zh",
+      status: "completed",
+    });
+  });
+
+  it("category.progress failed 이벤트 수신 시 onUpdate 콜백이 progress 데이터와 함께 호출된다", () => {
+    const onUpdate = vi.fn();
+    const { result } = renderHook(() => useCategoryProgress(onUpdate));
+
+    act(() => {
+      result.current.subscribeProgress(1);
+    });
+
+    const progressCallback = mockListen.mock.calls.find(
+      ([event]) => event === ".category.progress",
+    )?.[1];
+
+    act(() => {
+      progressCallback({
+        categoryId: 1,
+        step: 2,
+        stepName: "embedding.ko",
+        status: "failed",
+        error: "Ollama timeout",
+      });
+    });
+
+    expect(onUpdate).toHaveBeenCalledWith({
+      categoryId: 1,
+      step: 2,
+      stepName: "embedding.ko",
+      status: "failed",
+      error: "Ollama timeout",
+    });
+  });
+
+  it("category.completed 이벤트 수신 시 onUpdate가 인자 없이 호출된다", () => {
+    const onUpdate = vi.fn();
+    const { result } = renderHook(() => useCategoryProgress(onUpdate));
+
+    act(() => {
+      result.current.subscribeProgress(1);
+    });
+
+    const completedCallback = mockListen.mock.calls.find(
+      ([event]) => event === ".category.completed",
+    )?.[1];
+
+    act(() => {
+      completedCallback({ categoryId: 1, allSuccess: true, failedStep: 0 });
+    });
+
+    expect(onUpdate).toHaveBeenCalledWith(); // 인자 없음 = 전체 완료
   });
 });
