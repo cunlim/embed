@@ -39,7 +39,7 @@ function copyToClipboard(text: string) {
 }
 
 export default function CategoryModal({
-  open, onOpenChange, data, isLoading, error, token, onReload, onListRefresh,
+  open, onOpenChange, data, isLoading, error, token, onListRefresh,
 }: Props) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [runningSteps, setRunningSteps] = useState<Set<StepName>>(new Set());
@@ -80,10 +80,9 @@ export default function CategoryModal({
       }
       onListRefresh?.();
     } else {
-      onReload?.();
       onListRefresh?.();
     }
-  }, [onReload, onListRefresh, data]);
+  }, [onListRefresh, data]);
 
   const { isRunning, activeStep, subscribeProgress, cancel } = useCategoryProgress(handleProgressUpdate);
 
