@@ -15,7 +15,6 @@ use App\Services\EmbeddingGenerator;
 use App\Services\OllamaTranslator;
 use Illuminate\Http\JsonResponse;
 use OpenApi\Attributes as OA;
-use RuntimeException;
 
 class CategoryController extends Controller
 {
@@ -319,7 +318,7 @@ class CategoryController extends Controller
                 'status' => 'completed',
                 'result' => json_encode(array_slice($vector, 0, 10)),
             ]);
-        } catch (RuntimeException $e) {
+        } catch (\Throwable $e) {
             $errorMsg = $e->getMessage();
             if (str_contains($errorMsg, 'Ollama rate limit exceeded')) {
                 $errorMsg = 'Ollama rate limit exceeded';
