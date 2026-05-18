@@ -34,3 +34,23 @@ it('255자를 초과하는 value를 거부한다', function () {
     );
     expect($validator->fails())->toBeTrue();
 });
+
+it('field가 누락되면 유효성 검증에 실패한다', function () {
+    $validator = Validator::make(
+        ['value' => 'test'],
+        (new CategoryUpdateTextRequest())->rules()
+    );
+    expect($validator->fails())->toBeTrue();
+    expect($validator->errors()->has('field'))->toBeTrue();
+});
+
+it('유효하지 않은 field에 대해 한글 오류 메시지를 반환한다', function () {
+    $request = new CategoryUpdateTextRequest;
+    $validator = Validator::make(
+        ['field' => 'invalid_field', 'value' => 'test'],
+        $request->rules(),
+        $request->messages()
+    );
+    $messages = $validator->messages()->get('field');
+    expect($messages[0])->toContain('유효하지 않은 필드');
+});
