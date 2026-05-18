@@ -32,5 +32,5 @@ export function useCategoryDetail(categoryId: number | null, token?: string | nu
     }
   }, [categoryId, load]);
 
-  return { data, isLoading, error, reload: load };
+  return { data, isLoading, error, reload: load, setData };
 }
