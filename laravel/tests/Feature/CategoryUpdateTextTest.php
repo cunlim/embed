@@ -152,6 +152,24 @@ it('value를 null로 업데이트할 수 있다', function () {
     ]);
 });
 
+it('category_name_ko를 null로 업데이트할 수 있다', function () {
+    $category = Category::factory()->create([
+        'category_name_ko' => '원본 이름',
+    ]);
+
+    $response = $this->withToken($this->token)
+        ->putJson("/api/categories/{$category->id}/update-text", [
+            'field' => 'category_name_ko',
+            'value' => null,
+        ]);
+
+    $response->assertOk();
+    $this->assertDatabaseHas('categories', [
+        'id' => $category->id,
+        'category_name_ko' => null,
+    ]);
+});
+
 it('존재하지 않는 카테고리에 404를 반환한다', function () {
     $response = $this->withToken($this->token)
         ->putJson('/api/categories/99999/update-text', [
