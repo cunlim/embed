@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState } from "react";
 import { Copy, Loader2, AlertCircle, Play, Check, Clock, Square } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -9,9 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { CategoryTranslations } from "@/lib/api";
-
-type StepName = "translation.zh" | "translation.en" | "embedding.ko" | "embedding.zh" | "embedding.en";
+import type { CategoryTranslations, StepName } from "@/lib/api";
+import type { CatExecState } from "@/hooks/useCategoryExecution";
 
 interface Props {
   open: boolean;
@@ -22,6 +21,11 @@ interface Props {
   token?: string | null;
   onReload?: () => void;
   onListRefresh?: () => void;
+  // New props from useCategoryExecution
+  execState: CatExecState | null;
+  onSingleAction: (stepName: StepName) => Promise<void>;
+  onRunAll: () => Promise<void>;
+  onCancelPending: () => void;
 }
 
 const LANGUAGES: { key: "ko" | "en" | "zh"; label: string; hasTranslation: boolean }[] = [
@@ -40,180 +44,18 @@ function copyToClipboard(text: string) {
 
 export default function CategoryModal({
   open, onOpenChange, data, isLoading, error, token, onListRefresh,
+  execState, onSingleAction, onRunAll, onCancelPending,
 }: Props) {
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [runningSteps, setRunningSteps] = useState<Set<StepName>>(new Set());
-  const [pendingSteps, setPendingSteps] = useState<StepName[]>([]);
-  const [completedSteps, setCompletedSteps] = useState<Set<StepName>>(new Set());
-  const [failedSteps, setFailedSteps] = useState<Set<StepName>>(new Set());
-  const [stepResults, setStepResults] = useState<Map<StepName, string>>(new Map());
-  const [copyableSteps, setCopyableSteps] = useState<Set<StepName>>(new Set());
-  const [embeddingFullData, setEmbeddingFullData] = useState<Map<StepName, string>>(new Map());
   const [flashSteps, setFlashSteps] = useState<Set<StepName>>(new Set());
 
-  const abortRef = useRef(false);
-
-  const enableStepCopy = (stepName: StepName) => {
-    setTimeout(() => {
-      setCopyableSteps((prev) => new Set(prev).add(stepName));
-    }, 2000);
-  };
-
-  const handleSingleAction = async (stepName: StepName) => {
-    if (!data) return;
-    setActionError(null);
-    setRunningSteps((prev) => new Set(prev).add(stepName));
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api"}/categories/${data.id}/run-step`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ step: stepName }),
-        }
-      );
-      const result = await res.json();
-      if (result.status === 'completed') {
-        setCompletedSteps((prev) => new Set(prev).add(stepName));
-        setStepResults((prev) => new Map(prev).set(stepName, result.result));
-        if (stepName.startsWith("embedding")) {
-          handleStepComplete(stepName, data.id);
-        }
-        enableStepCopy(stepName);
-      } else {
-        throw new Error(result.error || '실행 실패');
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : '실행 실패';
-      setActionError(msg);
-      setFailedSteps((prev) => new Set(prev).add(stepName));
-    } finally {
-      setRunningSteps((prev) => {
-        const next = new Set(prev);
-        next.delete(stepName);
-        return next;
-      });
-    }
-  };
-
-  const handleRunAll = async () => {
-    if (!data) return;
-    setActionError(null);
-
-    const steps: StepName[] = [];
-    for (const lang of LANGUAGES) {
-      if (lang.hasTranslation) {
-        const tl = data.languages[lang.key];
-        const transKey = `translation.${lang.key}` as StepName;
-        const embedKey = `embedding.${lang.key}` as StepName;
-        if (!tl.translation_text && !completedSteps.has(transKey) && !stepResults.has(transKey)) {
-          steps.push(transKey);
-        }
-        if (tl.embedding.status !== "completed" && !completedSteps.has(embedKey) && !stepResults.has(embedKey)) {
-          steps.push(embedKey);
-        }
-      } else {
-        const embedKey = `embedding.${lang.key}` as StepName;
-        if (data.languages[lang.key].embedding.status !== "completed" && !completedSteps.has(embedKey) && !stepResults.has(embedKey)) {
-          steps.push(embedKey);
-        }
-      }
-    }
-
-    if (steps.length === 0) return;
-
-    abortRef.current = false;
-    setRunningSteps(new Set([steps[0]]));
-    setPendingSteps(steps.slice(1));
-
-    for (let i = 0; i < steps.length; i++) {
-      if (abortRef.current) {
-        setRunningSteps(new Set());
-        setPendingSteps([]);
-        break;
-      }
-
-      const stepName = steps[i];
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api"}/categories/${data.id}/run-step`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ step: stepName }),
-          }
-        );
-        const result = await res.json();
-
-        if (result.status === 'completed') {
-          setCompletedSteps((prev) => new Set(prev).add(stepName));
-          setStepResults((prev) => new Map(prev).set(stepName, result.result));
-
-          if (stepName.startsWith("embedding")) {
-            handleStepComplete(stepName, data.id);
-          }
-          enableStepCopy(stepName);
-
-          onListRefresh?.();
-        } else {
-          throw new Error(result.error || '실행 실패');
-        }
-
-        if (abortRef.current) {
-          setRunningSteps(new Set());
-          setPendingSteps([]);
-          break;
-        }
-
-        const nextIndex = i + 1;
-        if (nextIndex < steps.length) {
-          setRunningSteps(new Set([steps[nextIndex]]));
-          setPendingSteps(steps.slice(nextIndex + 1));
-        } else {
-          setRunningSteps(new Set());
-          setPendingSteps([]);
-        }
-      } catch (err) {
-        if (abortRef.current) {
-          setRunningSteps(new Set());
-          setPendingSteps([]);
-          break;
-        }
-        const msg = err instanceof Error ? err.message : '실행 실패';
-        setActionError(msg);
-        setFailedSteps((prev) => new Set(prev).add(stepName));
-        setRunningSteps(new Set());
-        setPendingSteps([]);
-        break;
-      }
-    }
-  };
-
-  const handleCancelPending = () => {
-    abortRef.current = true;
-    setPendingSteps([]);
-  };
-
-  const handleStepComplete = useCallback(async (stepName: StepName, categoryId: number) => {
-    const isEmbedding = stepName.startsWith("embedding");
-    if (isEmbedding) {
-      const { fetchCategoryTranslations } = await import("@/lib/api");
-      try {
-        const res = await fetchCategoryTranslations(categoryId, token ?? null);
-        const lang = stepName.split(".")[1] as "ko" | "en" | "zh";
-        const emb = res.data.languages[lang].embedding;
-        if (emb.preview) {
-          setEmbeddingFullData((prev) => new Map(prev).set(stepName, JSON.stringify(emb.preview)));
-        }
-      } catch { /* 실패 시 무시 */ }
-    }
-  }, [token]);
+  const runningSteps = execState?.runningSteps ?? new Set<StepName>();
+  const pendingSteps = execState?.pendingSteps ?? [];
+  const completedSteps = execState?.completedSteps ?? new Set<StepName>();
+  const failedSteps = execState?.failedSteps ?? new Set<StepName>();
+  const stepResults = execState?.stepResults ?? new Map<StepName, string>();
+  const copyableSteps = execState?.copyableSteps ?? new Set<StepName>();
+  const embeddingFullData = execState?.embeddingFullData ?? new Map<StepName, string>();
+  const actionError = execState?.actionError ?? null;
 
   const renderRow = (
     label: string,
@@ -297,7 +139,7 @@ export default function CategoryModal({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleSingleAction(stepName)}
+                onClick={() => onSingleAction(stepName)}
                 title={label + " 실행"}
                 disabled={isExecuting || translationDone === false}
               >
@@ -312,16 +154,8 @@ export default function CategoryModal({
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      setActionError(null);
-      setRunningSteps(new Set());
-      setPendingSteps([]);
-      setCompletedSteps(new Set());
-      setFailedSteps(new Set());
-      setStepResults(new Map());
-      setCopyableSteps(new Set());
-      setEmbeddingFullData(new Map());
+      // Reset flashSteps locally (transient UI concern)
       setFlashSteps(new Set());
-      abortRef.current = false;
     }
     onOpenChange(open);
   };
@@ -447,12 +281,12 @@ export default function CategoryModal({
           return (
             <div className="flex justify-end">
               {hasPending ? (
-                <Button variant="destructive" onClick={handleCancelPending}>
+                <Button variant="destructive" onClick={onCancelPending}>
                   <Square className="mr-1.5 h-4 w-4" />
                   실행중지
                 </Button>
               ) : (
-                <Button onClick={handleRunAll} disabled={isExecuting || allCompleted}>
+                <Button onClick={onRunAll} disabled={isExecuting || allCompleted}>
                   {allCompleted ? (
                     <Check className="mr-1.5 h-4 w-4" />
                   ) : (

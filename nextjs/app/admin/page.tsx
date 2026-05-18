@@ -35,6 +35,7 @@ import StatusBadge from "@/components/admin/status-badge";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
 import { useCategoryDetail } from "@/hooks/useCategoryDetail";
+import { useCategoryExecution } from "@/hooks/useCategoryExecution";
 import { isAdmin } from "@/lib/utils";
 
 export default function AdminPage() {
@@ -73,6 +74,8 @@ function AdminPageInner() {
   }, [mounted, authLoading, user, router]);
 
   const token = mounted ? getToken() : null;
+  const { getState, handleSingleAction, handleRunAll, handleCancelPending } =
+    useCategoryExecution(token);
   const {
     categories,
     meta,
@@ -340,6 +343,22 @@ function AdminPageInner() {
         token={token}
         onReload={reload}
         onListRefresh={() => loadCategories(page)}
+        execState={modalCategoryId ? getState(modalCategoryId) : null}
+        onSingleAction={async (stepName) => {
+          if (modalCategoryId !== null) {
+            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page));
+          }
+        }}
+        onRunAll={async () => {
+          if (modalCategoryId !== null && detailData) {
+            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page));
+          }
+        }}
+        onCancelPending={() => {
+          if (modalCategoryId !== null) {
+            handleCancelPending(modalCategoryId);
+          }
+        }}
       />
     </div>
   );

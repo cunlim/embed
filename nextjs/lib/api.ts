@@ -32,6 +32,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return res.json();
 }
 
+// --- Runner 상태 ---
+
+export type StepName = "translation.zh" | "translation.en" | "embedding.ko" | "embedding.zh" | "embedding.en";
+
 // --- 카테고리 상세 (번역·임베딩 상태) ---
 
 export type EmbeddingStatus = "completed" | "pending" | "failed" | "running";

@@ -1,6 +1,28 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import CategoryModal from "@/components/admin/category-modal";
+import type { CatExecState } from "@/hooks/useCategoryExecution";
+
+function createEmptyExecState(): CatExecState {
+  return {
+    runningSteps: new Set(),
+    pendingSteps: [],
+    completedSteps: new Set(),
+    failedSteps: new Set(),
+    stepResults: new Map(),
+    copyableSteps: new Set(),
+    embeddingFullData: new Map(),
+    flashSteps: new Set(),
+    abortRef: { current: false },
+    actionError: null,
+  };
+}
+
+const defaultHandlers = {
+  onSingleAction: vi.fn().mockResolvedValue(undefined),
+  onRunAll: vi.fn().mockResolvedValue(undefined),
+  onCancelPending: vi.fn(),
+};
 
 vi.mock("sonner", () => ({ toast: vi.fn() }));
 
@@ -37,7 +59,7 @@ afterEach(cleanup);
 
 describe("CategoryModal", () => {
   it("미완료 항목에 Play 아이콘 실행 버튼이 표시된다", () => {
-    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={pendingData} isLoading={false} error={null} token="token" />);
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={pendingData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
     const translationButtons = screen.getAllByRole("button", { name: "번역 실행" });
     expect(translationButtons.length).toBeGreaterThanOrEqual(1);
     const embeddingButtons = screen.getAllByRole("button", { name: "임베딩 실행" });
@@ -55,30 +77,30 @@ describe("CategoryModal", () => {
         },
       },
     };
-    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={completedData} isLoading={false} error={null} token="token" />);
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={completedData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
     const copyButtons = screen.getAllByRole("button", { name: "복사" });
     expect(copyButtons.length).toBeGreaterThan(0);
   });
 
   it("로딩 중 스켈레톤이 표시된다", () => {
-    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={null} isLoading={true} error={null} token="token" />);
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={null} isLoading={true} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
     const skeletons = document.querySelectorAll('[data-slot="skeleton"]');
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
   it("에러 발생 시 에러 메시지가 표시된다", () => {
-    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={pendingData} isLoading={false} error="번역 API 호출 실패" token="token" />);
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={pendingData} isLoading={false} error="번역 API 호출 실패" token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
     expect(screen.getByText("번역 API 호출 실패")).toBeInTheDocument();
   });
 
   it("전체실행 버튼이 표시되고 클릭 가능하다", () => {
-    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={pendingData} isLoading={false} error={null} token="token" />);
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={pendingData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
     const runAllButton = screen.getByRole("button", { name: "전체 실행" });
     expect(runAllButton).not.toBeDisabled();
   });
 
   it("초기 상태에서는 실행중지 버튼이 표시되지 않는다", () => {
-    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={pendingData} isLoading={false} error={null} token="token" />);
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={pendingData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
     expect(screen.queryByRole("button", { name: "실행중지" })).not.toBeInTheDocument();
   });
 
@@ -93,7 +115,7 @@ describe("CategoryModal", () => {
         },
       },
     };
-    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={partialData} isLoading={false} error={null} token="token" />);
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={partialData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
     expect(screen.getByRole("button", { name: "전체 실행" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "실행중지" })).not.toBeInTheDocument();
   });
@@ -119,7 +141,7 @@ describe("CategoryModal", () => {
         },
       },
     };
-    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={allDoneData} isLoading={false} error={null} token="token" />);
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={allDoneData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
     const runAllButton = screen.getByRole("button", { name: "전체 실행" });
     expect(runAllButton).toBeDisabled();
   });
