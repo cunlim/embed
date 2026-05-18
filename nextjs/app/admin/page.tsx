@@ -75,7 +75,7 @@ function AdminPageInner() {
   }, [mounted, authLoading, user, router]);
 
   const token = mounted ? getToken() : null;
-  const { getState, handleSingleAction, handleRunAll, handleCancelPending } =
+  const { getState, handleSingleAction, handleRunAll, handleCancelPending, clearStep } =
     useCategoryExecution(token);
   const {
     categories,
@@ -359,6 +359,11 @@ function AdminPageInner() {
         onCancelPending={() => {
           if (modalCategoryId !== null) {
             handleCancelPending(modalCategoryId);
+          }
+        }}
+        onClearStep={(stepName) => {
+          if (modalCategoryId !== null) {
+            clearStep(modalCategoryId, stepName);
           }
         }}
       />
