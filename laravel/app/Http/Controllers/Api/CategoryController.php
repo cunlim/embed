@@ -110,7 +110,9 @@ class CategoryController extends Controller
     public function store(CategoryStoreRequest $request): CategoryResource
     {
         $category = Category::create([
-            'category_code' => $request->category_code ?? Category::generateCode(),
+            'category_code' => $request->filled('category_code')
+                ? $request->category_code
+                : Category::generateCode(),
             'category_name_ko' => $request->category_name_ko,
         ]);
 
