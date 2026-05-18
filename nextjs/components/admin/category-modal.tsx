@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Copy, Loader2, AlertCircle, Play, Check } from "lucide-react";
+import { useState, useCallback, useRef } from "react";
+import { Copy, Loader2, AlertCircle, Play, Check, Clock, Square } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
@@ -51,7 +51,7 @@ export default function CategoryModal({
   const [embeddingFullData, setEmbeddingFullData] = useState<Map<StepName, string>>(new Map());
   const [flashSteps, setFlashSteps] = useState<Set<StepName>>(new Set());
 
-  const [isRunning, setIsRunning] = useState(false);
+  const abortRef = useRef(false);
 
   const enableStepCopy = (stepName: StepName) => {
     setTimeout(() => {
@@ -104,85 +104,90 @@ export default function CategoryModal({
     if (!data) return;
     setActionError(null);
 
-    const translationSteps: StepName[] = [];
-    const embeddingSteps: StepName[] = [];
-
+    const steps: StepName[] = [];
     for (const lang of LANGUAGES) {
       if (lang.hasTranslation) {
         const tl = data.languages[lang.key];
         const transKey = `translation.${lang.key}` as StepName;
         const embedKey = `embedding.${lang.key}` as StepName;
         if (!tl.translation_text && !completedSteps.has(transKey) && !stepResults.has(transKey)) {
-          translationSteps.push(transKey);
+          steps.push(transKey);
         }
         if (tl.embedding.status !== "completed" && !completedSteps.has(embedKey) && !stepResults.has(embedKey)) {
-          embeddingSteps.push(embedKey);
+          steps.push(embedKey);
         }
       } else {
         const embedKey = `embedding.${lang.key}` as StepName;
         if (data.languages[lang.key].embedding.status !== "completed" && !completedSteps.has(embedKey) && !stepResults.has(embedKey)) {
-          embeddingSteps.push(embedKey);
+          steps.push(embedKey);
         }
       }
     }
 
-    if (translationSteps.length === 0 && embeddingSteps.length === 0) return;
+    if (steps.length === 0) return;
 
-    setIsRunning(true);
+    abortRef.current = false;
+    setRunningSteps(new Set([steps[0]]));
+    setPendingSteps(steps.slice(1));
 
-    const processSteps = async (steps: StepName[], onStepComplete: (step: StepName, response: any) => void) => {
-      const results = await Promise.allSettled(
-        steps.map(async (step) => {
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api"}/categories/${data.id}/run-step`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ step }),
-            }
-          );
-          return { step, response: await res.json() };
-        })
-      );
+    for (let i = 0; i < steps.length; i++) {
+      if (abortRef.current) break;
 
-      results.forEach((result) => {
-        if (result.status === 'fulfilled') {
-          const { step, response } = result.value;
-          onStepComplete(step, response);
+      const stepName = steps[i];
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api"}/categories/${data.id}/run-step`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ step: stepName }),
+          }
+        );
+        const result = await res.json();
+
+        if (result.status === 'completed') {
+          setCompletedSteps((prev) => new Set(prev).add(stepName));
+          setStepResults((prev) => new Map(prev).set(stepName, result.result));
+
+          if (stepName.startsWith("embedding")) {
+            handleStepComplete(stepName, data.id);
+          } else {
+            enableStepCopy(stepName);
+          }
+
+          onListRefresh?.();
         } else {
-          setActionError('네트워크 오류가 발생했습니다');
+          throw new Error(result.error || '실행 실패');
         }
-      });
-    };
 
-    await processSteps(translationSteps, (step, response) => {
-      if (response.status === 'completed') {
-        setCompletedSteps((prev) => new Set(prev).add(step));
-        setStepResults((prev) => new Map(prev).set(step, response.result));
-        enableStepCopy(step);
-      } else {
-        setFailedSteps((prev) => new Set(prev).add(step));
-        setActionError(response.error || '실패');
+        if (abortRef.current) break;
+
+        const nextIndex = i + 1;
+        if (nextIndex < steps.length) {
+          setRunningSteps(new Set([steps[nextIndex]]));
+          setPendingSteps(steps.slice(nextIndex + 1));
+        } else {
+          setRunningSteps(new Set());
+          setPendingSteps([]);
+        }
+      } catch (err) {
+        if (abortRef.current) break;
+        const msg = err instanceof Error ? err.message : '실행 실패';
+        setActionError(msg);
+        setFailedSteps((prev) => new Set(prev).add(stepName));
+        setRunningSteps(new Set());
+        setPendingSteps([]);
+        break;
       }
-    });
+    }
+  };
 
-    await processSteps(embeddingSteps, (step, response) => {
-      if (response.status === 'completed') {
-        setCompletedSteps((prev) => new Set(prev).add(step));
-        setStepResults((prev) => new Map(prev).set(step, response.result));
-        handleStepComplete(step, data.id);
-        enableStepCopy(step);
-      } else {
-        setFailedSteps((prev) => new Set(prev).add(step));
-        setActionError(response.error || '실패');
-      }
-    });
-
-    setIsRunning(false);
-    onListRefresh?.();
+  const handleCancelPending = () => {
+    abortRef.current = true;
+    setPendingSteps([]);
   };
 
   const handleStepComplete = useCallback(async (stepName: StepName, categoryId: number) => {
@@ -206,6 +211,8 @@ export default function CategoryModal({
     copyValue: string | null,
     stepName: StepName | null,
     translationDone?: boolean,
+    isExecuting?: boolean,
+    isPending?: boolean,
   ) => {
     const hasValue = displayValue !== null;
     const isRunningThis = stepName ? runningSteps.has(stepName) : false;
@@ -272,15 +279,21 @@ export default function CategoryModal({
               <Check className="size-3 text-muted-foreground" />
             </Button>
           ) : stepName ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleSingleAction(stepName)}
-              title={label + " 실행"}
-              disabled={isRunning || translationDone === false || (stepName ? pendingSteps.includes(stepName) : false)}
-            >
-              <Play className="size-3" />
-            </Button>
+            isPending ? (
+              <Button variant="ghost" size="icon" disabled title={label + " 대기 중"}>
+                <Clock className="size-3 animate-pulse" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleSingleAction(stepName)}
+                title={label + " 실행"}
+                disabled={isExecuting || translationDone === false}
+              >
+                <Play className="size-3" />
+              </Button>
+            )
           ) : null}
         </div>
       </div>
@@ -298,7 +311,7 @@ export default function CategoryModal({
       setCopyableSteps(new Set());
       setEmbeddingFullData(new Map());
       setFlashSteps(new Set());
-      setIsRunning(false);
+      abortRef.current = false;
     }
     onOpenChange(open);
   };
@@ -334,6 +347,7 @@ export default function CategoryModal({
           <div className="space-y-2 py-2">
             {LANGUAGES.map((lang, i) => {
               const detail = data.languages[lang.key];
+              const isExecuting = runningSteps.size > 0 || pendingSteps.length > 0;
 
               return (
                 <div key={lang.key}>
@@ -350,6 +364,9 @@ export default function CategoryModal({
                             detail.translation_text,
                             detail.translation_text,
                             `translation.${lang.key}` as StepName,
+                            undefined,
+                            isExecuting,
+                            pendingSteps.includes(`translation.${lang.key}` as StepName),
                           )}
                           {renderRow(
                             "임베딩",
@@ -361,6 +378,8 @@ export default function CategoryModal({
                               : null,
                             `embedding.${lang.key}` as StepName,
                             detail.translation_text !== null,
+                            isExecuting,
+                            pendingSteps.includes(`embedding.${lang.key}` as StepName),
                           )}
                         </>
                       )
@@ -382,6 +401,8 @@ export default function CategoryModal({
                               : null,
                             `embedding.${lang.key}` as StepName,
                             true,
+                            isExecuting,
+                            pendingSteps.includes(`embedding.${lang.key}` as StepName),
                           )}
                         </>
                       )
@@ -405,13 +426,29 @@ export default function CategoryModal({
             const lang = step.split(".")[1] as "ko" | "en" | "zh";
             return data.languages[lang].embedding.status === "completed";
           };
+          const isExecuting = runningSteps.size > 0 || pendingSteps.length > 0;
           const allCompleted = data ? ALL_STEPS.every(isStepDone) : false;
+          const hasPending = pendingSteps.length > 0;
 
           return (
             <div className="flex justify-end">
-              <Button onClick={handleRunAll} disabled={isRunning || pendingSteps.length > 0 || allCompleted}>
-                전체 실행
-              </Button>
+              {hasPending ? (
+                <Button variant="destructive" onClick={handleCancelPending}>
+                  <Square className="mr-1.5 h-4 w-4" />
+                  실행중지
+                </Button>
+              ) : (
+                <Button onClick={handleRunAll} disabled={isExecuting || allCompleted}>
+                  {isExecuting ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : allCompleted ? (
+                    <Check className="mr-1.5 h-4 w-4" />
+                  ) : (
+                    <Play className="mr-1.5 h-4 w-4" />
+                  )}
+                  전체 실행
+                </Button>
+              )}
             </div>
           );
         })()}

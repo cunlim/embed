@@ -76,4 +76,51 @@ describe("CategoryModal", () => {
     const runAllButton = screen.getByRole("button", { name: "전체 실행" });
     expect(runAllButton).not.toBeDisabled();
   });
+
+  it("초기 상태에서는 실행중지 버튼이 표시되지 않는다", () => {
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={pendingData} isLoading={false} error={null} token="token" />);
+    expect(screen.queryByRole("button", { name: "실행중지" })).not.toBeInTheDocument();
+  });
+
+  it("일부 항목이 완료되었지만 pending이 없으면 실행중지 버튼이 표시되지 않는다", () => {
+    const partialData = {
+      ...pendingData,
+      languages: {
+        ...pendingData.languages,
+        en: {
+          translation_text: "Life/Health",
+          embedding: { status: "completed" as const, preview: [0.1, 0.2] },
+        },
+      },
+    };
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={partialData} isLoading={false} error={null} token="token" />);
+    expect(screen.getByRole("button", { name: "전체 실행" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "실행중지" })).not.toBeInTheDocument();
+  });
+
+  it("모든 항목이 완료되면 전체실행 버튼이 disabled된다", () => {
+    const allDoneData = {
+      id: 4,
+      category_code: "CAT_004",
+      category_name_ko: "테스트",
+      embedding_dimensions: 1024,
+      languages: {
+        ko: {
+          translation_text: "테스트",
+          embedding: { status: "completed" as const, preview: [0.1] },
+        },
+        en: {
+          translation_text: "Test",
+          embedding: { status: "completed" as const, preview: [0.2] },
+        },
+        zh: {
+          translation_text: "测试",
+          embedding: { status: "completed" as const, preview: [0.3] },
+        },
+      },
+    };
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={allDoneData} isLoading={false} error={null} token="token" />);
+    const runAllButton = screen.getByRole("button", { name: "전체 실행" });
+    expect(runAllButton).toBeDisabled();
+  });
 });
