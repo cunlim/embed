@@ -195,6 +195,38 @@ describe("CategoryModal", () => {
     const inputs = screen.getAllByRole("textbox");
     expect(inputs.length).toBe(3); // textbox는 3개 (ko, en, zh translations만) — embedding rows are NOT textboxes
   });
+  it("한국어가 빈값이면 한국어 임베딩 버튼이 disabled된다", () => {
+    const koEmptyData = {
+      ...pendingData,
+      category_name_ko: "",
+      languages: {
+        ko: { translation_text: "", embedding: { status: "pending" as const, preview: null } },
+        en: { translation_text: null, embedding: { status: "pending" as const, preview: null } },
+        zh: { translation_text: null, embedding: { status: "pending" as const, preview: null } },
+      },
+    };
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={koEmptyData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
+    const embeddingBtns = screen.getAllByRole("button", { name: "임베딩 실행" });
+    expect(embeddingBtns[0]).toBeDisabled();
+  });
+
+  it("한국어가 빈값이어도 다른 언어에 번역 텍스트가 있으면 임베딩 버튼이 disabled되지 않는다", () => {
+    const koEmptyEnTextData = {
+      ...pendingData,
+      category_name_ko: "",
+      languages: {
+        ko: { translation_text: "", embedding: { status: "pending" as const, preview: null } },
+        en: { translation_text: "Life/Health", embedding: { status: "pending" as const, preview: null } },
+        zh: { translation_text: null, embedding: { status: "pending" as const, preview: null } },
+      },
+    };
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={koEmptyEnTextData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
+    const embeddingBtns = screen.getAllByRole("button", { name: "임베딩 실행" });
+    expect(embeddingBtns[0]).toBeDisabled();
+    expect(embeddingBtns[1]).not.toBeDisabled();
+    expect(embeddingBtns[2]).toBeDisabled();
+  });
+
   it("blur 시 값이 변경되었으면 저장 API를 호출한다", async () => {
     vi.mocked(updateCategoryText).mockResolvedValue({
       data: {

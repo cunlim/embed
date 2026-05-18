@@ -27,6 +27,7 @@ interface Props {
   onSingleAction: (stepName: StepName) => Promise<void>;
   onRunAll: () => Promise<void>;
   onCancelPending: () => void;
+  onClearStep?: (stepName: StepName) => void;
 }
 
 const LANGUAGES: { key: "ko" | "en" | "zh"; label: string; hasTranslation: boolean }[] = [
@@ -46,7 +47,7 @@ function copyToClipboard(text: string) {
 export default function CategoryModal({
   open, onOpenChange, data, isLoading, error, token,
   onUpdateData, onUpdateListRow,
-  execState, onSingleAction, onRunAll, onCancelPending,
+  execState, onSingleAction, onRunAll, onCancelPending, onClearStep,
 }: Props) {
   const [flashSteps, setFlashSteps] = useState<Set<StepName>>(new Set());
   const [editValues, setEditValues] = useState<Record<string, string>>({});
@@ -69,6 +70,7 @@ export default function CategoryModal({
     isExecuting?: boolean,
     isPending?: boolean,
     langKey?: "ko" | "en" | "zh",
+    showDisabledCopy?: boolean,
   ) => {
     const hasValue = displayValue !== null;
     const isRunningThis = stepName ? runningSteps.has(stepName) : false;
@@ -161,6 +163,10 @@ export default function CategoryModal({
                 <Play className="size-3" />
               </Button>
             )
+          ) : showDisabledCopy ? (
+            <Button variant="ghost" size="icon" disabled title="복사">
+              <Copy className="size-3 text-muted-foreground" />
+            </Button>
           ) : null}
         </div>
       </div>
@@ -193,6 +199,7 @@ export default function CategoryModal({
       setEditValues({});
       onUpdateData?.(res.data.translations);
       onUpdateListRow?.(res.data.listRow);
+      onClearStep?.(`embedding.${langKey}` as StepName);
       toast("저장되었습니다");
     } catch {
       toast("저장에 실패했습니다");
@@ -232,9 +239,14 @@ export default function CategoryModal({
               const detail = data.languages[lang.key];
               const isExecuting = runningSteps.size > 0 || pendingSteps.length > 0;
               const transKey = `translation.${lang.key}` as StepName;
+              const isKoEmpty = !data.category_name_ko?.trim();
+              const hasTranslationText = detail.translation_text !== null || completedSteps.has(transKey) || stepResults.has(transKey);
               const translationDone = lang.hasTranslation
-                ? detail.translation_text !== null || completedSteps.has(transKey) || stepResults.has(transKey)
+                ? (!isKoEmpty && hasTranslationText)
                 : true;
+              const embeddingReady = lang.hasTranslation
+                ? hasTranslationText
+                : !isKoEmpty;
 
               return (
                 <div key={lang.key}>
@@ -251,7 +263,7 @@ export default function CategoryModal({
                             detail.translation_text,
                             detail.translation_text,
                             `translation.${lang.key}` as StepName,
-                            undefined,
+                            !isKoEmpty,
                             isExecuting,
                             pendingSteps.includes(`translation.${lang.key}` as StepName),
                             lang.key,
@@ -265,7 +277,7 @@ export default function CategoryModal({
                               ? JSON.stringify(detail.embedding.preview)
                               : null,
                             `embedding.${lang.key}` as StepName,
-                            translationDone,
+                            embeddingReady,
                             isExecuting,
                             pendingSteps.includes(`embedding.${lang.key}` as StepName),
                           )}
@@ -282,6 +294,7 @@ export default function CategoryModal({
                             undefined,
                             undefined,
                             "ko",
+                            isKoEmpty,
                           )}
                           {renderRow(
                             "임베딩",
@@ -292,7 +305,7 @@ export default function CategoryModal({
                               ? JSON.stringify(detail.embedding.preview)
                               : null,
                             `embedding.${lang.key}` as StepName,
-                            true,
+                            embeddingReady,
                             isExecuting,
                             pendingSteps.includes(`embedding.${lang.key}` as StepName),
                           )}
@@ -319,6 +332,7 @@ export default function CategoryModal({
             return data.languages[lang].embedding.status === "completed";
           };
           const isExecuting = runningSteps.size > 0 || pendingSteps.length > 0;
+          const isKoEmpty = data ? !data.category_name_ko?.trim() : false;
           const allCompleted = data ? ALL_STEPS.every(isStepDone) : false;
           const hasPending = pendingSteps.length > 0;
 
@@ -330,7 +344,7 @@ export default function CategoryModal({
                   실행중지
                 </Button>
               ) : (
-                <Button onClick={onRunAll} disabled={isExecuting || allCompleted}>
+                <Button onClick={onRunAll} disabled={isExecuting || allCompleted || isKoEmpty}>
                   {allCompleted ? (
                     <Check className="mr-1.5 h-4 w-4" />
                   ) : (
