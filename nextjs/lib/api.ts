@@ -77,23 +77,34 @@ export function fetchCategoryTranslations(
 // --- 추천 ---
 
 export interface Recommendation {
+  id: number;
   category_code: string;
+  category_name_ko: string;
+  category_name_zh: string | null;
+  category_name_en: string | null;
   category_name: string;
-  similarity_score: number;
+  translation_status: "completed" | "partial" | "pending";
+  similarity_score: number | null;
 }
 
 export interface RecommendResponse {
   data: Recommendation[];
+  meta: PaginationMeta;
 }
 
 export function recommend(
   text: string,
   targetLanguage: string,
-  token?: string | null
+  token?: string | null,
+  page?: number,
+  perPage?: number,
 ): Promise<RecommendResponse> {
+  const body: Record<string, string | number> = { text, target_language: targetLanguage };
+  if (page) body.page = page;
+  if (perPage) body.per_page = perPage;
   return request<RecommendResponse>("/recommend", {
     method: "POST",
-    body: { text, target_language: targetLanguage },
+    body,
     token,
   });
 }
