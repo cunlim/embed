@@ -103,6 +103,16 @@ it('카테고리 텍스트를 업데이트하고 임베딩을 삭제한다', fun
 
     $response->assertOk();
     $response->assertJson(['data' => ['updated' => true, 'id' => $category->id]]);
+    $response->assertJsonStructure([
+        'data' => [
+            'translations' => [
+                'id', 'category_code', 'category_name_ko', 'languages',
+            ],
+            'listRow' => [
+                'id', 'category_name_ko', 'translation_status',
+            ],
+        ],
+    ]);
 
     $this->assertDatabaseHas('categories', [
         'id' => $category->id,
@@ -130,6 +140,12 @@ it('value를 null로 업데이트할 수 있다', function () {
         ]);
 
     $response->assertOk();
+    $response->assertJsonStructure([
+        'data' => [
+            'translations' => ['id', 'languages'],
+            'listRow' => ['id', 'translation_status'],
+        ],
+    ]);
     $this->assertDatabaseHas('categories', [
         'id' => $category->id,
         'category_name_en' => null,
