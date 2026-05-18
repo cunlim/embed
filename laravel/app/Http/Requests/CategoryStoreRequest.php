@@ -12,12 +12,13 @@ class CategoryStoreRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, array<int, string>>
      */
     public function rules(): array
     {
         return [
             'category_name_ko' => ['required', 'string', 'max:255'],
+            'category_code' => ['nullable', 'string', 'max:255', 'unique:categories,category_code'],
         ];
     }
 }
