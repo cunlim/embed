@@ -32,7 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRecommend } from "@/hooks/useRecommend";
 import { getToken } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
-import { runStep, getCategories } from "@/lib/api";
+import { runStep, getAllCategories } from "@/lib/api";
 import { parseHierarchy } from "@/lib/category";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -118,7 +118,7 @@ export default function EmbedPage() {
     setIsBatchLoading(true);
     setBatchError(null);
     try {
-      const cats = await getCategories(token || null);
+      const cats = await getAllCategories(token || null);
       const allCategories = cats.data;
       const totalJobs = allCategories.length;
 

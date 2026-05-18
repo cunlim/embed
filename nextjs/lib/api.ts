@@ -136,6 +136,13 @@ export function getCategories(
   return request<CategoryListResponse>(`/categories?${qs}`, { token });
 }
 
+export function getAllCategories(token?: string | null): Promise<CategoryListResponse> {
+  const params = new URLSearchParams();
+  params.set("per_page", "10000");
+  params.set("page", "1");
+  return request<CategoryListResponse>(`/categories?${params.toString()}`, { token });
+}
+
 export function createCategory(
   categoryNameKo: string,
   token?: string | null
