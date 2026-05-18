@@ -149,11 +149,16 @@ export function getAllCategories(token?: string | null): Promise<CategoryListRes
 
 export function createCategory(
   categoryNameKo: string,
-  token?: string | null
+  token?: string | null,
+  categoryCode?: string
 ): Promise<{ data: Category }> {
+  const body: Record<string, string> = { category_name_ko: categoryNameKo };
+  if (categoryCode) {
+    body.category_code = categoryCode;
+  }
   return request<{ data: Category }>("/categories", {
     method: "POST",
-    body: { category_name_ko: categoryNameKo },
+    body,
     token,
   });
 }
