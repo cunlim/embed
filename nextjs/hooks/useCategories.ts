@@ -16,6 +16,7 @@ interface UseCategoriesReturn {
   error: string | null;
   loadCategories: (page?: number) => Promise<void>;
   addCategory: (categoryNameKo: string) => Promise<void>;
+  updateCategoryStatus: (id: number, updates: Partial<Category>) => void;
 }
 
 export function useCategories(token?: string | null): UseCategoriesReturn {
@@ -75,5 +76,14 @@ export function useCategories(token?: string | null): UseCategoriesReturn {
     [token]
   );
 
-  return { categories, meta, isLoading, isLoaded, error, loadCategories, addCategory };
+  const updateCategoryStatus = useCallback(
+    (id: number, updates: Partial<Category>) => {
+      setCategories((prev) =>
+        prev.map((cat) => (cat.id === id ? { ...cat, ...updates } : cat))
+      );
+    },
+    []
+  );
+
+  return { categories, meta, isLoading, isLoaded, error, loadCategories, addCategory, updateCategoryStatus };
 }

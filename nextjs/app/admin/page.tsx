@@ -37,6 +37,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useCategoryDetail } from "@/hooks/useCategoryDetail";
 import { useCategoryExecution } from "@/hooks/useCategoryExecution";
 import { isAdmin } from "@/lib/utils";
+import type { Category } from "@/lib/api";
 
 export default function AdminPage() {
   return (
@@ -83,6 +84,7 @@ function AdminPageInner() {
     error: catError,
     loadCategories,
     addCategory,
+    updateCategoryStatus,
   } = useCategories(token);
 
   // URL page 동기화
@@ -93,7 +95,7 @@ function AdminPageInner() {
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [modalCategoryId, setModalCategoryId] = useState<number | null>(null);
-  const { data: detailData, isLoading: detailLoading, error: detailError, reload } =
+  const { data: detailData, isLoading: detailLoading, error: detailError, reload, setData } =
     useCategoryDetail(modalCategoryId, token);
 
   const handleAddCategory = useCallback(async () => {
@@ -343,15 +345,17 @@ function AdminPageInner() {
         token={token}
         onReload={reload}
         onListRefresh={() => loadCategories(page)}
+        onUpdateData={setData}
+        onUpdateListRow={(row) => updateCategoryStatus(row.id, { translation_status: row.translation_status as Category["translation_status"] })}
         execState={modalCategoryId ? getState(modalCategoryId) : null}
         onSingleAction={async (stepName) => {
           if (modalCategoryId !== null) {
-            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page));
+            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page), setData);
           }
         }}
         onRunAll={async () => {
           if (modalCategoryId !== null && detailData) {
-            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page));
+            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page), setData);
           }
         }}
         onCancelPending={() => {
