@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\Category;
 use App\Models\SearchLog;
 use App\Services\EmbeddingCacheService;
 use App\Services\RecommendationService;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 beforeEach(function () {
     // RecommendationService mock을 사용하므로 DB 테이블은 불필요
@@ -24,24 +26,29 @@ test('POST /api/recommend — 유효한 검색어는 RecommendationService를 �
         ->andReturn($searchLog);
     app()->instance(EmbeddingCacheService::class, $mockCache);
 
-    $recommendations = [
-        (object) [
-            'category_code' => '50000000',
-            'category_name' => '패션의류',
-            'similarity_score' => 0.95,
-        ],
-        (object) [
-            'category_code' => '50000001',
-            'category_name' => '여성의류',
-            'similarity_score' => 0.87,
-        ],
-    ];
+    $category = new Category([
+        'category_code' => '50000000',
+        'category_name_ko' => '패션의류',
+        'category_name_zh' => '时尚服装',
+        'category_name_en' => 'Fashion Clothing',
+        'translation_status' => 'completed',
+    ]);
+    $category->id = 1;
+    $category->similarity_score = 0.95;
+
+    $items = collect([$category]);
+    $paginator = new LengthAwarePaginator(
+        items: $items,
+        total: 1,
+        perPage: 20,
+        currentPage: 1,
+    );
 
     $mockRecommend = Mockery::mock(RecommendationService::class);
-    $mockRecommend->shouldReceive('recommend')
+    $mockRecommend->shouldReceive('recommendPaginated')
         ->once()
-        ->with(Mockery::type(SearchLog::class), 'ko')
-        ->andReturn($recommendations);
+        ->with(Mockery::type(SearchLog::class), 'ko', 20, 1)
+        ->andReturn($paginator);
     app()->instance(RecommendationService::class, $mockRecommend);
 
     $response = $this->postJson('/api/recommend', [
@@ -50,23 +57,29 @@ test('POST /api/recommend — 유효한 검색어는 RecommendationService를 �
     ]);
 
     $response->assertOk()
-        ->assertJsonCount(2, 'data')
+        ->assertJsonStructure([
+            'data' => [['id', 'category_code', 'category_name', 'similarity_score']],
+            'meta' => ['current_page', 'last_page', 'total', 'per_page'],
+        ])
         ->assertJsonPath('data.0.category_code', '50000000')
         ->assertJsonPath('data.0.category_name', '패션의류')
         ->assertJsonPath('data.0.similarity_score', 0.95);
 
     $mockCache->shouldHaveReceived('getOrCreateEmbedding')->once();
-    $mockRecommend->shouldHaveReceived('recommend')->once();
+    $mockRecommend->shouldHaveReceived('recommendPaginated')->once();
 });
 
-test('POST /api/recommend — 빈 검색어는 422 에러를 반환한다', function () {
+test('POST /api/recommend — 빈 검색어는 일반 카테고리 목록을 반환한다', function () {
     $response = $this->postJson('/api/recommend', [
         'text' => '',
         'target_language' => 'ko',
     ]);
 
-    $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['text']);
+    $response->assertOk()
+        ->assertJsonStructure([
+            'data' => [],
+            'meta' => ['current_page', 'last_page', 'total', 'per_page'],
+        ]);
 });
 
 test('POST /api/recommend — 지원하지 않는 언어는 422 에러를 반환한다', function () {
