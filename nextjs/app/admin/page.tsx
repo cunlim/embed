@@ -94,15 +94,17 @@ function AdminPageInner() {
   }, [mounted, page, loadCategories]);
 
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryCode, setNewCategoryCode] = useState("");
   const [modalCategoryId, setModalCategoryId] = useState<number | null>(null);
   const { data: detailData, isLoading: detailLoading, error: detailError, reload, setData } =
     useCategoryDetail(modalCategoryId, token);
 
   const handleAddCategory = useCallback(async () => {
     if (!newCategoryName.trim()) return;
-    await addCategory(newCategoryName.trim());
+    await addCategory(newCategoryName.trim(), newCategoryCode.trim() || undefined);
     setNewCategoryName("");
-  }, [newCategoryName, addCategory]);
+    setNewCategoryCode("");
+  }, [newCategoryName, newCategoryCode, addCategory]);
 
   const handlePageChange = useCallback((newPage: number) => {
     router.push(`/admin?page=${newPage}`);
@@ -131,6 +133,18 @@ function AdminPageInner() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-2">
+                  <Label htmlFor="category-code">카테고리 코드</Label>
+                  <Input
+                    id="category-code"
+                    placeholder="입력하지 않을 시 자동 생성"
+                    value={newCategoryCode}
+                    onChange={(e) => setNewCategoryCode(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAddCategory();
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="category-name">한국어 카테고리명</Label>
                   <Input
                     id="category-name"
@@ -142,9 +156,6 @@ function AdminPageInner() {
                     }}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  카테고리 코드는 자동 생성됩니다
-                </p>
                 <Button
                   onClick={handleAddCategory}
                   disabled={!newCategoryName.trim()}

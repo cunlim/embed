@@ -96,6 +96,11 @@ describe("AdminPage 재설계", () => {
     expect(items.length).toBeGreaterThan(0);
   });
 
+  it("카테고리 코드 input이 렌더링된다", () => {
+    render(<AdminPage />);
+    expect(screen.getByLabelText("카테고리 코드")).toBeInTheDocument();
+  });
+
   it("처리안됨 상태가 표시된다", () => {
     render(<AdminPage />);
     const items = screen.getAllByText("처리안됨");
