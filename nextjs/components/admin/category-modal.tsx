@@ -53,6 +53,12 @@ export default function CategoryModal({
 
   const [isRunning, setIsRunning] = useState(false);
 
+  const enableStepCopy = (stepName: StepName) => {
+    setTimeout(() => {
+      setCopyableSteps((prev) => new Set(prev).add(stepName));
+    }, 2000);
+  };
+
   const handleSingleAction = async (stepName: StepName) => {
     if (!data) return;
     setActionError(null);
@@ -73,7 +79,11 @@ export default function CategoryModal({
       if (result.status === 'completed') {
         setCompletedSteps((prev) => new Set(prev).add(stepName));
         setStepResults((prev) => new Map(prev).set(stepName, result.result));
-        handleStepComplete(stepName, data.id);
+        if (stepName.startsWith("embedding")) {
+          handleStepComplete(stepName, data.id);
+        } else {
+          enableStepCopy(stepName);
+        }
       } else {
         throw new Error(result.error || '실행 실패');
       }
@@ -94,60 +104,80 @@ export default function CategoryModal({
     if (!data) return;
     setActionError(null);
 
-    const steps: StepName[] = [];
+    const translationSteps: StepName[] = [];
+    const embeddingSteps: StepName[] = [];
+
     for (const lang of LANGUAGES) {
       if (lang.hasTranslation) {
         const tl = data.languages[lang.key];
         const transKey = `translation.${lang.key}` as StepName;
         const embedKey = `embedding.${lang.key}` as StepName;
         if (!tl.translation_text && !completedSteps.has(transKey) && !stepResults.has(transKey)) {
-          steps.push(transKey);
+          translationSteps.push(transKey);
         }
         if (tl.embedding.status !== "completed" && !completedSteps.has(embedKey) && !stepResults.has(embedKey)) {
-          steps.push(embedKey);
+          embeddingSteps.push(embedKey);
         }
       } else {
         const embedKey = `embedding.${lang.key}` as StepName;
         if (data.languages[lang.key].embedding.status !== "completed" && !completedSteps.has(embedKey) && !stepResults.has(embedKey)) {
-          steps.push(embedKey);
+          embeddingSteps.push(embedKey);
         }
       }
     }
-    if (steps.length === 0) return;
+
+    if (translationSteps.length === 0 && embeddingSteps.length === 0) return;
 
     setIsRunning(true);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api";
-    const results = await Promise.allSettled(
-      steps.map(async (step) => {
-        const res = await fetch(
-          `${API_URL}/categories/${data.id}/run-step`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ step }),
-          }
-        );
-        return { step, response: await res.json() };
-      })
-    );
+    const processSteps = async (steps: StepName[], onStepComplete: (step: StepName, response: any) => void) => {
+      const results = await Promise.allSettled(
+        steps.map(async (step) => {
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api"}/categories/${data.id}/run-step`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ step }),
+            }
+          );
+          return { step, response: await res.json() };
+        })
+      );
 
-    results.forEach((result) => {
-      if (result.status === 'fulfilled') {
-        const { step, response } = result.value;
-        if (response.status === 'completed') {
-          setCompletedSteps((prev) => new Set(prev).add(step));
-          setStepResults((prev) => new Map(prev).set(step, response.result));
-          handleStepComplete(step, data.id);
+      results.forEach((result) => {
+        if (result.status === 'fulfilled') {
+          const { step, response } = result.value;
+          onStepComplete(step, response);
         } else {
-          setFailedSteps((prev) => new Set(prev).add(step));
-          setActionError(response.error || '실패');
+          setActionError('네트워크 오류가 발생했습니다');
         }
+      });
+    };
+
+    await processSteps(translationSteps, (step, response) => {
+      if (response.status === 'completed') {
+        setCompletedSteps((prev) => new Set(prev).add(step));
+        setStepResults((prev) => new Map(prev).set(step, response.result));
+        enableStepCopy(step);
       } else {
-        setActionError('네트워크 오류가 발생했습니다');
+        setFailedSteps((prev) => new Set(prev).add(step));
+        setActionError(response.error || '실패');
+      }
+    });
+
+    await processSteps(embeddingSteps, (step, response) => {
+      if (response.status === 'completed') {
+        setCompletedSteps((prev) => new Set(prev).add(step));
+        setStepResults((prev) => new Map(prev).set(step, response.result));
+        handleStepComplete(step, data.id);
+        enableStepCopy(step);
+      } else {
+        setFailedSteps((prev) => new Set(prev).add(step));
+        setActionError(response.error || '실패');
       }
     });
 
