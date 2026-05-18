@@ -301,7 +301,7 @@
                     "Categories"
                 ],
                 "summary": "카테고리 목록 조회",
-                "description": "등록된 모든 카테고리를 조회합니다.",
+                "description": "등록된 모든 카테고리를 조회합니다. 20개씩 페이지네이션됩니다.",
                 "operationId": "ac9c4d978ea4e5b72915ca9728e5b8b1",
                 "responses": {
                     "200": {
@@ -342,6 +342,50 @@
                                                 },
                                                 "type": "object"
                                             }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": "integer"
+                                                },
+                                                "to": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "properties": {
+                                                "first": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "last": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "prev": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "next": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -551,28 +595,41 @@
                 ]
             }
         },
-        "/api/categories/batch-translate": {
+        "/api/categories/{category}/run-step": {
             "post": {
                 "tags": [
                     "Categories"
                 ],
-                "summary": "일괄 번역 트리거",
-                "description": "지정된 언어로 전체 카테고리 일괄 번역을 시작합니다.",
-                "operationId": "880a6536a6e57658f8c932d08143c34c",
+                "summary": "카테고리 단일 스텝 실행",
+                "description": "특정 카테고리에 대해 번역 또는 임베딩 단일 스텝을 동기 실행합니다.",
+                "operationId": "a27032705a08f3399466da1615b046a0",
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "target_language"
+                                    "step"
                                 ],
                                 "properties": {
-                                    "target_language": {
+                                    "step": {
                                         "type": "string",
                                         "enum": [
-                                            "zh",
-                                            "en"
+                                            "translation.zh",
+                                            "translation.en",
+                                            "embedding.ko",
+                                            "embedding.zh",
+                                            "embedding.en"
                                         ]
                                     }
                                 },
@@ -582,17 +639,29 @@
                     }
                 },
                 "responses": {
-                    "202": {
-                        "description": "일괄 번역 시작됨",
+                    "200": {
+                        "description": "스텝 실행 완료",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "message": {
+                                        "step": {
                                             "type": "string"
                                         },
-                                        "target_language": {
-                                            "type": "string"
+                                        "status": {
+                                            "type": "string",
+                                            "enum": [
+                                                "completed",
+                                                "failed"
+                                            ]
+                                        },
+                                        "result": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "nullable": true
                                         }
                                     },
                                     "type": "object"
@@ -601,131 +670,7 @@
                         }
                     },
                     "422": {
-                        "description": "입력값 검증 실패"
-                    },
-                    "401": {
-                        "description": "인증 필요"
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/categories/{category}/translate-embed": {
-            "post": {
-                "tags": [
-                    "Categories"
-                ],
-                "summary": "카테고리별 번역·임베딩 실행",
-                "description": "특정 카테고리에 대해 번역과 임베딩 파이프라인을 실행합니다.",
-                "operationId": "3a43f514b245ad8072eda6b14f466948",
-                "parameters": [
-                    {
-                        "name": "category",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": false,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "steps": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string",
-                                            "enum": [
-                                                "translation.zh",
-                                                "translation.en",
-                                                "embedding.ko",
-                                                "embedding.zh",
-                                                "embedding.en"
-                                            ]
-                                        }
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "202": {
-                        "description": "파이프라인 실행 시작됨",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "category_id": {
-                                            "type": "integer"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "인증 필요"
-                    },
-                    "404": {
-                        "description": "카테고리를 찾을 수 없음"
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/categories/{category}/translate-embed/cancel": {
-            "post": {
-                "tags": [
-                    "Categories"
-                ],
-                "summary": "카테고리별 번역·임베딩 중단",
-                "description": "실행 중인 카테고리 번역·임베딩 파이프라인을 중단합니다.",
-                "operationId": "83cc04a7d75ccf84b19524feb86bd5c2",
-                "parameters": [
-                    {
-                        "name": "category",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "중단 요청 처리됨",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "category_id": {
-                                            "type": "integer"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "입력값 검증 실패 또는 전제조건 불만족"
                     },
                     "401": {
                         "description": "인증 필요"
