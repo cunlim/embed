@@ -47,6 +47,11 @@ test('POST /api/categories/{category}/run-step — translation.zh가 정상 동�
             'step' => 'translation.zh',
             'status' => 'completed',
         ]);
+    $response->assertJsonStructure([
+        'translations' => [
+            'id', 'category_code', 'category_name_ko', 'languages',
+        ],
+    ]);
     expect($response->json('result'))->toBe('测试分类');
 
     // DB에 저장되었는지 확인
@@ -74,6 +79,11 @@ test('POST /api/categories/{category}/run-step — embedding.ko가 정상 동작
             'step' => 'embedding.ko',
             'status' => 'completed',
         ]);
+    $response->assertJsonStructure([
+        'translations' => [
+            'id', 'category_code', 'languages',
+        ],
+    ]);
 
     // DB에 저장되었는지 확인
     $this->assertDatabaseHas('category_embeddings', [
