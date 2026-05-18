@@ -78,4 +78,29 @@ describe("useCategoryExecution", () => {
 
     expect(result.current.getState(1).abortRef.current).toBe(true);
   });
+
+  it("clearStep으로 completedSteps/stepResults/copyableSteps에서 step이 제거된다", async () => {
+    const { result } = renderHook(() => useCategoryExecution("token"));
+
+    mockFetch.mockResolvedValueOnce({
+      json: async () => ({ status: "completed", result: "some result" }),
+    });
+
+    await act(async () => {
+      await result.current.handleSingleAction(1, "translation.en");
+    });
+
+    let state = result.current.getState(1);
+    expect(state.completedSteps.has("translation.en")).toBe(true);
+    expect(state.stepResults.size).toBe(1);
+
+    act(() => {
+      result.current.clearStep(1, "translation.en");
+    });
+
+    state = result.current.getState(1);
+    expect(state.completedSteps.has("translation.en")).toBe(false);
+    expect(state.stepResults.has("translation.en")).toBe(false);
+    expect(state.copyableSteps.has("translation.en")).toBe(false);
+  });
 });

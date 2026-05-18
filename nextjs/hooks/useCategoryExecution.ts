@@ -31,6 +31,7 @@ export interface UseCategoryExecutionReturn {
     onUpdateData?: (data: CategoryTranslations) => void,
   ) => Promise<void>;
   handleCancelPending: (catId: number) => void;
+  clearStep: (catId: number, stepName: StepName) => void;
 }
 
 function createInitialState(): CatExecState {
@@ -276,10 +277,28 @@ export function useCategoryExecution(
     [getState],
   );
 
+  const clearStep = useCallback((catId: number, stepName: StepName) => {
+    const state = getState(catId);
+    const nextCompleted = new Set(state.completedSteps);
+    nextCompleted.delete(stepName);
+    state.completedSteps = nextCompleted;
+
+    const nextResults = new Map(state.stepResults);
+    nextResults.delete(stepName);
+    state.stepResults = nextResults;
+
+    const nextCopyable = new Set(state.copyableSteps);
+    nextCopyable.delete(stepName);
+    state.copyableSteps = nextCopyable;
+
+    forceUpdate();
+  }, [getState]);
+
   return {
     getState,
     handleSingleAction,
     handleRunAll,
     handleCancelPending,
+    clearStep,
   };
 }
