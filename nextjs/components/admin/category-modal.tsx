@@ -81,9 +81,8 @@ export default function CategoryModal({
         setStepResults((prev) => new Map(prev).set(stepName, result.result));
         if (stepName.startsWith("embedding")) {
           handleStepComplete(stepName, data.id);
-        } else {
-          enableStepCopy(stepName);
         }
+        enableStepCopy(stepName);
       } else {
         throw new Error(result.error || '실행 실패');
       }
@@ -131,7 +130,11 @@ export default function CategoryModal({
     setPendingSteps(steps.slice(1));
 
     for (let i = 0; i < steps.length; i++) {
-      if (abortRef.current) break;
+      if (abortRef.current) {
+        setRunningSteps(new Set());
+        setPendingSteps([]);
+        break;
+      }
 
       const stepName = steps[i];
       try {
@@ -154,16 +157,19 @@ export default function CategoryModal({
 
           if (stepName.startsWith("embedding")) {
             handleStepComplete(stepName, data.id);
-          } else {
-            enableStepCopy(stepName);
           }
+          enableStepCopy(stepName);
 
           onListRefresh?.();
         } else {
           throw new Error(result.error || '실행 실패');
         }
 
-        if (abortRef.current) break;
+        if (abortRef.current) {
+          setRunningSteps(new Set());
+          setPendingSteps([]);
+          break;
+        }
 
         const nextIndex = i + 1;
         if (nextIndex < steps.length) {
@@ -174,7 +180,11 @@ export default function CategoryModal({
           setPendingSteps([]);
         }
       } catch (err) {
-        if (abortRef.current) break;
+        if (abortRef.current) {
+          setRunningSteps(new Set());
+          setPendingSteps([]);
+          break;
+        }
         const msg = err instanceof Error ? err.message : '실행 실패';
         setActionError(msg);
         setFailedSteps((prev) => new Set(prev).add(stepName));
@@ -348,6 +358,10 @@ export default function CategoryModal({
             {LANGUAGES.map((lang, i) => {
               const detail = data.languages[lang.key];
               const isExecuting = runningSteps.size > 0 || pendingSteps.length > 0;
+              const transKey = `translation.${lang.key}` as StepName;
+              const translationDone = lang.hasTranslation
+                ? detail.translation_text !== null || completedSteps.has(transKey) || stepResults.has(transKey)
+                : true;
 
               return (
                 <div key={lang.key}>
@@ -377,7 +391,7 @@ export default function CategoryModal({
                               ? JSON.stringify(detail.embedding.preview)
                               : null,
                             `embedding.${lang.key}` as StepName,
-                            detail.translation_text !== null,
+                            translationDone,
                             isExecuting,
                             pendingSteps.includes(`embedding.${lang.key}` as StepName),
                           )}
@@ -439,9 +453,7 @@ export default function CategoryModal({
                 </Button>
               ) : (
                 <Button onClick={handleRunAll} disabled={isExecuting || allCompleted}>
-                  {isExecuting ? (
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  ) : allCompleted ? (
+                  {allCompleted ? (
                     <Check className="mr-1.5 h-4 w-4" />
                   ) : (
                     <Play className="mr-1.5 h-4 w-4" />
