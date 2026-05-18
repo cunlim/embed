@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useSyncExternalStore, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
@@ -10,10 +10,13 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
+  Search,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -37,7 +40,8 @@ import { useCategories } from "@/hooks/useCategories";
 import { useCategoryDetail } from "@/hooks/useCategoryDetail";
 import { useCategoryExecution } from "@/hooks/useCategoryExecution";
 import { isAdmin } from "@/lib/utils";
-import type { Category } from "@/lib/api";
+import { recommend } from "@/lib/api";
+import type { Category, Recommendation, PaginationMeta } from "@/lib/api";
 
 export default function AdminPage() {
   return (
@@ -95,6 +99,19 @@ function AdminPageInner() {
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryCode, setNewCategoryCode] = useState("");
+
+  // 검색 state
+  const [searchText, setSearchText] = useState("");
+  const [searchLanguage, setSearchLanguage] = useState("ko");
+  const [searchResults, setSearchResults] = useState<Recommendation[] | null>(null);
+  const [searchMeta, setSearchMeta] = useState<PaginationMeta | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const searchPageRef = useRef(1);
+
+  const isSearchMode = searchResults !== null;
+  const displayCategories = isSearchMode ? searchResults : categories;
+  const displayMeta = isSearchMode ? searchMeta : meta;
   const [modalCategoryId, setModalCategoryId] = useState<number | null>(null);
   const { data: detailData, isLoading: detailLoading, error: detailError, reload, setData } =
     useCategoryDetail(modalCategoryId, token);
@@ -106,9 +123,37 @@ function AdminPageInner() {
     setNewCategoryCode("");
   }, [newCategoryName, newCategoryCode, addCategory]);
 
+  const handleSearch = useCallback(async (page?: number) => {
+    const currentPage = page ?? 1;
+    searchPageRef.current = currentPage;
+    setIsSearching(true);
+    setSearchError(null);
+    try {
+      const data = await recommend(searchText, searchLanguage, token, currentPage);
+      setSearchResults(data.data);
+      setSearchMeta(data.meta);
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : "검색에 실패했습니다");
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [searchText, searchLanguage, token]);
+
+  const handleReset = useCallback(() => {
+    setSearchText("");
+    setSearchResults(null);
+    setSearchMeta(null);
+    setSearchError(null);
+  }, []);
+
   const handlePageChange = useCallback((newPage: number) => {
-    router.push(`/admin?page=${newPage}`);
-  }, [router]);
+    if (isSearchMode) {
+      handleSearch(newPage);
+    } else {
+      router.push(`/admin?page=${newPage}`);
+    }
+  }, [isSearchMode, handleSearch, router]);
 
   if (!mounted || !authorized) return null;
 
@@ -125,8 +170,60 @@ function AdminPageInner() {
         </h1>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* 카테고리 추가 (sidebar) */}
+          {/* 사이드바 */}
           <div className="space-y-6">
+            {/* 카테고리 검색 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">카테고리 검색</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Tabs value={searchLanguage} onValueChange={setSearchLanguage}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="ko" className="flex-1">한국어</TabsTrigger>
+                    <TabsTrigger value="zh" className="flex-1">중국어</TabsTrigger>
+                    <TabsTrigger value="en" className="flex-1">영어</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <Input
+                  placeholder="검색어 입력..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSearch();
+                  }}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleSearch()}
+                    disabled={isSearching}
+                    className="flex-1"
+                  >
+                    {isSearching ? (
+                      <RefreshCw className="mr-1.5 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="mr-1.5 h-4 w-4" />
+                    )}
+                    검색
+                  </Button>
+                  {searchText && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleReset}
+                      title="초기화"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {searchError && (
+                  <p className="text-sm text-destructive">{searchError}</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 카테고리 추가 */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">카테고리 추가</CardTitle>
@@ -188,7 +285,7 @@ function AdminPageInner() {
             </CardHeader>
             <CardContent>
               {/* 로딩 */}
-              {catLoading && categories.length === 0 && (
+              {(catLoading || isSearching) && displayCategories.length === 0 && (
                 <div className="space-y-2">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <Skeleton key={i} className="h-10 w-full" />
@@ -197,7 +294,7 @@ function AdminPageInner() {
               )}
 
               {/* 에러 */}
-              {!catLoading && catError && (
+              {!catLoading && !isSearching && catError && (
                 <div className="flex items-start gap-3 rounded-md border border-destructive/50 p-4">
                   <AlertCircle className="mt-0.5 h-5 w-5 text-destructive" />
                   <div>
@@ -221,7 +318,7 @@ function AdminPageInner() {
               )}
 
               {/* 빈 상태 */}
-              {!catLoading && !catError && categories.length === 0 && (
+              {!catLoading && !isSearching && !catError && displayCategories.length === 0 && (
                 <div className="flex flex-col items-center gap-2 py-12">
                   <Database className="h-10 w-10 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
@@ -231,24 +328,42 @@ function AdminPageInner() {
               )}
 
               {/* 테이블 */}
-              {categories.length > 0 && (
+              {displayCategories.length > 0 && (
                 <div>
                   {/* 데스크톱 */}
                   <div className="hidden md:block">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>한국어 카테고리</TableHead>
+                          <TableHead>
+                            {searchLanguage === "ko"
+                              ? "한국어 카테고리"
+                              : searchLanguage === "zh"
+                                ? "중국어 카테고리"
+                                : "영어 카테고리"}
+                          </TableHead>
+                          {isSearchMode && <TableHead className="w-[80px]">유사도</TableHead>}
                           <TableHead className="w-[100px]">상태</TableHead>
                           <TableHead className="w-[60px]">보기</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {categories.map((cat) => (
+                        {displayCategories.map((cat) => (
                           <TableRow key={cat.id}>
                             <TableCell className="font-medium">
-                              {cat.category_name_ko}
+                              {searchLanguage === "ko"
+                                ? cat.category_name_ko ?? cat.category_name
+                                : searchLanguage === "zh"
+                                  ? cat.category_name_zh ?? cat.category_name
+                                  : cat.category_name_en ?? cat.category_name}
                             </TableCell>
+                            {isSearchMode && (
+                              <TableCell className="font-mono text-sm text-accent">
+                                {cat.similarity_score !== null
+                                  ? `${(cat.similarity_score * 100).toFixed(1)}%`
+                                  : "-"}
+                              </TableCell>
+                            )}
                             <TableCell>
                               <StatusBadge status={cat.translation_status} />
                             </TableCell>
@@ -271,12 +386,21 @@ function AdminPageInner() {
 
                   {/* 모바일 */}
                   <div className="space-y-2 md:hidden">
-                    {categories.map((cat) => (
+                    {displayCategories.map((cat) => (
                       <Card key={cat.id} className="p-3">
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">
-                              {cat.category_name_ko}
+                              {searchLanguage === "ko"
+                                ? cat.category_name_ko ?? cat.category_name
+                                : searchLanguage === "zh"
+                                  ? cat.category_name_zh ?? cat.category_name
+                                  : cat.category_name_en ?? cat.category_name}
+                              {isSearchMode && cat.similarity_score !== null && (
+                                <span className="ml-2 font-mono text-sm text-accent">
+                                  {(cat.similarity_score * 100).toFixed(1)}%
+                                </span>
+                              )}
                             </p>
                             <div className="mt-1">
                               <StatusBadge status={cat.translation_status} />
@@ -297,7 +421,7 @@ function AdminPageInner() {
                   </div>
 
                   {/* 페이지네이션 */}
-                  {meta && meta.last_page > 1 && (
+                  {displayMeta && displayMeta.last_page > 1 && (
                     <div className="mt-4">
                       <Pagination>
                         <PaginationContent>
@@ -305,17 +429,17 @@ function AdminPageInner() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handlePageChange(meta.current_page - 1)}
-                              disabled={meta.current_page <= 1}
+                              onClick={() => handlePageChange(displayMeta.current_page - 1)}
+                              disabled={displayMeta.current_page <= 1}
                             >
                               <ChevronLeft className="mr-1 h-4 w-4" />
                               이전
                             </Button>
                           </PaginationItem>
-                          {Array.from({ length: meta.last_page }, (_, i) => i + 1).map((p) => (
+                          {Array.from({ length: displayMeta.last_page }, (_, i) => i + 1).map((p) => (
                             <PaginationItem key={p}>
                               <PaginationLink
-                                isActive={p === meta.current_page}
+                                isActive={p === displayMeta.current_page}
                                 onClick={() => handlePageChange(p)}
                               >
                                 {p}
@@ -326,8 +450,8 @@ function AdminPageInner() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handlePageChange(meta.current_page + 1)}
-                              disabled={meta.current_page >= meta.last_page}
+                              onClick={() => handlePageChange(displayMeta.current_page + 1)}
+                              disabled={displayMeta.current_page >= displayMeta.last_page}
                             >
                               다음
                               <ChevronRight className="ml-1 h-4 w-4" />
