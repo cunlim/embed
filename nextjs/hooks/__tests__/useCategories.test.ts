@@ -132,7 +132,7 @@ describe("useCategories", () => {
         await result.current.addCategory("의류>여성의류>원피스");
       });
 
-      expect(mockCreateCategory).toHaveBeenCalledWith("의류>여성의류>원피스", "token");
+      expect(mockCreateCategory).toHaveBeenCalledWith("의류>여성의류>원피스", "token", undefined);
       expect(result.current.categories).toEqual([mockCategory]);
       expect(result.current.isLoading).toBe(false);
       expect(result.current.error).toBeNull();

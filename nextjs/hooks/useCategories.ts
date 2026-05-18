@@ -15,7 +15,7 @@ interface UseCategoriesReturn {
   isLoaded: boolean;
   error: string | null;
   loadCategories: (page?: number) => Promise<void>;
-  addCategory: (categoryNameKo: string) => Promise<void>;
+  addCategory: (categoryNameKo: string, categoryCode?: string) => Promise<void>;
   updateCategoryStatus: (id: number, updates: Partial<Category>) => void;
 }
 
@@ -57,11 +57,11 @@ export function useCategories(token?: string | null): UseCategoriesReturn {
   }, [token]);
 
   const addCategory = useCallback(
-    async (categoryNameKo: string) => {
+    async (categoryNameKo: string, categoryCode?: string) => {
       setIsLoading(true);
       setError(null);
       try {
-        await createCategory(categoryNameKo, token);
+        await createCategory(categoryNameKo, token, categoryCode);
         const data = await getCategories(token, currentPage.current);
         setCategories(data.data);
         setMeta(data.meta);
