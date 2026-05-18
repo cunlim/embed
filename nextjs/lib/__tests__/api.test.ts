@@ -217,4 +217,36 @@ describe("API 클라이언트", () => {
       );
     });
   });
+
+  describe("updateCategoryText", () => {
+    it("올바른 URL과 body로 PUT 요청을 보낸다", async () => {
+      mockResponse({ data: { updated: true, id: 1 } });
+
+      const result = await api.updateCategoryText(1, "category_name_en", "New Name", "token");
+
+      expect(result).toEqual({ data: { updated: true, id: 1 } });
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://embed.cunlim.dev/api/categories/1/update-text",
+        expect.objectContaining({
+          method: "PUT",
+          body: JSON.stringify({ field: "category_name_en", value: "New Name" }),
+          headers: expect.objectContaining({ Authorization: "Bearer token" }),
+        })
+      );
+    });
+
+    it("null value를 전달할 수 있다", async () => {
+      mockResponse({ data: { updated: true, id: 1 } });
+
+      await api.updateCategoryText(1, "category_name_ko", null, "token");
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          method: "PUT",
+          body: JSON.stringify({ field: "category_name_ko", value: null }),
+        })
+      );
+    });
+  });
 });

@@ -208,6 +208,21 @@ export function runStep(
   });
 }
 
+// --- 카테고리 텍스트 업데이트 ---
+
+export function updateCategoryText(
+  categoryId: number,
+  field: "category_name_ko" | "category_name_en" | "category_name_zh",
+  value: string | null,
+  token?: string | null
+): Promise<{ data: { updated: boolean; id: number } }> {
+  return request(`/categories/${categoryId}/update-text`, {
+    method: "PUT",
+    body: { field, value },
+    token,
+  });
+}
+
 // --- 인증 ---
 
 export interface User {
