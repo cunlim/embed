@@ -385,7 +385,7 @@ class CategoryController extends Controller
             ->where('language', $lang)
             ->delete();
 
-        $category->fresh();
+        $category = $category->fresh();
         $translations = (new CategoryTranslationsResource($category))->resolve();
         $listRow = (new CategoryResource($category))->resolve();
 
