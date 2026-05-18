@@ -41,10 +41,11 @@ Schema::table('categories', function (Blueprint $table) {
 
 **변경 파일**: `nextjs/components/admin/category-modal.tsx`
 
+- **input 필드는 항상 편집 가능** — `isKoEmpty`가 버튼 disabled에만 영향, input의 `readOnly`는 기존 조건(`runningSteps.size > 0 || pendingSteps.length > 0`)과 무관하게 유지
 - `isKoEmpty = data && !data.category_name_ko` 도입
 - `LANGUAGES.map` 루프 내에서 `translationDone` 계산 시 한국어 빈값 고려
-  - `noSourceText = isKoEmpty && lang.hasTranslation` (en/zh 번역)
-  - `noSourceTextForEmbedding = isKoEmpty` (모든 언어 임베딩)
+  - `noSourceText = isKoEmpty && lang.hasTranslation` (en/zh 번역 play 버튼만 disabled)
+  - `noSourceTextForEmbedding = isKoEmpty` (모든 언어 임베딩 play 버튼 disabled)
 - 전달:
   - 번역 play 버튼: `disabled={isExecuting || translationDone === false || noSourceText}`
   - 임베딩 play 버튼: `disabled={isExecuting || translationDone === false || noSourceTextForEmbedding}`
