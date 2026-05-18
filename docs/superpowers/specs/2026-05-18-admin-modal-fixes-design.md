@@ -1,108 +1,139 @@
-# Admin 모달 버튼 상태 버그 수정 설계
+# Admin 페이지 수정 모달 이슈 해결 설계
 
-2026-05-18 (v2)
+날짜: 2026-05-18 (v3)
 
 ## 개요
 
-Admin 페이지 카테고리 상세 모달의 버튼 상태 관련 4가지 버그를 수정한다.
+Admin 페이지 카테고리 상세 모달의 3가지 이슈를 수정한다:
+1. TSC 타입 체크 실패 (run-all-checks.sh)
+2. 개별 실행 버튼 완료 후 목록 미반영
+3. 모달 닫힘 시 실행 상태 초기화 문제
 
-## 변경 대상
+## Issue 1: TSC Fail
 
-- `nextjs/components/admin/category-modal.tsx` — 모든 수정 사항
+### 원인
+`tsconfig.json`의 `include`에 `.next/dev/types/**/*.ts`가 포함되어 있고, Turbopack이 생성한 `.next/dev/types/validator.ts`에 문법 오류가 있다.
+
+### 수정
+`tsconfig.json`의 `exclude` 배열에 `.next`를 추가한다.
+
+### 변경 파일
+- `nextjs/tsconfig.json`: `.next`를 `exclude`에 추가
 
 ---
 
-## Fix 1: 전체실행 버튼 로딩 아이콘 제거
+## Issue 2: 개별 실행 버튼 목록 미반영
 
-### 현재 동작
-
-`isExecuting=true` + `hasPending=false`일 때 전체실행 버튼에 `Loader2` 회전 아이콘이 표시된다.
+### 원인
+`handleSingleAction` 함수에서 실행 완료 후 `onListRefresh?.()`를 호출하지 않는다.
 
 ### 수정
+`handleSingleAction`의 성공 분기에 `onListRefresh?.()`를 추가한다.
 
-전체실행 버튼의 아이콘 조건을 단순화:
-- `allCompleted` → `Check` 아이콘 + `disabled`
-- 실행 중 또는 기본 → `Play` 아이콘만 (Loader2 제거)
-- 전체실행 버튼은 `disabled={isExecuting || allCompleted}` 유지
-
-### 버튼 상태 흐름
-
-| 상태 | 아이콘 | disabled |
-|------|--------|----------|
-| 전체실행 (기본) | Play | false |
-| 전체실행 (실행 중) | Play | true |
-| 전체실행 (전체완료) | Check | true |
-| 실행중지 | Square | false |
+### 변경 파일
+- `nextjs/components/admin/category-modal.tsx`
 
 ---
 
-## Fix 2: 번역 완료 후 임베딩 버튼 disabled 해제
+## Issue 3: 모달 닫힘 시 실행 상태 초기화
 
-### 현재 동작
-
-`handleSingleAction`으로 번역 실행 성공 시 `completedSteps`와 `stepResults`에는 반영되지만,
-`data` prop이 갱신되지 않아 `detail.translation_text`가 여전히 `null`이다.
-임베딩 버튼의 `disabled` 조건이 `detail.translation_text !== null`에 의존하므로 disabled가 해제되지 않는다.
+### 원인
+실행 상태(runningSteps, pendingSteps, completedSteps, failedSteps, 등)가 `CategoryModal` 내부에 존재하며, `handleOpenChange`가 모달 닫힘 시 이 모든 상태를 초기화한다.
 
 ### 수정
+`useCategoryExecution` 훅을 생성하여 실행 상태와 로직을 부모 컴포넌트로 분리한다.
 
-임베딩 버튼의 disabled 조건에 `completedSteps`와 `stepResults`를 추가로 확인:
+### 아키텍처
 
+변경 전:
 ```
-translationDone = detail.translation_text !== null 
-                || completedSteps.has("translation.{lang}") 
-                || stepResults.has("translation.{lang}")
+admin/page.tsx                     CategoryModal
+┌──────────────────┐              ┌─────────────────────────┐
+│                  │  props       │ 실행 상태 + 실행 로직   │
+│  CategoryModal   │────────────>│ handleOpenChange = reset │
+│                  │              │ 모달 닫으면 상태 소멸    │
+└──────────────────┘              └─────────────────────────┘
 ```
 
-이렇게 하면 서버 데이터가 갱신되지 않아도 로컬 실행 결과를 기반으로 disabled가 해제된다.
+변경 후:
+```
+admin/page.tsx                     CategoryModal
+┌──────────────────────┐          ┌─────────────────────────┐
+│ useCategoryExecution │ props    │ (presentational)        │
+│ ─ 실행 상태 관리     │────────>│ ─ props 기반 렌더링     │
+│ ─ 실행 로직 포함     │          │ ─ 내부 실행 state 없음  │
+│ ─ 상태 생명주기 관리  │          │ ─ handleOpenChange=     │
+│                      │          │   visual only           │
+└──────────────────────┘          └─────────────────────────┘
+```
 
----
+### useCategoryExecution 훅
 
-## Fix 3: 실행중지 후 runningSteps 정리
+```typescript
+// hooks/useCategoryExecution.ts
 
-### 현재 동작
+type StepName = "translation.zh" | "translation.en" | "embedding.ko" | "embedding.zh" | "embedding.en";
 
-`handleCancelPending()` → `abortRef.current = true`
-현재 실행 중인 step이 완료된 후 abort 체크에서 `break`되지만 `runningSteps`가 클리어되지 않는다.
-로딩 스피너가 영원히 멈추지 않고 "전체 실행" 버튼도 disabled+로딩 상태로 고정된다.
-
-### 수정
-
-`handleRunAll`의 모든 abort 체크 지점에서 `setRunningSteps(new Set())`, `setPendingSteps([])`를 먼저 호출:
-
-**지점 A** (루프 시작 - 다음 step 직전): `if (abortRef.current)` → `setRunningSteps(new Set()); break;`
-**지점 B** (step 완료 후 다음 step 전환 전): `if (abortRef.current)` → `setRunningSteps(new Set()); break;`
-**지점 C** (catch 블록): `if (abortRef.current)` → `setRunningSteps(new Set()); break;`
-
----
-
-## Fix 4: 임베딩 step도 copyableSteps에 추가
-
-### 현재 동작
-
-`handleRunAll`과 `handleSingleAction` 모두 임베딩 step 완료 시 `enableStepCopy()`를 호출하지 않는다.
-`copyableSteps`에 임베딩 step이 추가되지 않아 Check 아이콘에서 Copy 버튼으로 전환되지 않는다.
-
-### 수정
-
-임베딩 step 완료 시 `handleStepComplete()` 호출 후 `enableStepCopy(stepName)`를 추가:
-
-```ts
-if (stepName.startsWith("embedding")) {
-  handleStepComplete(stepName, data.id);
+interface CatExecState {
+  runningSteps: Set<StepName>;
+  pendingSteps: StepName[];
+  completedSteps: Set<StepName>;
+  failedSteps: Set<StepName>;
+  stepResults: Map<StepName, string>;
+  copyableSteps: Set<StepName>;
+  embeddingFullData: Map<StepName, string>;
+  flashSteps: Set<StepName>;
+  abortRef: { current: boolean };
 }
-enableStepCopy(stepName);  // embedding도 포함
 ```
 
----
+### CategoryModal props 추가
 
-## 테스트
+```typescript
+interface Props {
+  // 기존 props 유지
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  data: CategoryTranslations | null;
+  isLoading: boolean;
+  error: string | null;
+  token?: string | null;
+  onReload?: () => void;
+  onListRefresh?: () => void;
+  // 추가 props
+  execState: CatExecState | null;
+  onSingleAction: (stepName: StepName) => Promise<void>;
+  onRunAll: () => Promise<void>;
+  onCancelPending: () => void;
+}
+```
 
-- 기존 `category-modal.test.tsx`에 다음 케이스 추가:
-  - Fix 2: 번역 완료 후 임베딩 버튼 disabled 해제 검증 (completedSteps 모킹)
-  - Fix 3: abort 후 runningSteps 정리 검증
-  - Fix 4: 임베딩 완료 후 copyableSteps 추가 검증 (setTimeout 우회)
+### 상태 생명주기
 
-## 영향 범위
+| 이벤트 | 동작 |
+|--------|------|
+| 카테고리 상세 보기 | 해당 카테고리 상태 획득 (없으면 신규) |
+| 모달 닫힘 | 상태 유지 |
+| 같은 카테고리 다시 열기 | 기존 상태로 진행 상황 표시 |
+| 다른 카테고리 열기 | 새 상태 생성 (이전 상태는 메모리 잔류) |
 
-`nextjs/components/admin/category-modal.tsx` 1개 파일만 변경. 테스트 파일도 동일 디렉토리.
+### CategoryModal 내부 변경 사항
+- `handleSingleAction`, `handleRunAll`, `handleCancelPending` 제거
+- `handleStepComplete` 제거 (훅 내부 처리)
+- 실행 관련 state 선언 제거
+- `handleOpenChange`: `onOpenChange(open)`만 호출, 상태 리셋 없음
+- 모든 실행 관련 로직을 props 콜백으로 위임
+
+### 변경 파일 목록
+
+| 파일 | 변경 내용 |
+|------|-----------|
+| `nextjs/tsconfig.json` | Issue 1: `.next` exclude 추가 |
+| `nextjs/hooks/useCategoryExecution.ts` | 신규: 실행 상태 관리 훅 |
+| `nextjs/components/admin/category-modal.tsx` | Issue 2+3: onListRefresh 추가, 실행 상태 제거, props 기반 렌더링 |
+| `nextjs/app/admin/page.tsx` | `useCategoryExecution` 적용 및 props 전달 |
+
+### 테스트 전략
+- `useCategoryExecution` 훅 단위 테스트 신규 작성
+- `category-modal.test.tsx` props 인터페이스 변경에 맞게 수정
+- Playwright E2E로 전체 실행/개별 실행/모달 닫기 동작 검증
