@@ -1,786 +1,696 @@
-# Admin 모달 이슈 수정 구현 계획
+# Admin 모달 이슈 3건 수정 구현 계획
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Admin 페이지의 3가지 이슈(임베딩 버튼 disabled, 목록 정렬+페이지네이션, 전체실행 순차 애니메이션)를 수정한다.
+**Goal:** Admin 페이지 카테고리 상세 모달의 3가지 이슈(TSC fail, 개별실행 목록 미반영, 모달 닫힘 시 상태 소멸)를 수정한다.
 
-**Architecture:** 이슈 1과 4는 `category-modal.tsx`의 renderRow/handleRunAll 로직 수정으로 해결한다. 이슈 3은 Laravel `paginate(20)` + Next.js `useSearchParams` URL 연동으로 서버사이드 페이지네이션을 구현한다. 이슈 4는 WebSocket `completed` 이벤트 수신 시 `pendingSteps` 배열에서 순차적으로 runningSteps를 채우는 방식으로 구현한다.
+**Architecture:** `useCategoryExecution` 훅을 신규 생성하여 실행 상태와 로직을 부모 컴포넌트로 분리한다. CategoryModal은 props 기반 presentational 컴포넌트로 변경되어 모달 닫힘 시에도 상태가 유지된다. TSC 설정은 `.next`를 exclude에 추가하여 생성 파일의 오류를 무시한다.
 
-**Tech Stack:** Next.js 16 + React 19 + TypeScript + shadcn/ui, Laravel 13 + PHP 8.5 + Pest 4
+**Tech Stack:** Next.js 16, React 19, TypeScript 5, Vitest + React Testing Library
 
 ---
 
-### Task 1: 임베딩 버튼 disabled (renderRow 수정)
+### Task 1: TSC 설정 수정
 
 **Files:**
-- Modify: `nextjs/components/admin/category-modal.tsx:163-247` (renderRow)
-- Modify: `nextjs/components/admin/__tests__/category-modal.test.tsx`
+- Modify: `nextjs/tsconfig.json:33`
 
-- [ ] **Step 1: renderRow에 translationDone 파라미터 추가**
+- [ ] **Step 1: `.next`를 exclude에 추가**
 
-`renderRow` 시그니처에 `translationDone` 파라미터를 추가한다. `ko`는 항상 `true`, `en`/`zh`는 `translation_text !== null` 여부를 전달한다.
-
-```tsx
-// renderRow line 163 — 파라미터 추가
-const renderRow = (
-  label: string,
-  displayValue: string | null,
-  copyValue: string | null,
-  stepName: StepName | null,
-  translationDone?: boolean,
-) => {
+수정 전:
+```json
+"exclude": ["node_modules"]
 ```
 
-- [ ] **Step 2: Play 버튼 disabled 조건에 translationDone 추가**
-
-Play 버튼(embedding/translation 실행)은 `translationDone === false`일 때도 disabled 되어야 한다. `isRunning`과 `translationDone === false`를 OR 조건으로 묶는다.
-
-```tsx
-// line 237-241 — disabled 조건 변경
-) : stepName ? (
-  <Button
-    variant="ghost"
-    size="icon"
-    onClick={() => handleSingleAction(stepName)}
-    title={label + " 실행"}
-    disabled={isRunning || translationDone === false}
-  >
-    <Play className="size-3" />
-  </Button>
-) : null}
+수정 후:
+```json
+"exclude": ["node_modules", ".next"]
 ```
 
-- [ ] **Step 3: 호출부에서 translationDone 전달**
+- [ ] **Step 2: TSC 실행하여 통과 확인**
 
-`ko` 언어의 임베딩 행은 `translationDone=true`, `en`/`zh` 언어의 임베딩 행은 `detail.translation_text !== null`을 전달한다.
+Run: `docker exec cl_embed_nextjs npx tsc --noEmit`
+Expected: 종료 코드 0
 
-```tsx
-// line 302-327 — renderRow 호출부 수정
-<div className="space-y-0.5">
-  {lang.hasTranslation
-    ? (
-      <>
-        {renderRow(
-          "번역",
-          detail.translation_text,
-          detail.translation_text,
-          `translation.${lang.key}` as StepName,
-        )}
-        {renderRow(
-          "임베딩",
-          detail.embedding.preview
-            ? `[${detail.embedding.preview.slice(0, 10).map((v) => v.toFixed(3)).join(", ")}…1024차원]`
-            : null,
-          detail.embedding.preview
-            ? JSON.stringify(detail.embedding.preview)
-            : null,
-          `embedding.${lang.key}` as StepName,
-          detail.translation_text !== null,
-        )}
-      </>
-    )
-    : (
-      <>
-        {renderRow(
-          "원본",
-          detail.translation_text,
-          detail.translation_text,
-          null,
-        )}
-        {renderRow(
-          "임베딩",
-          detail.embedding.preview
-            ? `[${detail.embedding.preview.slice(0, 10).map((v) => v.toFixed(3)).join(", ")}…1024차원]`
-            : null,
-          detail.embedding.preview
-            ? JSON.stringify(detail.embedding.preview)
-            : null,
-          `embedding.${lang.key}` as StepName,
-          true,
-        )}
-      </>
-    )
-  }
-</div>
+---
+
+### Task 2: `StepName` 타입을 `@/lib/api`로 이동
+
+**Files:**
+- Modify: `nextjs/lib/api.ts` — StepName 타입 추가
+- Modify: `nextjs/components/admin/category-modal.tsx` — 로컬 StepName 제거, import로 대체
+
+- [ ] **Step 1: `@/lib/api.ts`에 `StepName` 타입 추가**
+
+```typescript
+export type StepName = "translation.zh" | "translation.en" | "embedding.ko" | "embedding.zh" | "embedding.en";
 ```
 
-- [ ] **Step 4: 테스트 추가 — 번역 미완료 시 임베딩 버튼 disabled 검증**
+- [ ] **Step 2: `category-modal.tsx`에서 로컬 `StepName` 제거**
 
-`nextjs/components/admin/__tests__/category-modal.test.tsx`에 다음 테스트를 추가한다:
+```typescript
+// 제거:
+type StepName = "translation.zh" | "translation.en" | "embedding.ko" | "embedding.zh" | "embedding.en";
 
-```ts
-it("번역이 완료되지 않은 언어의 임베딩 실행 버튼은 disabled 된다", () => {
-  render(
-    <CategoryModal
-      open={true}
-      onOpenChange={vi.fn()}
-      data={pendingData}
-      isLoading={false}
-      error={null}
-      token="token"
-    />,
-  );
-
-  // en, zh 번역이 null → 임베딩 버튼은 disabled
-  const embeddingButtons = screen.getAllByRole("button", { name: "임베딩 실행" });
-  // ko의 임베딩 버튼은 활성화 (번역 불필요)
-  // en, zh의 임베딩 버튼은 disabled (번역 미완료)
-  const disabledEmbeds = embeddingButtons.filter((btn) => (btn as HTMLButtonElement).disabled);
-  expect(disabledEmbeds.length).toBe(2); // en, zh
-});
-
-it("번역이 완료된 언어의 임베딩 실행 버튼은 활성화된다", () => {
-  const partialData = {
-    ...pendingData,
-    languages: {
-      ...pendingData.languages,
-      en: {
-        translation_text: "Life/Health>Laundry>Ironing Board",
-        embedding: { status: "pending" as const, preview: null },
-      },
-    },
-  };
-
-  render(
-    <CategoryModal
-      open={true}
-      onOpenChange={vi.fn()}
-      data={partialData}
-      isLoading={false}
-      error={null}
-      token="token"
-    />,
-  );
-
-  const embeddingButtons = screen.getAllByRole("button", { name: "임베딩 실행" });
-  // ko: 활성화, en: 활성화 (번역 완료), zh: disabled (번역 미완료)
-  const enabledEmbeds = embeddingButtons.filter((btn) => !(btn as HTMLButtonElement).disabled);
-  expect(enabledEmbeds.length).toBe(2); // ko, en
-});
-```
-
-- [ ] **Step 5: 테스트 실행 및 확인**
-
-```bash
-docker exec cl_embed_nextjs npm test -- --filter="category-modal"
-```
-
-Expected: 12 tests (기존 10 + 신규 2) all pass.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add nextjs/components/admin/category-modal.tsx nextjs/components/admin/__tests__/category-modal.test.tsx
-git commit -m "fix: 임베딩 버튼 번역 미완료 시 disabled 처리"
+// 변경:
+import type { CategoryTranslations, StepName } from "@/lib/api";
 ```
 
 ---
 
-### Task 2: Laravel 카테고리 목록 정렬 + 페이지네이션
+### Task 3: `useCategoryExecution` 훅 생성
 
 **Files:**
-- Modify: `laravel/app/Http/Controllers/Api/CategoryController.php:49-52`
-- Modify: `laravel/tests/Feature/Api/CategoryControllerTest.php`
+- Create: `nextjs/hooks/useCategoryExecution.ts`
+- Test: `nextjs/hooks/__tests__/useCategoryExecution.test.ts`
 
-- [ ] **Step 1: 테스트 작성 — orderBy + paginate 검증**
+- [ ] **Step 1: `CatExecState` 인터페이스 정의 및 훅 구현**
 
-`laravel/tests/Feature/Api/CategoryControllerTest.php`의 `'GET /api/categories — 카테고리 목록을 반환한다'` 테스트를 확장한다:
-
-```php
-test('GET /api/categories — id 오름차순으로 정렬된 카테고리 목록을 반환한다', function () {
-    // id 역순으로 생성해도 응답은 id 오름차순이어야 함
-    $cat3 = Category::factory()->create(['id' => 3, 'category_name_ko' => 'C']);
-    $cat2 = Category::factory()->create(['id' => 2, 'category_name_ko' => 'B']);
-    $cat1 = Category::factory()->create(['id' => 1, 'category_name_ko' => 'A']);
-
-    $response = $this->getJson('/api/categories');
-
-    $response->assertOk()
-        ->assertJsonPath('data.0.id', 1)
-        ->assertJsonPath('data.1.id', 2)
-        ->assertJsonPath('data.2.id', 3);
-});
-
-test('GET /api/categories — 페이지네이션 응답에 meta와 links가 포함된다', function () {
-    Category::factory()->count(25)->create();
-
-    $response = $this->getJson('/api/categories');
-
-    $response->assertOk()
-        ->assertJsonCount(20, 'data')
-        ->assertJsonStructure([
-            'data',
-            'meta' => ['current_page', 'last_page', 'per_page', 'total'],
-            'links' => ['first', 'last', 'prev', 'next'],
-        ])
-        ->assertJsonPath('meta.per_page', 20)
-        ->assertJsonPath('meta.total', 25);
-});
-
-test('GET /api/categories — page 파라미터로 다른 페이지 조회', function () {
-    Category::factory()->count(25)->create();
-
-    $response = $this->getJson('/api/categories?page=2');
-
-    $response->assertOk()
-        ->assertJsonCount(5, 'data')
-        ->assertJsonPath('meta.current_page', 2)
-        ->assertJsonPath('meta.last_page', 2);
-});
-```
-
-- [ ] **Step 2: 테스트 실패 확인**
-
-```bash
-docker exec cl_embed_laravel php artisan test --compact --filter="GET /api/categories"
-```
-
-Expected: 신규 추가된 3개 테스트 FAIL (기존 2개는 통과).
-
-- [ ] **Step 3: CategoryController::index() 수정**
-
-```php
-public function index(): CategoryCollection
-{
-    return new CategoryCollection(
-        Category::query()->with('embeddings')->orderBy('id')->paginate(20)
-    );
-}
-```
-
-- [ ] **Step 4: 테스트 통과 확인**
-
-```bash
-docker exec cl_embed_laravel php artisan test --compact --filter="GET /api/categories"
-```
-
-Expected: 5 tests (기존 2 + 신규 3) all PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add laravel/app/Http/Controllers/Api/CategoryController.php laravel/tests/Feature/Api/CategoryControllerTest.php
-git commit -m "feat: 카테고리 목록 id 오름차순 정렬 및 페이지네이션 (per_page=20)"
-```
-
----
-
-### Task 3: 프론트엔드 페이지네이션 + URL 연동
-
-**Files:**
-- Modify: `nextjs/hooks/useCategories.ts`
-- Modify: `nextjs/lib/api.ts:108-114` (getCategories, CategoryListResponse)
-- Modify: `nextjs/app/admin/page.tsx` (Suspense 경계 추가, Pagination UI, URL 동기화 effect)
-- Modify: `nextjs/hooks/__tests__/useCategories.test.ts`
-
-Shadcn Pagination 컴포넌트가 없으므로 추가한다.
-
-- [ ] **Step 1: shadcn Pagination 컴포넌트 추가**
-
-```bash
-docker exec cl_embed_nextjs sh -c "echo 'y' | npx shadcn@latest add pagination"
-```
-
-- [ ] **Step 2: API 함수 수정 — getCategories에 page 파라미터 추가**
-
-`nextjs/lib/api.ts`:
-
-```ts
-export interface PaginationMeta {
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
-  from: number;
-  to: number;
-}
-
-export interface CategoryListResponse {
-  data: Category[];
-  meta: PaginationMeta;
-  links: {
-    first: string | null;
-    last: string | null;
-    prev: string | null;
-    next: string | null;
-  };
-}
-
-export function getCategories(
-  token?: string | null,
-  page?: number,
-): Promise<CategoryListResponse> {
-  const params = new URLSearchParams();
-  if (page && page > 1) params.set("page", String(page));
-  params.set("per_page", "20");
-  const qs = params.toString();
-  return request<CategoryListResponse>(`/categories?${qs}`, { token });
-}
-```
-
-- [ ] **Step 3: useCategories 훅 수정 — page 파라미터 + meta 반환**
-
-`nextjs/hooks/useCategories.ts`:
-
-```ts
-import { useState, useCallback, useEffect, useRef } from "react";
-import {
-  getCategories,
-  createCategory,
-  type Category,
-  type PaginationMeta,
-} from "@/lib/api";
-
-interface UseCategoriesReturn {
-  categories: Category[];
-  meta: PaginationMeta | null;
-  isLoading: boolean;
-  isLoaded: boolean;
-  error: string | null;
-  loadCategories: (page?: number) => Promise<void>;
-  addCategory: (categoryNameKo: string) => Promise<void>;
-}
-
-export function useCategories(token?: string | null): UseCategoriesReturn {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [meta, setMeta] = useState<PaginationMeta | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const loadedToken = useRef<string | null | undefined>(undefined);
-  const currentPage = useRef<number>(1);
-
-  const loadCategories = useCallback(async (page?: number) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await getCategories(token, page ?? currentPage.current);
-      setCategories(data.data);
-      setMeta(data.meta);
-      currentPage.current = data.meta.current_page;
-      setIsLoaded(true);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "카테고리 목록을 불러오지 못했습니다"
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [token]);
-
-  // mount 시 자동 로드, token 변경 시 재로드
-  useEffect(() => {
-    if (loadedToken.current !== token) {
-      loadedToken.current = token;
-      setCategories([]);
-      setMeta(null);
-      setIsLoaded(false);
-      loadCategories(1);
-    }
-  }, [token, loadCategories]);
-
-  const addCategory = useCallback(
-    async (categoryNameKo: string) => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        await createCategory(categoryNameKo, token);
-        const data = await getCategories(token, currentPage.current);
-        setCategories(data.data);
-        setMeta(data.meta);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "카테고리 추가에 실패했습니다"
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [token]
-  );
-
-  return { categories, meta, isLoading, isLoaded, error, loadCategories, addCategory };
-}
-```
-
-- [ ] **Step 4: admin/page.tsx 수정 — Suspense 경계 + Pagination UI**
-
-`useSearchParams()`는 Suspense 경계가 필요하므로, 내부 컴포넌트 `AdminPageInner`를 생성하고 default export를 Suspense로 감싼다.
-
-```tsx
+`hooks/useCategoryExecution.ts`:
+```typescript
 "use client";
 
-import { useState, useCallback, useSyncExternalStore, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Plus, RefreshCw, AlertCircle, Database, Eye,
-  ChevronLeft, ChevronRight,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
-  Pagination, PaginationContent, PaginationItem, PaginationLink,
-} from "@/components/ui/pagination";
-import { Skeleton } from "@/components/ui/skeleton";
-import CategoryModal from "@/components/admin/category-modal";
-import StatusBadge from "@/components/admin/status-badge";
-import { useAuth, getToken } from "@/hooks/useAuth";
-import { useCategories } from "@/hooks/useCategories";
-import { useCategoryDetail } from "@/hooks/useCategoryDetail";
-import { isAdmin } from "@/lib/utils";
+import { useRef, useCallback, useReducer } from "react";
+import type { StepName, CategoryTranslations } from "@/lib/api";
 
-export default function AdminPage() {
-  return (
-    <Suspense>
-      <AdminPageInner />
-    </Suspense>
-  );
+export interface CatExecState {
+  runningSteps: Set<StepName>;
+  pendingSteps: StepName[];
+  completedSteps: Set<StepName>;
+  failedSteps: Set<StepName>;
+  stepResults: Map<StepName, string>;
+  copyableSteps: Set<StepName>;
+  embeddingFullData: Map<StepName, string>;
+  flashSteps: Set<StepName>;
+  abortRef: { current: boolean };
+  actionError: string | null;
 }
 
-function AdminPageInner() {
-  const { user, isLoading: authLoading } = useAuth();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
-  const authorized = user ? isAdmin(user.id) : false;
+export interface UseCategoryExecutionReturn {
+  getState: (catId: number) => CatExecState;
+  handleSingleAction: (
+    catId: number,
+    stepName: StepName,
+    onListRefresh?: () => void,
+  ) => Promise<void>;
+  handleRunAll: (
+    catId: number,
+    data: CategoryTranslations,
+    onListRefresh?: () => void,
+  ) => Promise<void>;
+  handleCancelPending: (catId: number) => void;
+}
 
-  // URL에서 현재 페이지 파싱
-  const pageParam = searchParams.get("page");
-  const [currentPage, setCurrentPage] = useState(() => {
-    const p = parseInt(pageParam ?? "1", 10);
-    return Number.isNaN(p) || p < 1 ? 1 : p;
-  });
+function createInitialState(): CatExecState {
+  return {
+    runningSteps: new Set(),
+    pendingSteps: [],
+    completedSteps: new Set(),
+    failedSteps: new Set(),
+    stepResults: new Map(),
+    copyableSteps: new Set(),
+    embeddingFullData: new Map(),
+    flashSteps: new Set(),
+    abortRef: { current: false },
+    actionError: null,
+  };
+}
 
-  // URL page 파라미터 변경 감지 → currentPage 동기화
-  const urlPage = parseInt(pageParam ?? "1", 10);
-  const effectivePage = Number.isNaN(urlPage) || urlPage < 1 ? 1 : urlPage;
-  // effect 대신 렌더링 중 동기화 (이미 mount 완료 상태이므로 안전)
-  const page = effectivePage;
+function delayMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-  // 인증 가드
-  useEffect(() => {
-    if (!mounted || authLoading) return;
+export function useCategoryExecution(
+  token: string | null,
+): UseCategoryExecutionReturn {
+  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
+  const stateMapRef = useRef<Map<number, CatExecState>>(new Map());
 
-    if (!user) {
-      router.replace("/login?redirect=/admin");
-    } else if (!isAdmin(user.id)) {
-      router.back();
+  const getState = useCallback((catId: number): CatExecState => {
+    if (!stateMapRef.current.has(catId)) {
+      stateMapRef.current.set(catId, createInitialState());
     }
-  }, [mounted, authLoading, user, router]);
+    return stateMapRef.current.get(catId)!;
+  }, []);
 
-  // URL page 파라미터 동기화 (mount 시 + URL 변경 시 해당 페이지 로드)
-  useEffect(() => {
-    if (!mounted) return;
-    loadCategories(page);
-  }, [mounted, page, loadCategories]);
+  const handleSingleAction = useCallback(
+    async (catId: number, stepName: StepName, onListRefresh?: () => void) => {
+      const state = getState(catId);
+      state.runningSteps = new Set(state.runningSteps).add(stepName);
+      state.completedSteps.delete(stepName);
+      state.failedSteps.delete(stepName);
+      state.actionError = null;
+      forceUpdate();
 
-  const token = mounted ? getToken() : null;
-  const {
-    categories,
-    meta,
-    isLoading: catLoading,
-    error: catError,
-    loadCategories,
-    addCategory,
-  } = useCategories(token);
+      try {
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api";
+        const res = await fetch(
+          `${apiUrl}/categories/${catId}/run-step`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ step: stepName }),
+          },
+        );
+        const result = await res.json();
 
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [modalCategoryId, setModalCategoryId] = useState<number | null>(null);
-  const { data: detailData, isLoading: detailLoading, error: detailError, reload } =
-    useCategoryDetail(modalCategoryId, token);
+        if (result.status === "completed") {
+          state.completedSteps = new Set(state.completedSteps).add(stepName);
+          state.stepResults = new Map(state.stepResults).set(
+            stepName,
+            result.result,
+          );
+          state.copyableSteps = new Set(state.copyableSteps);
 
-  // page 변경 시 데이터 로드
-  const handlePageChange = useCallback((newPage: number) => {
-    router.push(`/admin?page=${newPage}`);
-    // loadCategories는 page 파라미터를 받아 요청
-    loadCategories(newPage);
-  }, [router, loadCategories]);
+          delayMs(2000).then(() => {
+            state.copyableSteps.add(stepName);
+            forceUpdate();
+          });
 
-  // ... (기존 handleAddCategory, return JSX 그대로)
+          if (stepName.startsWith("embedding")) {
+            try {
+              const { fetchCategoryTranslations } = await import("@/lib/api");
+              const res2 = await fetchCategoryTranslations(catId, token);
+              const lang = stepName.split(".")[1] as "ko" | "en" | "zh";
+              const emb = res2.data.languages[lang].embedding;
+              if (emb.preview) {
+                state.embeddingFullData = new Map(state.embeddingFullData).set(
+                  stepName,
+                  JSON.stringify(emb.preview),
+                );
+              }
+            } catch {
+              /* ignore */
+            }
+          }
 
-  // 테이블 아래 Pagination 추가 (테이블이 표시될 때만)
-  // CardContent 내부, 테이블 div 바로 아래에 추가:
+          onListRefresh?.();
+        } else {
+          throw new Error(result.error || "실행 실패");
+        }
+      } catch (err) {
+        state.failedSteps = new Set(state.failedSteps).add(stepName);
+        state.actionError =
+          err instanceof Error ? err.message : "실행 실패";
+      } finally {
+        const next = new Set(state.runningSteps);
+        next.delete(stepName);
+        state.runningSteps = next;
+        forceUpdate();
+      }
+    },
+    [token, getState],
+  );
+
+  const handleRunAll = useCallback(
+    async (
+      catId: number,
+      data: CategoryTranslations,
+      onListRefresh?: () => void,
+    ) => {
+      const state = getState(catId);
+      state.actionError = null;
+
+      const LANGUAGES: {
+        key: "ko" | "en" | "zh";
+        hasTranslation: boolean;
+      }[] = [
+        { key: "ko", hasTranslation: false },
+        { key: "en", hasTranslation: true },
+        { key: "zh", hasTranslation: true },
+      ];
+
+      const steps: StepName[] = [];
+      for (const lang of LANGUAGES) {
+        if (lang.hasTranslation) {
+          const tl = data.languages[lang.key];
+          const transKey = `translation.${lang.key}` as StepName;
+          const embedKey = `embedding.${lang.key}` as StepName;
+          if (
+            !tl.translation_text &&
+            !state.completedSteps.has(transKey) &&
+            !state.stepResults.has(transKey)
+          ) {
+            steps.push(transKey);
+          }
+          if (
+            tl.embedding.status !== "completed" &&
+            !state.completedSteps.has(embedKey) &&
+            !state.stepResults.has(embedKey)
+          ) {
+            steps.push(embedKey);
+          }
+        } else {
+          const embedKey = `embedding.${lang.key}` as StepName;
+          if (
+            data.languages[lang.key].embedding.status !== "completed" &&
+            !state.completedSteps.has(embedKey) &&
+            !state.stepResults.has(embedKey)
+          ) {
+            steps.push(embedKey);
+          }
+        }
+      }
+
+      if (steps.length === 0) return;
+
+      state.abortRef.current = false;
+      state.runningSteps = new Set([steps[0]]);
+      state.pendingSteps = steps.slice(1);
+      forceUpdate();
+
+      for (let i = 0; i < steps.length; i++) {
+        if (state.abortRef.current) {
+          state.runningSteps = new Set();
+          state.pendingSteps = [];
+          forceUpdate();
+          break;
+        }
+
+        const stepName = steps[i];
+        try {
+          const apiUrl =
+            process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api";
+          const res = await fetch(
+            `${apiUrl}/categories/${catId}/run-step`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ step: stepName }),
+            },
+          );
+          const result = await res.json();
+
+          if (result.status === "completed") {
+            state.completedSteps = new Set(state.completedSteps).add(stepName);
+            state.stepResults = new Map(state.stepResults).set(
+              stepName,
+              result.result,
+            );
+            state.copyableSteps = new Set(state.copyableSteps);
+
+            delayMs(2000).then(() => {
+              state.copyableSteps.add(stepName);
+              forceUpdate();
+            });
+
+            if (stepName.startsWith("embedding")) {
+              try {
+                const { fetchCategoryTranslations } = await import("@/lib/api");
+                const res2 = await fetchCategoryTranslations(catId, token);
+                const lang = stepName.split(".")[1] as "ko" | "en" | "zh";
+                const emb = res2.data.languages[lang].embedding;
+                if (emb.preview) {
+                  state.embeddingFullData = new Map(
+                    state.embeddingFullData,
+                  ).set(stepName, JSON.stringify(emb.preview));
+                }
+              } catch {
+                /* ignore */
+              }
+            }
+
+            onListRefresh?.();
+          } else {
+            throw new Error(result.error || "실행 실패");
+          }
+
+          if (state.abortRef.current) {
+            state.runningSteps = new Set();
+            state.pendingSteps = [];
+            forceUpdate();
+            break;
+          }
+
+          const nextIndex = i + 1;
+          if (nextIndex < steps.length) {
+            state.runningSteps = new Set([steps[nextIndex]]);
+            state.pendingSteps = steps.slice(nextIndex + 1);
+          } else {
+            state.runningSteps = new Set();
+            state.pendingSteps = [];
+          }
+          forceUpdate();
+        } catch (err) {
+          if (state.abortRef.current) {
+            state.runningSteps = new Set();
+            state.pendingSteps = [];
+            forceUpdate();
+            break;
+          }
+          state.failedSteps = new Set(state.failedSteps).add(stepName);
+          state.actionError =
+            err instanceof Error ? err.message : "실행 실패";
+          state.runningSteps = new Set();
+          state.pendingSteps = [];
+          forceUpdate();
+          break;
+        }
+      }
+    },
+    [token, getState],
+  );
+
+  const handleCancelPending = useCallback(
+    (catId: number) => {
+      const state = getState(catId);
+      state.abortRef.current = true;
+      state.pendingSteps = [];
+      forceUpdate();
+    },
+    [getState],
+  );
+
+  return {
+    getState,
+    handleSingleAction,
+    handleRunAll,
+    handleCancelPending,
+  };
+}
 ```
 
-Pagination UI:
+- [ ] **Step 2: 훅 테스트 작성**
 
-```tsx
-{/* 페이지네이션 */}
-{meta && meta.last_page > 1 && (
-  <div className="mt-4">
-    <Pagination>
-      <PaginationContent>
-        <PaginationItem>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              if (meta.current_page > 1) handlePageChange(meta.current_page - 1);
-            }}
-            disabled={meta.current_page <= 1}
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            이전
-          </Button>
-        </PaginationItem>
-        {Array.from({ length: meta.last_page }, (_, i) => i + 1).map((p) => (
-          <PaginationItem key={p}>
-            <PaginationLink
-              isActive={p === meta.current_page}
-              onClick={() => handlePageChange(p)}
-            >
-              {p}
-            </PaginationLink>
-          </PaginationItem>
-        ))}
-        <PaginationItem>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              if (meta.current_page < meta.last_page) handlePageChange(meta.current_page + 1);
-            }}
-            disabled={meta.current_page >= meta.last_page}
-          >
-            다음
-            <ChevronRight className="ml-1 h-4 w-4" />
-          </Button>
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
-  </div>
-)}
-```
+`hooks/__tests__/useCategoryExecution.test.ts`:
+```typescript
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { useCategoryExecution } from "@/hooks/useCategoryExecution";
 
-- [ ] **Step 5: useCategories 테스트 수정**
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
 
-`nextjs/hooks/__tests__/useCategories.test.ts` — mock 응답에 `meta` 추가, page 파라미터 검증:
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
-```ts
-const mockCategoryList = {
-  data: [mockCategory],
-  meta: {
-    current_page: 1,
-    last_page: 1,
-    per_page: 20,
-    total: 1,
-    from: 1,
-    to: 1,
-  },
-  links: {
-    first: null,
-    last: null,
-    prev: null,
-    next: null,
-  },
-};
-
-// 성공 시 meta도 반환되는지 검증 추가
-it("성공 시 meta를 반환한다", async () => {
-  mockGetCategories.mockResolvedValue(mockCategoryList);
-
-  const { result } = renderHook(() => useCategories("token"));
-
-  await act(async () => {
-    await result.current.loadCategories();
+describe("useCategoryExecution", () => {
+  it("getState는 신규 카테고리에 초기 상태를 반환한다", () => {
+    const { result } = renderHook(() => useCategoryExecution("token"));
+    const state = result.current.getState(1);
+    expect(state.runningSteps.size).toBe(0);
+    expect(state.pendingSteps).toEqual([]);
+    expect(state.completedSteps.size).toBe(0);
+    expect(state.failedSteps.size).toBe(0);
+    expect(state.stepResults.size).toBe(0);
+    expect(state.copyableSteps.size).toBe(0);
+    expect(state.embeddingFullData.size).toBe(0);
+    expect(state.abortRef.current).toBe(false);
+    expect(state.actionError).toBeNull();
   });
 
-  expect(result.current.meta).toEqual(mockCategoryList.meta);
+  it("getState는 같은 카테고리에 동일한 상태 참조를 반환한다", () => {
+    const { result } = renderHook(() => useCategoryExecution("token"));
+    const state1 = result.current.getState(1);
+    const state2 = result.current.getState(1);
+    expect(state1).toBe(state2);
+  });
+
+  it("getState는 다른 카테고리에 다른 상태를 반환한다", () => {
+    const { result } = renderHook(() => useCategoryExecution("token"));
+    const state1 = result.current.getState(1);
+    const state2 = result.current.getState(2);
+    expect(state1).not.toBe(state2);
+  });
+
+  it("handleSingleAction으로 step 완료 시 completedSteps에 추가된다", async () => {
+    mockFetch.mockResolvedValueOnce({
+      json: async () => ({ status: "completed", result: "번역 결과" }),
+    });
+
+    const { result } = renderHook(() => useCategoryExecution("token"));
+
+    await act(async () => {
+      await result.current.handleSingleAction(1, "translation.en");
+    });
+
+    const state = result.current.getState(1);
+    expect(state.runningSteps.size).toBe(0);
+    expect(state.completedSteps.has("translation.en")).toBe(true);
+    expect(state.stepResults.get("translation.en")).toBe("번역 결과");
+  });
+
+  it("handleSingleAction 실패 시 failedSteps에 추가된다", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+    const { result } = renderHook(() => useCategoryExecution("token"));
+
+    await act(async () => {
+      await result.current.handleSingleAction(1, "translation.zh");
+    });
+
+    const state = result.current.getState(1);
+    expect(state.runningSteps.size).toBe(0);
+    expect(state.failedSteps.has("translation.zh")).toBe(true);
+  });
+
+  it("handleCancelPending으로 abortRef가 설정된다", () => {
+    const { result } = renderHook(() => useCategoryExecution("token"));
+
+    act(() => {
+      result.current.handleCancelPending(1);
+    });
+
+    expect(result.current.getState(1).abortRef.current).toBe(true);
+  });
 });
 ```
 
-- [ ] **Step 6: 테스트 실행 및 확인**
+- [ ] **Step 3: 훅 테스트 실행**
 
-```bash
-docker exec cl_embed_nextjs npm test
-```
-
-Expected: All tests pass.
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add nextjs/lib/api.ts nextjs/hooks/useCategories.ts nextjs/hooks/__tests__/useCategories.test.ts nextjs/app/admin/page.tsx nextjs/components/ui/pagination.tsx
-git commit -m "feat: 카테고리 목록 서버사이드 페이지네이션 및 URL 연동"
-```
+Run: `docker exec cl_embed_nextjs npx vitest run hooks/__tests__/useCategoryExecution.test.ts`
+Expected: 모든 테스트 통과
 
 ---
 
-### Task 4: 전체실행 순차 애니메이션 (pendingSteps 도입)
+### Task 4: CategoryModal 리팩토링 — props 기반 전환
 
 **Files:**
 - Modify: `nextjs/components/admin/category-modal.tsx`
 - Modify: `nextjs/components/admin/__tests__/category-modal.test.tsx`
 
-- [ ] **Step 1: pendingSteps state 추가 및 초기화**
+- [ ] **Step 1: `CatExecState` import 추가 및 props 확장**
 
-```tsx
-// line 44-51 — pendingSteps state 추가
-const [pendingSteps, setPendingSteps] = useState<StepName[]>([]);
-```
+```typescript
+import type { CatExecState } from "@/hooks/useCategoryExecution";
 
-`handleOpenChange`에서도 `pendingSteps` 초기화 추가:
-
-```tsx
-// line 252-261
-if (!open) {
-  setActionError(null);
-  setRunningSteps(new Set());
-  setPendingSteps([]);
-  setCompletedSteps(new Set());
-  setFailedSteps(new Set());
-  setStepResults(new Map());
-  setCopyableSteps(new Set());
-  setEmbeddingFullData(new Map());
-  setFlashSteps(new Set());
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  data: CategoryTranslations | null;
+  isLoading: boolean;
+  error: string | null;
+  token?: string | null;
+  onReload?: () => void;
+  onListRefresh?: () => void;
+  // New
+  execState: CatExecState | null;
+  onSingleAction: (stepName: StepName) => Promise<void>;
+  onRunAll: () => Promise<void>;
+  onCancelPending: () => void;
 }
 ```
 
-- [ ] **Step 2: handleRunAll 수정 — 첫 step만 running, 나머지는 pending**
+- [ ] **Step 2: 모든 내부 실행 state 및 로직 제거**
 
-```tsx
-// line 128-161 — handleRunAll 변경
-const handleRunAll = async () => {
-  if (!data) return;
-  setActionError(null);
-  const steps: StepName[] = [];
-  for (const lang of LANGUAGES) {
-    if (lang.hasTranslation) {
-      const tl = data.languages[lang.key];
-      const transKey = `translation.${lang.key}` as StepName;
-      const embedKey = `embedding.${lang.key}` as StepName;
-      if (!tl.translation_text && !completedSteps.has(transKey) && !stepResults.has(transKey)) {
-        steps.push(transKey);
-      }
-      if (tl.embedding.status !== "completed" && !completedSteps.has(embedKey) && !stepResults.has(embedKey)) {
-        steps.push(embedKey);
-      }
-    } else {
-      const embedKey = `embedding.${lang.key}` as StepName;
-      if (data.languages[lang.key].embedding.status !== "completed" && !completedSteps.has(embedKey) && !stepResults.has(embedKey)) {
-        steps.push(embedKey);
-      }
-    }
-  }
-  if (steps.length === 0) return;
+제거할 항목:
+- `useState` 라인: `actionError`, `runningSteps`, `pendingSteps`, `completedSteps`, `failedSteps`, `stepResults`, `copyableSteps`, `embeddingFullData`, `flashSteps`
+- `useRef`: `abortRef`
+- 함수: `enableStepCopy`, `handleSingleAction`, `handleRunAll`, `handleCancelPending`, `handleStepComplete`
 
-  // 첫 step만 running, 나머지는 pending
-  const firstStep = steps[0];
-  const rest = steps.slice(1);
-  setRunningSteps(new Set(firstStep ? [firstStep] : []));
-  setPendingSteps(rest);
+대체 — props에서 execState 추출:
+```typescript
+const execState = props.execState;
+const runningSteps = execState?.runningSteps ?? new Set<StepName>();
+const pendingSteps = execState?.pendingSteps ?? [];
+const completedSteps = execState?.completedSteps ?? new Set<StepName>();
+const failedSteps = execState?.failedSteps ?? new Set<StepName>();
+const stepResults = execState?.stepResults ?? new Map<StepName, string>();
+const copyableSteps = execState?.copyableSteps ?? new Set<StepName>();
+const embeddingFullData = execState?.embeddingFullData ?? new Map<StepName, string>();
+const flashSteps = execState?.flashSteps ?? new Set<StepName>();
+const actionError = execState?.actionError ?? null;
+```
 
-  subscribeProgress(data.id);
-  try {
-    await translateEmbedCategory(data.id, token, steps);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "실행 실패";
-    setActionError(msg);
+- [ ] **Step 3: `handleOpenChange`에서 상태 리셋 제거**
+
+수정 전:
+```typescript
+const handleOpenChange = (open: boolean) => {
+  if (!open) {
+    setActionError(null);
     setRunningSteps(new Set());
-    setPendingSteps([]);
-    cancel();
+    // ... 전체 리셋
+    abortRef.current = false;
   }
+  onOpenChange(open);
 };
 ```
 
-- [ ] **Step 3: handleProgressUpdate — completed 시 pending→running 이동**
-
-`completed` 케이스에서 `pendingSteps`를 소비하는 로직 추가:
-
-```tsx
-// handleProgressUpdate 내 completed 케이스 (line 88 line, setCopyableSteps 이후)
-setPendingSteps((prev) => {
-  if (prev.length === 0) return prev;
-  const [nextStep, ...remaining] = prev;
-  setRunningSteps((running) => new Set(running).add(nextStep));
-  return remaining;
-});
+수정 후:
+```typescript
+const handleOpenChange = (open: boolean) => {
+  onOpenChange(open);
+};
 ```
 
-`failed` 케이스에서도 `pendingSteps` 초기화:
+- [ ] **Step 4: 버튼 onClick을 props 콜백으로 연결**
 
-```tsx
-// failed 케이스 (line 89-98)
-} else if (progress.status === "failed") {
-  setFailedSteps((prev) => new Set(prev).add(progress.stepName));
-  setRunningSteps((prev) => {
-    const next = new Set(prev);
-    next.delete(progress.stepName);
-    return next;
-  });
-  setPendingSteps([]);  // 추가
-  if (progress.error) {
-    setActionError(progress.error);
-  }
+```typescript
+// 전체실행 버튼
+onClick={handleRunAll} → onClick={props.onRunAll}
+
+// 실행중지 버튼
+onClick={handleCancelPending} → onClick={props.onCancelPending}
+
+// 개별 실행 Play 버튼
+onClick={() => handleSingleAction(stepName)} → onClick={() => props.onSingleAction(stepName)}
+```
+
+- [ ] **Step 5: `import` 정리 — 사용하지 않는 훅 제거**
+
+```typescript
+// 수정 전
+import { useState, useCallback, useRef } from "react";
+
+// 수정 후  
+import { useState, useCallback } from "react";
+```
+
+- [ ] **Step 6: Modal 테스트 업데이트 — 새 props 전달**
+
+`category-modal.test.tsx`에 추가:
+```typescript
+import type { CatExecState } from "@/hooks/useCategoryExecution";
+import { vi } from "vitest";
+
+function createEmptyExecState(): CatExecState {
+  return {
+    runningSteps: new Set(),
+    pendingSteps: [],
+    completedSteps: new Set(),
+    failedSteps: new Set(),
+    stepResults: new Map(),
+    copyableSteps: new Set(),
+    embeddingFullData: new Map(),
+    flashSteps: new Set(),
+    abortRef: { current: false },
+    actionError: null,
+  };
 }
+
+const defaultHandlers = {
+  onSingleAction: vi.fn().mockResolvedValue(undefined),
+  onRunAll: vi.fn().mockResolvedValue(undefined),
+  onCancelPending: vi.fn(),
+};
 ```
 
-- [ ] **Step 4: 전체실행 버튼 disabled 조건에 pendingSteps 반영**
-
-전체실행 버튼은 `isRunning` 또는 `pendingSteps.length > 0` 일 때 disabled:
-
-```tsx
-// line 350
-<Button onClick={handleRunAll} disabled={isRunning || pendingSteps.length > 0 || allCompleted}>
-  전체 실행
-</Button>
+모든 `render(<CategoryModal ... />)` 호출에 다음 props 추가:
+```typescript
+execState={createEmptyExecState()}
+onSingleAction={defaultHandlers.onSingleAction}
+onRunAll={defaultHandlers.onRunAll}
+onCancelPending={defaultHandlers.onCancelPending}
 ```
 
-- [ ] **Step 5: 테스트 추가 — 전체실행 시 첫 step만 running 상태 검증**
+---
 
-```ts
-it("전체실행 클릭 시 첫 번째 step만 running 상태가 된다", async () => {
-  const { useCategoryProgress } = await import("@/hooks/useCategoryProgress");
-  const mockStartTranslation = vi.fn();
-  (useCategoryProgress as ReturnType<typeof vi.fn>).mockReturnValue({
-    progress: null,
-    isRunning: false,
-    activeStep: null as string | null,
-    startTranslation: mockStartTranslation,
-    subscribeProgress: mockSubscribeProgress,
-    cancel: mockCancel,
-  });
+### Task 5: admin/page.tsx — `useCategoryExecution` 적용
 
-  render(
-    <CategoryModal
-      open={true}
-      onOpenChange={vi.fn()}
-      data={pendingData}
-      isLoading={false}
-      error={null}
-      token="token"
-    />,
-  );
+**Files:**
+- Modify: `nextjs/app/admin/page.tsx`
 
-  const runAllButton = screen.getByRole("button", { name: "전체 실행" });
-  fireEvent.click(runAllButton);
+- [ ] **Step 1: import 추가**
 
-  // 전체실행 클릭 후 첫 step만 Loader2(spinner) — 나머지는 Play 아이콘
-  const loaderIcons = document.querySelectorAll(".animate-spin");
-  expect(loaderIcons.length).toBe(1);
-});
+```typescript
+import { useCategoryExecution } from "@/hooks/useCategoryExecution";
 ```
 
-- [ ] **Step 6: 테스트 실행 및 확인**
+- [ ] **Step 2: 훅 사용 및 CategoryModal에 props 전달**
+
+```typescript
+const { getState, handleSingleAction, handleRunAll, handleCancelPending } =
+  useCategoryExecution(token);
+
+// CategoryModal에 전달
+<CategoryModal
+  open={modalCategoryId !== null}
+  onOpenChange={(open) => {
+    if (!open) setModalCategoryId(null);
+  }}
+  data={detailData}
+  isLoading={detailLoading}
+  error={detailError}
+  token={token}
+  onReload={reload}
+  onListRefresh={() => loadCategories(page)}
+  execState={modalCategoryId ? getState(modalCategoryId) : null}
+  onSingleAction={async (stepName) => {
+    if (modalCategoryId !== null) {
+      await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page));
+    }
+  }}
+  onRunAll={async () => {
+    if (modalCategoryId !== null && detailData) {
+      await handleRunAll(modalCategoryId, detailData, () => loadCategories(page));
+    }
+  }}
+  onCancelPending={() => {
+    if (modalCategoryId !== null) {
+      handleCancelPending(modalCategoryId);
+    }
+  }}
+/>
+```
+
+---
+
+### Task 6: 최종 검증
+
+- [ ] **Step 1: TSC 체크**
+
+Run: `docker exec cl_embed_nextjs npx tsc --noEmit`
+Expected: 종료 코드 0
+
+- [ ] **Step 2: 전체 테스트 실행**
+
+Run: `docker exec cl_embed_nextjs sh -c "cd /app && node node_modules/vitest/vitest.mjs run --run"`
+Expected: 모든 테스트 통과
+
+---
+
+### Task 7: 커밋
+
+- [ ] **Step 1: 변경 파일 커밋**
 
 ```bash
-docker exec cl_embed_nextjs npm test -- --filter="category-modal"
-```
+git add docs/superpowers/plans/2026-05-18-admin-modal-fixes.md \
+  nextjs/tsconfig.json \
+  nextjs/lib/api.ts \
+  nextjs/hooks/useCategoryExecution.ts \
+  nextjs/hooks/__tests__/useCategoryExecution.test.ts \
+  nextjs/components/admin/category-modal.tsx \
+  nextjs/components/admin/__tests__/category-modal.test.tsx \
+  nextjs/app/admin/page.tsx
+git commit -m "$(cat <<'EOF'
+feat: Admin 모달 이슈 3건 수정
 
-Expected: 13 tests (기존 12 + 신규 1) all pass.
+- TSC fail: tsconfig.json exclude에 .next 추가
+- 개별실행 목록 미반영: handleSingleAction에 onListRefresh 추가
+- 모달 닫힘 시 상태 소멸: useCategoryExecution 훅으로 실행 상태 분리
+  - CategoryModal presentational 전환
+  - admin/page.tsx에서 훅 사용
 
-- [ ] **Step 7: Commit**
-
-```bash
-git add nextjs/components/admin/category-modal.tsx nextjs/components/admin/__tests__/category-modal.test.tsx
-git commit -m "feat: 전체실행 시 WebSocket 이벤트 기반 순차 애니메이션 구현"
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
 ```
