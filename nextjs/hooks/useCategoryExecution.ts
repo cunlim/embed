@@ -22,11 +22,13 @@ export interface UseCategoryExecutionReturn {
     catId: number,
     stepName: StepName,
     onListRefresh?: () => void,
+    onUpdateData?: (data: CategoryTranslations) => void,
   ) => Promise<void>;
   handleRunAll: (
     catId: number,
     data: CategoryTranslations,
     onListRefresh?: () => void,
+    onUpdateData?: (data: CategoryTranslations) => void,
   ) => Promise<void>;
   handleCancelPending: (catId: number) => void;
 }
@@ -64,7 +66,7 @@ export function useCategoryExecution(
   }, []);
 
   const handleSingleAction = useCallback(
-    async (catId: number, stepName: StepName, onListRefresh?: () => void) => {
+    async (catId: number, stepName: StepName, onListRefresh?: () => void, onUpdateData?: (data: CategoryTranslations) => void) => {
       const state = getState(catId);
       state.runningSteps = new Set(state.runningSteps).add(stepName);
       state.completedSteps.delete(stepName);
@@ -101,21 +103,8 @@ export function useCategoryExecution(
             forceUpdate();
           });
 
-          if (stepName.startsWith("embedding")) {
-            try {
-              const { fetchCategoryTranslations } = await import("@/lib/api");
-              const res2 = await fetchCategoryTranslations(catId, token);
-              const lang = stepName.split(".")[1] as "ko" | "en" | "zh";
-              const emb = res2.data.languages[lang].embedding;
-              if (emb.preview) {
-                state.embeddingFullData = new Map(state.embeddingFullData).set(
-                  stepName,
-                  JSON.stringify(emb.preview),
-                );
-              }
-            } catch {
-              /* ignore */
-            }
+          if (result.translations && onUpdateData) {
+            onUpdateData(result.translations);
           }
 
           onListRefresh?.();
@@ -141,6 +130,7 @@ export function useCategoryExecution(
       catId: number,
       data: CategoryTranslations,
       onListRefresh?: () => void,
+      onUpdateData?: (data: CategoryTranslations) => void,
     ) => {
       const state = getState(catId);
       state.actionError = null;
@@ -231,20 +221,8 @@ export function useCategoryExecution(
               forceUpdate();
             });
 
-            if (stepName.startsWith("embedding")) {
-              try {
-                const { fetchCategoryTranslations } = await import("@/lib/api");
-                const res2 = await fetchCategoryTranslations(catId, token);
-                const lang = stepName.split(".")[1] as "ko" | "en" | "zh";
-                const emb = res2.data.languages[lang].embedding;
-                if (emb.preview) {
-                  state.embeddingFullData = new Map(
-                    state.embeddingFullData,
-                  ).set(stepName, JSON.stringify(emb.preview));
-                }
-              } catch {
-                /* ignore */
-              }
+            if (result.translations && onUpdateData) {
+              onUpdateData(result.translations);
             }
 
             onListRefresh?.();
