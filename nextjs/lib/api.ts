@@ -117,7 +117,9 @@ export interface Category {
   category_name_ko: string;
   category_name_zh: string | null;
   category_name_en: string | null;
+  category_name?: string;
   translation_status: "completed" | "partial" | "pending";
+  similarity_score?: number | null;
 }
 
 export interface PaginationMeta {

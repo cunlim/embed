@@ -311,7 +311,7 @@ export default function EmbedPage() {
                             "text-accent font-mono text-lg font-semibold"
                           )}
                         >
-                          {(result.similarity_score * 100).toFixed(1)}%
+                          {((result.similarity_score ?? 0) * 100).toFixed(1)}%
                         </span>
                       </div>
                     </div>
@@ -483,7 +483,7 @@ export default function EmbedPage() {
               <div>
                 <p className="text-xs text-muted-foreground">유사도 점수</p>
                 <p className="text-accent font-mono text-2xl font-bold">
-                  {(results[activeResult].similarity_score * 100).toFixed(1)}%
+                  {((results[activeResult]?.similarity_score ?? 0) * 100).toFixed(1)}%
                 </p>
               </div>
               <div className="space-y-2">

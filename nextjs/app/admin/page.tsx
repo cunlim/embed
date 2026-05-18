@@ -359,7 +359,7 @@ function AdminPageInner() {
                             </TableCell>
                             {isSearchMode && (
                               <TableCell className="font-mono text-sm text-accent">
-                                {cat.similarity_score !== null
+                                {cat.similarity_score != null
                                   ? `${(cat.similarity_score * 100).toFixed(1)}%`
                                   : "-"}
                               </TableCell>
@@ -396,7 +396,7 @@ function AdminPageInner() {
                                 : searchLanguage === "zh"
                                   ? cat.category_name_zh ?? cat.category_name
                                   : cat.category_name_en ?? cat.category_name}
-                              {isSearchMode && cat.similarity_score !== null && (
+                              {isSearchMode && cat.similarity_score != null && (
                                 <span className="ml-2 font-mono text-sm text-accent">
                                   {(cat.similarity_score * 100).toFixed(1)}%
                                 </span>
