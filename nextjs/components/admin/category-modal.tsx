@@ -22,6 +22,8 @@ interface Props {
   token?: string | null;
   onReload?: () => void;
   onListRefresh?: () => void;
+  onUpdateData?: (data: CategoryTranslations) => void;
+  onUpdateListRow?: (row: { id: number; translation_status: string }) => void;
   // New props from useCategoryExecution
   execState: CatExecState | null;
   onSingleAction: (stepName: StepName) => Promise<void>;
@@ -45,6 +47,7 @@ function copyToClipboard(text: string) {
 
 export default function CategoryModal({
   open, onOpenChange, data, isLoading, error, token, onReload, onListRefresh,
+  onUpdateData, onUpdateListRow,
   execState, onSingleAction, onRunAll, onCancelPending,
 }: Props) {
   const [flashSteps, setFlashSteps] = useState<Set<StepName>>(new Set());
@@ -84,7 +87,7 @@ export default function CategoryModal({
     return (
       <div className="grid grid-cols-[80px_1fr_40px] gap-3 items-center py-1.5">
         <span className="text-sm text-muted-foreground">{label}</span>
-        {langKey && hasValue ? (
+        {langKey ? (
           <input
             type="text"
             className="text-sm truncate font-mono w-full bg-transparent border-b border-border px-1 py-0.5 focus:outline-none focus:border-accent read-only:opacity-60 read-only:cursor-default"
@@ -188,10 +191,10 @@ export default function CategoryModal({
     if (newValue === originalValue) return;
 
     try {
-      await updateCategoryText(data.id, fieldMap[langKey], newValue || null, token);
+      const res = await updateCategoryText(data.id, fieldMap[langKey], newValue || null, token);
       setEditValues({});
-      onReload?.();
-      onListRefresh?.();
+      onUpdateData?.(res.data.translations);
+      onUpdateListRow?.(res.data.listRow);
       toast("저장되었습니다");
     } catch {
       toast("저장에 실패했습니다");

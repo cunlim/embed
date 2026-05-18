@@ -232,7 +232,9 @@ describe("CategoryModal", () => {
     };
     const onReload = vi.fn();
     const onListRefresh = vi.fn();
-    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={completedData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} onReload={onReload} onListRefresh={onListRefresh} />);
+    const onUpdateData = vi.fn();
+    const onUpdateListRow = vi.fn();
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={completedData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} onReload={onReload} onListRefresh={onListRefresh} onUpdateData={onUpdateData} onUpdateListRow={onUpdateListRow} />);
 
     const inputs = screen.getAllByRole("textbox");
     // Change value of first input and blur
@@ -241,6 +243,26 @@ describe("CategoryModal", () => {
 
     await vi.waitFor(() => {
       expect(updateCategoryText).toHaveBeenCalled();
+    });
+
+    expect(onUpdateData).toHaveBeenCalledWith({
+      id: 1,
+      category_code: "TEST001",
+      category_name_ko: "원본",
+      embedding_dimensions: null,
+      languages: {
+        ko: { translation_text: "원본", embedding: { status: "completed", preview: [0.1] } },
+        en: { translation_text: "English", embedding: { status: "completed", preview: [0.3] } },
+        zh: { translation_text: "中文", embedding: { status: "completed", preview: [0.4] } },
+      },
+    });
+    expect(onUpdateListRow).toHaveBeenCalledWith({
+      id: 1,
+      category_code: "TEST001",
+      category_name_ko: "원본",
+      category_name_zh: "中文",
+      category_name_en: "English",
+      translation_status: "completed",
     });
 
     vi.clearAllMocks();
