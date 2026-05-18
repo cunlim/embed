@@ -12,10 +12,6 @@ vi.mock("@/hooks/useCategories", () => ({
   useCategories: vi.fn(),
 }));
 
-vi.mock("@/hooks/useCategoryProgress", () => ({
-  useCategoryProgress: vi.fn(),
-}));
-
 vi.mock("@/hooks/useCategoryDetail", () => ({
   useCategoryDetail: vi.fn(),
 }));
@@ -27,12 +23,10 @@ vi.mock("next/navigation", () => ({
 
 import { useAuth } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
-import { useCategoryProgress } from "@/hooks/useCategoryProgress";
 import { useCategoryDetail } from "@/hooks/useCategoryDetail";
 
 const mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
 const mockUseCategories = useCategories as ReturnType<typeof vi.fn>;
-const mockUseCategoryProgress = useCategoryProgress as ReturnType<typeof vi.fn>;
 const mockUseCategoryDetail = useCategoryDetail as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
@@ -65,13 +59,6 @@ beforeEach(() => {
     error: null,
     loadCategories: vi.fn(),
     addCategory: vi.fn(),
-  });
-  mockUseCategoryProgress.mockReturnValue({
-    progress: null,
-    isRunning: false,
-    startTranslation: vi.fn(),
-    subscribeProgress: vi.fn(),
-    cancel: vi.fn(),
   });
   mockUseCategoryDetail.mockReturnValue({
     data: null,

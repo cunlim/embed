@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { CategoryTranslations } from "@/lib/api";
-import { translateEmbedCategory } from "@/lib/api";
-import { useCategoryProgress, type StepName, type CategoryProgress } from "@/hooks/useCategoryProgress";
+
+type StepName = "translation.zh" | "translation.en" | "embedding.ko" | "embedding.zh" | "embedding.en";
 
 interface Props {
   open: boolean;
@@ -51,92 +51,49 @@ export default function CategoryModal({
   const [embeddingFullData, setEmbeddingFullData] = useState<Map<StepName, string>>(new Map());
   const [flashSteps, setFlashSteps] = useState<Set<StepName>>(new Set());
 
-  const handleProgressUpdate = useCallback((progress?: CategoryProgress) => {
-    if (progress) {
-      if (progress.status === "completed") {
-        setCompletedSteps((prev) => new Set(prev).add(progress.stepName));
-        setRunningSteps((prev) => {
-          const next = new Set(prev);
-          next.delete(progress.stepName);
-          return next;
-        });
-        const result = progress.result;
-        if (result) {
-          setStepResults((prev) => new Map(prev).set(progress.stepName, result));
-          const stepName = progress.stepName;
-          const isEmbedding = stepName.startsWith("embedding");
-          if (isEmbedding) {
-            const categoryId = data?.id;
-            setTimeout(async () => {
-              if (categoryId) {
-                const { fetchCategoryTranslations } = await import("@/lib/api");
-                try {
-                  const res = await fetchCategoryTranslations(categoryId, token ?? null);
-                  const lang = stepName.split(".")[1] as "ko" | "en" | "zh";
-                  const emb = res.data.languages[lang].embedding;
-                  if (emb.preview) {
-                    setEmbeddingFullData((prev) => new Map(prev).set(stepName, JSON.stringify(emb.preview)));
-                  }
-                } catch { /* fetch 실패 시 copyableSteps만 설정 */ }
-              }
-              setCopyableSteps((prev) => new Set(prev).add(stepName));
-            }, 2000);
-          } else {
-            setTimeout(() => {
-              setCopyableSteps((prev) => new Set(prev).add(stepName));
-            }, 2000);
-          }
-        }
-        // 완료된 step 제거 후 다음 pending step을 running으로 이동
-        setPendingSteps((prev) => {
-          if (prev.length === 0) return prev;
-          const [nextStep, ...remaining] = prev;
-          setRunningSteps((running) => new Set(running).add(nextStep));
-          return remaining;
-        });
-      } else if (progress.status === "failed") {
-        setFailedSteps((prev) => new Set(prev).add(progress.stepName));
-        setRunningSteps((prev) => {
-          const next = new Set(prev);
-          next.delete(progress.stepName);
-          return next;
-        });
-        setPendingSteps([]);  // 실패 시 나머지 step 진행 중단
-        if (progress.error) {
-          setActionError(progress.error);
-        }
-      }
-      onListRefresh?.();
-    } else {
-      onListRefresh?.();
-    }
-  }, [onListRefresh, data?.id, token]);
-
-  const { isRunning, activeStep, subscribeProgress, cancel } = useCategoryProgress(handleProgressUpdate);
+  const [isRunning, setIsRunning] = useState(false);
 
   const handleSingleAction = async (stepName: StepName) => {
     if (!data) return;
     setActionError(null);
     setRunningSteps((prev) => new Set(prev).add(stepName));
-    subscribeProgress(data.id);
     try {
-      await translateEmbedCategory(data.id, token, [stepName]);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api"}/categories/${data.id}/run-step`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ step: stepName }),
+        }
+      );
+      const result = await res.json();
+      if (result.status === 'completed') {
+        setCompletedSteps((prev) => new Set(prev).add(stepName));
+        setStepResults((prev) => new Map(prev).set(stepName, result.result));
+        handleStepComplete(stepName, data.id);
+      } else {
+        throw new Error(result.error || '실행 실패');
+      }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "실행 실패";
+      const msg = err instanceof Error ? err.message : '실행 실패';
       setActionError(msg);
+      setFailedSteps((prev) => new Set(prev).add(stepName));
+    } finally {
       setRunningSteps((prev) => {
         const next = new Set(prev);
         next.delete(stepName);
         return next;
       });
-      setFailedSteps((prev) => new Set(prev).add(stepName));
-      cancel();
     }
   };
 
   const handleRunAll = async () => {
     if (!data) return;
     setActionError(null);
+
     const steps: StepName[] = [];
     for (const lang of LANGUAGES) {
       if (lang.hasTranslation) {
@@ -158,22 +115,60 @@ export default function CategoryModal({
     }
     if (steps.length === 0) return;
 
-    // 첫 step만 running, 나머지는 pending
-    const firstStep = steps[0];
-    const rest = steps.slice(1);
-    setRunningSteps(new Set(firstStep ? [firstStep] : []));
-    setPendingSteps(rest);
-    subscribeProgress(data.id);
-    try {
-      await translateEmbedCategory(data.id, token, steps);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "실행 실패";
-      setActionError(msg);
-      setRunningSteps(new Set());
-      setPendingSteps([]);
-      cancel();
-    }
+    setIsRunning(true);
+
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api";
+    const results = await Promise.allSettled(
+      steps.map(async (step) => {
+        const res = await fetch(
+          `${API_URL}/categories/${data.id}/run-step`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ step }),
+          }
+        );
+        return { step, response: await res.json() };
+      })
+    );
+
+    results.forEach((result) => {
+      if (result.status === 'fulfilled') {
+        const { step, response } = result.value;
+        if (response.status === 'completed') {
+          setCompletedSteps((prev) => new Set(prev).add(step));
+          setStepResults((prev) => new Map(prev).set(step, response.result));
+          handleStepComplete(step, data.id);
+        } else {
+          setFailedSteps((prev) => new Set(prev).add(step));
+          setActionError(response.error || '실패');
+        }
+      } else {
+        setActionError('네트워크 오류가 발생했습니다');
+      }
+    });
+
+    setIsRunning(false);
+    onListRefresh?.();
   };
+
+  const handleStepComplete = useCallback(async (stepName: StepName, categoryId: number) => {
+    const isEmbedding = stepName.startsWith("embedding");
+    if (isEmbedding) {
+      const { fetchCategoryTranslations } = await import("@/lib/api");
+      try {
+        const res = await fetchCategoryTranslations(categoryId, token ?? null);
+        const lang = stepName.split(".")[1] as "ko" | "en" | "zh";
+        const emb = res.data.languages[lang].embedding;
+        if (emb.preview) {
+          setEmbeddingFullData((prev) => new Map(prev).set(stepName, JSON.stringify(emb.preview)));
+        }
+      } catch { /* 실패 시 무시 */ }
+    }
+  }, [token]);
 
   const renderRow = (
     label: string,
@@ -183,7 +178,7 @@ export default function CategoryModal({
     translationDone?: boolean,
   ) => {
     const hasValue = displayValue !== null;
-    const isRunningThis = stepName ? runningSteps.has(stepName) || activeStep === stepName : false;
+    const isRunningThis = stepName ? runningSteps.has(stepName) : false;
     const isCompleted = hasValue || (stepName ? completedSteps.has(stepName) : false);
     const isFailed = stepName ? failedSteps.has(stepName) : false;
     const hasResult = stepName ? stepResults.has(stepName) : false;
@@ -263,7 +258,6 @@ export default function CategoryModal({
   };
 
   const handleOpenChange = (open: boolean) => {
-    if (!open && isRunning) cancel();
     if (!open) {
       setActionError(null);
       setRunningSteps(new Set());
@@ -274,6 +268,7 @@ export default function CategoryModal({
       setCopyableSteps(new Set());
       setEmbeddingFullData(new Map());
       setFlashSteps(new Set());
+      setIsRunning(false);
     }
     onOpenChange(open);
   };
