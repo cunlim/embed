@@ -170,6 +170,8 @@ export default function CategoryModal({
     if (!open) {
       // Reset flashSteps locally (transient UI concern)
       setFlashSteps(new Set());
+      // Reset editValues so stale values don't persist on next open
+      setEditValues({});
     }
     onOpenChange(open);
   };
@@ -187,6 +189,7 @@ export default function CategoryModal({
 
     try {
       await updateCategoryText(data.id, fieldMap[langKey], newValue || null, token);
+      setEditValues({});
       onReload?.();
       onListRefresh?.();
       toast("저장되었습니다");

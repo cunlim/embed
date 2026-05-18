@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import CategoryModal from "@/components/admin/category-modal";
+import { updateCategoryText } from "@/lib/api";
 import type { CatExecState } from "@/hooks/useCategoryExecution";
 
 function createEmptyExecState(): CatExecState {
@@ -25,6 +26,7 @@ const defaultHandlers = {
 };
 
 vi.mock("sonner", () => ({ toast: vi.fn() }));
+vi.mock("@/lib/api", () => ({ updateCategoryText: vi.fn() }));
 
 const mockWriteText = vi.fn();
 Object.assign(navigator, { clipboard: { writeText: mockWriteText } });
@@ -192,5 +194,31 @@ describe("CategoryModal", () => {
     render(<CategoryModal open={true} onOpenChange={vi.fn()} data={completedData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
     const inputs = screen.getAllByRole("textbox");
     expect(inputs.length).toBe(3); // textbox는 3개 (ko, en, zh translations만) — embedding rows are NOT textboxes
+  });
+  it("blur 시 값이 변경되었으면 저장 API를 호출한다", async () => {
+    vi.mocked(updateCategoryText).mockResolvedValue({ data: { updated: true, id: 1 } });
+
+    const completedData = {
+      ...pendingData,
+      languages: {
+        ko: { translation_text: "원본", embedding: { status: "completed" as const, preview: [0.1] } },
+        en: { translation_text: "English", embedding: { status: "completed" as const, preview: [0.2] } },
+        zh: { translation_text: "中文", embedding: { status: "completed" as const, preview: [0.3] } },
+      },
+    };
+    const onReload = vi.fn();
+    const onListRefresh = vi.fn();
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={completedData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} onReload={onReload} onListRefresh={onListRefresh} />);
+
+    const inputs = screen.getAllByRole("textbox");
+    // Change value of first input and blur
+    fireEvent.change(inputs[0], { target: { value: "새로운값" } });
+    fireEvent.blur(inputs[0]);
+
+    await vi.waitFor(() => {
+      expect(updateCategoryText).toHaveBeenCalled();
+    });
+
+    vi.clearAllMocks();
   });
 });
