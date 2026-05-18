@@ -92,18 +92,18 @@ describe("API 클라이언트", () => {
     });
   });
 
-  describe("batchTranslate", () => {
-    it("일괄 번역을 POST로 요청한다", async () => {
-      mockResponse({ batch_id: "batch-123" });
+  describe("runStep", () => {
+    it("개별 단계 실행을 POST로 요청한다", async () => {
+      mockResponse({ step: "translation.zh", status: "completed" });
 
-      const result = await api.batchTranslate("zh");
+      const result = await api.runStep(1, "translation.zh");
 
-      expect(result).toEqual({ batch_id: "batch-123" });
+      expect(result).toEqual({ step: "translation.zh", status: "completed" });
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://embed.cunlim.dev/api/categories/batch-translate",
+        "https://embed.cunlim.dev/api/categories/1/run-step",
         expect.objectContaining({
           method: "POST",
-          body: JSON.stringify({ target_language: "zh" }),
+          body: JSON.stringify({ step: "translation.zh" }),
         })
       );
     });

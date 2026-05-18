@@ -176,19 +176,23 @@ export function cancelTranslateEmbed(
   });
 }
 
-// --- 배치 번역 ---
+// --- 개별 단계 실행 ---
 
-export interface BatchTranslateResponse {
-  batch_id: string;
+export interface RunStepResponse {
+  step: string;
+  status: "completed" | "failed";
+  result?: string;
+  error?: string;
 }
 
-export function batchTranslate(
-  targetLanguage: string,
+export function runStep(
+  categoryId: number,
+  step: string,
   token?: string | null
-): Promise<BatchTranslateResponse> {
-  return request<BatchTranslateResponse>("/categories/batch-translate", {
+): Promise<RunStepResponse> {
+  return request<RunStepResponse>(`/categories/${categoryId}/run-step`, {
     method: "POST",
-    body: { target_language: targetLanguage },
+    body: { step },
     token,
   });
 }

@@ -30,10 +30,9 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRecommend } from "@/hooks/useRecommend";
-import { useBatchProgress } from "@/hooks/useBatchProgress";
 import { getToken } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
-import { batchTranslate } from "@/lib/api";
+import { runStep, getCategories } from "@/lib/api";
 import { parseHierarchy } from "@/lib/category";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -53,6 +52,8 @@ export default function EmbedPage() {
     }
   }, [mounted, router]);
 
+  const token = getToken();
+
   const [text, setText] = useState("");
   const [language, setLanguage] = useState("ko");
   const { recommend: doRecommend, results, isLoading, error } = useRecommend();
@@ -62,11 +63,15 @@ export default function EmbedPage() {
   const [selected중, setSelected중] = useState<string | null>(null);
   const [selected소, setSelected소] = useState<string | null>(null);
 
-  const [batchId, setBatchId] = useState<string | null>(null);
-  const batchProgress = useBatchProgress(batchId);
   const [batchLanguage, setBatchLanguage] = useState("zh");
   const [isBatchLoading, setIsBatchLoading] = useState(false);
   const [batchError, setBatchError] = useState<string | null>(null);
+  const [batchProgress, setBatchProgress] = useState<{
+    status: string;
+    totalJobs: number;
+    completedJobs: number;
+    failedJobs: number;
+  } | null>(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeResult, setActiveResult] = useState<number | null>(null);
@@ -113,8 +118,32 @@ export default function EmbedPage() {
     setIsBatchLoading(true);
     setBatchError(null);
     try {
-      const data = await batchTranslate(batchLanguage);
-      setBatchId(data.batch_id);
+      const cats = await getCategories(token || null);
+      const allCategories = cats.data;
+      const totalJobs = allCategories.length;
+
+      setBatchProgress({
+        status: "processing",
+        totalJobs,
+        completedJobs: 0,
+        failedJobs: 0,
+      });
+
+      for (const cat of allCategories) {
+        try {
+          const steps = [`translation.${batchLanguage}`, `embedding.${batchLanguage}`];
+          await Promise.all(
+            steps.map(step =>
+              runStep(cat.id, step, token ?? null)
+            )
+          );
+          setBatchProgress(p => p ? { ...p, completedJobs: p.completedJobs + 1 } : p);
+        } catch {
+          setBatchProgress(p => p ? { ...p, failedJobs: p.failedJobs + 1 } : p);
+        }
+      }
+
+      setBatchProgress(p => p ? { ...p, status: "completed" } : p);
     } catch (err) {
       setBatchError(
         err instanceof Error ? err.message : "일괄 번역 요청에 실패했습니다"
@@ -122,7 +151,7 @@ export default function EmbedPage() {
     } finally {
       setIsBatchLoading(false);
     }
-  }, [batchLanguage]);
+  }, [batchLanguage, token]);
 
   const vectorSteps = [
     { label: "검색어 입력", description: "사용자 텍스트 수신" },
