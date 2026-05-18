@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryStoreRequest;
+use App\Http\Requests\CategoryUpdateTextRequest;
 use App\Http\Requests\RunStepRequest;
 use App\Http\Resources\CategoryCollection;
 use App\Http\Resources\CategoryResource;
@@ -324,5 +325,71 @@ class CategoryController extends Controller
                 'error' => $errorMsg,
             ], 500);
         }
+    }
+
+    #[OA\Put(
+        path: '/api/categories/{category}/update-text',
+        summary: '카테고리 텍스트 업데이트',
+        description: '카테고리의 특정 언어 텍스트를 업데이트하고 해당 언어의 임베딩을 삭제합니다.',
+        tags: ['Categories'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'category',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'integer')
+            ),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['field', 'value'],
+                properties: [
+                    new OA\Property(property: 'field', type: 'string', enum: ['category_name_ko', 'category_name_en', 'category_name_zh']),
+                    new OA\Property(property: 'value', type: 'string', nullable: true, maxLength: 255),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: '업데이트 성공',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'data', properties: [
+                            new OA\Property(property: 'updated', type: 'boolean', example: true),
+                            new OA\Property(property: 'id', type: 'integer', example: 1),
+                        ], type: 'object'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: '인증 필요'),
+            new OA\Response(response: 404, description: '카테고리를 찾을 수 없음'),
+            new OA\Response(response: 422, description: '입력값 검증 실패'),
+        ]
+    )]
+    public function updateText(CategoryUpdateTextRequest $request, Category $category): JsonResponse
+    {
+        $field = $request->input('field');
+        $value = $request->input('value');
+
+        $category->update([$field => $value]);
+
+        $lang = match ($field) {
+            'category_name_ko' => 'ko',
+            'category_name_en' => 'en',
+            'category_name_zh' => 'zh',
+        };
+        CategoryEmbedding::where('category_id', $category->id)
+            ->where('language', $lang)
+            ->delete();
+
+        return response()->json([
+            'data' => [
+                'updated' => true,
+                'id' => $category->id,
+            ],
+        ]);
     }
 }
