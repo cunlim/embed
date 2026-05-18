@@ -145,4 +145,52 @@ describe("CategoryModal", () => {
     const runAllButton = screen.getByRole("button", { name: "전체 실행" });
     expect(runAllButton).toBeDisabled();
   });
+
+  it("텍스트가 input으로 렌더링된다", () => {
+    const completedData = {
+      ...pendingData,
+      languages: {
+        ko: { translation_text: "원본", embedding: { status: "completed" as const, preview: [0.1] } },
+        en: { translation_text: "English", embedding: { status: "completed" as const, preview: [0.2] } },
+        zh: { translation_text: "中文", embedding: { status: "completed" as const, preview: [0.3] } },
+      },
+    };
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={completedData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
+    const inputs = screen.getAllByRole("textbox");
+    expect(inputs.length).toBe(3); // ko, en, zh — NOT embeddings
+  });
+
+  it("실행 중 input이 readonly가 된다", () => {
+    const completedData = {
+      ...pendingData,
+      languages: {
+        ko: { translation_text: "원본", embedding: { status: "completed" as const, preview: [0.1] } },
+        en: { translation_text: "English", embedding: { status: "completed" as const, preview: [0.2] } },
+        zh: { translation_text: "中文", embedding: { status: "completed" as const, preview: [0.3] } },
+      },
+    };
+    const execState = {
+      ...createEmptyExecState(),
+      runningSteps: new Set(["translation.en" as const]),
+    };
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={completedData} isLoading={false} error={null} token="token" execState={execState} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
+    const inputs = screen.getAllByRole("textbox");
+    inputs.forEach(input => {
+      expect(input).toHaveAttribute("readonly");
+    });
+  });
+
+  it("임베딩 행은 input이 아닌 text로 표시된다", () => {
+    const completedData = {
+      ...pendingData,
+      languages: {
+        ko: { translation_text: "원본", embedding: { status: "completed" as const, preview: [0.1, 0.2] } },
+        en: { translation_text: "English", embedding: { status: "completed" as const, preview: [0.3] } },
+        zh: { translation_text: "中文", embedding: { status: "completed" as const, preview: [0.4] } },
+      },
+    };
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={completedData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} />);
+    const inputs = screen.getAllByRole("textbox");
+    expect(inputs.length).toBe(3); // textbox는 3개 (ko, en, zh translations만) — embedding rows are NOT textboxes
+  });
 });

@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { updateCategoryText } from "@/lib/api";
 import type { CategoryTranslations, StepName } from "@/lib/api";
 import type { CatExecState } from "@/hooks/useCategoryExecution";
 
@@ -43,10 +44,11 @@ function copyToClipboard(text: string) {
 }
 
 export default function CategoryModal({
-  open, onOpenChange, data, isLoading, error, token, onListRefresh,
+  open, onOpenChange, data, isLoading, error, token, onReload, onListRefresh,
   execState, onSingleAction, onRunAll, onCancelPending,
 }: Props) {
   const [flashSteps, setFlashSteps] = useState<Set<StepName>>(new Set());
+  const [editValues, setEditValues] = useState<Record<string, string>>({});
 
   const runningSteps = execState?.runningSteps ?? new Set<StepName>();
   const pendingSteps = execState?.pendingSteps ?? [];
@@ -65,6 +67,7 @@ export default function CategoryModal({
     translationDone?: boolean,
     isExecuting?: boolean,
     isPending?: boolean,
+    langKey?: "ko" | "en" | "zh",
   ) => {
     const hasValue = displayValue !== null;
     const isRunningThis = stepName ? runningSteps.has(stepName) : false;
@@ -81,23 +84,34 @@ export default function CategoryModal({
     return (
       <div className="grid grid-cols-[80px_1fr_40px] gap-3 items-center py-1.5">
         <span className="text-sm text-muted-foreground">{label}</span>
-        <span className="text-sm truncate font-mono">
-          {hasValue ? (
-            displayValue
-          ) : stepName && stepResults.has(stepName) ? (
-            isEmbedding ? (() => {
-              try {
-                const arr = JSON.parse(stepResults.get(stepName)!) as number[];
-                const dims = data?.embedding_dimensions ?? 1024;
-                return `[${arr.slice(0, 10).map((v) => v.toFixed(3)).join(", ")}…${dims}차원]`;
-              } catch { return stepResults.get(stepName); }
-            })() : stepResults.get(stepName)
-          ) : isFailed ? (
-            <span className="text-destructive italic">실패</span>
-          ) : (
-            <span className="text-muted-foreground italic">처리전</span>
-          )}
-        </span>
+        {langKey && hasValue ? (
+          <input
+            type="text"
+            className="text-sm truncate font-mono w-full bg-transparent border-b border-border px-1 py-0.5 focus:outline-none focus:border-accent read-only:opacity-60 read-only:cursor-default"
+            value={editValues[langKey] ?? displayValue ?? ""}
+            onChange={(e) => setEditValues((prev) => ({ ...prev, [langKey]: e.target.value }))}
+            onBlur={() => handleBlur(langKey)}
+            readOnly={runningSteps.size > 0 || pendingSteps.length > 0}
+          />
+        ) : (
+          <span className="text-sm truncate font-mono">
+            {hasValue ? (
+              displayValue
+            ) : stepName && stepResults.has(stepName) ? (
+              isEmbedding ? (() => {
+                try {
+                  const arr = JSON.parse(stepResults.get(stepName)!) as number[];
+                  const dims = data?.embedding_dimensions ?? 1024;
+                  return `[${arr.slice(0, 10).map((v) => v.toFixed(3)).join(", ")}…${dims}차원]`;
+                } catch { return stepResults.get(stepName); }
+              })() : stepResults.get(stepName)
+            ) : isFailed ? (
+              <span className="text-destructive italic">실패</span>
+            ) : (
+              <span className="text-muted-foreground italic">처리전</span>
+            )}
+          </span>
+        )}
         <div>
           {isRunningThis ? (
             <Button variant="ghost" size="icon" disabled title={label + " 실행 중"}>
@@ -160,6 +174,27 @@ export default function CategoryModal({
     onOpenChange(open);
   };
 
+  const handleBlur = async (langKey: "ko" | "en" | "zh") => {
+    if (!data) return;
+    const fieldMap: Record<string, "category_name_ko" | "category_name_en" | "category_name_zh"> = {
+      ko: "category_name_ko",
+      en: "category_name_en",
+      zh: "category_name_zh",
+    };
+    const originalValue = data.languages[langKey].translation_text ?? "";
+    const newValue = editValues[langKey] ?? originalValue;
+    if (newValue === originalValue) return;
+
+    try {
+      await updateCategoryText(data.id, fieldMap[langKey], newValue || null, token);
+      onReload?.();
+      onListRefresh?.();
+      toast("저장되었습니다");
+    } catch {
+      toast("저장에 실패했습니다");
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -215,6 +250,7 @@ export default function CategoryModal({
                             undefined,
                             isExecuting,
                             pendingSteps.includes(`translation.${lang.key}` as StepName),
+                            lang.key,
                           )}
                           {renderRow(
                             "임베딩",
@@ -238,6 +274,10 @@ export default function CategoryModal({
                             detail.translation_text,
                             detail.translation_text,
                             null,
+                            undefined,
+                            undefined,
+                            undefined,
+                            "ko",
                           )}
                           {renderRow(
                             "임베딩",
