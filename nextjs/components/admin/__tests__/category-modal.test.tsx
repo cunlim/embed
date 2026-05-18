@@ -230,11 +230,9 @@ describe("CategoryModal", () => {
         zh: { translation_text: "中文", embedding: { status: "completed" as const, preview: [0.3] } },
       },
     };
-    const onReload = vi.fn();
-    const onListRefresh = vi.fn();
     const onUpdateData = vi.fn();
     const onUpdateListRow = vi.fn();
-    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={completedData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} onReload={onReload} onListRefresh={onListRefresh} onUpdateData={onUpdateData} onUpdateListRow={onUpdateListRow} />);
+    render(<CategoryModal open={true} onOpenChange={vi.fn()} data={completedData} isLoading={false} error={null} token="token" execState={createEmptyExecState()} onSingleAction={defaultHandlers.onSingleAction} onRunAll={defaultHandlers.onRunAll} onCancelPending={defaultHandlers.onCancelPending} onUpdateData={onUpdateData} onUpdateListRow={onUpdateListRow} />);
 
     const inputs = screen.getAllByRole("textbox");
     // Change value of first input and blur

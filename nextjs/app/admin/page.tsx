@@ -343,8 +343,6 @@ function AdminPageInner() {
         isLoading={detailLoading}
         error={detailError}
         token={token}
-        onReload={reload}
-        onListRefresh={() => loadCategories(page)}
         onUpdateData={setData}
         onUpdateListRow={(row) => updateCategoryStatus(row.id, { translation_status: row.translation_status as Category["translation_status"] })}
         execState={modalCategoryId ? getState(modalCategoryId) : null}

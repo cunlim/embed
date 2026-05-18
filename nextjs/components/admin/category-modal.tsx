@@ -20,8 +20,6 @@ interface Props {
   isLoading: boolean;
   error: string | null;
   token?: string | null;
-  onReload?: () => void;
-  onListRefresh?: () => void;
   onUpdateData?: (data: CategoryTranslations) => void;
   onUpdateListRow?: (row: { id: number; translation_status: string }) => void;
   // New props from useCategoryExecution
@@ -46,7 +44,7 @@ function copyToClipboard(text: string) {
 }
 
 export default function CategoryModal({
-  open, onOpenChange, data, isLoading, error, token, onReload, onListRefresh,
+  open, onOpenChange, data, isLoading, error, token,
   onUpdateData, onUpdateListRow,
   execState, onSingleAction, onRunAll, onCancelPending,
 }: Props) {
