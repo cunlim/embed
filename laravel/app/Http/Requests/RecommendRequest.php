@@ -17,8 +17,10 @@ class RecommendRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'text' => ['required', 'string', 'min:1', 'max:500'],
+            'text' => ['nullable', 'string', 'max:500'],
             'target_language' => ['required', 'string', 'in:ko,zh,en'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
     }
 }
