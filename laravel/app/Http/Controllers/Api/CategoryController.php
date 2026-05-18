@@ -385,10 +385,16 @@ class CategoryController extends Controller
             ->where('language', $lang)
             ->delete();
 
+        $category->fresh();
+        $translations = (new CategoryTranslationsResource($category))->resolve();
+        $listRow = (new CategoryResource($category))->resolve();
+
         return response()->json([
             'data' => [
                 'updated' => true,
                 'id' => $category->id,
+                'translations' => $translations,
+                'listRow' => $listRow,
             ],
         ]);
     }
