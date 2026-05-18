@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Category;
 use App\Models\CategoryEmbedding;
 use App\Models\SearchLog;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class RecommendationService
 {
@@ -45,6 +46,33 @@ class RecommendationService
         }
 
         return $recommendations;
+    }
+
+    /**
+     * pgvector JOIN pagination으로 유사도 검색 결과를 반환한다.
+     * Category + CategoryEmbedding을 language로 JOIN하여 distance를 계산한다.
+     */
+    public function recommendPaginated(SearchLog $searchLog, string $targetLanguage, int $perPage = 20, int $page = 1): LengthAwarePaginator
+    {
+        $embedding = $searchLog->embedding->toArray();
+        $vectorLiteral = '['.implode(',', $embedding).']';
+
+        $paginator = Category::select('categories.*')
+            ->selectRaw('MIN(ce.embedding <=> ?::vector) as distance', [$vectorLiteral])
+            ->join('category_embeddings as ce', 'ce.category_id', '=', 'categories.id')
+            ->where('ce.language', $targetLanguage)
+            ->groupBy('categories.id')
+            ->orderByRaw('MIN(ce.embedding <=> ?::vector)', [$vectorLiteral])
+            ->paginate(perPage: $perPage, page: $page);
+
+        $items = $paginator->getCollection()->map(function (Category $category) {
+            $category->similarity_score = round(1.0 - (float) $category->distance, 4);
+
+            return $category;
+        });
+        $paginator->setCollection($items);
+
+        return $paginator;
     }
 
     /**

@@ -5,6 +5,7 @@ use App\Models\CategoryEmbedding;
 use App\Models\SearchLog;
 use App\Services\RecommendationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Pgvector\Laravel\Vector;
 use Tests\TestCase;
 
@@ -63,4 +64,35 @@ test('recommend — 유사도 점수는 1.0 - distance로 계산된다', functio
     $distance = $categoryEmbedding->distance;
     $score = round(1.0 - (float) $distance, 4);
     expect($score)->toBe(0.85);
+});
+
+test('recommendPaginated — 페이지네이션 결과를 반환한다', function () {
+    $category = Category::factory()->create([
+        'category_code' => '50000000',
+        'category_name_ko' => '패션의류',
+    ]);
+
+    $embedding = new Vector(array_fill(0, 1024, 0.1));
+    $categoryEmbedding = new CategoryEmbedding;
+    $categoryEmbedding->category_id = $category->id;
+    $categoryEmbedding->language = 'ko';
+    $categoryEmbedding->embed_model_name = 'bge-m3:latest';
+    $categoryEmbedding->embedding = $embedding;
+    $categoryEmbedding->save();
+
+    $searchLog = new SearchLog([
+        'search_keyword' => '청바지',
+        'normalized_keyword' => '청바지',
+        'embed_model_name' => 'bge-m3:latest',
+        'session_id' => 'test-session',
+    ]);
+    $searchLog->embedding = array_fill(0, 1024, 0.05);
+
+    $service = new RecommendationService;
+    $result = $service->recommendPaginated($searchLog, 'ko', 20, 1);
+
+    expect($result)->toBeInstanceOf(LengthAwarePaginator::class);
+    expect($result->total())->toBe(1);
+    expect($result->items()[0]->id)->toBe($category->id);
+    expect($result->items()[0]->similarity_score)->toBeGreaterThan(0);
 });
