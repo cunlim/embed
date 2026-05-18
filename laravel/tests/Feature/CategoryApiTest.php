@@ -1,9 +1,7 @@
 <?php
 
-use App\Jobs\TranslateAndEmbedJob;
 use App\Models\Category;
 use App\Models\User;
-use Illuminate\Support\Facades\Bus;
 
 test('GET /api/categories — 카테고리 목록을 반환한다', function () {
     Category::factory()->count(3)->create();
@@ -22,16 +20,19 @@ test('POST /api/categories — 인증 없이 401을 반환한다', function () {
     $response->assertUnauthorized();
 });
 
-test('POST /api/categories — 인증된 사용자는 201을 반환하고 Job을 dispatch한다', function () {
-    Bus::fake();
-
+test('POST /api/categories — 인증된 사용자는 201을 반환한다', function () {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories', [
         'category_name_ko' => '패션의류',
     ]);
 
-    $response->assertCreated();
-
-    Bus::assertDispatched(TranslateAndEmbedJob::class, 2);
+    $response->assertCreated()
+        ->assertJsonStructure([
+            'data' => [
+                'id',
+                'category_code',
+                'category_name_ko',
+            ],
+        ]);
 });

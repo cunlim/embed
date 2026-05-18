@@ -8,7 +8,6 @@ use App\Http\Requests\RunStepRequest;
 use App\Http\Resources\CategoryCollection;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\CategoryTranslationsResource;
-use App\Jobs\TranslateAndEmbedJob;
 use App\Models\Category;
 use App\Models\CategoryEmbedding;
 use App\Services\EmbeddingGenerator;
@@ -113,11 +112,6 @@ class CategoryController extends Controller
             'category_code' => Category::generateCode(),
             'category_name_ko' => $request->category_name_ko,
         ]);
-
-        // zh, en 언어별 번역 Job dispatch
-        foreach (['zh', 'en'] as $lang) {
-            TranslateAndEmbedJob::dispatch($category->id, $lang);
-        }
 
         return new CategoryResource($category);
     }
