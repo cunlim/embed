@@ -3,19 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\BatchTranslateRequest;
 use App\Http\Requests\CategoryStoreRequest;
+use App\Http\Requests\RunStepRequest;
 use App\Http\Resources\CategoryCollection;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\CategoryTranslationsResource;
-use App\Jobs\BatchTranslatePipeline;
-use App\Jobs\CategoryTranslateEmbedPipeline;
 use App\Jobs\TranslateAndEmbedJob;
 use App\Models\Category;
+use App\Models\CategoryEmbedding;
+use App\Services\EmbeddingGenerator;
+use App\Services\OllamaTranslator;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use OpenApi\Attributes as OA;
+use RuntimeException;
 
 class CategoryController extends Controller
 {
@@ -214,55 +214,9 @@ class CategoryController extends Controller
     }
 
     #[OA\Post(
-        path: '/api/categories/batch-translate',
-        summary: '일괄 번역 트리거',
-        description: '지정된 언어로 전체 카테고리 일괄 번역을 시작합니다.',
-        tags: ['Categories'],
-        security: [['sanctum' => []]],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ['target_language'],
-                properties: [
-                    new OA\Property(property: 'target_language', type: 'string', enum: ['zh', 'en']),
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: 202,
-                description: '일괄 번역 시작됨',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(property: 'target_language', type: 'string'),
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 422,
-                description: '입력값 검증 실패',
-            ),
-            new OA\Response(
-                response: 401,
-                description: '인증 필요',
-            ),
-        ]
-    )]
-    public function batchTranslate(BatchTranslateRequest $request): JsonResponse
-    {
-        BatchTranslatePipeline::dispatch($request->target_language);
-
-        return response()->json([
-            'message' => '일괄 번역이 시작되었습니다.',
-            'target_language' => $request->target_language,
-        ], 202);
-    }
-
-    #[OA\Post(
-        path: '/api/categories/{category}/translate-embed',
-        summary: '카테고리별 번역·임베딩 실행',
-        description: '특정 카테고리에 대해 번역과 임베딩 파이프라인을 실행합니다.',
+        path: '/api/categories/{category}/run-step',
+        summary: '카테고리 단일 스텝 실행',
+        description: '특정 카테고리에 대해 번역 또는 임베딩 단일 스텝을 동기 실행합니다.',
         tags: ['Categories'],
         security: [['sanctum' => []]],
         parameters: [
@@ -274,80 +228,35 @@ class CategoryController extends Controller
             ),
         ],
         requestBody: new OA\RequestBody(
-            required: false,
+            required: true,
             content: new OA\JsonContent(
-                type: 'object',
+                required: ['step'],
                 properties: [
                     new OA\Property(
-                        property: 'steps',
-                        type: 'array',
-                        items: new OA\Items(type: 'string', enum: ['translation.zh', 'translation.en', 'embedding.ko', 'embedding.zh', 'embedding.en'])
+                        property: 'step',
+                        type: 'string',
+                        enum: ['translation.zh', 'translation.en', 'embedding.ko', 'embedding.zh', 'embedding.en']
                     ),
                 ]
             )
         ),
         responses: [
             new OA\Response(
-                response: 202,
-                description: '파이프라인 실행 시작됨',
-                content: new OA\JsonContent(
-                    type: 'object',
-                    properties: [
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(property: 'category_id', type: 'integer'),
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 401,
-                description: '인증 필요',
-            ),
-            new OA\Response(
-                response: 404,
-                description: '카테고리를 찾을 수 없음',
-            ),
-        ]
-    )]
-    public function translateEmbed(Request $request, Category $category): JsonResponse
-    {
-        $request->validate([
-            'steps' => ['nullable', 'array'],
-            'steps.*' => ['string', 'in:translation.zh,translation.en,embedding.ko,embedding.zh,embedding.en'],
-        ]);
-        $steps = $request->input('steps');
-        CategoryTranslateEmbedPipeline::dispatch($category->id, $steps);
-
-        return response()->json([
-            'message' => '카테고리 번역·임베딩이 시작되었습니다.',
-            'category_id' => $category->id,
-        ], 202);
-    }
-
-    #[OA\Post(
-        path: '/api/categories/{category}/translate-embed/cancel',
-        summary: '카테고리별 번역·임베딩 중단',
-        description: '실행 중인 카테고리 번역·임베딩 파이프라인을 중단합니다.',
-        tags: ['Categories'],
-        security: [['sanctum' => []]],
-        parameters: [
-            new OA\Parameter(
-                name: 'category',
-                in: 'path',
-                required: true,
-                schema: new OA\Schema(type: 'integer')
-            ),
-        ],
-        responses: [
-            new OA\Response(
                 response: 200,
-                description: '중단 요청 처리됨',
+                description: '스텝 실행 완료',
                 content: new OA\JsonContent(
                     type: 'object',
                     properties: [
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(property: 'category_id', type: 'integer'),
+                        new OA\Property(property: 'step', type: 'string'),
+                        new OA\Property(property: 'status', type: 'string', enum: ['completed', 'failed']),
+                        new OA\Property(property: 'result', type: 'string', nullable: true),
+                        new OA\Property(property: 'error', type: 'string', nullable: true),
                     ]
                 )
+            ),
+            new OA\Response(
+                response: 422,
+                description: '입력값 검증 실패 또는 전제조건 불만족',
             ),
             new OA\Response(
                 response: 401,
@@ -355,13 +264,72 @@ class CategoryController extends Controller
             ),
         ]
     )]
-    public function cancelTranslateEmbed(Category $category): JsonResponse
+    public function runStep(RunStepRequest $request, Category $category): JsonResponse
     {
-        Cache::put("category-translate-cancel:{$category->id}", true, 600);
+        $step = $request->input('step');
+        $categoryNameKo = $category->category_name_ko;
+        $embedModelName = config('services.ollama.embedding_model');
+        $translator = app(OllamaTranslator::class);
+        $embedder = app(EmbeddingGenerator::class);
 
-        return response()->json([
-            'message' => '카테고리 번역·임베딩 중단이 요청되었습니다.',
-            'category_id' => $category->id,
-        ]);
+        try {
+            [$type, $lang] = explode('.', $step);
+
+            if ($type === 'translation') {
+                $column = $lang === 'zh' ? 'category_name_zh' : 'category_name_en';
+                $translated = $translator->translate($categoryNameKo, $lang);
+                $category->{$column} = $translated;
+                $category->save();
+
+                return response()->json([
+                    'step' => $step,
+                    'status' => 'completed',
+                    'result' => $translated,
+                ]);
+            }
+
+            // embedding
+            $textForEmbedding = match ($lang) {
+                'ko' => $category->category_name_ko,
+                'zh' => $category->category_name_zh,
+                'en' => $category->category_name_en,
+            };
+
+            if ($textForEmbedding === null) {
+                return response()->json([
+                    'step' => $step,
+                    'status' => 'failed',
+                    'error' => "{$lang} 번역 텍스트가 없습니다. 먼저 번역을 실행해주세요.",
+                ], 422);
+            }
+
+            $vector = $embedder->generate($textForEmbedding);
+
+            CategoryEmbedding::updateOrCreate(
+                [
+                    'category_id' => $category->id,
+                    'language' => $lang,
+                    'embed_model_name' => $embedModelName,
+                ],
+                ['embedding' => $vector]
+            );
+
+            return response()->json([
+                'step' => $step,
+                'status' => 'completed',
+                'result' => json_encode(array_slice($vector, 0, 10)),
+            ]);
+        } catch (RuntimeException $e) {
+            $errorMsg = $e->getMessage();
+            if (str_contains($errorMsg, 'Ollama rate limit exceeded')) {
+                $errorMsg = 'Ollama rate limit exceeded';
+            }
+
+            return response()->json([
+                'step' => $step,
+                'status' => 'failed',
+                'error' => $errorMsg,
+            ], 500);
+        }
     }
 }

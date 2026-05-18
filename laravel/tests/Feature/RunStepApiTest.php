@@ -1,0 +1,116 @@
+<?php
+
+use App\Models\Category;
+use App\Models\User;
+use App\Services\EmbeddingGenerator;
+use App\Services\OllamaTranslator;
+
+test('POST /api/categories/{category}/run-step — 인증 없이 401을 반환한다', function () {
+    $category = Category::factory()->create();
+
+    $response = $this->postJson("/api/categories/{$category->id}/run-step", [
+        'step' => 'translation.zh',
+    ]);
+
+    $response->assertUnauthorized();
+});
+
+test('POST /api/categories/{category}/run-step — 유효하지 않은 step은 422를 반환한다', function () {
+    $user = User::factory()->create();
+    $category = Category::factory()->create();
+
+    $response = $this->actingAs($user, 'sanctum')->postJson("/api/categories/{$category->id}/run-step", [
+        'step' => 'invalid.step',
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['step']);
+});
+
+test('POST /api/categories/{category}/run-step — translation.zh가 정상 동작한다', function () {
+    $translator = mock(OllamaTranslator::class);
+    $translator->shouldReceive('translate')
+        ->once()
+        ->with('테스트 카테고리', 'zh')
+        ->andReturn('测试分类');
+    app()->instance(OllamaTranslator::class, $translator);
+
+    $user = User::factory()->create();
+    $category = Category::factory()->create(['category_name_ko' => '테스트 카테고리']);
+
+    $response = $this->actingAs($user, 'sanctum')->postJson("/api/categories/{$category->id}/run-step", [
+        'step' => 'translation.zh',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'step' => 'translation.zh',
+            'status' => 'completed',
+        ]);
+    expect($response->json('result'))->toBe('测试分类');
+
+    // DB에 저장되었는지 확인
+    $category->refresh();
+    expect($category->category_name_zh)->toBe('测试分类');
+});
+
+test('POST /api/categories/{category}/run-step — embedding.ko가 정상 동작한다', function () {
+    $embedder = mock(EmbeddingGenerator::class);
+    $embedder->shouldReceive('generate')
+        ->once()
+        ->with('테스트 카테고리')
+        ->andReturn(array_fill(0, 1024, 0.01));
+    app()->instance(EmbeddingGenerator::class, $embedder);
+
+    $user = User::factory()->create();
+    $category = Category::factory()->create(['category_name_ko' => '테스트 카테고리']);
+
+    $response = $this->actingAs($user, 'sanctum')->postJson("/api/categories/{$category->id}/run-step", [
+        'step' => 'embedding.ko',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'step' => 'embedding.ko',
+            'status' => 'completed',
+        ]);
+
+    // DB에 저장되었는지 확인
+    $this->assertDatabaseHas('category_embeddings', [
+        'category_id' => $category->id,
+        'language' => 'ko',
+    ]);
+});
+
+test('POST /api/categories/{category}/run-step — 번역 없이 임베딩 실행 시 422를 반환한다', function () {
+    $user = User::factory()->create();
+    $category = Category::factory()->create(['category_name_ko' => '테스트']);
+
+    $response = $this->actingAs($user, 'sanctum')->postJson("/api/categories/{$category->id}/run-step", [
+        'step' => 'embedding.zh',
+    ]);
+
+    $response->assertStatus(422);
+});
+
+test('POST /api/categories/{category}/run-step — Ollama 실패 시 500과 failed 상태를 반환한다', function () {
+    $translator = mock(OllamaTranslator::class);
+    $translator->shouldReceive('translate')
+        ->once()
+        ->andThrow(new RuntimeException('Ollama rate limit exceeded'));
+    app()->instance(OllamaTranslator::class, $translator);
+
+    $user = User::factory()->create();
+    $category = Category::factory()->create(['category_name_ko' => '테스트']);
+
+    $response = $this->actingAs($user, 'sanctum')->postJson("/api/categories/{$category->id}/run-step", [
+        'step' => 'translation.zh',
+    ]);
+
+    $response->assertStatus(500)
+        ->assertJson([
+            'step' => 'translation.zh',
+            'status' => 'failed',
+            'error' => 'Ollama rate limit exceeded',
+        ]);
+});

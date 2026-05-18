@@ -1,6 +1,5 @@
 <?php
 
-use App\Jobs\BatchTranslatePipeline;
 use App\Jobs\TranslateAndEmbedJob;
 use App\Models\Category;
 use App\Models\User;
@@ -35,50 +34,4 @@ test('POST /api/categories — 인증된 사용자는 201을 반환하고 Job을
     $response->assertCreated();
 
     Bus::assertDispatched(TranslateAndEmbedJob::class, 2);
-});
-
-test('POST /api/categories/batch-translate — 인증 없이 401을 반환한다', function () {
-    $response = $this->postJson('/api/categories/batch-translate', [
-        'target_language' => 'zh',
-    ]);
-
-    $response->assertUnauthorized();
-});
-
-test('POST /api/categories/batch-translate — 인증된 사용자는 202를 반환한다', function () {
-    Bus::fake();
-
-    $user = User::factory()->create();
-
-    $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories/batch-translate', [
-        'target_language' => 'zh',
-    ]);
-
-    $response->assertAccepted();
-
-    Bus::assertDispatched(BatchTranslatePipeline::class);
-});
-
-test('POST /api/categories/batch-translate — target_language가 없으면 422를 반환한다', function () {
-    Bus::fake();
-
-    $user = User::factory()->create();
-
-    $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories/batch-translate', []);
-
-    $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['target_language']);
-});
-
-test('POST /api/categories/batch-translate — 지원하지 않는 언어면 422를 반환한다', function () {
-    Bus::fake();
-
-    $user = User::factory()->create();
-
-    $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories/batch-translate', [
-        'target_language' => 'ja',
-    ]);
-
-    $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['target_language']);
 });
