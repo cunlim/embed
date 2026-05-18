@@ -245,6 +245,68 @@ class CategoryController extends Controller
                         new OA\Property(property: 'status', type: 'string', enum: ['completed', 'failed']),
                         new OA\Property(property: 'result', type: 'string', nullable: true),
                         new OA\Property(property: 'error', type: 'string', nullable: true),
+                        new OA\Property(
+                            property: 'translations',
+                            type: 'object',
+                            nullable: true,
+                            properties: [
+                                new OA\Property(property: 'id', type: 'integer'),
+                                new OA\Property(property: 'category_code', type: 'string'),
+                                new OA\Property(property: 'category_name_ko', type: 'string'),
+                                new OA\Property(property: 'embedding_dimensions', type: 'integer', nullable: true),
+                                new OA\Property(
+                                    property: 'languages',
+                                    type: 'object',
+                                    properties: [
+                                        new OA\Property(
+                                            property: 'ko',
+                                            type: 'object',
+                                            properties: [
+                                                new OA\Property(property: 'translation_text', type: 'string', nullable: true),
+                                                new OA\Property(
+                                                    property: 'embedding',
+                                                    type: 'object',
+                                                    properties: [
+                                                        new OA\Property(property: 'status', type: 'string', enum: ['pending', 'completed']),
+                                                        new OA\Property(property: 'preview', type: 'array', items: new OA\Items(type: 'number'), nullable: true),
+                                                    ]
+                                                ),
+                                            ]
+                                        ),
+                                        new OA\Property(
+                                            property: 'en',
+                                            type: 'object',
+                                            properties: [
+                                                new OA\Property(property: 'translation_text', type: 'string', nullable: true),
+                                                new OA\Property(
+                                                    property: 'embedding',
+                                                    type: 'object',
+                                                    properties: [
+                                                        new OA\Property(property: 'status', type: 'string', enum: ['pending', 'completed']),
+                                                        new OA\Property(property: 'preview', type: 'array', items: new OA\Items(type: 'number'), nullable: true),
+                                                    ]
+                                                ),
+                                            ]
+                                        ),
+                                        new OA\Property(
+                                            property: 'zh',
+                                            type: 'object',
+                                            properties: [
+                                                new OA\Property(property: 'translation_text', type: 'string', nullable: true),
+                                                new OA\Property(
+                                                    property: 'embedding',
+                                                    type: 'object',
+                                                    properties: [
+                                                        new OA\Property(property: 'status', type: 'string', enum: ['pending', 'completed']),
+                                                        new OA\Property(property: 'preview', type: 'array', items: new OA\Items(type: 'number'), nullable: true),
+                                                    ]
+                                                ),
+                                            ]
+                                        ),
+                                    ]
+                                ),
+                            ]
+                        ),
                     ]
                 )
             ),
@@ -275,10 +337,14 @@ class CategoryController extends Controller
                 $category->{$column} = $translated;
                 $category->save();
 
+                $category = $category->fresh();
+                $translations = (new CategoryTranslationsResource($category))->resolve();
+
                 return response()->json([
                     'step' => $step,
                     'status' => 'completed',
                     'result' => $translated,
+                    'translations' => $translations,
                 ]);
             }
 
@@ -308,10 +374,14 @@ class CategoryController extends Controller
                 ['embedding' => $vector]
             );
 
+            $category = $category->fresh();
+            $translations = (new CategoryTranslationsResource($category))->resolve();
+
             return response()->json([
                 'step' => $step,
                 'status' => 'completed',
                 'result' => json_encode(array_slice($vector, 0, 10)),
+                'translations' => $translations,
             ]);
         } catch (\Throwable $e) {
             $errorMsg = $e->getMessage();
