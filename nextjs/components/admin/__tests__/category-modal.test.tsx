@@ -196,7 +196,31 @@ describe("CategoryModal", () => {
     expect(inputs.length).toBe(3); // textbox는 3개 (ko, en, zh translations만) — embedding rows are NOT textboxes
   });
   it("blur 시 값이 변경되었으면 저장 API를 호출한다", async () => {
-    vi.mocked(updateCategoryText).mockResolvedValue({ data: { updated: true, id: 1 } });
+    vi.mocked(updateCategoryText).mockResolvedValue({
+      data: {
+        updated: true,
+        id: 1,
+        translations: {
+          id: 1,
+          category_code: "TEST001",
+          category_name_ko: "원본",
+          embedding_dimensions: null,
+          languages: {
+            ko: { translation_text: "원본", embedding: { status: "completed", preview: [0.1] } },
+            en: { translation_text: "English", embedding: { status: "completed", preview: [0.3] } },
+            zh: { translation_text: "中文", embedding: { status: "completed", preview: [0.4] } },
+          },
+        },
+        listRow: {
+          id: 1,
+          category_code: "TEST001",
+          category_name_ko: "원본",
+          category_name_zh: "中文",
+          category_name_en: "English",
+          translation_status: "completed",
+        },
+      },
+    });
 
     const completedData = {
       ...pendingData,

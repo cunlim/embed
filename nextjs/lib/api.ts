@@ -194,6 +194,7 @@ export interface RunStepResponse {
   status: "completed" | "failed";
   result?: string;
   error?: string;
+  translations?: CategoryTranslations;
 }
 
 export function runStep(
@@ -210,13 +211,29 @@ export function runStep(
 
 // --- 카테고리 텍스트 업데이트 ---
 
+export interface UpdateTextResponse {
+  data: {
+    updated: boolean;
+    id: number;
+    translations: CategoryTranslations;
+    listRow: {
+      id: number;
+      category_code: string;
+      category_name_ko: string;
+      category_name_zh: string | null;
+      category_name_en: string | null;
+      translation_status: string;
+    };
+  };
+}
+
 export function updateCategoryText(
   categoryId: number,
   field: "category_name_ko" | "category_name_en" | "category_name_zh",
   value: string | null,
   token?: string | null
-): Promise<{ data: { updated: boolean; id: number } }> {
-  return request(`/categories/${categoryId}/update-text`, {
+): Promise<UpdateTextResponse> {
+  return request<UpdateTextResponse>(`/categories/${categoryId}/update-text`, {
     method: "PUT",
     body: { field, value },
     token,

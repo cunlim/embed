@@ -220,11 +220,36 @@ describe("API 클라이언트", () => {
 
   describe("updateCategoryText", () => {
     it("올바른 URL과 body로 PUT 요청을 보낸다", async () => {
-      mockResponse({ data: { updated: true, id: 1 } });
+      const testResp = {
+        data: {
+          updated: true,
+          id: 1,
+          translations: {
+            id: 1,
+            category_code: "TEST001",
+            category_name_ko: "New Name",
+            embedding_dimensions: null,
+            languages: {
+              ko: { translation_text: null, embedding: { status: "pending" as const, preview: null } },
+              en: { translation_text: "New Name", embedding: { status: "pending" as const, preview: null } },
+              zh: { translation_text: null, embedding: { status: "pending" as const, preview: null } },
+            },
+          },
+          listRow: {
+            id: 1,
+            category_code: "TEST001",
+            category_name_ko: "New Name",
+            category_name_zh: null,
+            category_name_en: "New Name",
+            translation_status: "partial",
+          },
+        },
+      };
+      mockResponse(testResp);
 
       const result = await api.updateCategoryText(1, "category_name_en", "New Name", "token");
 
-      expect(result).toEqual({ data: { updated: true, id: 1 } });
+      expect(result).toEqual(testResp);
       expect(mockFetch).toHaveBeenCalledWith(
         "https://embed.cunlim.dev/api/categories/1/update-text",
         expect.objectContaining({
