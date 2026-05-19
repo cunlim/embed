@@ -28,6 +28,9 @@ printf '%s\nEXIT=%s\n' "$OUTPUT" "$EXIT" > "$RESULT_DIR/nextjs-test.txt"
 OUTPUT=$(docker exec cl_embed_laravel vendor/bin/pint --format agent 2>&1); EXIT=$?
 printf '%s\nEXIT=%s\n' "$OUTPUT" "$EXIT" > "$RESULT_DIR/laravel-pint.txt"
 
+# ── Laravel Config Cache Clear (운영DB 오염 방지) ──────────────
+docker exec cl_embed_laravel php artisan config:clear 2>&1 > /dev/null
+
 # ── Laravel Tests ─────────────────────────────────────────────
 OUTPUT=$(docker exec cl_embed_laravel php artisan test --compact 2>&1); EXIT=$?
 printf '%s\nEXIT=%s\n' "$OUTPUT" "$EXIT" > "$RESULT_DIR/laravel-test.txt"
