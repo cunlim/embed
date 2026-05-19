@@ -28,6 +28,7 @@ interface Props {
   onRunAll: () => Promise<void>;
   onCancelPending: () => void;
   onClearStep?: (stepName: StepName) => void;
+  readOnly?: boolean;
 }
 
 const LANGUAGES: { key: "ko" | "en" | "zh"; label: string; hasTranslation: boolean }[] = [
@@ -48,6 +49,7 @@ export default function CategoryModal({
   open, onOpenChange, data, isLoading, error, token,
   onUpdateData, onUpdateListRow,
   execState, onSingleAction, onRunAll, onCancelPending, onClearStep,
+  readOnly = false,
 }: Props) {
   const [flashSteps, setFlashSteps] = useState<Set<StepName>>(new Set());
   const [editValues, setEditValues] = useState<Record<string, string>>({});
@@ -94,7 +96,7 @@ export default function CategoryModal({
             value={editValues[langKey] ?? displayValue ?? ""}
             onChange={(e) => setEditValues((prev) => ({ ...prev, [langKey]: e.target.value }))}
             onBlur={() => handleBlur(langKey)}
-            readOnly={runningSteps.size > 0 || pendingSteps.length > 0}
+            readOnly={runningSteps.size > 0 || pendingSteps.length > 0 || readOnly}
           />
         ) : (
           <span className="text-sm truncate font-mono">
@@ -184,7 +186,7 @@ export default function CategoryModal({
   };
 
   const handleBlur = async (langKey: "ko" | "en" | "zh") => {
-    if (!data) return;
+    if (!data || readOnly) return;
     const fieldMap: Record<string, "category_name_ko" | "category_name_en" | "category_name_zh"> = {
       ko: "category_name_ko",
       en: "category_name_en",
@@ -210,7 +212,7 @@ export default function CategoryModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>카테고리 상세</DialogTitle>
+          <DialogTitle>{readOnly ? "카테고리 보기" : "카테고리 상세"}</DialogTitle>
           <DialogDescription className="font-mono text-xs">
             {data ? (
               `코드: ${data.category_code}`
@@ -334,23 +336,27 @@ export default function CategoryModal({
           const hasPending = pendingSteps.length > 0;
 
           return (
-            <div className="flex justify-end">
-              {hasPending ? (
-                <Button variant="destructive" onClick={onCancelPending}>
-                  <Square className="mr-1.5 h-4 w-4" />
-                  실행중지
-                </Button>
-              ) : (
-                <Button onClick={onRunAll} disabled={isExecuting || allCompleted || isKoEmpty}>
-                  {allCompleted ? (
-                    <Check className="mr-1.5 h-4 w-4" />
+            <>
+              {!readOnly && (
+                <div className="flex justify-end">
+                  {hasPending ? (
+                    <Button variant="destructive" onClick={onCancelPending}>
+                      <Square className="mr-1.5 h-4 w-4" />
+                      실행중지
+                    </Button>
                   ) : (
-                    <Play className="mr-1.5 h-4 w-4" />
+                    <Button onClick={onRunAll} disabled={isExecuting || allCompleted || isKoEmpty}>
+                      {allCompleted ? (
+                        <Check className="mr-1.5 h-4 w-4" />
+                      ) : (
+                        <Play className="mr-1.5 h-4 w-4" />
+                      )}
+                      전체 실행
+                    </Button>
                   )}
-                  전체 실행
-                </Button>
+                </div>
               )}
-            </div>
+            </>
           );
         })()}
       </DialogContent>
