@@ -1,26 +1,193 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowRight, Inbox } from "lucide-react";
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Plus,
+  RefreshCw,
+  AlertCircle,
+  Database,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { getToken } from "@/hooks/useAuth";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import CategoryModal from "@/components/admin/category-modal";
+import StatusBadge from "@/components/admin/status-badge";
+import CategoryHierarchy from "@/components/admin/category-hierarchy";
+import BatchTranslate from "@/components/admin/batch-translate";
+import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
+import { useAuth, getToken } from "@/hooks/useAuth";
+import { useCategories } from "@/hooks/useCategories";
+import { useCategoryDetail } from "@/hooks/useCategoryDetail";
+import { useCategoryExecution } from "@/hooks/useCategoryExecution";
+import { recommend } from "@/lib/api";
+import type { Category, Recommendation, PaginationMeta } from "@/lib/api";
+
+function getPageRange(current: number, last: number): (number | "...")[] {
+  if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1);
+
+  const pages: (number | "...")[] = [1];
+
+  const start = Math.max(2, current - 2);
+  const end = Math.min(last - 1, current + 2);
+
+  if (start > 2) pages.push("...");
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < last - 1) pages.push("...");
+
+  pages.push(last);
+  return pages;
+}
+
+function getEllipsisTarget(current: number, last: number, direction: "prev" | "next"): number {
+  if (direction === "prev") return Math.max(1, current - 5);
+  return Math.min(last, current + 5);
+}
 
 export default function EmbedPage() {
+  return (
+    <Suspense>
+      <EmbedPageInner />
+    </Suspense>
+  );
+}
+
+function EmbedPageInner() {
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
-    () => false
+    () => false,
   );
 
+  // Parse page and per_page from URL
+  const pageParam = searchParams.get("page");
+  const urlPage = parseInt(pageParam ?? "1", 10);
+  const page = Number.isNaN(urlPage) || urlPage < 1 ? 1 : urlPage;
+
+  const perPageParam = searchParams.get("per_page");
+  const urlPerPage = parseInt(perPageParam ?? "20", 10);
+  const validPerPageValues = [10, 20, 50];
+  const initialPerPage = validPerPageValues.includes(urlPerPage) ? urlPerPage : 20;
+
+  // 인증 가드 (isAdmin 체크 없이 로그인만 확인)
   useEffect(() => {
-    if (mounted && !getToken()) {
+    if (!mounted || authLoading) return;
+
+    if (!user) {
       router.replace("/login?redirect=/embed");
     }
-  }, [mounted, router]);
+  }, [mounted, authLoading, user, router]);
+
+  const token = mounted ? getToken() : null;
+  const { getState, handleSingleAction, handleRunAll, handleCancelPending, clearStep } =
+    useCategoryExecution(token);
+  const {
+    categories,
+    meta,
+    isLoading: catLoading,
+    error: catError,
+    loadCategories,
+    addCategory,
+    updateCategoryStatus,
+  } = useCategories(token);
+
+  const [perPage, setPerPage] = useState(initialPerPage);
+
+  // URL page 동기화
+  useEffect(() => {
+    if (!mounted) return;
+    loadCategories(page, perPage);
+  }, [mounted, page, perPage, loadCategories]);
+
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryCode, setNewCategoryCode] = useState("");
+
+  // 검색 state
+  const [searchText, setSearchText] = useState("");
+  const [searchLanguage, setSearchLanguage] = useState("ko");
+  const [searchResults, setSearchResults] = useState<Recommendation[] | null>(null);
+  const [searchMeta, setSearchMeta] = useState<PaginationMeta | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [cosineDialogOpen, setCosineDialogOpen] = useState(false);
+  const [activeResult, setActiveResult] = useState<Recommendation | null>(null);
+  const searchPageRef = useRef(1);
+  const perPageRef = useRef(perPage);
+  useEffect(() => { perPageRef.current = perPage });
+
+  const isSearchMode = searchResults !== null;
+  const displayCategories = isSearchMode ? searchResults : categories;
+  const displayMeta = isSearchMode ? searchMeta : meta;
+  const [modalCategoryId, setModalCategoryId] = useState<number | null>(null);
+  const { data: detailData, isLoading: detailLoading, error: detailError, setData } =
+    useCategoryDetail(modalCategoryId, token);
+
+  const handleAddCategory = useCallback(async () => {
+    if (!newCategoryName.trim()) return;
+    await addCategory(newCategoryName.trim(), newCategoryCode.trim() || undefined);
+    setNewCategoryName("");
+    setNewCategoryCode("");
+  }, [newCategoryName, newCategoryCode, addCategory]);
+
+  const handleSearch = useCallback(async (page?: number) => {
+    const currentPage = page ?? 1;
+    searchPageRef.current = currentPage;
+    setIsSearching(true);
+    setSearchError(null);
+    try {
+      const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current);
+      setSearchResults(data.data);
+      setSearchMeta(data.meta);
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : "검색에 실패했습니다");
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [searchText, searchLanguage, token]);
+
+  const handleReset = useCallback(() => {
+    setSearchText("");
+    setSearchResults(null);
+    setSearchMeta(null);
+    setSearchError(null);
+  }, []);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    if (isSearchMode) {
+      handleSearch(newPage);
+    } else {
+      router.push(`/embed?page=${newPage}&per_page=${perPage}`);
+    }
+  }, [isSearchMode, handleSearch, router, perPage]);
+
+  if (!mounted || !user) return null;
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
@@ -30,24 +197,422 @@ export default function EmbedPage() {
       <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
 
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-12 sm:px-8">
-        <div className="flex flex-1 items-center justify-center">
-          <Card className="flex flex-col items-center gap-4 py-16 px-8 max-w-md text-center">
-            <Inbox className="h-12 w-12 text-muted-foreground" />
-            <div>
-              <h2 className="text-lg font-semibold">기능이 이전되었습니다</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                카테고리 추천 기능이 관리자 페이지로 통합되었습니다.
-              </p>
-            </div>
-            <Button asChild>
-              <Link href="/admin">
-                관리자 페이지로 이동
-                <ArrowRight className="ml-1.5 h-4 w-4" />
-              </Link>
-            </Button>
+        <h1 className="mb-8 text-3xl font-bold tracking-tight sm:text-4xl">
+          카테고리 추천
+        </h1>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* 사이드바 */}
+          <div className="space-y-6">
+            {/* 카테고리 검색 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">카테고리 검색</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Tabs value={searchLanguage} onValueChange={setSearchLanguage}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="ko" className="flex-1">한국어</TabsTrigger>
+                    <TabsTrigger value="zh" className="flex-1">중국어</TabsTrigger>
+                    <TabsTrigger value="en" className="flex-1">영어</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <Input
+                  placeholder="검색어 입력..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSearch();
+                  }}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleSearch()}
+                    disabled={isSearching}
+                    className="flex-1"
+                  >
+                    {isSearching ? (
+                      <RefreshCw className="mr-1.5 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="mr-1.5 h-4 w-4" />
+                    )}
+                    검색
+                  </Button>
+                  {searchText && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleReset}
+                      title="초기화"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {searchError && (
+                  <p className="text-sm text-destructive">{searchError}</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 카테고리 계층 탐색 */}
+            <CategoryHierarchy
+              categories={categories}
+              categoriesLoaded={!catLoading}
+              onLoadCategories={() => loadCategories()}
+              onSelectCategory={(categoryId) => setModalCategoryId(categoryId)}
+            />
+
+            {/* 카테고리 추가 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">카테고리 추가</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="category-code">카테고리 코드</Label>
+                  <Input
+                    id="category-code"
+                    placeholder="입력하지 않을 시 자동 생성"
+                    value={newCategoryCode}
+                    onChange={(e) => setNewCategoryCode(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAddCategory();
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category-name">한국어 카테고리명</Label>
+                  <Input
+                    id="category-name"
+                    placeholder="예: 의류>여성의류>원피스"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAddCategory();
+                    }}
+                  />
+                </div>
+                <Button
+                  onClick={handleAddCategory}
+                  disabled={!newCategoryName.trim()}
+                  className="w-full"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  추가
+                </Button>
+                {catError && (
+                  <p className="text-sm text-destructive">{catError}</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 일괄 번역 */}
+            <BatchTranslate
+              token={token}
+              onComplete={() => loadCategories(page)}
+            />
+          </div>
+
+          {/* 카테고리 목록 테이블 */}
+          <Card className="lg:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">카테고리 목록</CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => loadCategories(page)}
+                disabled={catLoading}
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${catLoading ? "animate-spin" : ""}`}
+                />
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {/* 로딩 */}
+              {(catLoading || isSearching) && displayCategories.length === 0 && (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              )}
+
+              {/* 에러 */}
+              {!catLoading && !isSearching && catError && (
+                <div className="flex items-start gap-3 rounded-md border border-destructive/50 p-4">
+                  <AlertCircle className="mt-0.5 h-5 w-5 text-destructive" />
+                  <div>
+                    <p className="font-medium text-destructive">
+                      오류가 발생했습니다
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {catError}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => loadCategories(page)}
+                    >
+                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                      재시도
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* 빈 상태 */}
+              {!catLoading && !isSearching && !catError && displayCategories.length === 0 && (
+                <div className="flex flex-col items-center gap-2 py-12">
+                  <Database className="h-10 w-10 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    등록된 카테고리가 없습니다
+                  </p>
+                </div>
+              )}
+
+              {/* 테이블 */}
+              {displayCategories.length > 0 && (
+                <div>
+                  {/* 데스크톱 */}
+                  <div className="hidden md:block">
+                    <Table className="table-fixed">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>
+                            {searchLanguage === "ko"
+                              ? "한국어 카테고리"
+                              : searchLanguage === "zh"
+                                ? "중국어 카테고리"
+                                : "영어 카테고리"}
+                          </TableHead>
+                          {isSearchMode && <TableHead className="w-[80px]">유사도</TableHead>}
+                          <TableHead className="w-[80px]">상태</TableHead>
+                          <TableHead className="w-[52px]">보기</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {displayCategories.map((cat) => (
+                          <TableRow key={cat.id}>
+                            <TableCell className="max-w-0 w-full truncate font-medium">
+                              {searchLanguage === "ko"
+                                ? cat.category_name_ko ?? cat.category_name
+                                : searchLanguage === "zh"
+                                  ? cat.category_name_zh ?? cat.category_name
+                                  : cat.category_name_en ?? cat.category_name}
+                            </TableCell>
+                            {isSearchMode && (
+                              <TableCell className="font-mono text-sm text-accent">
+                                {cat.similarity_score != null ? (
+                                  <button
+                                    type="button"
+                                    className="cursor-pointer hover:underline"
+                                    onClick={() => {
+                                      setActiveResult(cat as Recommendation);
+                                      setCosineDialogOpen(true);
+                                    }}
+                                  >
+                                    {(cat.similarity_score * 100).toFixed(1)}%
+                                  </button>
+                                ) : (
+                                  "-"
+                                )}
+                              </TableCell>
+                            )}
+                            <TableCell>
+                              <StatusBadge status={cat.translation_status} />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="상세 보기"
+                                onClick={() => setModalCategoryId(cat.id)}
+                                aria-label="상세 보기"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* 모바일 */}
+                  <div className="space-y-2 md:hidden">
+                    {displayCategories.map((cat) => (
+                      <Card key={cat.id} className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">
+                              {searchLanguage === "ko"
+                                ? cat.category_name_ko ?? cat.category_name
+                                : searchLanguage === "zh"
+                                  ? cat.category_name_zh ?? cat.category_name
+                                  : cat.category_name_en ?? cat.category_name}
+                              {isSearchMode && cat.similarity_score != null && (
+                                <button
+                                  type="button"
+                                  className="ml-2 font-mono text-sm text-accent cursor-pointer hover:underline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveResult(cat as Recommendation);
+                                    setCosineDialogOpen(true);
+                                  }}
+                                >
+                                  {(cat.similarity_score * 100).toFixed(1)}%
+                                </button>
+                              )}
+                            </p>
+                            <div className="mt-1">
+                              <StatusBadge status={cat.translation_status} />
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="상세 보기"
+                            onClick={() => setModalCategoryId(cat.id)}
+                            aria-label="상세 보기"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* 페이지네이션 */}
+                  {displayMeta && displayMeta.last_page > 1 && (
+                    <div className="mt-4 overflow-x-auto">
+                      <Pagination className="mx-0 w-auto justify-start">
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationLink
+                              onClick={() => handlePageChange(displayMeta.current_page - 1)}
+                              className={displayMeta.current_page <= 1 ? "pointer-events-none opacity-50" : ""}
+                              aria-disabled={displayMeta.current_page <= 1}
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                            </PaginationLink>
+                          </PaginationItem>
+                          {(() => {
+                            const range = getPageRange(displayMeta.current_page, displayMeta.last_page);
+                            const currentIndex = range.indexOf(displayMeta.current_page);
+                            return range.map((p, i) => {
+                              if (p === "...") {
+                                const direction = i < currentIndex ? "prev" : "next";
+                                const target = getEllipsisTarget(
+                                  displayMeta.current_page,
+                                  displayMeta.last_page,
+                                  direction,
+                                );
+                                return (
+                                  <PaginationItem key={`e-${i}`}>
+                                    <PaginationLink
+                                      className="h-9 w-9 p-0"
+                                      onClick={() => handlePageChange(target)}
+                                    >
+                                      <PaginationEllipsis />
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                );
+                              }
+                              return (
+                                <PaginationItem key={p}>
+                                  <PaginationLink
+                                    isActive={p === displayMeta.current_page}
+                                    onClick={() => handlePageChange(p)}
+                                  >
+                                    {p}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              );
+                            });
+                          })()}
+                          <PaginationItem>
+                            <PaginationLink
+                              onClick={() => handlePageChange(displayMeta.current_page + 1)}
+                              className={displayMeta.current_page >= displayMeta.last_page ? "pointer-events-none opacity-50" : ""}
+                              aria-disabled={displayMeta.current_page >= displayMeta.last_page}
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </PaginationLink>
+                          </PaginationItem>
+                          <PaginationItem className="ml-2">
+                            <select
+                              value={perPage}
+                              onChange={(e) => {
+                                const newPerPage = Number(e.target.value);
+                                setPerPage(newPerPage);
+                                if (isSearchMode) {
+                                  handleSearch(1);
+                                } else {
+                                  router.push(`/embed?page=1&per_page=${newPerPage}`);
+                                }
+                              }}
+                              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                            >
+                              <option value={10}>10 / page</option>
+                              <option value={20}>20 / page</option>
+                              <option value={50}>50 / page</option>
+                            </select>
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
           </Card>
         </div>
       </main>
+
+      {/* 코사인 유사도 상세 다이얼로그 */}
+      <CosineDetailDialog
+        open={cosineDialogOpen}
+        onOpenChange={setCosineDialogOpen}
+        result={activeResult}
+      />
+
+      {/* 카테고리 상세 모달 */}
+      <CategoryModal
+        open={modalCategoryId !== null}
+        onOpenChange={(open) => {
+          if (!open) setModalCategoryId(null);
+        }}
+        data={detailData}
+        isLoading={detailLoading}
+        error={detailError}
+        token={token}
+        onUpdateData={setData}
+        onUpdateListRow={(row) => updateCategoryStatus(row.id, { translation_status: row.translation_status as Category["translation_status"] })}
+        execState={modalCategoryId ? getState(modalCategoryId) : null}
+        onSingleAction={async (stepName) => {
+          if (modalCategoryId !== null) {
+            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page), setData);
+          }
+        }}
+        onRunAll={async () => {
+          if (modalCategoryId !== null && detailData) {
+            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page), setData);
+          }
+        }}
+        onCancelPending={() => {
+          if (modalCategoryId !== null) {
+            handleCancelPending(modalCategoryId);
+          }
+        }}
+        onClearStep={(stepName) => {
+          if (modalCategoryId !== null) {
+            clearStep(modalCategoryId, stepName);
+          }
+        }}
+      />
     </div>
   );
 }
