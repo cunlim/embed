@@ -31,7 +31,6 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 | Eloquent Resource | Feature (응답 형식 검증) | — |
 | Model | Unit (Factory, 관계, 캐스팅) | [모델 테스트 최소 요건](#모델-테스트-최소-요건) |
 | Service | Unit/Feature (의존성 mock + 위임 검증) | [서비스 클래스 테스트 최소 요건](#서비스-클래스-테스트-최소-요건) |
-| Job/Event | Feature (dispatch, broadcast) | [ShouldBroadcast 이벤트 테스트](#shouldbroadcast-이벤트-테스트-최소-요건) |
 | Command/Scheduled Task | Feature (실행 결과 검증) | — |
 
 ### Laravel 코드 컨벤션
@@ -119,17 +118,6 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
 - **테스트 헬퍼가 한계를 우회하면 별도 검증**: `makeClient()` 같은 테스트 헬퍼로 제한을 느슨하게 설정해 일반 테스트를 통과시키는 경우, 별도 테스트에서 실제 제한이 동작하는지 검증해야 한다. 예: `OllamaRateLimiter(1000, 1)`로 대부분 테스트를 통과시키면서, `OllamaRateLimiter(1, 60)`으로 rate limit 초과 시나리오를 별도 검증.
 - **Unit 테스트에서 `$this->mock()` 필요 시 `uses(TestCase::class)` 선언**: `tests/Unit/` 디렉토리의 테스트는 기본적으로 Laravel `TestCase`를 상속하지 않으므로 `$this->mock()`이나 `$this->app`에 접근할 수 없다. 컨테이너 접근이 필요하면 파일 상단에 `use Tests\TestCase;` + `uses(TestCase::class);`를 추가할 것. (`tests/Unit/CategoryEmbeddingTest.php`의 패턴 참고)
 - 기존 Feature 테스트(`OllamaTranslatorTest`, `EmbeddingGeneratorTest`)의 mock 패턴을 참고할 것.
-
-### ShouldBroadcast 이벤트 테스트 최소 요건
-
-**CRITICAL** — ShouldBroadcast를 구현하는 모든 이벤트는 다음을 검증하는 Pest 테스트를 함께 작성한다:
-
-- `broadcastOn()` 반환 채널 (Channel name 검증)
-- `broadcastAs()` 이벤트명
-- 모든 public 프로퍼티 값 (생성자 주입값이 올바르게 설정되는지)
-- 기본값이 있는 프로퍼티는 기본값 검증도 포함
-
-기존 `tests/Feature/Events/BatchCompletedTest.php`, `TranslationProgressTest.php` 패턴을 참고한다.
 
 ### OllamaTranslator 세그먼트 캐싱 검증
 

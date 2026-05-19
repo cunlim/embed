@@ -312,7 +312,7 @@ Feature card 패턴:
   - **카테고리 목록**: shadcn Table, 페이지네이션 (10/20/50 per page, compact ellipsis), 모바일 카드 뷰
   - **카테고리 추가**: 카테고리 코드(optional) + 한국어 카테고리명 입력
   - **계층 탐색**: `CategoryHierarchy` 컴포넌트 — "대>중>소" 계층형 Select
-  - **번역 실행**: 카테고리 행의 Pencil 아이콘 클릭 → `CategoryModal`에서 텍스트 수정 및 5단계 번역/임베딩 실행 (WebSocket 프로그레스)
+  - **번역 실행**: 카테고리 행의 Pencil 아이콘 클릭 → `CategoryModal`에서 텍스트 수정 및 5단계 번역/임베딩 실행 (HTTP API, 단계별 상태 표시)
   - **일괄 번역**: `BatchTranslate` 컴포넌트 — 언어/모델 선택 후 전체 카테고리 번역 실행
 - **디자인 방향**:
   - 랜딩 페이지와 동일한 디자인 시스템 (그리드 배경, 글로우 오브)
@@ -320,9 +320,9 @@ Feature card 패턴:
   - 로딩: Skeleton
   - 에러: AlertCircle + inline error + 재시도 버튼
 
-### 6.4 `/admin` 관리자 페이지
+### 6.4 `/admin` 관리자 전용 페이지
 
-- **상태**: `/embed`로 기능 이전 완료. 로그인 + 관리자 ID 확인 후 `/embed` 이동 안내 카드만 표시.
+- **상태**: 모든 관리 기능이 `/embed`로 이전 완료. 로그인 + 관리자 확인 후 `/embed` 이동 안내 카드 표시.
 - **접근 제어**: **로그인 필수** + `isAdmin(user.id)` 확인. 비로그인 시 `/login?redirect=/admin`, 비관리자 시 `router.back()`.
 
 ### 6.5 공통 패턴

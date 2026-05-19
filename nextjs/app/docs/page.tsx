@@ -17,7 +17,7 @@ interface DocEntry {
 const docList: DocEntry[] = [
   { slug: "PRD", title: "제품 요구사항 (PRD)", description: "제품 요구사항, Phase 정의, 성능 목표" },
   { slug: "ARCHITECTURE", title: "아키텍처 (ARCHITECTURE)", description: "인프라, DB 스키마, 데이터 흐름" },
-  { slug: "ADR", title: "아키텍처 결정 기록 (ADR)", description: "pgvector, Reverb, Ollama, Sanctum" },
+  { slug: "ADR", title: "아키텍처 결정 기록 (ADR)", description: "pgvector, Ollama, Sanctum" },
   { slug: "UI_GUIDE", title: "UI 디자인 가이드", description: "프론트엔드 디자인 제약 및 컴포넌트" },
 ];
 
