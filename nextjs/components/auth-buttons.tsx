@@ -20,7 +20,7 @@ export function AuthButtons() {
   if (!mounted) return null;
 
   const hasToken = !!getToken();
-  const admin = isAdmin(user?.id);
+  const admin = isAdmin(user);
 
   return (
     <div className="flex items-center gap-1">

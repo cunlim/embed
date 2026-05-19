@@ -23,12 +23,12 @@ export default function AdminPage() {
 
     if (!user) {
       router.replace("/login?redirect=/admin");
-    } else if (!isAdmin(user.id)) {
+    } else if (!isAdmin(user)) {
       router.back();
     }
   }, [mounted, authLoading, user, router]);
 
-  if (!mounted || !user || !isAdmin(user.id)) return null;
+  if (!mounted || !user || !isAdmin(user)) return null;
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">

@@ -5,6 +5,7 @@ import type { Category } from "@/lib/api";
 function makeCategory(overrides: Partial<Category> = {}): Category {
   return {
     id: 1,
+    user_id: 1,
     category_code: "50000001",
     category_name_ko: "대분류 > 중분류 > 소분류",
     category_name_zh: null,
