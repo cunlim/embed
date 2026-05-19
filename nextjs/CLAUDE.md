@@ -78,7 +78,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component>
 ### 상태 관리
 - **서버 상태**: RSC에서 직접 DB 쿼리 (Laravel API 호출)
 - **클라이언트 상태**: React hooks (useState, useEffect)
-- **비회원**: `LocalStorage` + `session_id` 기반
+- **비회원**: `LocalStorage` 기반 (검색 캐시는 모든 사용자가 공유)
 - **회원**: Laravel Sanctum API Token → `User ID` 종속
 
 ## 정적 문서 서빙
