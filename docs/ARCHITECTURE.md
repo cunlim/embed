@@ -40,8 +40,8 @@
 | GET | `/api/categories` | 카테고리 목록 (페이지네이션: `page`, `per_page`, 검색: `search`) |
 | POST | `/api/categories` | 카테고리 추가 (`category_name_ko`, `category_code` optional) |
 | GET | `/api/categories/{id}/translations` | 카테고리별 번역/임베딩 상태 조회 |
-| POST | `/api/categories/{id}/translate-embed` | 카테고리별 번역→임베딩 5단계 파이프라인 실행 |
-| POST | `/api/categories/{id}/cancel-translate-embed` | 실행 중인 카테고리 파이프라인 취소 |
+| POST | `/api/categories/{id}/run-step` | 카테고리별 단일 단계 실행 (번역 또는 임베딩). 클라이언트가 5단계를 순차 호출 |
+| PUT | `/api/categories/{id}/update-text` | 카테고리 텍스트 수정 (필드+값). 임베딩 자동 초기화 |
 | GET | `/api/auth/user` | 현재 로그인 사용자 정보 |
 | POST | `/api/auth/login` / `/api/auth/register` | 이메일 인증 |
 
@@ -53,21 +53,20 @@
 
 ### 개별 카테고리 처리 (Per-Category)
 ```
-1. 클라이언트가 카테고리 행의 "실행" 버튼 클릭 → POST /api/categories/{id}/translate-embed → Laravel
-2. 백엔드는 카테고리 ID 수신 → 202 Accepted + {batch_id: "uuid"} 즉시 응답.
-3. 단일 카테고리에 대해 5단계 직렬 HTTP 실행 (중복 방지 lock 키: "category-translate:{categoryId}"):
+1. 클라이언트가 카테고리 행의 "실행" 버튼 클릭 → 프론트엔드에서 HTTP 루프 시작.
+2. 5단계를 순차적으로 POST /api/categories/{id}/run-step 호출 (중복 방지 lock 키: "category-translate:{categoryId}"):
    단계1: zh 번역 → 단계2: en 번역 → 단계3: ko 임베딩 → 단계4: zh 임베딩 → 단계5: en 임베딩
-4. 각 단계 완료 후 runStep API 호출하여 단계별 상태 갱신.
-5. 클라이언트는 폴링 또는 단계별 HTTP 응답으로 진행 상태를 확인.
+3. 각 run-step 응답으로 단계별 상태(pending/running/completed/failed)를 즉시 수신.
+4. 백엔드는 동기적으로 처리 후 결과 반환. 별도 큐/Job 사용하지 않음.
 ```
 ### 일괄 처리 (Batch)
 ```
-1. 클라이언트 트리거 → POST /api/categories/batch-translate → Laravel
-2. 백엔드는 중복 실행 방지(Redis Cache::lock) 검증 후 HTTP 루프로 순차 처리.
-3. 각 카테고리별 5단계 파이프라인을 HTTP API로 실행.
+1. 클라이언트에서 HTTP 루프로 카테고리 목록을 순회.
+2. 각 카테고리별로 run-step을 5회 순차 호출하여 전체 파이프라인 실행.
+3. 백엔드 Lock으로 동일 카테고리 중복 실행 방지.
 ```
 
-## 캐시 및 동시성 제어
+## 동시성 제어
 
-- **중복 실행 방지**: Redis `Cache::lock()`을 사용하여 동일 언어/모델 조합의 처리가 진행 중일 경우 중복 실행 방지.
-  - 개별 카테고리 Lock 키: `"category-translate:{categoryId}"`
+- **중복 실행 방지**: Redis `Cache::lock()`을 사용하여 동일 카테고리의 처리가 진행 중일 경우 중복 실행 방지.
+  - Lock 키: `"category-translate:{categoryId}"`

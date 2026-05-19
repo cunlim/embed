@@ -165,6 +165,7 @@ Feature card 패턴:
 
 ### 3.4 배지 (상태 표시)
 
+일반 배지 패턴:
 ```tsx
 <div className="inline-flex items-center gap-1.5 rounded-full
                 border border-border bg-muted/50 px-3 py-1
@@ -178,6 +179,8 @@ Feature card 패턴:
   라벨 텍스트
 </div>
 ```
+
+**StatusBadge (아이콘 전용)**: 카테고리 테이블에서 번역 상태를 아이콘만으로 표시. 라벨 텍스트 없이 `aria-label`으로 접근성 제공. 상태별 아이콘: `CheckCircle2`(완료, green), `Clock`(진행중/부분, blue), `Minus`(미처리, muted).
 
 ### 3.5 네비게이션 바
 
@@ -309,16 +312,17 @@ Feature card 패턴:
 - **레이아웃**: 좌측 사이드바 (검색 + 계층 탐색 + 카테고리 추가 + 일괄 번역) + 우측 카테고리 목록 테이블 (lg:col-span-2)
 - **핵심 기능**:
   - **카테고리 검색**: 언어 탭(ko/zh/en) + 검색어 입력 → `POST /api/recommend` 추천 결과. 유사도 % 클릭 시 `CosineDetailDialog`로 코사인 유사도 상세 확인
-  - **카테고리 목록**: shadcn Table, 페이지네이션 (10/20/50 per page, compact ellipsis), 모바일 카드 뷰
+  - **카테고리 목록**: shadcn Table (`table-fixed` + `truncate`로 컬럼 너비 제어), 페이지네이션 (10/20/50 per page, compact ellipsis, URL 쿼리 파라미터 동기화), 모바일 카드 뷰. 상태 컬럼은 `StatusBadge` 아이콘 전용 모드.
   - **카테고리 추가**: 카테고리 코드(optional) + 한국어 카테고리명 입력
   - **계층 탐색**: `CategoryHierarchy` 컴포넌트 — "대>중>소" 계층형 Select
-  - **번역 실행**: 카테고리 행의 Pencil 아이콘 클릭 → `CategoryModal`에서 텍스트 수정 및 5단계 번역/임베딩 실행 (HTTP API, 단계별 상태 표시)
+  - **번역 실행**: 카테고리 행의 Pencil 아이콘 클릭 → `CategoryModal`에서 텍스트 수정 (input + blur 저장), 5단계 직렬 실행 (HTTP API, 단계별 상태 표시), 취소 버튼, 복사 버튼 (sonner toast 피드백)
   - **일괄 번역**: `BatchTranslate` 컴포넌트 — 언어/모델 선택 후 전체 카테고리 번역 실행
 - **디자인 방향**:
   - 랜딩 페이지와 동일한 디자인 시스템 (그리드 배경, 글로우 오브)
   - 빈 상태: Database 아이콘 + "등록된 카테고리가 없습니다"
   - 로딩: Skeleton
   - 에러: AlertCircle + inline error + 재시도 버튼
+  - 복사: `navigator.clipboard.writeText` + sonner toast ("클립보드에 복사되었습니다")
 
 ### 6.4 `/admin` 관리자 전용 페이지
 
@@ -328,13 +332,13 @@ Feature card 패턴:
 ### 6.5 공통 패턴
 
 모든 페이지에서 일관되게 적용할 패턴:
-- **[b]로고[/b]**: 좌상단에 `h-8 w-8 rounded-lg bg-primary text-primary-foreground`
-- **[b]테마 토글[/b]**: 우상단, Sun/Moon 아이콘 전환, `variant="ghost" size="icon"`
-- **[b]폼 필드[/b]**: visible label, error below field, helper text
-- **[b]로딩[/b]**: `animate-pulse` 또는 shadcn Skeleton
-- **[b]빈 상태[/b]**: 아이콘 + 설명 + CTA
-- **[b]에러[/b]**: inline error + retry button + `aria-live="polite"`
-- **[b]아이콘[/b]**: lucide-react (Lucide 아이콘)만 사용, 절대 이모지 금지
+- **로고**: 좌상단에 `h-8 w-8 rounded-lg bg-primary text-primary-foreground`
+- **테마 토글**: 우상단, Sun/Moon 아이콘 전환, `variant="ghost" size="icon"`
+- **폼 필드**: visible label, error below field, helper text
+- **로딩**: `animate-pulse` 또는 shadcn Skeleton
+- **빈 상태**: 아이콘 + 설명 + CTA
+- **에러**: inline error + retry button + `aria-live="polite"`
+- **아이콘**: lucide-react (Lucide 아이콘)만 사용, 절대 이모지 금지
 
 ---
 

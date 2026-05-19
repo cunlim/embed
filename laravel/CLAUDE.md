@@ -84,12 +84,9 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 
 TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한다.
 
-### Bus::fake / Event::fake 사용 시 주의사항
+### Event::fake 사용 시 주의사항
 
-- **`Bus::fake()` + `assertBatched()` 콜백 타입**: `Bus::fake()` 사용 시 `assertBatched(callback)`의 콜백 파라미터는 `Illuminate\Bus\Batch`가 아닌 `Illuminate\Support\Testing\Fakes\PendingBatchFake` 이다. `$batch->name`, `count($batch->jobs)` 등으로 검증한다. `$batch->totalJobs` 속성은 존재하지 않는다.
-- **`Bus::fake()`는 batch 콜백을 실행하지 않는다**: `progress`, `then`, `catch` 콜백은 `Bus::fake()` 환경에서 호출되지 않는다. 이벤트 dispatch 검증이 필요하면 `Event::fake([...])`만 사용하고 실제 batch를 실행하거나, 별도 통합 테스트를 작성한다.
 - **`Event::fake()`는 Eloquent 라이프사이클 이벤트까지 캡처한다**: `Event::fake()` (인자 없는 호출) 시 `eloquent.booting`, `eloquent.booted` 등 Model 생성 시 발생하는 프레임워크 내부 이벤트까지 캡처된다. `Event::assertNothingDispatched()`를 쓰려면 `Event::fake([SpecificEvent::class])`로 감시 대상을 한정해야 한다.
-- **`Bus::batch` `catch` 콜백은 `allowFailures()`와 함께 사용 시 주의**: `allowFailures()` 설정 시 개별 job 실패는 batch 실패로 간주되지 않아 `catch` 콜백이 호출되지 않는다. `catch`는 job을 큐에 넣지 못하는 infrastructure-level 오류에서만 실행된다. 개별 job 실패 정보는 `then` 콜백에서 `$batch->failedJobs`로 확인한다.
 
 ### Cache::lock 사용 시 주의사항
 
@@ -140,6 +137,17 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
   - (A) `firstOrCreate()` 사용
   - (B) `create()`를 try-catch로 감싸고 예외 발생 시 재조회
   - 판단 기준: `firstOrCreate()`는 추가 DB 쿼리가 발생하지만 코드가 단순하다. try-catch는 오버헤드가 적고 예외 상황에만 발동한다.
+
+### 번역·임베딩 실행 패턴 (동기 HTTP)
+
+- **번역과 임베딩은 비동기 Job이 아닌 동기 HTTP 컨트롤러 메서드에서 실행**한다. `POST /api/categories/{id}/run-step`이 번역(`translation.zh`, `translation.en`)과 임베딩(`embedding.ko`, `.zh`, `.en`)을 단일 step 단위로 동기 처리한다.
+- `CategoryController::runStep()`에서 `OllamaTranslator::translate()`와 `EmbeddingGenerator::generate()`를 직접 호출하며, `CategoryEmbedding::updateOrCreate()`로 결과를 저장한다.
+- 응답에 `translations` 필드(`CategoryTranslationsResource`)를 포함해 프론트엔드가 추가 API 호출 없이 UI를 갱신할 수 있게 한다.
+- `PUT /api/categories/{id}/update-text`는 텍스트 업데이트 후 해당 언어의 `CategoryEmbedding`을 **삭제**한다. 응답에 `translations` + `listRow`(`CategoryResource`)를 포함해 목록과 상세를 동시에 갱신한다.
+- Form Request `RunStepRequest`: `step` 필수, `in:translation.zh,translation.en,embedding.ko,embedding.zh,embedding.en`
+- Form Request `CategoryUpdateTextRequest`: `field` (in: `category_name_ko,_en,_zh`) + `value` (nullable, max:255)
+- `category_code`: optional unique 필드, `$request->filled('category_code')`로 체크 (빈 문자열 `""`와 `null` 구분 필요 — `??` 연산자는 `""`를 통과시키므로 `filled()` 사용), 미제공 시 `Category::generateCode()`로 자동 생성.
+- `recommend()`에서 text가 nullable: 빈 문자열이면 일반 카테고리 페이지네이션 반환, text 있으면 `RecommendationService::recommendPaginated()`로 pgvector JOIN 검색.
 
 ### 운영 설정 패턴 (Config + Settings Table)
 
