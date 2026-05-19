@@ -25,11 +25,26 @@
 |--------|--------|------|------|
 | `/` | 랜딩 페이지 | 프로젝트 소개, 검색어 입력 및 타겟 언어 선택, 추천 결과 기본 확인 | 불필요 |
 | `/login` | 로그인 페이지 [계획] | 이메일/비밀번호 로그인, OAuth (Google, GitHub, Naver) 소셜 로그인, 회원가입 | 불필요 |
-| `/embed` | Embed 기술 시연 페이지 [계획] | 검색어 입력, 타겟 언어 선택, 추천 결과 출력, 코사인 유사도 상세, 계층형 Select Box (네이버 카테고리 "대>중>소" 계층을 순서대로 선택), 벡터 과정 모달 등 모든 기능을 하나의 위젯 형태로 기술 시연 | **필수** (로그인 필수, 비로그인 시 `/login` 리다이렉트) |
-| `/docs` | 프로젝트 문서 페이지 [계획] | `docs/` 디렉토리의 마크다운 문서를 웹으로 렌더링. MVP에서는 간단한 임시 구현 | 불필요 |
-| `/admin` | 관리자 전용 페이지 [계획] | 카테고리 CRUD, 카테고리별 개별 번역/임베딩 실행 (5단계 WebSocket 프로그레스), 일괄 번역 트리거, 시스템 관리 | **필수** (로그인 필수, 비로그인 시 `/login` 리다이렉트. "관리자"란 `/admin` 접근 권한이 있는 로그인 사용자를 의미하며 별도 역할(Role) 구분은 없음) |
+| `/embed` | Embed 기술 시연 페이지 | 검색어 입력, 언어별 카테고리 추천, 코사인 유사도 상세 다이얼로그, 카테고리 CRUD, 계층 탐색, 일괄 번역, 개별 번역/임베딩 실행 (5단계 WebSocket 프로그레스), 페이지네이션 | **필수** (로그인 필수, 비로그인 시 `/login` 리다이렉트) |
+| `/docs` | 프로젝트 문서 페이지 [계획] | `docs/` 디렉토리의 마크다운 문서를 웹으로 렌더링 | 불필요 |
+| `/admin` | 관리자 페이지 | `/embed`로 기능 이전됨. 로그인 + 관리자 확인 후 `/embed` 이동 안내 메시지만 표시 | **필수** (로그인 + 관리자 ID 확인, 비관리자는 이전 페이지로 리다이렉트) |
 
 프론트엔드 디렉토리 구조 및 패키지 상세는 [`nextjs/CLAUDE.md`](../nextjs/CLAUDE.md) 참조.
+
+## 주요 API 엔드포인트
+
+전체 목록은 `/swagger/` 참조. 아래는 아키텍처상 주요 엔드포인트:
+
+| 메서드 | 경로 | 용도 |
+|--------|------|------|
+| POST | `/api/recommend` | 텍스트 기반 카테고리 추천 (페이지네이션: `page`, `per_page`) |
+| GET | `/api/categories` | 카테고리 목록 (페이지네이션: `page`, `per_page`, 검색: `search`) |
+| POST | `/api/categories` | 카테고리 추가 (`category_name_ko`, `category_code` optional) |
+| GET | `/api/categories/{id}/translations` | 카테고리별 번역/임베딩 상태 조회 |
+| POST | `/api/categories/{id}/translate-embed` | 카테고리별 번역→임베딩 5단계 파이프라인 실행 |
+| POST | `/api/categories/{id}/cancel-translate-embed` | 실행 중인 카테고리 파이프라인 취소 |
+| GET | `/api/auth/user` | 현재 로그인 사용자 정보 |
+| POST | `/api/auth/login` / `/api/auth/register` | 이메일 인증 |
 
 ## 데이터베이스
 
@@ -63,4 +78,13 @@
 ## 상태 관리
 * **서버 상태**: DB에 적재된 다국어 임베딩 벡터 데이터, pgvector 코사인 유사도 연산.
 * **사용자 상태**: 비회원은 브라우저 `LocalStorage` 및 `session_id`로 개인 설정 분리. 회원은 `User ID`에 종속되어 DB 동기화.
-* **동시성 상태**: Redis `Cache::lock()`을 사용하여 동일 언어/모델 조합의 일괄 처리가 진행 중일 경우 Job 적재 생략 및 웹소켓만 구독. Lock 키 형식: `"translate-batch:{언어코드}:{모델명}"`
+* **동시성 상태**: Redis `Cache::lock()`을 사용하여 동일 언어/모델 조합의 일괄 처리가 진행 중일 경우 Job 적재 생략 및 웹소켓만 구독.
+  * 배치 Lock 키: `"translate-batch:{언어코드}:{모델명}"`
+  * 개별 카테고리 Lock 키: `"category-translate:{categoryId}"`
+
+## WebSocket 이벤트
+
+| 이벤트 | 채널 | 페이로드 |
+|--------|------|----------|
+| `CategoryProgress` | `private-category.{id}.progress` | `{step, stepName, status, categoryId}` |
+| `CategoryPipelineCompleted` | `private-category.{id}.completed` | `{categoryId, status: "completed"\|"failed"}` |
