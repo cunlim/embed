@@ -14,13 +14,13 @@ class EmbeddingCacheService
         private SearchNormalizer $normalizer,
     ) {}
 
-    public function getOrCreateEmbedding(string $keyword, string $modelName, ?int $userId, string $sessionId): SearchLog
+    public function getOrCreateEmbedding(string $keyword, string $modelName, ?int $userId = null): SearchLog
     {
         $normalized = $this->normalizer->normalize($keyword);
 
         $start = microtime(true);
 
-        $existing = $this->repository->findByNormalizedKeyword($normalized, $userId, $sessionId);
+        $existing = $this->repository->findByNormalizedKeyword($normalized);
 
         if ($existing !== null) {
             $elapsed = (microtime(true) - $start) * 1000;
@@ -37,7 +37,6 @@ class EmbeddingCacheService
 
         $searchLog = $this->repository->createSearchLog([
             'user_id' => $userId,
-            'session_id' => $sessionId,
             'search_keyword' => $keyword,
             'normalized_keyword' => $normalized,
             'embed_model_name' => $modelName,

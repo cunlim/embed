@@ -5,7 +5,6 @@ namespace Database\Factories;
 use App\Models\SearchLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 use Pgvector\Laravel\Vector;
 
 /**
@@ -21,7 +20,6 @@ class SearchLogFactory extends Factory
 
         return [
             'user_id' => null,
-            'session_id' => (string) Str::uuid(),
             'search_keyword' => $keyword,
             'normalized_keyword' => mb_strtolower(trim($keyword)),
             'embed_model_name' => 'bge-m3:latest',

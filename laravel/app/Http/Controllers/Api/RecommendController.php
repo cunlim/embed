@@ -9,7 +9,6 @@ use App\Models\Category;
 use App\Services\EmbeddingCacheService;
 use App\Services\RecommendationService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Str;
 use OpenApi\Attributes as OA;
 
 class RecommendController extends Controller
@@ -74,14 +73,11 @@ class RecommendController extends Controller
             return RecommendResource::collection($categories)->response();
         }
 
-        $sessionId = $request->hasSession()
-            ? $request->session()->getId()
-            : (string) Str::uuid();
-        $userId = auth()->id();
+        $userId = auth('sanctum')->id();
         $modelName = config('services.ollama.embedding_model', 'bge-m3:latest');
 
         $searchLog = $this->embeddingCache->getOrCreateEmbedding(
-            $text, $modelName, $userId, $sessionId
+            $text, $modelName, $userId
         );
 
         $results = $this->recommendation->recommendPaginated(
