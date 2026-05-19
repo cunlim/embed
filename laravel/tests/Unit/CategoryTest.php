@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Category;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,4 +25,10 @@ test('embeddings 릴레이션은 HasMany 인스턴스를 반환한다', function
     $category = Category::factory()->create();
 
     expect($category->embeddings())->toBeInstanceOf(HasMany::class);
+});
+
+test('user 릴레이션은 BelongsTo 인스턴스를 반환한다', function () {
+    $category = Category::factory()->create(['user_id' => 1]);
+
+    expect($category->user())->toBeInstanceOf(BelongsTo::class);
 });
