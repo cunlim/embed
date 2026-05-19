@@ -76,13 +76,13 @@ describe("EmbedPage", () => {
 
   it("각 카테고리 행에 상세 보기 버튼이 렌더링된다", () => {
     render(<EmbedPage />);
-    const buttons = screen.getAllByRole("button", { name: "상세 보기" });
+    const buttons = screen.getAllByRole("button", { name: "수정" });
     expect(buttons.length).toBeGreaterThanOrEqual(2);
   });
 
   it("상세 보기 버튼 클릭 시 모달이 열린다", () => {
     render(<EmbedPage />);
-    const buttons = screen.getAllByRole("button", { name: "상세 보기" });
+    const buttons = screen.getAllByRole("button", { name: "수정" });
     fireEvent.click(buttons[0]);
 
     expect(screen.getByText("카테고리 상세")).toBeInTheDocument();

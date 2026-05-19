@@ -7,7 +7,7 @@ import {
   RefreshCw,
   AlertCircle,
   Database,
-  Eye,
+  Pencil,
   ChevronLeft,
   ChevronRight,
   Search,
@@ -390,7 +390,7 @@ function EmbedPageInner() {
                           </TableHead>
                           {isSearchMode && <TableHead className="w-[80px]">유사도</TableHead>}
                           <TableHead className="w-[80px]">상태</TableHead>
-                          <TableHead className="w-[52px]">보기</TableHead>
+                          <TableHead className="w-[52px]">수정</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -428,11 +428,11 @@ function EmbedPageInner() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                title="상세 보기"
+                                title="수정"
                                 onClick={() => setModalCategoryId(cat.id)}
-                                aria-label="상세 보기"
+                                aria-label="수정"
                               >
-                                <Eye className="h-4 w-4" />
+                                <Pencil className="h-4 w-4" />
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -474,11 +474,11 @@ function EmbedPageInner() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="상세 보기"
+                            title="수정"
                             onClick={() => setModalCategoryId(cat.id)}
-                            aria-label="상세 보기"
+                            aria-label="수정"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                         </div>
                       </Card>
