@@ -15,14 +15,13 @@ test('POST /api/recommend — 유효한 검색어는 RecommendationService를 �
         'search_keyword' => '청바지',
         'normalized_keyword' => '청바지',
         'embed_model_name' => 'bge-m3:latest',
-        'session_id' => 'test-session',
     ]);
     $searchLog->embedding = array_fill(0, 1024, 0.05);
 
     $mockCache = Mockery::mock(EmbeddingCacheService::class);
     $mockCache->shouldReceive('getOrCreateEmbedding')
         ->once()
-        ->with('청바지', 'bge-m3:latest', null, Mockery::any())
+        ->with('청바지', 'bge-m3:latest', null)
         ->andReturn($searchLog);
     app()->instance(EmbeddingCacheService::class, $mockCache);
 

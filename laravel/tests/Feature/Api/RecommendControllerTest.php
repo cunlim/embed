@@ -63,7 +63,6 @@ test('POST /api/recommend — 유효성 검증 통과 후 EmbeddingCacheService.
         'search_keyword' => '검색어',
         'normalized_keyword' => '검색어',
         'embed_model_name' => 'bge-m3:latest',
-        'session_id' => 'test-session',
     ]);
     $searchLog->embedding = array_fill(0, 1024, 0.1);
 

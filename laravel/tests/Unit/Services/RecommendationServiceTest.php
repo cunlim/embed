@@ -49,7 +49,6 @@ test('recommend — 유사도 점수는 1.0 - distance로 계산된다', functio
         'search_keyword' => '청바지',
         'normalized_keyword' => '청바지',
         'embed_model_name' => 'bge-m3:latest',
-        'session_id' => 'test-session',
     ]);
     $searchLog->embedding = array_fill(0, 1024, 0.05);
 
@@ -84,7 +83,6 @@ test('recommendPaginated — 페이지네이션 결과를 반환한다', functio
         'search_keyword' => '청바지',
         'normalized_keyword' => '청바지',
         'embed_model_name' => 'bge-m3:latest',
-        'session_id' => 'test-session',
     ]);
     $searchLog->embedding = array_fill(0, 1024, 0.05);
 
