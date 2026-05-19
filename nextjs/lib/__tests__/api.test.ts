@@ -218,6 +218,32 @@ describe("API 클라이언트", () => {
     });
   });
 
+  describe("deleteCategory", () => {
+    it("카테고리 삭제를 DELETE로 요청한다", async () => {
+      mockResponse(null);
+
+      await api.deleteCategory(1, "test-token");
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://embed.cunlim.dev/api/categories/1",
+        expect.objectContaining({
+          method: "DELETE",
+          headers: expect.objectContaining({
+            Authorization: "Bearer test-token",
+          }),
+        })
+      );
+    });
+
+    it("API 오류 시 예외를 throw한다", async () => {
+      mockResponse({ message: "권한 없음" }, false, 403);
+
+      await expect(api.deleteCategory(1, "test-token")).rejects.toThrow(
+        "권한 없음"
+      );
+    });
+  });
+
   describe("updateCategoryText", () => {
     it("올바른 URL과 body로 PUT 요청을 보낸다", async () => {
       const testResp = {

@@ -113,6 +113,7 @@ export function recommend(
 
 export interface Category {
   id: number;
+  user_id: number;
   category_code: string;
   category_name_ko: string;
   category_name_zh: string | null;
@@ -159,6 +160,16 @@ export function getAllCategories(token?: string | null): Promise<CategoryListRes
   params.set("per_page", "10000");
   params.set("page", "1");
   return request<CategoryListResponse>(`/categories?${params.toString()}`, { token });
+}
+
+export function deleteCategory(
+  id: number,
+  token?: string | null
+): Promise<void> {
+  return request<void>(`/categories/${id}`, {
+    method: "DELETE",
+    token,
+  });
 }
 
 export function createCategory(
@@ -265,6 +276,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  role: string;
 }
 
 export interface AuthResponse {

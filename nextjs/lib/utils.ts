@@ -5,6 +5,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function isAdmin(userId?: number): boolean {
-  return userId === 1;
+export function isSuperAdmin(user: { role?: string } | null | undefined): boolean {
+  return user?.role === "superadmin";
+}
+
+export function isAdmin(user: { role?: string } | null | undefined): boolean {
+  return user?.role === "admin" || user?.role === "superadmin";
 }
