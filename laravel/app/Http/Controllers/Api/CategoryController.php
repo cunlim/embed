@@ -66,12 +66,23 @@ class CategoryController extends Controller
         $perPage = min((int) $request->input('per_page', 20), 100);
 
         $query = Category::query()->with('embeddings');
+        $user = auth('sanctum')->user();
 
         if ($request->input('filter') === 'my') {
-            $query->where(function ($q) {
-                $q->where('user_id', auth('sanctum')->id())
-                    ->orWhere('user_id', 1);
-            });
+            if ($user) {
+                $query->where('user_id', $user->id);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        } else {
+            if ($user) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id)
+                        ->orWhere('user_id', 1);
+                });
+            } else {
+                $query->where('user_id', 1);
+            }
         }
 
         return new CategoryCollection(

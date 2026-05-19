@@ -137,3 +137,69 @@ describe('updateText', function () {
         $response->assertStatus(200);
     });
 });
+
+test('GET /api/categories?filter=my — 인증된 사용자는 본인 소유 카테고리만 조회', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    Category::factory()->create(['user_id' => $user->id, 'category_name_ko' => '내 카테고리']);
+    Category::factory()->create(['user_id' => $otherUser->id, 'category_name_ko' => '타인 카테고리']);
+    Category::factory()->create(['user_id' => 1, 'category_name_ko' => '관리자 카테고리']);
+
+    $token = $user->createToken('test')->plainTextToken;
+
+    $response = $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/categories?filter=my');
+
+    $response->assertOk();
+    $names = collect($response->json('data'))->pluck('category_name_ko');
+    expect($names)->toContain('내 카테고리');
+    expect($names)->not->toContain('타인 카테고리');
+    expect($names)->not->toContain('관리자 카테고리');
+});
+
+test('GET /api/categories — 인증된 사용자는 본인 + user_id=1 소유 카테고리 조회', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    Category::factory()->create(['user_id' => $user->id, 'category_name_ko' => '내 카테고리']);
+    Category::factory()->create(['user_id' => $otherUser->id, 'category_name_ko' => '타인 카테고리']);
+    Category::factory()->create(['user_id' => 1, 'category_name_ko' => '관리자 카테고리']);
+
+    $token = $user->createToken('test')->plainTextToken;
+
+    $response = $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/categories');
+
+    $response->assertOk();
+    $names = collect($response->json('data'))->pluck('category_name_ko');
+    expect($names)->toContain('내 카테고리');
+    expect($names)->not->toContain('타인 카테고리');
+    expect($names)->toContain('관리자 카테고리');
+});
+
+test('GET /api/categories — 비회원은 user_id=1 소유 카테고리만 조회', function () {
+    $user = User::factory()->create();
+
+    Category::factory()->create(['user_id' => $user->id, 'category_name_ko' => '회원 카테고리']);
+    Category::factory()->create(['user_id' => 1, 'category_name_ko' => '관리자 카테고리']);
+
+    $response = $this->getJson('/api/categories');
+
+    $response->assertOk();
+    $names = collect($response->json('data'))->pluck('category_name_ko');
+    expect($names)->not->toContain('회원 카테고리');
+    expect($names)->toContain('관리자 카테고리');
+});
+
+test('GET /api/categories?filter=my — 비회원은 빈 결과', function () {
+    $user = User::factory()->create();
+
+    Category::factory()->create(['user_id' => $user->id, 'category_name_ko' => '회원 카테고리']);
+    Category::factory()->create(['user_id' => 1, 'category_name_ko' => '관리자 카테고리']);
+
+    $response = $this->getJson('/api/categories?filter=my');
+
+    $response->assertOk();
+    expect($response->json('data'))->toBeEmpty();
+});
