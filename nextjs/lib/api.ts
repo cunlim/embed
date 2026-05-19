@@ -145,10 +145,11 @@ export interface CategoryListResponse {
 export function getCategories(
   token?: string | null,
   page?: number,
+  perPage?: number,
 ): Promise<CategoryListResponse> {
   const params = new URLSearchParams();
   if (page && page > 1) params.set("page", String(page));
-  params.set("per_page", "20");
+  params.set("per_page", String(perPage ?? 20));
   const qs = params.toString();
   return request<CategoryListResponse>(`/categories?${qs}`, { token });
 }
