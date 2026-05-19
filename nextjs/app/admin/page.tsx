@@ -28,7 +28,7 @@ export default function AdminPage() {
     }
   }, [mounted, authLoading, user, router]);
 
-  if (!mounted || !user) return null;
+  if (!mounted || !user || !isAdmin(user.id)) return null;
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">

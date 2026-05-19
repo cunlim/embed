@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 import AdminPage from "../page";
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 const mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
+  cleanup();
   vi.clearAllMocks();
   mockUseAuth.mockReturnValue({
     user: { id: 1, name: "Admin", email: "admin@test.com" },
@@ -36,5 +37,25 @@ describe("AdminPage", () => {
     render(<AdminPage />);
     const links = screen.getAllByRole("link", { name: "임베드 페이지로 이동" });
     expect(links.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("비관리자 사용자는 admin 페이지 내용이 렌더링되지 않는다", () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 2, name: "User", email: "user@test.com" },
+      isLoading: false,
+    });
+    const { container } = render(<AdminPage />);
+    expect(screen.queryByText("기능이 이전되었습니다")).not.toBeInTheDocument();
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("비로그인 사용자는 admin 페이지 내용이 렌더링되지 않는다", () => {
+    mockUseAuth.mockReturnValue({
+      user: null,
+      isLoading: false,
+    });
+    const { container } = render(<AdminPage />);
+    expect(screen.queryByText("기능이 이전되었습니다")).not.toBeInTheDocument();
+    expect(container.innerHTML).toBe("");
   });
 });
