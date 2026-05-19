@@ -84,10 +84,15 @@ function AdminPageInner() {
   );
   const authorized = user ? isAdmin(user.id) : false;
 
-  // Parse page from URL
+  // Parse page and per_page from URL
   const pageParam = searchParams.get("page");
   const urlPage = parseInt(pageParam ?? "1", 10);
   const page = Number.isNaN(urlPage) || urlPage < 1 ? 1 : urlPage;
+
+  const perPageParam = searchParams.get("per_page");
+  const urlPerPage = parseInt(perPageParam ?? "20", 10);
+  const validPerPageValues = [10, 20, 50];
+  const initialPerPage = validPerPageValues.includes(urlPerPage) ? urlPerPage : 20;
 
   // 인증 가드
   useEffect(() => {
@@ -113,7 +118,7 @@ function AdminPageInner() {
     updateCategoryStatus,
   } = useCategories(token);
 
-  const [perPage, setPerPage] = useState(20);
+  const [perPage, setPerPage] = useState(initialPerPage);
 
   // URL page 동기화
   useEffect(() => {
@@ -132,6 +137,8 @@ function AdminPageInner() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const searchPageRef = useRef(1);
+  const perPageRef = useRef(perPage);
+  useEffect(() => { perPageRef.current = perPage });
 
   const isSearchMode = searchResults !== null;
   const displayCategories = isSearchMode ? searchResults : categories;
@@ -153,7 +160,7 @@ function AdminPageInner() {
     setIsSearching(true);
     setSearchError(null);
     try {
-      const data = await recommend(searchText, searchLanguage, token, currentPage);
+      const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current);
       setSearchResults(data.data);
       setSearchMeta(data.meta);
     } catch (err) {
@@ -175,9 +182,9 @@ function AdminPageInner() {
     if (isSearchMode) {
       handleSearch(newPage);
     } else {
-      router.push(`/admin?page=${newPage}`);
+      router.push(`/admin?page=${newPage}&per_page=${perPage}`);
     }
-  }, [isSearchMode, handleSearch, router]);
+  }, [isSearchMode, handleSearch, router, perPage]);
 
   if (!mounted || !authorized) return null;
 
@@ -446,24 +453,24 @@ function AdminPageInner() {
 
                   {/* 페이지네이션 */}
                   {displayMeta && displayMeta.last_page > 1 && (
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-                      <Pagination>
+                    <div className="mt-4 overflow-x-auto">
+                      <Pagination className="mx-0 w-auto justify-start">
                         <PaginationContent>
                           <PaginationItem>
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                            <PaginationLink
                               onClick={() => handlePageChange(displayMeta.current_page - 1)}
-                              disabled={displayMeta.current_page <= 1}
+                              className={displayMeta.current_page <= 1 ? "pointer-events-none opacity-50" : ""}
+                              aria-disabled={displayMeta.current_page <= 1}
                             >
                               <ChevronLeft className="h-4 w-4" />
-                            </Button>
+                            </PaginationLink>
                           </PaginationItem>
                           {(() => {
-                            let ellipsisCount = 0;
-                            return getPageRange(displayMeta.current_page, displayMeta.last_page).map((p, i) => {
+                            const range = getPageRange(displayMeta.current_page, displayMeta.last_page);
+                            const currentIndex = range.indexOf(displayMeta.current_page);
+                            return range.map((p, i) => {
                               if (p === '...') {
-                                const direction = ellipsisCount++ === 0 ? 'prev' : 'next';
+                                const direction = i < currentIndex ? 'prev' : 'next';
                                 const target = getEllipsisTarget(
                                   displayMeta.current_page,
                                   displayMeta.last_page,
@@ -471,14 +478,12 @@ function AdminPageInner() {
                                 );
                                 return (
                                   <PaginationItem key={`e-${i}`}>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
+                                    <PaginationLink
                                       className="h-9 w-9 p-0"
                                       onClick={() => handlePageChange(target)}
                                     >
                                       <PaginationEllipsis />
-                                    </Button>
+                                    </PaginationLink>
                                   </PaginationItem>
                                 );
                               }
@@ -495,35 +500,35 @@ function AdminPageInner() {
                             });
                           })()}
                           <PaginationItem>
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                            <PaginationLink
                               onClick={() => handlePageChange(displayMeta.current_page + 1)}
-                              disabled={displayMeta.current_page >= displayMeta.last_page}
+                              className={displayMeta.current_page >= displayMeta.last_page ? "pointer-events-none opacity-50" : ""}
+                              aria-disabled={displayMeta.current_page >= displayMeta.last_page}
                             >
                               <ChevronRight className="h-4 w-4" />
-                            </Button>
+                            </PaginationLink>
+                          </PaginationItem>
+                          <PaginationItem className="ml-2">
+                            <select
+                              value={perPage}
+                              onChange={(e) => {
+                                const newPerPage = Number(e.target.value);
+                                setPerPage(newPerPage);
+                                if (isSearchMode) {
+                                  handleSearch(1);
+                                } else {
+                                  router.push(`/admin?page=1&per_page=${newPerPage}`);
+                                }
+                              }}
+                              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                            >
+                              <option value={10}>10 / page</option>
+                              <option value={20}>20 / page</option>
+                              <option value={50}>50 / page</option>
+                            </select>
                           </PaginationItem>
                         </PaginationContent>
                       </Pagination>
-
-                      <select
-                        value={perPage}
-                        onChange={(e) => {
-                          const newPerPage = Number(e.target.value);
-                          setPerPage(newPerPage);
-                          if (isSearchMode) {
-                            handleSearch(1);
-                          } else {
-                            router.push('/admin?page=1');
-                          }
-                        }}
-                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-                      >
-                        <option value={10}>10 / page</option>
-                        <option value={20}>20 / page</option>
-                        <option value={50}>50 / page</option>
-                      </select>
                     </div>
                   )}
                 </div>
