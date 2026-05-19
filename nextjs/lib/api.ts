@@ -147,10 +147,12 @@ export function getCategories(
   token?: string | null,
   page?: number,
   perPage?: number,
+  filter?: string,
 ): Promise<CategoryListResponse> {
   const params = new URLSearchParams();
   if (page && page > 1) params.set("page", String(page));
   params.set("per_page", String(perPage ?? 20));
+  if (filter) params.set("filter", filter);
   const qs = params.toString();
   return request<CategoryListResponse>(`/categories?${qs}`, { token });
 }

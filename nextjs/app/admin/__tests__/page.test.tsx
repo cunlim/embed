@@ -19,7 +19,7 @@ beforeEach(() => {
   cleanup();
   vi.clearAllMocks();
   mockUseAuth.mockReturnValue({
-    user: { id: 1, name: "Admin", email: "admin@test.com" },
+    user: { id: 1, name: "Admin", email: "admin@test.com", role: "admin" },
     isLoading: false,
   });
 });
@@ -41,7 +41,7 @@ describe("AdminPage", () => {
 
   it("비관리자 사용자는 admin 페이지 내용이 렌더링되지 않는다", () => {
     mockUseAuth.mockReturnValue({
-      user: { id: 2, name: "User", email: "user@test.com" },
+      user: { id: 2, name: "User", email: "user@test.com", role: "member" },
       isLoading: false,
     });
     const { container } = render(<AdminPage />);

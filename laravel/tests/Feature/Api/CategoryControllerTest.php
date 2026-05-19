@@ -33,7 +33,7 @@ describe('destroy', function () {
 
         $response = $this->deleteJson("/api/categories/{$category->id}");
 
-        $response->assertStatus(204);
+        $response->assertStatus(200);
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
     });
 
@@ -46,7 +46,7 @@ describe('destroy', function () {
 
         $response = $this->deleteJson("/api/categories/{$category->id}");
 
-        $response->assertStatus(204);
+        $response->assertStatus(200);
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
     });
 
@@ -59,7 +59,7 @@ describe('destroy', function () {
 
         $response = $this->deleteJson("/api/categories/{$category->id}");
 
-        $response->assertStatus(204);
+        $response->assertStatus(200);
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
     });
 
@@ -88,7 +88,7 @@ describe('destroy', function () {
 
         $response = $this->deleteJson("/api/categories/{$category->id}");
 
-        $response->assertStatus(204);
+        $response->assertStatus(200);
         $this->assertDatabaseMissing('category_embeddings', ['category_id' => $category->id]);
     });
 

@@ -65,8 +65,17 @@ class CategoryController extends Controller
     {
         $perPage = min((int) $request->input('per_page', 20), 100);
 
+        $query = Category::query()->with('embeddings');
+
+        if ($request->input('filter') === 'my') {
+            $query->where(function ($q) {
+                $q->where('user_id', auth('sanctum')->id())
+                    ->orWhere('user_id', 1);
+            });
+        }
+
         return new CategoryCollection(
-            Category::query()->with('embeddings')->orderBy('id')->paginate($perPage)
+            $query->orderBy('id', 'desc')->paginate($perPage)
         );
     }
 
@@ -329,6 +338,13 @@ class CategoryController extends Controller
     )]
     public function runStep(RunStepRequest $request, Category $category): JsonResponse
     {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $this->canModify($user, $category)) {
+            return response()->json(['message' => '이 카테고리의 번역·임베딩을 실행할 권한이 없습니다.'], 403);
+        }
+
         $step = $request->input('step');
         $categoryNameKo = $category->category_name_ko;
         $embedModelName = config('services.ollama.embedding_model');
@@ -498,7 +514,7 @@ class CategoryController extends Controller
             ),
         ],
         responses: [
-            new OA\Response(response: 204, description: '삭제 성공'),
+            new OA\Response(response: 200, description: '삭제 성공'),
             new OA\Response(response: 401, description: '인증 필요'),
             new OA\Response(response: 403, description: '권한 없음'),
             new OA\Response(response: 404, description: '카테고리를 찾을 수 없음'),
@@ -516,7 +532,7 @@ class CategoryController extends Controller
         CategoryEmbedding::where('category_id', $category->id)->delete();
         $category->delete();
 
-        return response()->json(null, 204);
+        return response()->json(['message' => '카테고리가 삭제되었습니다.', 'id' => $category->id]);
     }
 
     private function canModify(User $user, Category $category): bool

@@ -15,7 +15,7 @@ interface UseCategoriesReturn {
   isLoading: boolean;
   isLoaded: boolean;
   error: string | null;
-  loadCategories: (page?: number, perPage?: number) => Promise<void>;
+  loadCategories: (page?: number, perPage?: number, filter?: string) => Promise<void>;
   addCategory: (categoryNameKo: string, categoryCode?: string) => Promise<void>;
   updateCategoryStatus: (id: number, updates: Partial<Category>) => void;
   deleteCategory: (id: number) => Promise<void>;
@@ -30,16 +30,18 @@ export function useCategories(token?: string | null): UseCategoriesReturn {
   const loadedToken = useRef<string | null | undefined>(undefined);
   const currentPage = useRef<number>(1);
   const currentPerPage = useRef<number>(20);
+  const currentFilter = useRef<string | undefined>(undefined);
 
-  const loadCategories = useCallback(async (page?: number, perPage?: number) => {
+  const loadCategories = useCallback(async (page?: number, perPage?: number, filter?: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getCategories(token, page ?? currentPage.current, perPage ?? currentPerPage.current);
+      const data = await getCategories(token, page ?? currentPage.current, perPage ?? currentPerPage.current, filter);
       setCategories(data.data);
       setMeta(data.meta);
       currentPage.current = data.meta.current_page;
       currentPerPage.current = data.meta.per_page;
+      currentFilter.current = filter;
       setIsLoaded(true);
     } catch (err) {
       setError(
@@ -66,7 +68,7 @@ export function useCategories(token?: string | null): UseCategoriesReturn {
       setError(null);
       try {
         await createCategory(categoryNameKo, token, categoryCode);
-        const data = await getCategories(token, currentPage.current);
+        const data = await getCategories(token, currentPage.current, currentPerPage.current, currentFilter.current);
         setCategories(data.data);
         setMeta(data.meta);
       } catch (err) {
@@ -95,7 +97,7 @@ export function useCategories(token?: string | null): UseCategoriesReturn {
       setError(null);
       try {
         await deleteCategoryApi(id, token);
-        const data = await getCategories(token, currentPage.current);
+        const data = await getCategories(token, currentPage.current, currentPerPage.current, currentFilter.current);
         setCategories(data.data);
         setMeta(data.meta);
       } catch (err) {

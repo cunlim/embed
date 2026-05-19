@@ -122,12 +122,13 @@ function EmbedPageInner() {
   } = useCategories(token);
 
   const [perPage, setPerPage] = useState(initialPerPage);
+  const [filter, setFilter] = useState<string | undefined>(undefined);
 
   // URL page 동기화
   useEffect(() => {
     if (!mounted) return;
-    loadCategories(page, perPage);
-  }, [mounted, page, perPage, loadCategories]);
+    loadCategories(page, perPage, filter);
+  }, [mounted, page, perPage, filter, loadCategories]);
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryCode, setNewCategoryCode] = useState("");
@@ -327,7 +328,7 @@ function EmbedPageInner() {
             {/* 일괄 번역 */}
             <BatchTranslate
               token={token}
-              onComplete={() => loadCategories(page)}
+              onComplete={() => loadCategories(page, perPage, filter)}
             />
           </div>
 
@@ -335,16 +336,22 @@ function EmbedPageInner() {
           <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">카테고리 목록</CardTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => loadCategories(page)}
-                disabled={catLoading}
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${catLoading ? "animate-spin" : ""}`}
-                />
-              </Button>
+              <div className="flex gap-1">
+                <Button
+                  variant={filter === undefined ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setFilter(undefined)}
+                >
+                  전체
+                </Button>
+                <Button
+                  variant={filter === "my" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setFilter("my")}
+                >
+                  내 카테고리
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {/* 로딩 */}
@@ -371,7 +378,7 @@ function EmbedPageInner() {
                       variant="outline"
                       size="sm"
                       className="mt-3"
-                      onClick={() => loadCategories(page)}
+                      onClick={() => loadCategories(page, perPage, filter)}
                     >
                       <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                       재시도
@@ -645,12 +652,12 @@ function EmbedPageInner() {
         execState={modalCategoryId ? getState(modalCategoryId) : null}
         onSingleAction={async (stepName) => {
           if (modalCategoryId !== null) {
-            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page), setData);
+            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page, perPage, filter), setData);
           }
         }}
         onRunAll={async () => {
           if (modalCategoryId !== null && detailData) {
-            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page), setData);
+            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page, perPage, filter), setData);
           }
         }}
         onCancelPending={() => {

@@ -160,7 +160,7 @@ export default function CategoryModal({
                 size="icon"
                 onClick={() => onSingleAction(stepName)}
                 title={label + " 실행"}
-                disabled={isExecuting || translationDone === false}
+                disabled={isExecuting || translationDone === false || readOnly}
               >
                 <Play className="size-3" />
               </Button>

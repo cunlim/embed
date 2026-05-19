@@ -36,7 +36,7 @@ test('POST /api/categories/{category}/run-step — translation.zh가 정상 동�
     app()->instance(OllamaTranslator::class, $translator);
 
     $user = User::factory()->create();
-    $category = Category::factory()->create(['category_name_ko' => '테스트 카테고리']);
+    $category = Category::factory()->create(['category_name_ko' => '테스트 카테고리', 'user_id' => $user->id]);
 
     $response = $this->actingAs($user, 'sanctum')->postJson("/api/categories/{$category->id}/run-step", [
         'step' => 'translation.zh',
@@ -68,7 +68,7 @@ test('POST /api/categories/{category}/run-step — embedding.ko가 정상 동작
     app()->instance(EmbeddingGenerator::class, $embedder);
 
     $user = User::factory()->create();
-    $category = Category::factory()->create(['category_name_ko' => '테스트 카테고리']);
+    $category = Category::factory()->create(['category_name_ko' => '테스트 카테고리', 'user_id' => $user->id]);
 
     $response = $this->actingAs($user, 'sanctum')->postJson("/api/categories/{$category->id}/run-step", [
         'step' => 'embedding.ko',
@@ -94,7 +94,7 @@ test('POST /api/categories/{category}/run-step — embedding.ko가 정상 동작
 
 test('POST /api/categories/{category}/run-step — 번역 없이 임베딩 실행 시 422를 반환한다', function () {
     $user = User::factory()->create();
-    $category = Category::factory()->create(['category_name_ko' => '테스트']);
+    $category = Category::factory()->create(['category_name_ko' => '테스트', 'user_id' => $user->id]);
 
     $response = $this->actingAs($user, 'sanctum')->postJson("/api/categories/{$category->id}/run-step", [
         'step' => 'embedding.zh',
@@ -111,7 +111,7 @@ test('POST /api/categories/{category}/run-step — Ollama 실패 시 500과 fail
     app()->instance(OllamaTranslator::class, $translator);
 
     $user = User::factory()->create();
-    $category = Category::factory()->create(['category_name_ko' => '테스트']);
+    $category = Category::factory()->create(['category_name_ko' => '테스트', 'user_id' => $user->id]);
 
     $response = $this->actingAs($user, 'sanctum')->postJson("/api/categories/{$category->id}/run-step", [
         'step' => 'translation.zh',
@@ -123,4 +123,32 @@ test('POST /api/categories/{category}/run-step — Ollama 실패 시 500과 fail
             'status' => 'failed',
             'error' => 'Ollama rate limit exceeded',
         ]);
+});
+
+test('POST /api/categories/{category}/run-step — 일반회원은 타인 카테고리에 run-step을 실행할 수 없다', function () {
+    $owner = User::factory()->create(['role' => 'member']);
+    $other = User::factory()->create(['role' => 'member']);
+    $category = Category::factory()->create(['category_name_ko' => '테스트', 'user_id' => $owner->id]);
+
+    $response = $this->actingAs($other, 'sanctum')->postJson("/api/categories/{$category->id}/run-step", [
+        'step' => 'translation.zh',
+    ]);
+
+    $response->assertStatus(403);
+});
+
+test('POST /api/categories/{category}/run-step — admin은 타인 카테고리에도 run-step을 실행할 수 있다', function () {
+    $translator = mock(OllamaTranslator::class);
+    $translator->shouldReceive('translate')->once()->andReturn('测试');
+    app()->instance(OllamaTranslator::class, $translator);
+
+    $owner = User::factory()->create(['role' => 'member']);
+    $admin = User::factory()->create(['role' => 'admin']);
+    $category = Category::factory()->create(['category_name_ko' => '테스트', 'user_id' => $owner->id]);
+
+    $response = $this->actingAs($admin, 'sanctum')->postJson("/api/categories/{$category->id}/run-step", [
+        'step' => 'translation.zh',
+    ]);
+
+    $response->assertOk();
 });

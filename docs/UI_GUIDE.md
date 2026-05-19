@@ -286,11 +286,10 @@ Feature card 패턴:
 
 ### 6.2 로그인 페이지
 
-- **목적**: OAuth 소셜 계정 인증 (이메일/비밀번호 로그인 없음)
+- **목적**: 이메일/비밀번호 및 OAuth 소셜 계정 인증
 - **핵심 요구사항**:
-  - 로그인/회원가입 구분 없음 — 소셜 버튼 클릭 시 미가입자는 자동 회원가입 후 로그인
-  - 이메일·비밀번호 입력 필드 없음, 별도 로그인 제출 버튼 없음
-  - Google, GitHub, Naver 3개 소셜 로그인 버튼만 제공
+  - 이메일·비밀번호 로그인/회원가입 + Google, GitHub, Naver 소셜 로그인
+  - OAuth 미가입자는 자동 회원가입 후 로그인
 - **컴포넌트 구조**:
   - `components/site-header.tsx` — 공통 헤더. 로고 클릭 시 `/` 이동, ThemeToggle 항상 우측 고정, `badge`/`children` prop
   - `components/social-login.tsx` — 소셜 로그인 버튼 그룹. 페이지 및 Modal 양쪽에서 재사용 가능
