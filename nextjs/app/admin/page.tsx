@@ -32,6 +32,7 @@ import {
   PaginationContent,
   PaginationItem,
   PaginationLink,
+  PaginationEllipsis,
 } from "@/components/ui/pagination";
 import CategoryModal from "@/components/admin/category-modal";
 import StatusBadge from "@/components/admin/status-badge";
@@ -42,6 +43,27 @@ import { useCategoryExecution } from "@/hooks/useCategoryExecution";
 import { isAdmin } from "@/lib/utils";
 import { recommend } from "@/lib/api";
 import type { Category, Recommendation, PaginationMeta } from "@/lib/api";
+
+function getPageRange(current: number, last: number): (number | '...')[] {
+  if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1);
+
+  const pages: (number | '...')[] = [1];
+
+  const start = Math.max(2, current - 2);
+  const end = Math.min(last - 1, current + 2);
+
+  if (start > 2) pages.push('...');
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < last - 1) pages.push('...');
+
+  pages.push(last);
+  return pages;
+}
+
+function getEllipsisTarget(current: number, last: number, direction: 'prev' | 'next'): number {
+  if (direction === 'prev') return Math.max(1, current - 5);
+  return Math.min(last, current + 5);
+}
 
 export default function AdminPage() {
   return (
@@ -91,11 +113,13 @@ function AdminPageInner() {
     updateCategoryStatus,
   } = useCategories(token);
 
+  const [perPage, setPerPage] = useState(20);
+
   // URL page 동기화
   useEffect(() => {
     if (!mounted) return;
-    loadCategories(page);
-  }, [mounted, page, loadCategories]);
+    loadCategories(page, perPage);
+  }, [mounted, page, perPage, loadCategories]);
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryCode, setNewCategoryCode] = useState("");
@@ -422,7 +446,7 @@ function AdminPageInner() {
 
                   {/* 페이지네이션 */}
                   {displayMeta && displayMeta.last_page > 1 && (
-                    <div className="mt-4">
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
                       <Pagination>
                         <PaginationContent>
                           <PaginationItem>
@@ -432,20 +456,44 @@ function AdminPageInner() {
                               onClick={() => handlePageChange(displayMeta.current_page - 1)}
                               disabled={displayMeta.current_page <= 1}
                             >
-                              <ChevronLeft className="mr-1 h-4 w-4" />
-                              이전
+                              <ChevronLeft className="h-4 w-4" />
                             </Button>
                           </PaginationItem>
-                          {Array.from({ length: displayMeta.last_page }, (_, i) => i + 1).map((p) => (
-                            <PaginationItem key={p}>
-                              <PaginationLink
-                                isActive={p === displayMeta.current_page}
-                                onClick={() => handlePageChange(p)}
-                              >
-                                {p}
-                              </PaginationLink>
-                            </PaginationItem>
-                          ))}
+                          {(() => {
+                            let ellipsisCount = 0;
+                            return getPageRange(displayMeta.current_page, displayMeta.last_page).map((p, i) => {
+                              if (p === '...') {
+                                const direction = ellipsisCount++ === 0 ? 'prev' : 'next';
+                                const target = getEllipsisTarget(
+                                  displayMeta.current_page,
+                                  displayMeta.last_page,
+                                  direction,
+                                );
+                                return (
+                                  <PaginationItem key={`e-${i}`}>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-9 w-9 p-0"
+                                      onClick={() => handlePageChange(target)}
+                                    >
+                                      <PaginationEllipsis />
+                                    </Button>
+                                  </PaginationItem>
+                                );
+                              }
+                              return (
+                                <PaginationItem key={p}>
+                                  <PaginationLink
+                                    isActive={p === displayMeta.current_page}
+                                    onClick={() => handlePageChange(p)}
+                                  >
+                                    {p}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              );
+                            });
+                          })()}
                           <PaginationItem>
                             <Button
                               variant="ghost"
@@ -453,12 +501,29 @@ function AdminPageInner() {
                               onClick={() => handlePageChange(displayMeta.current_page + 1)}
                               disabled={displayMeta.current_page >= displayMeta.last_page}
                             >
-                              다음
-                              <ChevronRight className="ml-1 h-4 w-4" />
+                              <ChevronRight className="h-4 w-4" />
                             </Button>
                           </PaginationItem>
                         </PaginationContent>
                       </Pagination>
+
+                      <select
+                        value={perPage}
+                        onChange={(e) => {
+                          const newPerPage = Number(e.target.value);
+                          setPerPage(newPerPage);
+                          if (isSearchMode) {
+                            handleSearch(1);
+                          } else {
+                            router.push('/admin?page=1');
+                          }
+                        }}
+                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                      >
+                        <option value={10}>10 / page</option>
+                        <option value={20}>20 / page</option>
+                        <option value={50}>50 / page</option>
+                      </select>
                     </div>
                   )}
                 </div>
