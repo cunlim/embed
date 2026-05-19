@@ -227,6 +227,42 @@ describe("CategoryModal", () => {
     expect(embeddingBtns[2]).toBeDisabled();
   });
 
+  it("readOnly 모드에서는 보기 타이틀이 표시된다", () => {
+    render(
+      <CategoryModal
+        open={true}
+        onOpenChange={vi.fn()}
+        data={pendingData}
+        isLoading={false}
+        error={null}
+        readOnly={true}
+        execState={createEmptyExecState()}
+        onSingleAction={defaultHandlers.onSingleAction}
+        onRunAll={defaultHandlers.onRunAll}
+        onCancelPending={defaultHandlers.onCancelPending}
+      />
+    );
+    expect(screen.getByText("카테고리 보기")).toBeInTheDocument();
+  });
+
+  it("readOnly 모드에서는 전체 실행 버튼이 표시되지 않는다", () => {
+    render(
+      <CategoryModal
+        open={true}
+        onOpenChange={vi.fn()}
+        data={pendingData}
+        isLoading={false}
+        error={null}
+        readOnly={true}
+        execState={createEmptyExecState()}
+        onSingleAction={defaultHandlers.onSingleAction}
+        onRunAll={defaultHandlers.onRunAll}
+        onCancelPending={defaultHandlers.onCancelPending}
+      />
+    );
+    expect(screen.queryByText("전체 실행")).not.toBeInTheDocument();
+  });
+
   it("blur 시 값이 변경되었으면 저장 API를 호출한다", async () => {
     vi.mocked(updateCategoryText).mockResolvedValue({
       data: {

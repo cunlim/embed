@@ -15,6 +15,16 @@ vi.mock("@/hooks/useCategoryDetail", () => ({
   useCategoryDetail: vi.fn(),
 }));
 
+vi.mock("@/hooks/useCategoryExecution", () => ({
+  useCategoryExecution: vi.fn(() => ({
+    getState: vi.fn(() => null),
+    handleSingleAction: vi.fn(),
+    handleRunAll: vi.fn(),
+    handleCancelPending: vi.fn(),
+    clearStep: vi.fn(),
+  })),
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ replace: vi.fn(), back: vi.fn(), push: vi.fn() })),
   useSearchParams: vi.fn(() => new URLSearchParams()),
@@ -31,13 +41,14 @@ const mockUseCategoryDetail = useCategoryDetail as ReturnType<typeof vi.fn>;
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseAuth.mockReturnValue({
-    user: { id: 2, name: "User", email: "user@test.com" },
+    user: { id: 2, name: "User", email: "user@test.com", role: "member" },
     isLoading: false,
   });
   mockUseCategories.mockReturnValue({
     categories: [
       {
         id: 1,
+        user_id: 1,  // 다른 사용자 소유 → member는 보기만 가능
         category_code: "A01",
         category_name_ko: "의류",
         category_name_zh: "服装",
@@ -46,6 +57,7 @@ beforeEach(() => {
       },
       {
         id: 2,
+        user_id: 2,  // 본인 소유 → 수정 가능
         category_code: "A02",
         category_name_ko: "식품",
         category_name_zh: null,
@@ -58,6 +70,7 @@ beforeEach(() => {
     error: null,
     loadCategories: vi.fn(),
     addCategory: vi.fn(),
+    deleteCategory: vi.fn(),
   });
   mockUseCategoryDetail.mockReturnValue({
     data: null,
@@ -74,18 +87,20 @@ describe("EmbedPage", () => {
     expect(items.length).toBe(2);
   });
 
-  it("각 카테고리 행에 상세 보기 버튼이 렌더링된다", () => {
+  it("각 카테고리 행에 작업 버튼이 렌더링된다", () => {
     render(<EmbedPage />);
-    const buttons = screen.getAllByRole("button", { name: "수정" });
-    expect(buttons.length).toBeGreaterThanOrEqual(2);
+    const editButtons = screen.getAllByRole("button", { name: "수정" });
+    const viewButtons = screen.getAllByRole("button", { name: "보기" });
+    expect(editButtons.length + viewButtons.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("상세 보기 버튼 클릭 시 모달이 열린다", () => {
+  it("작업 버튼 클릭 시 모달이 열린다", () => {
     render(<EmbedPage />);
-    const buttons = screen.getAllByRole("button", { name: "수정" });
+    const buttons = screen.getAllByRole("button", { name: /수정|보기/ });
     fireEvent.click(buttons[0]);
 
-    expect(screen.getByText("카테고리 상세")).toBeInTheDocument();
+    // id=1은 타인 소유이므로 readOnly 모달 → "카테고리 보기" 타이틀
+    expect(screen.getByText("카테고리 보기")).toBeInTheDocument();
   });
 
   it("처리완료 상태가 표시된다", () => {
@@ -152,12 +167,35 @@ describe("EmbedPage", () => {
 
   it("관리자가 아닌 일반 사용자도 접근 가능하다", () => {
     mockUseAuth.mockReturnValue({
-      user: { id: 2, name: "User", email: "user@test.com" },
+      user: { id: 2, name: "User", email: "user@test.com", role: "member" },
       isLoading: false,
     });
 
     render(<EmbedPage />);
     const headings = screen.getAllByText("카테고리 추천");
     expect(headings.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("일반회원은 자신의 카테고리에 수정 버튼이 표시된다", () => {
+    render(<EmbedPage />);
+    const editButtons = screen.getAllByRole("button", { name: "수정" });
+    expect(editButtons.length).toBeGreaterThan(0); // id=2 (user_id=2, 본인 소유)
+  });
+
+  it("일반회원은 타인 카테고리에 보기 버튼이 표시된다", () => {
+    render(<EmbedPage />);
+    const viewButtons = screen.getAllByRole("button", { name: "보기" });
+    expect(viewButtons.length).toBeGreaterThan(0); // id=1 (user_id=1, 타인 소유)
+  });
+
+  it("일반회원은 자신의 카테고리에 삭제 버튼이 표시된다", () => {
+    render(<EmbedPage />);
+    const deleteButtons = screen.getAllByRole("button", { name: "삭제" });
+    expect(deleteButtons.length).toBeGreaterThan(0); // id=2 (자신의 카테고리)
+  });
+
+  it("컬럼 헤더에 작업이 표시된다", () => {
+    render(<EmbedPage />);
+    expect(screen.getAllByText("작업").length).toBeGreaterThanOrEqual(1);
   });
 });
