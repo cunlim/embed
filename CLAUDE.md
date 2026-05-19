@@ -139,6 +139,8 @@ cd docker && docker compose down                      # 모든 서비스 중지
 - **`.env`/`.env.local` 파일** — gitignore 대상이므로 CI/CD에서 `$LIVE_ROOT`로부터 복사. `LIVE_ROOT`는 GitHub Repository Variables에 설정 (절대 경로 노출 방지).
 - **Node 의존성** — `docker compose build`의 `RUN npm ci`로 설치, `/app/node_modules` 익명 볼륨이 bind mount보다 우선해 보존. 별도 npm ci 불필요.
 - **CI 종료 후 bind mount 경로 차이** — CI/CD "Restart Containers" 단계가 `$LIVE_ROOT/docker`에서 실행되므로 bind mount는 자동 로컬 경로로 복귀. 문제 발생 시 `docker inspect cl_embed_nextjs --format '{{range .Mounts}}{{if eq .Destination "/app"}}Source: {{.Source}}{{end}}{{end}}'`로 확인, CI workspace를 가리키면 `docker compose stop && docker compose up -d`로 복구.
+- **`isAdmin`/`isSuperAdmin` 시그니처 변경 시 `tsc --noEmit`** — user 객체(`{role?: string}`) 기반 권한 체크로 변경 시 `npx tsc --noEmit`으로 모든 호출자를 찾아 갱신. `admin/page.tsx`, `auth-buttons.tsx` 등에서 `isAdmin(user.id)` → `isAdmin(user)`로 변경.
+- **`make:migration` 빈 파일 생성** — bind mount 환경에서 `php artisan make:migration`이 0-byte 파일을 생성할 수 있다. 호스트에서 직접 작성 후 `cat <host-path> | base64 | docker exec -i cl_embed_laravel bash -c "base64 -d > /var/www/html/<container-path>"`로 동기화.
 
 ## 관련 문서
 

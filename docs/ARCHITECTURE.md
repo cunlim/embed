@@ -26,24 +26,13 @@
 | `/login` | 로그인 페이지 [계획] | 이메일/비밀번호 로그인, OAuth (Google, GitHub, Naver) 소셜 로그인, 회원가입 | 불필요 |
 | `/embed` | Embed 기술 시연 페이지 | 검색어 입력, 언어별 카테고리 추천, 코사인 유사도 상세 다이얼로그, 카테고리 CRUD, 계층 탐색, 일괄 번역, 개별 번역/임베딩 실행 (5단계 HTTP API), 페이지네이션 | **필수** (로그인 필수, 비로그인 시 `/login` 리다이렉트) |
 | `/docs` | 프로젝트 문서 페이지 [계획] | `docs/` 디렉토리의 마크다운 문서를 웹으로 렌더링 | 불필요 |
-| `/admin` | 관리자 전용 페이지 | `/embed`로 기능 이전 완료. 로그인 + 관리자 확인 후 `/embed` 이동 안내 카드 표시 | **필수** (로그인 + 관리자 ID 확인, 비관리자는 이전 페이지로 리다이렉트) |
+| `/admin` | 관리자 전용 페이지 | `/embed`로 기능 이전 완료. 로그인 + role 확인 후 `/embed` 이동 안내 카드 표시 | **필수** (로그인 + role 확인, 비관리자는 이전 페이지로 리다이렉트) |
 
 프론트엔드 디렉토리 구조 및 패키지 상세는 [`nextjs/CLAUDE.md`](../nextjs/CLAUDE.md) 참조.
 
 ## 주요 API 엔드포인트
 
-전체 목록은 `/swagger/` 참조. 아래는 아키텍처상 주요 엔드포인트:
-
-| 메서드 | 경로 | 용도 |
-|--------|------|------|
-| POST | `/api/recommend` | 텍스트 기반 카테고리 추천 (페이지네이션: `page`, `per_page`) |
-| GET | `/api/categories` | 카테고리 목록 (페이지네이션: `page`, `per_page`, 검색: `search`) |
-| POST | `/api/categories` | 카테고리 추가 (`category_name_ko`, `category_code` optional) |
-| GET | `/api/categories/{id}/translations` | 카테고리별 번역/임베딩 상태 조회 |
-| POST | `/api/categories/{id}/run-step` | 카테고리별 단일 단계 실행 (번역 또는 임베딩). 클라이언트가 5단계를 순차 호출 |
-| PUT | `/api/categories/{id}/update-text` | 카테고리 텍스트 수정 (필드+값). 임베딩 자동 초기화 |
-| GET | `/api/auth/user` | 현재 로그인 사용자 정보 |
-| POST | `/api/auth/login` / `/api/auth/register` | 이메일 인증 |
+전체 목록은 `/swagger/` 참조. 카테고리 CRUD(`GET/POST/DELETE /api/categories`), 번역/임베딩(`run-step`, `update-text`), 추천(`recommend`), 인증(`auth/*`).
 
 ## 데이터베이스
 

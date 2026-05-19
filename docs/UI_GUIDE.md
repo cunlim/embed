@@ -315,7 +315,7 @@ Feature card 패턴:
   - **카테고리 목록**: shadcn Table (`table-fixed` + `truncate`로 컬럼 너비 제어), 페이지네이션 (10/20/50 per page, compact ellipsis, URL 쿼리 파라미터 동기화), 모바일 카드 뷰. 상태 컬럼은 `StatusBadge` 아이콘 전용 모드.
   - **카테고리 추가**: 카테고리 코드(optional) + 한국어 카테고리명 입력
   - **계층 탐색**: `CategoryHierarchy` 컴포넌트 — "대>중>소" 계층형 Select
-  - **번역 실행**: 카테고리 행의 Pencil 아이콘 클릭 → `CategoryModal`에서 텍스트 수정 (input + blur 저장), 5단계 직렬 실행 (HTTP API, 단계별 상태 표시), 취소 버튼, 복사 버튼 (sonner toast 피드백)
+  - **카테고리 작업**: 각 행에 역할별 버튼 표시 — 소유자/admin은 삭제(Trash2) + 수정(Pencil), 비소유 일반회원은 보기(Eye)のみ. 수정 클릭 → `CategoryModal` 편집 모드, 보기 클릭 → 읽기 전용 모달
   - **일괄 번역**: `BatchTranslate` 컴포넌트 — 언어/모델 선택 후 전체 카테고리 번역 실행
 - **디자인 방향**:
   - 랜딩 페이지와 동일한 디자인 시스템 (그리드 배경, 글로우 오브)
