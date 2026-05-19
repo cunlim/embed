@@ -98,15 +98,6 @@ function EmbedPageInner() {
   const validPerPageValues = [10, 20, 50];
   const initialPerPage = validPerPageValues.includes(urlPerPage) ? urlPerPage : 20;
 
-  // 인증 가드 (isAdmin 체크 없이 로그인만 확인)
-  useEffect(() => {
-    if (!mounted || authLoading) return;
-
-    if (!user) {
-      router.replace("/login?redirect=/embed");
-    }
-  }, [mounted, authLoading, user, router]);
-
   const token = mounted ? getToken() : null;
   const { getState, handleSingleAction, handleRunAll, handleCancelPending, clearStep } =
     useCategoryExecution(token);
@@ -205,7 +196,7 @@ function EmbedPageInner() {
     }
   }, [isSearchMode, handleSearch, router, perPage]);
 
-  if (!mounted || !user) return null;
+  if (!mounted) return null;
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
@@ -312,7 +303,10 @@ function EmbedPageInner() {
                   />
                 </div>
                 <Button
-                  onClick={handleAddCategory}
+                  onClick={() => {
+                    if (!user) { alert("로그인이 필요합니다"); return; }
+                    handleAddCategory();
+                  }}
                   disabled={!newCategoryName.trim()}
                   className="w-full"
                 >
@@ -347,7 +341,10 @@ function EmbedPageInner() {
                 <Button
                   variant={filter === "my" ? "secondary" : "ghost"}
                   size="sm"
-                  onClick={() => setFilter("my")}
+                  onClick={() => {
+                    if (!user) { alert("로그인이 필요합니다"); return; }
+                    setFilter("my");
+                  }}
                 >
                   내 카테고리
                 </Button>
