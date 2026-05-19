@@ -24,6 +24,7 @@ export default function BatchTranslate({ token, onComplete }: BatchTranslateProp
   } | null>(null);
 
   const handleBatchTranslate = useCallback(async () => {
+    if (!token) { alert("로그인이 필요합니다"); return; }
     setIsBatchLoading(true);
     setBatchError(null);
     try {
@@ -89,7 +90,7 @@ export default function BatchTranslate({ token, onComplete }: BatchTranslateProp
 
         <Button
           onClick={handleBatchTranslate}
-          disabled={isBatchLoading}
+          disabled
           variant="outline"
           className="w-full"
         >

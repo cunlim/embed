@@ -80,12 +80,12 @@ test('GET /api/categories/{id}/translations returns all languages completed when
         ->assertJsonPath('data.languages.zh.embedding.status', 'completed');
 });
 
-test('GET /api/categories/{id}/translations returns 401 without auth', function () {
+test('GET /api/categories/{id}/translations returns 200 without auth (public route)', function () {
     $category = Category::factory()->create();
 
     $response = $this->getJson("/api/categories/{$category->id}/translations");
 
-    $response->assertUnauthorized();
+    $response->assertOk();
 });
 
 test('GET /api/categories/{id}/translations returns 404 for missing category', function () {

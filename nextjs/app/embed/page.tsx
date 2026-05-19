@@ -79,7 +79,7 @@ export default function EmbedPage() {
 }
 
 function EmbedPageInner() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const mounted = useSyncExternalStore(
@@ -141,9 +141,7 @@ function EmbedPageInner() {
   const displayCategories = isSearchMode ? searchResults : categories;
   const displayMeta = isSearchMode ? searchMeta : meta;
   const [modalCategoryId, setModalCategoryId] = useState<number | null>(null);
-  const selectedCategory = modalCategoryId !== null
-    ? displayCategories.find((c) => c.id === modalCategoryId) ?? null
-    : null;
+  const [modalReadOnly, setModalReadOnly] = useState(false);
   const { data: detailData, isLoading: detailLoading, error: detailError, setData } =
     useCategoryDetail(modalCategoryId, token);
 
@@ -269,7 +267,11 @@ function EmbedPageInner() {
               categories={categories}
               categoriesLoaded={!catLoading}
               onLoadCategories={() => loadCategories()}
-              onSelectCategory={(categoryId) => setModalCategoryId(categoryId)}
+              onSelectCategory={(categoryId) => {
+                const cat = displayCategories.find(c => c.id === categoryId);
+                setModalReadOnly(cat ? !canModify(cat) : false);
+                setModalCategoryId(categoryId);
+              }}
             />
 
             {/* 카테고리 추가 */}
@@ -462,7 +464,10 @@ function EmbedPageInner() {
                                   variant="ghost"
                                   size="icon"
                                   title={canModify(cat) ? "수정" : "보기"}
-                                  onClick={() => setModalCategoryId(cat.id)}
+                                  onClick={() => {
+                                    setModalReadOnly(!canModify(cat));
+                                    setModalCategoryId(cat.id);
+                                  }}
                                   aria-label={canModify(cat) ? "수정" : "보기"}
                                 >
                                   {canModify(cat) ? (
@@ -525,7 +530,10 @@ function EmbedPageInner() {
                               variant="ghost"
                               size="icon"
                               title={canModify(cat) ? "수정" : "보기"}
-                              onClick={() => setModalCategoryId(cat.id)}
+                              onClick={() => {
+                                setModalReadOnly(!canModify(cat));
+                                setModalCategoryId(cat.id);
+                              }}
                               aria-label={canModify(cat) ? "수정" : "보기"}
                             >
                               {canModify(cat) ? (
@@ -667,7 +675,7 @@ function EmbedPageInner() {
             clearStep(modalCategoryId, stepName);
           }
         }}
-        readOnly={selectedCategory !== null ? !canModify(selectedCategory) : false}
+        readOnly={modalReadOnly}
       />
     </div>
   );

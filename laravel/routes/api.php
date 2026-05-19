@@ -25,7 +25,7 @@ Route::post('categories/{category}/run-step', [CategoryController::class, 'runSt
 Route::put('categories/{category}/update-text', [CategoryController::class, 'updateText'])->middleware('auth:sanctum');
 
 // 개별 카테고리 번역/임베딩 조회
-Route::get('categories/{category}/translations', [CategoryController::class, 'translations'])->middleware('auth:sanctum');
+Route::get('categories/{category}/translations', [CategoryController::class, 'translations']);
 
 // 추천
 Route::post('recommend', [RecommendController::class, 'recommend']);

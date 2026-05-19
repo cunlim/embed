@@ -90,6 +90,7 @@ export default function CategoryHierarchy({
               setSelected대(v);
               setSelected중(null);
             }}
+            disabled
           >
             <SelectTrigger>
               <SelectValue placeholder="대분류 선택" />
@@ -106,7 +107,7 @@ export default function CategoryHierarchy({
           <Select
             value={selected중 ?? ""}
             onValueChange={setSelected중}
-            disabled={!selected대}
+            disabled
           >
             <SelectTrigger>
               <SelectValue placeholder="중분류 선택" />
@@ -126,7 +127,7 @@ export default function CategoryHierarchy({
               const found = 소Options.find((o) => o.categoryCode === v);
               if (found) onSelectCategory(found.categoryId);
             }}
-            disabled={!selected중}
+            disabled
           >
             <SelectTrigger>
               <SelectValue placeholder="소분류 선택" />
