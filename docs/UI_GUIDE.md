@@ -14,56 +14,24 @@
 
 ### 1.1 색상 토큰 (CSS 변수)
 
-Light/Light 모드는 `:root`, Dark 모드는 `.dark` 클래스에서 정의한다. 모든 색상은 **oklch** 색 공간을 사용한다. raw hex 값은 컴포넌트에서 직접 사용하지 않고 CSS 변수로만 참조한다.
-
-| 토큰 | Light | Dark | 용도 |
-|------|-------|------|------|
-| `--background` | oklch(1 0 0) | oklch(0.145 0 0) | 페이지 배경 |
-| `--foreground` | oklch(0.145 0 0) | oklch(0.985 0 0) | 기본 텍스트 |
-| `--card` | oklch(1 0 0) | oklch(0.205 0.042 265.75) | 카드/표면 배경 |
-| `--primary` | oklch(0.205 0.042 265.75) | oklch(0.588 0.158 265) | 주요 액션/버튼 |
-| `--accent` | oklch(0.507 0.157 265.75) | oklch(0.507 0.157 265.75) | 강조/링크/하이라이트 |
-| `--muted` | oklch(0.965 0.001 286.375) | oklch(0.269 0.015 286.375) | 비활성/보조 영역 |
-| `--border` | oklch(0.922 0.003 286.375) | oklch(0.269 0.015 286.375) | 테두리/구분선 |
-| `--destructive` | oklch(0.577 0.245 27.325) | oklch(0.577 0.245 27.325) | 삭제/위험 동작 |
-| `--ring` | oklch(0.507 0.157 265.75) | oklch(0.507 0.157 265.75) | 포커스 링 |
-| `--radius` | 0.625rem | 0.625rem | 기본 border-radius |
+Light/Light 모드는 `:root`, Dark 모드는 `.dark` 클래스에서 정의. 모든 색상은 **oklch** 색 공간 사용, raw hex 금지. 정의된 토큰은 `app/global.css`의 `@layer base` 참조.
 
 ### 1.2 Gradient Text
 
 ```css
-.gradient-text {
-  background: linear-gradient(
-    135deg,
-    oklch(0.507 0.157 265.75),  /* blue */
-    oklch(0.646 0.222 41.116)   /* orange/amber */
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+.gradient-text { /* see app/global.css */ }
 ```
 
 ### 1.3 Grid Background
 
 ```css
-.bg-grid {
-  background-image:
-    linear-gradient(var(--grid-color) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-  background-size: 60px 60px;
-}
+.bg-grid { /* see app/global.css */ }
 ```
 
 ### 1.4 Glow Orb
 
 ```css
-.glow-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  pointer-events: none;
-}
+.glow-orb { /* see app/global.css */ }
 ```
 
 ---

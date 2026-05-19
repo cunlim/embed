@@ -53,15 +53,7 @@
 
 ## 4. 개발 Phase
 
-8개 Phase로 구성. 상세 작업 내용과 진행 상황은 `phases/index.json` 참조.
-
-1. **backend-models** — Eloquent 모델 및 DB 마이그레이션
-2. **ollama-integration** — Ollama 로컬 모델 연동 (번역, 임베딩, Rate Limit)
-3. **translation-pipeline** — HTTP API 기반 번역/임베딩 파이프라인
-4. **api-layer** — REST API, pgvector 코사인 유사도 추천 엔진
-5. **auth-system** — Sanctum + Socialite OAuth
-6. **frontend-embed** — Next.js 프론트엔드
-7. **search-integration** — 검색 최적화, E2E 통합 테스트, Swagger 문서 완성
+8개 Phase로 구성. 각 Phase의 step별 진행 상황과 상세는 `phases/index.json` 참조.
 
 ## 5. 테스트 및 배포 (CI/CD)
 * **테스트 코드:** 백엔드 핵심 파이프라인(분할 조립, 예외 처리, Chaining, Lock, Rate Limit 방어) 테스트 코드 의무화.

@@ -20,42 +20,20 @@
 
 ## 페이지 구성 (Next.js 5개 페이지)
 
-| 라우트 | 페이지 | 목적 | 인증 |
-|--------|--------|------|------|
-| `/` | 랜딩 페이지 | 프로젝트 소개, 검색어 입력 및 타겟 언어 선택, 추천 결과 기본 확인 | 불필요 |
-| `/login` | 로그인 페이지 | 이메일/비밀번호 로그인 및 회원가입, OAuth (Google, GitHub, Naver) 소셜 로그인 | 불필요 |
-| `/embed` | Embed 기술 시연 페이지 | 검색어 입력, 언어별 카테고리 추천, 코사인 유사도 상세 다이얼로그, 카테고리 CRUD, 계층 탐색, 일괄 번역, 개별 번역/임베딩 실행 (5단계 HTTP API), 페이지네이션 | **선택** (비회원 조회·검색 가능, 쓰기 작업은 로그인 필요) |
-| `/docs` | 프로젝트 문서 페이지 | `docs/` 디렉토리의 마크다운 문서를 웹으로 렌더링 | 불필요 |
-| `/admin` | 관리자 전용 페이지 | `/embed`로 기능 이전 완료. 로그인 + role 확인 후 `/embed` 이동 안내 카드 표시 | **필수** (로그인 + role 확인, 비관리자는 이전 페이지로 리다이렉트) |
+페이지별 인증 요건과 상세는 `CLAUDE.md` "기술 스택" 및 `nextjs/CLAUDE.md` 참조.
 
-프론트엔드 디렉토리 구조 및 패키지 상세는 [`nextjs/CLAUDE.md`](../nextjs/CLAUDE.md) 참조.
+## API 엔드포인트
 
-## 주요 API 엔드포인트
-
-전체 목록은 `/swagger/` 참조. 카테고리 CRUD(`GET/POST/DELETE /api/categories`), 번역/임베딩(`run-step`, `update-text`), 추천(`recommend`), 인증(`auth/*`).
+전체 목록은 `/swagger/` 참조. 쓰기 작업(run-step, update-text, store, destroy)은 `auth:sanctum` 보호.
 
 ## 데이터베이스
 
-테이블/컬럼 상세는 `laravel/database/migrations/` 참조. 주요 테이블: `categories`, `category_embeddings` (VECTOR(1024)), `translation_caches`, `search_logs`, `users`.
+테이블/컬럼 상세는 `laravel/database/migrations/` 참조.
 
 ## 데이터 흐름
 
-### 개별 카테고리 처리 (Per-Category)
-```
-1. 클라이언트가 카테고리 행의 "실행" 버튼 클릭 → 프론트엔드에서 HTTP 루프 시작.
-2. 5단계를 순차적으로 POST /api/categories/{id}/run-step 호출 (중복 방지 lock 키: "category-translate:{categoryId}"):
-   단계1: zh 번역 → 단계2: en 번역 → 단계3: ko 임베딩 → 단계4: zh 임베딩 → 단계5: en 임베딩
-3. 각 run-step 응답으로 단계별 상태(pending/running/completed/failed)를 즉시 수신.
-4. 백엔드는 동기적으로 처리 후 결과 반환. 별도 큐/Job 사용하지 않음.
-```
-### 일괄 처리 (Batch)
-```
-1. 클라이언트에서 HTTP 루프로 카테고리 목록을 순회.
-2. 각 카테고리별로 run-step을 5회 순차 호출하여 전체 파이프라인 실행.
-3. 백엔드 Lock으로 동일 카테고리 중복 실행 방지.
-```
+번역/임베딩 파이프라인의 상세는 `PRD.md` §2 참조.
 
 ## 동시성 제어
 
-- **중복 실행 방지**: Redis `Cache::lock()`을 사용하여 동일 카테고리의 처리가 진행 중일 경우 중복 실행 방지.
-  - Lock 키: `"category-translate:{categoryId}"`
+Redis `Cache::lock()`으로 동일 카테고리 중복 실행 방지. Lock 키: `"category-translate:{categoryId}"`.

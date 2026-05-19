@@ -93,6 +93,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component>
   - **파생 상태**: effect에서 `setState` 대신 기존 state에서 직접 도출 (예: `const authorized = user ? isAdmin(user.id) : false`)
   - **Data fetch**: `useCategories`/`useAuth` 훅이 mount 시 자동 로드 — 컴포넌트 effect에서 수동 호출 금지
 - **`react-hooks/refs`** — `useRef`의 `.current`를 render 중에 쓰기 금지. 콜백 ref 동기화는 `useEffect(() => { ref.current = callback })` 사용 (의존성 배열 없음 — 매 렌더링 후 갱신이 의도된 패턴).
+- **모달 닫힘 애니메이션 중 prop 변화로 인한 깜빡임 방지** — `react-hooks/refs` + `set-state-in-effect` 제약으로 인해 모달 내부에서 ref/effect로 prop을 안정화할 수 없다. 부모 컴포넌트에서 별도 `useState`로 값을 캡처하고, 모달을 열 때만 `setState`로 갱신하며 닫을 때는 그대로 두는 패턴을 사용한다.
 - **`@typescript-eslint/no-unused-vars`** — 미사용 import는 오류. 작업 완료 후 확인할 것.
 
 ## 테스트
