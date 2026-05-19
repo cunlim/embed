@@ -82,6 +82,7 @@ it('인증 없이 요청하면 401을 반환한다', function () {
 
 it('카테고리 텍스트를 업데이트하고 임베딩을 삭제한다', function () {
     $category = Category::factory()->create([
+        'user_id' => $this->user->id,
         'category_name_ko' => '원본',
         'category_name_en' => 'Old Name',
     ]);
@@ -130,6 +131,7 @@ it('카테고리 텍스트를 업데이트하고 임베딩을 삭제한다', fun
 
 it('value를 null로 업데이트할 수 있다', function () {
     $category = Category::factory()->create([
+        'user_id' => $this->user->id,
         'category_name_en' => 'Old Name',
     ]);
 
@@ -154,6 +156,7 @@ it('value를 null로 업데이트할 수 있다', function () {
 
 it('category_name_ko를 null로 업데이트할 수 있다', function () {
     $category = Category::factory()->create([
+        'user_id' => $this->user->id,
         'category_name_ko' => '원본 이름',
     ]);
 

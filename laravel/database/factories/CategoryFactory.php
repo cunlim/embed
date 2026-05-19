@@ -17,6 +17,7 @@ class CategoryFactory extends Factory
         return [
             'category_code' => Category::generateCode(),
             'category_name_ko' => fake()->unique()->word(),
+            'user_id' => 1,
         ];
     }
 

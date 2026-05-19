@@ -11,6 +11,7 @@ use App\Http\Resources\CategoryResource;
 use App\Http\Resources\CategoryTranslationsResource;
 use App\Models\Category;
 use App\Models\CategoryEmbedding;
+use App\Models\User;
 use App\Services\EmbeddingGenerator;
 use App\Services\OllamaTranslator;
 use Illuminate\Http\JsonResponse;
@@ -117,6 +118,7 @@ class CategoryController extends Controller
                 ? $request->category_code
                 : Category::generateCode(),
             'category_name_ko' => $request->category_name_ko,
+            'user_id' => $request->user()->id,
         ]);
 
         return new CategoryResource($category);
@@ -446,6 +448,13 @@ class CategoryController extends Controller
     )]
     public function updateText(CategoryUpdateTextRequest $request, Category $category): JsonResponse
     {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $this->canModify($user, $category)) {
+            return response()->json(['message' => '이 카테고리를 수정할 권한이 없습니다.'], 403);
+        }
+
         $field = $request->input('field');
         $value = $request->input('value');
 
@@ -472,5 +481,46 @@ class CategoryController extends Controller
                 'listRow' => $listRow,
             ],
         ]);
+    }
+
+    #[OA\Delete(
+        path: '/api/categories/{category}',
+        summary: '카테고리 삭제',
+        description: '카테고리와 관련 임베딩을 삭제합니다. 본인 소유이거나 admin/superadmin만 가능합니다.',
+        tags: ['Categories'],
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(
+                name: 'category',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'integer')
+            ),
+        ],
+        responses: [
+            new OA\Response(response: 204, description: '삭제 성공'),
+            new OA\Response(response: 401, description: '인증 필요'),
+            new OA\Response(response: 403, description: '권한 없음'),
+            new OA\Response(response: 404, description: '카테고리를 찾을 수 없음'),
+        ]
+    )]
+    public function destroy(Category $category): JsonResponse
+    {
+        /** @var User $user */
+        $user = request()->user();
+
+        if (! $this->canModify($user, $category)) {
+            return response()->json(['message' => '이 카테고리를 삭제할 권한이 없습니다.'], 403);
+        }
+
+        CategoryEmbedding::where('category_id', $category->id)->delete();
+        $category->delete();
+
+        return response()->json(null, 204);
+    }
+
+    private function canModify(User $user, Category $category): bool
+    {
+        return $user->isAdmin() || $category->user_id === $user->id;
     }
 }
