@@ -7,10 +7,12 @@ import {
   RefreshCw,
   AlertCircle,
   Database,
+  Eye,
   Pencil,
   ChevronLeft,
   ChevronRight,
   Search,
+  Trash2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,6 +42,7 @@ import CategoryHierarchy from "@/components/admin/category-hierarchy";
 import BatchTranslate from "@/components/admin/batch-translate";
 import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
 import { useAuth, getToken } from "@/hooks/useAuth";
+import { isAdmin } from "@/lib/utils";
 import { useCategories } from "@/hooks/useCategories";
 import { useCategoryDetail } from "@/hooks/useCategoryDetail";
 import { useCategoryExecution } from "@/hooks/useCategoryExecution";
@@ -115,6 +118,7 @@ function EmbedPageInner() {
     loadCategories,
     addCategory,
     updateCategoryStatus,
+    deleteCategory,
   } = useCategories(token);
 
   const [perPage, setPerPage] = useState(initialPerPage);
@@ -145,6 +149,9 @@ function EmbedPageInner() {
   const displayCategories = isSearchMode ? searchResults : categories;
   const displayMeta = isSearchMode ? searchMeta : meta;
   const [modalCategoryId, setModalCategoryId] = useState<number | null>(null);
+  const selectedCategory = modalCategoryId !== null
+    ? displayCategories.find((c) => c.id === modalCategoryId) ?? null
+    : null;
   const { data: detailData, isLoading: detailLoading, error: detailError, setData } =
     useCategoryDetail(modalCategoryId, token);
 
@@ -178,6 +185,16 @@ function EmbedPageInner() {
     setSearchMeta(null);
     setSearchError(null);
   }, []);
+
+  const canModify = useCallback((category: Category | Recommendation) => {
+    if (!user) return false;
+    return isAdmin(user) || ("user_id" in category && category.user_id === user.id);
+  }, [user]);
+
+  const handleDelete = useCallback(async (cat: Category | Recommendation) => {
+    if (!window.confirm(`"${cat.category_name_ko}" 카테고리를 삭제하시겠습니까?`)) return;
+    await deleteCategory(cat.id);
+  }, [deleteCategory]);
 
   const handlePageChange = useCallback((newPage: number) => {
     if (isSearchMode) {
@@ -390,7 +407,7 @@ function EmbedPageInner() {
                           </TableHead>
                           {isSearchMode && <TableHead className="w-[80px]">유사도</TableHead>}
                           <TableHead className="w-[80px]">상태</TableHead>
-                          <TableHead className="w-[52px]">수정</TableHead>
+                          <TableHead className="w-[92px]">작업</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -425,15 +442,32 @@ function EmbedPageInner() {
                               <StatusBadge status={cat.translation_status} />
                             </TableCell>
                             <TableCell className="text-center">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="수정"
-                                onClick={() => setModalCategoryId(cat.id)}
-                                aria-label="수정"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center justify-center gap-0.5">
+                                {canModify(cat) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    title="삭제"
+                                    onClick={() => handleDelete(cat)}
+                                    aria-label="삭제"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title={canModify(cat) ? "수정" : "보기"}
+                                  onClick={() => setModalCategoryId(cat.id)}
+                                  aria-label={canModify(cat) ? "수정" : "보기"}
+                                >
+                                  {canModify(cat) ? (
+                                    <Pencil className="h-4 w-4" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -471,15 +505,32 @@ function EmbedPageInner() {
                               <StatusBadge status={cat.translation_status} />
                             </div>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="수정"
-                            onClick={() => setModalCategoryId(cat.id)}
-                            aria-label="수정"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-0.5">
+                            {canModify(cat) && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="삭제"
+                                onClick={() => handleDelete(cat)}
+                                aria-label="삭제"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title={canModify(cat) ? "수정" : "보기"}
+                              onClick={() => setModalCategoryId(cat.id)}
+                              aria-label={canModify(cat) ? "수정" : "보기"}
+                            >
+                              {canModify(cat) ? (
+                                <Pencil className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       </Card>
                     ))}
@@ -612,6 +663,7 @@ function EmbedPageInner() {
             clearStep(modalCategoryId, stepName);
           }
         }}
+        readOnly={selectedCategory !== null ? !canModify(selectedCategory) : false}
       />
     </div>
   );
