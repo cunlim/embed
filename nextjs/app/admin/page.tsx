@@ -36,6 +36,9 @@ import {
 } from "@/components/ui/pagination";
 import CategoryModal from "@/components/admin/category-modal";
 import StatusBadge from "@/components/admin/status-badge";
+import CategoryHierarchy from "@/components/admin/category-hierarchy";
+import BatchTranslate from "@/components/admin/batch-translate";
+import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
 import { useCategoryDetail } from "@/hooks/useCategoryDetail";
@@ -136,6 +139,8 @@ function AdminPageInner() {
   const [searchMeta, setSearchMeta] = useState<PaginationMeta | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [cosineDialogOpen, setCosineDialogOpen] = useState(false);
+  const [activeResult, setActiveResult] = useState<Recommendation | null>(null);
   const searchPageRef = useRef(1);
   const perPageRef = useRef(perPage);
   useEffect(() => { perPageRef.current = perPage });
@@ -254,6 +259,14 @@ function AdminPageInner() {
               </CardContent>
             </Card>
 
+            {/* 카테고리 계층 탐색 */}
+            <CategoryHierarchy
+              categories={categories}
+              categoriesLoaded={!catLoading}
+              onLoadCategories={() => loadCategories()}
+              onSelectCategory={(categoryId) => setModalCategoryId(categoryId)}
+            />
+
             {/* 카테고리 추가 */}
             <Card>
               <CardHeader>
@@ -297,6 +310,12 @@ function AdminPageInner() {
                 )}
               </CardContent>
             </Card>
+
+            {/* 일괄 번역 */}
+            <BatchTranslate
+              token={token}
+              onComplete={() => loadCategories(page)}
+            />
           </div>
 
           {/* 카테고리 목록 테이블 */}
@@ -390,9 +409,20 @@ function AdminPageInner() {
                             </TableCell>
                             {isSearchMode && (
                               <TableCell className="font-mono text-sm text-accent">
-                                {cat.similarity_score != null
-                                  ? `${(cat.similarity_score * 100).toFixed(1)}%`
-                                  : "-"}
+                                {cat.similarity_score != null ? (
+                                  <button
+                                    type="button"
+                                    className="cursor-pointer hover:underline"
+                                    onClick={() => {
+                                      setActiveResult(cat as Recommendation);
+                                      setCosineDialogOpen(true);
+                                    }}
+                                  >
+                                    {(cat.similarity_score * 100).toFixed(1)}%
+                                  </button>
+                                ) : (
+                                  "-"
+                                )}
                               </TableCell>
                             )}
                             <TableCell>
@@ -428,9 +458,17 @@ function AdminPageInner() {
                                   ? cat.category_name_zh ?? cat.category_name
                                   : cat.category_name_en ?? cat.category_name}
                               {isSearchMode && cat.similarity_score != null && (
-                                <span className="ml-2 font-mono text-sm text-accent">
+                                <button
+                                  type="button"
+                                  className="ml-2 font-mono text-sm text-accent cursor-pointer hover:underline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveResult(cat as Recommendation);
+                                    setCosineDialogOpen(true);
+                                  }}
+                                >
                                   {(cat.similarity_score * 100).toFixed(1)}%
-                                </span>
+                                </button>
                               )}
                             </p>
                             <div className="mt-1">
@@ -537,6 +575,13 @@ function AdminPageInner() {
           </Card>
         </div>
       </main>
+
+      {/* 코사인 유사도 상세 다이얼로그 */}
+      <CosineDetailDialog
+        open={cosineDialogOpen}
+        onOpenChange={setCosineDialogOpen}
+        result={activeResult}
+      />
 
       {/* 카테고리 상세 모달 */}
       <CategoryModal
