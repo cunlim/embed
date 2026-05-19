@@ -7,7 +7,7 @@ interface Props {
 export default function StatusBadge({ status }: Props) {
   if (status === "completed") {
     return (
-      <div className="flex items-center text-green-500">
+      <div className="flex items-center text-green-500" aria-label="처리완료">
         <CheckCircle2 className="h-4 w-4" />
       </div>
     );
@@ -15,14 +15,14 @@ export default function StatusBadge({ status }: Props) {
 
   if (status === "partial") {
     return (
-      <div className="flex items-center text-blue-500">
+      <div className="flex items-center text-blue-500" aria-label="부분완료">
         <Clock className="h-4 w-4" />
       </div>
     );
   }
 
   return (
-    <div className="flex items-center text-muted-foreground">
+    <div className="flex items-center text-muted-foreground" aria-label="처리안됨">
       <Minus className="h-4 w-4" />
     </div>
   );

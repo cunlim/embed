@@ -241,9 +241,6 @@ export default function CategoryModal({
               const transKey = `translation.${lang.key}` as StepName;
               const isKoEmpty = !data.category_name_ko?.trim();
               const hasTranslationText = detail.translation_text !== null || completedSteps.has(transKey) || stepResults.has(transKey);
-              const translationDone = lang.hasTranslation
-                ? (!isKoEmpty && hasTranslationText)
-                : true;
               const embeddingReady = lang.hasTranslation
                 ? hasTranslationText
                 : !isKoEmpty;

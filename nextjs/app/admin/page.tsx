@@ -137,7 +137,7 @@ function AdminPageInner() {
   const displayCategories = isSearchMode ? searchResults : categories;
   const displayMeta = isSearchMode ? searchMeta : meta;
   const [modalCategoryId, setModalCategoryId] = useState<number | null>(null);
-  const { data: detailData, isLoading: detailLoading, error: detailError, reload, setData } =
+  const { data: detailData, isLoading: detailLoading, error: detailError, setData } =
     useCategoryDetail(modalCategoryId, token);
 
   const handleAddCategory = useCallback(async () => {

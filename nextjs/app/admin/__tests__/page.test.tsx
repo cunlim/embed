@@ -92,7 +92,7 @@ describe("AdminPage 재설계", () => {
 
   it("처리완료 상태가 표시된다", () => {
     render(<AdminPage />);
-    const items = screen.getAllByText("처리완료");
+    const items = screen.getAllByLabelText("처리완료");
     expect(items.length).toBeGreaterThan(0);
   });
 
@@ -103,7 +103,7 @@ describe("AdminPage 재설계", () => {
 
   it("처리안됨 상태가 표시된다", () => {
     render(<AdminPage />);
-    const items = screen.getAllByText("처리안됨");
+    const items = screen.getAllByLabelText("처리안됨");
     expect(items.length).toBeGreaterThan(0);
   });
 
