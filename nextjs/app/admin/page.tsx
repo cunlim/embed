@@ -332,7 +332,7 @@ function AdminPageInner() {
                 <div>
                   {/* 데스크톱 */}
                   <div className="hidden md:block">
-                    <Table>
+                    <Table className="table-fixed">
                       <TableHeader>
                         <TableRow>
                           <TableHead>
@@ -343,14 +343,14 @@ function AdminPageInner() {
                                 : "영어 카테고리"}
                           </TableHead>
                           {isSearchMode && <TableHead className="w-[80px]">유사도</TableHead>}
-                          <TableHead className="w-[100px]">상태</TableHead>
-                          <TableHead className="w-[60px]">보기</TableHead>
+                          <TableHead className="w-[80px]">상태</TableHead>
+                          <TableHead className="w-[52px]">보기</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {displayCategories.map((cat) => (
                           <TableRow key={cat.id}>
-                            <TableCell className="font-medium">
+                            <TableCell className="max-w-0 w-full truncate font-medium">
                               {searchLanguage === "ko"
                                 ? cat.category_name_ko ?? cat.category_name
                                 : searchLanguage === "zh"
@@ -367,7 +367,7 @@ function AdminPageInner() {
                             <TableCell>
                               <StatusBadge status={cat.translation_status} />
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="text-center">
                               <Button
                                 variant="ghost"
                                 size="icon"
