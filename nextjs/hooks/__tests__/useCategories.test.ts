@@ -5,11 +5,13 @@ import { useCategories } from "@/hooks/useCategories";
 vi.mock("@/lib/api", () => ({
   getCategories: vi.fn(),
   createCategory: vi.fn(),
+  deleteCategory: vi.fn(),
 }));
 
 const api = await import("@/lib/api");
 const mockGetCategories = api.getCategories as ReturnType<typeof vi.fn>;
 const mockCreateCategory = api.createCategory as ReturnType<typeof vi.fn>;
+const mockDeleteCategory = api.deleteCategory as ReturnType<typeof vi.fn>;
 
 const mockCategory = {
   id: 1,
@@ -180,6 +182,51 @@ describe("useCategories", () => {
       });
 
       expect(result.current.isLoading).toBe(false);
+    });
+  });
+
+  describe("deleteCategory", () => {
+    it("성공 시 API를 호출하고 목록에서 해당 카테고리를 제거한다", async () => {
+      // Initial load: 2 categories
+      mockGetCategories.mockResolvedValueOnce({
+        data: [
+          { ...mockCategory, id: 1, user_id: 1 },
+          { ...mockCategory, id: 2, user_id: 1 },
+        ],
+        meta: { current_page: 1, last_page: 1, per_page: 20, total: 2, from: 1, to: 2 },
+      });
+      mockDeleteCategory.mockResolvedValueOnce(undefined);
+      // After delete: 1 category remains
+      mockGetCategories.mockResolvedValueOnce({
+        data: [{ ...mockCategory, id: 1, user_id: 1 }],
+        meta: { current_page: 1, last_page: 1, per_page: 20, total: 1, from: 1, to: 1 },
+      });
+
+      const { result } = renderHook(() => useCategories("token"));
+
+      await act(async () => {
+        await result.current.loadCategories();
+      });
+      expect(result.current.categories).toHaveLength(2);
+
+      await act(async () => {
+        await result.current.deleteCategory(2);
+      });
+
+      expect(mockDeleteCategory).toHaveBeenCalledWith(2, "token");
+      expect(result.current.categories).toHaveLength(1);
+    });
+
+    it("실패 시 error가 설정된다", async () => {
+      mockDeleteCategory.mockRejectedValueOnce(new Error("권한 없음"));
+
+      const { result } = renderHook(() => useCategories("token"));
+
+      await act(async () => {
+        await result.current.deleteCategory(1);
+      });
+
+      expect(result.current.error).toBe("권한 없음");
     });
   });
 });

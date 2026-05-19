@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import {
   getCategories,
   createCategory,
+  deleteCategory as deleteCategoryApi,
   type Category,
   type PaginationMeta,
 } from "@/lib/api";
@@ -17,6 +18,7 @@ interface UseCategoriesReturn {
   loadCategories: (page?: number, perPage?: number) => Promise<void>;
   addCategory: (categoryNameKo: string, categoryCode?: string) => Promise<void>;
   updateCategoryStatus: (id: number, updates: Partial<Category>) => void;
+  deleteCategory: (id: number) => Promise<void>;
 }
 
 export function useCategories(token?: string | null): UseCategoriesReturn {
@@ -87,5 +89,25 @@ export function useCategories(token?: string | null): UseCategoriesReturn {
     []
   );
 
-  return { categories, meta, isLoading, isLoaded, error, loadCategories, addCategory, updateCategoryStatus };
+  const deleteCategory = useCallback(
+    async (id: number) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        await deleteCategoryApi(id, token);
+        const data = await getCategories(token, currentPage.current);
+        setCategories(data.data);
+        setMeta(data.meta);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "카테고리 삭제에 실패했습니다"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [token]
+  );
+
+  return { categories, meta, isLoading, isLoaded, error, loadCategories, addCategory, updateCategoryStatus, deleteCategory };
 }
