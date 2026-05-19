@@ -14,6 +14,7 @@ use App\Models\CategoryEmbedding;
 use App\Services\EmbeddingGenerator;
 use App\Services\OllamaTranslator;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
 class CategoryController extends Controller
@@ -59,10 +60,12 @@ class CategoryController extends Controller
             ),
         ]
     )]
-    public function index(): CategoryCollection
+    public function index(Request $request): CategoryCollection
     {
+        $perPage = min((int) $request->input('per_page', 20), 100);
+
         return new CategoryCollection(
-            Category::query()->with('embeddings')->orderBy('id')->paginate(20)
+            Category::query()->with('embeddings')->orderBy('id')->paginate($perPage)
         );
     }
 
