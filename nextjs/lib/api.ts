@@ -157,12 +157,6 @@ export function getCategories(
   return request<CategoryListResponse>(`/categories?${qs}`, { token });
 }
 
-export function getAllCategories(token?: string | null): Promise<CategoryListResponse> {
-  const params = new URLSearchParams();
-  params.set("per_page", "10000");
-  params.set("page", "1");
-  return request<CategoryListResponse>(`/categories?${params.toString()}`, { token });
-}
 
 export function deleteCategory(
   id: number,
@@ -190,34 +184,6 @@ export function createCategory(
   });
 }
 
-// --- 개별 카테고리 번역·임베딩 ---
-
-export interface TranslateEmbedResponse {
-  message: string;
-  category_id: number;
-}
-
-export function translateEmbedCategory(
-  categoryId: number,
-  token?: string | null,
-  steps?: string[]
-): Promise<TranslateEmbedResponse> {
-  return request<TranslateEmbedResponse>(`/categories/${categoryId}/translate-embed`, {
-    method: "POST",
-    body: steps ? { steps } : undefined,
-    token,
-  });
-}
-
-export function cancelTranslateEmbed(
-  categoryId: number,
-  token?: string | null,
-): Promise<TranslateEmbedResponse> {
-  return request<TranslateEmbedResponse>(`/categories/${categoryId}/translate-embed/cancel`, {
-    method: "POST",
-    token,
-  });
-}
 
 // --- 개별 단계 실행 ---
 
