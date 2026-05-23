@@ -336,6 +336,12 @@ export default function TaskExecution({
                 {progress.completedCategories}개 / 실패{" "}
                 {progress.failedCategories}개
               </p>
+              {!progress.queueEmpty && progress.totalSteps > 0 && (
+                <p>
+                  Step {progress.completedSteps + progress.failedSteps}/
+                  {progress.totalSteps}
+                </p>
+              )}
               {progress.queueEmpty && (
                 <p>모든 카테고리가 이미 처리되었습니다</p>
               )}
