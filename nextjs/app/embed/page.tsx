@@ -115,6 +115,7 @@ function EmbedPageInner() {
 
   const [perPage, setPerPage] = useState(initialPerPage);
   const [filter, setFilter] = useState<string | undefined>(undefined);
+  const [keywordSearchActive, setKeywordSearchActive] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   // URL page 동기화
@@ -139,7 +140,7 @@ function EmbedPageInner() {
   const perPageRef = useRef(perPage);
   useEffect(() => { perPageRef.current = perPage });
 
-  const isSearchMode = searchResults !== null;
+  const isSearchMode = searchResults !== null && !keywordSearchActive;
   const displayCategories = isSearchMode ? searchResults : categories;
   const displayMeta = isSearchMode ? searchMeta : meta;
   const [modalCategoryId, setModalCategoryId] = useState<number | null>(null);
@@ -177,6 +178,19 @@ function EmbedPageInner() {
     setSearchMeta(null);
     setSearchError(null);
   }, []);
+
+  const handleKeywordSearch = useCallback((keyword: string) => {
+    if (!keyword) {
+      setKeywordSearchActive(false);
+      loadCategories(1, perPage, filter);
+      return;
+    }
+    setSearchResults(null);
+    setSearchMeta(null);
+    setSearchError(null);
+    setKeywordSearchActive(true);
+    loadCategories(1, perPage, filter, keyword);
+  }, [perPage, filter, loadCategories]);
 
   const canModify = useCallback((category: Category | Recommendation) => {
     if (!user) return false;
@@ -232,10 +246,10 @@ function EmbedPageInner() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* 사이드바 */}
           <div className="space-y-6">
-            {/* 카테고리 검색 */}
+            {/* 카테고리 유사도 검색 */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">카테고리 검색</CardTitle>
+                <CardTitle className="text-base">카테고리 유사도 검색</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Tabs value={searchLanguage} onValueChange={setSearchLanguage}>
@@ -283,22 +297,20 @@ function EmbedPageInner() {
               </CardContent>
             </Card>
 
-            {/* 카테고리 계층 탐색 */}
+            {/* 필터 */}
             <CategoryHierarchy
-              categories={categories}
-              categoriesLoaded={!catLoading}
-              onLoadCategories={() => loadCategories()}
               onSelectCategory={(categoryId) => {
                 const cat = displayCategories.find(c => c.id === categoryId);
                 setModalReadOnly(cat ? !canModify(cat) : false);
                 setModalCategoryId(categoryId);
               }}
+              onKeywordSearch={handleKeywordSearch}
             />
 
-            {/* 카테고리 추가 */}
+            {/* 추가 */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">카테고리 추가</CardTitle>
+                <CardTitle className="text-base">추가</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-2">

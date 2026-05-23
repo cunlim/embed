@@ -32,8 +32,31 @@ describe("parseHierarchy", () => {
       대: "패션의류",
       중: "여성의류",
       소: "원피스",
+      세: null,
       categoryId: 1,
       categoryCode: "50000001",
+    });
+  });
+
+  it("4단계 카테고리명을 파싱한다", () => {
+    const categories: Category[] = [
+      makeCategory({
+        id: 1,
+        category_code: "50000002",
+        category_name_ko: "화장품/미용>헤어스타일링>파마약>웨이브",
+      }),
+    ];
+
+    const result = parseHierarchy(categories);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      대: "화장품/미용",
+      중: "헤어스타일링",
+      소: "파마약",
+      세: "웨이브",
+      categoryId: 1,
+      categoryCode: "50000002",
     });
   });
 
@@ -70,6 +93,7 @@ describe("parseHierarchy", () => {
       대: "패션의류",
       중: "여성의류",
       소: "원피스",
+      세: null,
       categoryId: 1,
       categoryCode: "50000001",
     });

@@ -85,9 +85,38 @@ class CategoryController extends Controller
             }
         }
 
+        if ($request->filled('search')) {
+            $query->where('category_name_ko', 'LIKE', '%'.$request->input('search').'%');
+        }
+
         return new CategoryCollection(
             $query->orderBy('id', 'desc')->paginate($perPage)
         );
+    }
+
+    public function levels(): JsonResponse
+    {
+        $categories = Category::query()
+            ->where('user_id', 1)
+            ->select('id', 'category_code', 'category_name_ko')
+            ->get();
+
+        $result = [];
+        foreach ($categories as $cat) {
+            $parts = explode('>', $cat->category_name_ko);
+            if (count($parts) >= 3) {
+                $result[] = [
+                    '대' => trim($parts[0]),
+                    '중' => trim($parts[1]),
+                    '소' => trim($parts[2]),
+                    '세' => isset($parts[3]) ? trim($parts[3]) : null,
+                    'categoryId' => $cat->id,
+                    'categoryCode' => $cat->category_code,
+                ];
+            }
+        }
+
+        return response()->json(['data' => $result]);
     }
 
     #[OA\Post(

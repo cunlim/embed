@@ -16,6 +16,7 @@ Route::get('auth/user', [AuthController::class, 'user'])->middleware('auth:sanct
 
 // 카테고리
 Route::get('categories', [CategoryController::class, 'index']);
+Route::get('categories/levels', [CategoryController::class, 'levels']);
 Route::post('categories', [CategoryController::class, 'store'])->middleware('auth:sanctum');
 Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->middleware('auth:sanctum');
 Route::get('categories/{category}', [CategoryController::class, 'show']);

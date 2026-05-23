@@ -4,6 +4,7 @@ export interface HierarchyLevel {
   대: string;
   중: string;
   소: string;
+  세: string | null;
   categoryId: number;
   categoryCode: string;
 }
@@ -17,6 +18,7 @@ export function parseHierarchy(categories: Category[]): HierarchyLevel[] {
           대: parts[0].trim(),
           중: parts[1].trim(),
           소: parts[2].trim(),
+          세: parts.length >= 4 ? parts[3].trim() : null,
           categoryId: cat.id,
           categoryCode: cat.category_code,
         };

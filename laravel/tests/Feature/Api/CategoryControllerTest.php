@@ -203,3 +203,52 @@ test('GET /api/categories?filter=my — 비회원은 빈 결과', function () {
     $response->assertOk();
     expect($response->json('data'))->toBeEmpty();
 });
+
+describe('search', function () {
+    test('search 파라미터로 카테고리명 LIKE 검색', function () {
+        Category::factory()->create(['user_id' => 1, 'category_name_ko' => '화장품/미용>헤어케어>샴푸']);
+        Category::factory()->create(['user_id' => 1, 'category_name_ko' => '화장품/미용>헤어케어>린스']);
+        Category::factory()->create(['user_id' => 1, 'category_name_ko' => '식품>음료>탄산수']);
+
+        $response = $this->getJson('/api/categories?search=샴푸');
+
+        $response->assertOk();
+        $names = collect($response->json('data'))->pluck('category_name_ko');
+        expect($names)->toContain('화장품/미용>헤어케어>샴푸');
+        expect($names)->not->toContain('화장품/미용>헤어케어>린스');
+        expect($names)->not->toContain('식품>음료>탄산수');
+    });
+
+    test('search 불일치 시 빈 결과', function () {
+        Category::factory()->create(['user_id' => 1, 'category_name_ko' => '화장품/미용>헤어케어>샴푸']);
+
+        $response = $this->getJson('/api/categories?search=존재하지않는키워드');
+
+        $response->assertOk();
+        expect($response->json('data'))->toBeEmpty();
+    });
+
+    test('search + filter=my 조합', function () {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        Category::factory()->create(['user_id' => $user->id, 'category_name_ko' => '화장품/미용>헤어케어>샴푸']);
+        Category::factory()->create(['user_id' => 1, 'category_name_ko' => '식품>음료>샴푸음료']);
+
+        $response = $this->getJson('/api/categories?search=샴푸&filter=my');
+
+        $response->assertOk();
+        $names = collect($response->json('data'))->pluck('category_name_ko');
+        expect($names)->toContain('화장품/미용>헤어케어>샴푸');
+        expect($names)->not->toContain('식품>음료>샴푸음료');
+    });
+
+    test('빈 search 값은 무시된다', function () {
+        Category::factory()->create(['user_id' => 1, 'category_name_ko' => '화장품/미용>헤어케어>샴푸']);
+
+        $response = $this->getJson('/api/categories?search=');
+
+        $response->assertOk();
+        expect($response->json('data'))->not->toBeEmpty();
+    });
+});

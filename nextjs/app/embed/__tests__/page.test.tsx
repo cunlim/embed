@@ -15,6 +15,10 @@ vi.mock("@/hooks/useCategoryDetail", () => ({
   useCategoryDetail: vi.fn(),
 }));
 
+vi.mock("@/hooks/useCategoryHierarchy", () => ({
+  useCategoryHierarchy: vi.fn(),
+}));
+
 vi.mock("@/hooks/useCategoryExecution", () => ({
   useCategoryExecution: vi.fn(() => ({
     getState: vi.fn(() => null),
@@ -33,10 +37,12 @@ vi.mock("next/navigation", () => ({
 import { useAuth } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
 import { useCategoryDetail } from "@/hooks/useCategoryDetail";
+import { useCategoryHierarchy } from "@/hooks/useCategoryHierarchy";
 
 const mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
 const mockUseCategories = useCategories as ReturnType<typeof vi.fn>;
 const mockUseCategoryDetail = useCategoryDetail as ReturnType<typeof vi.fn>;
+const mockUseCategoryHierarchy = useCategoryHierarchy as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -77,6 +83,17 @@ beforeEach(() => {
     isLoading: false,
     error: null,
     reload: vi.fn(),
+  });
+  mockUseCategoryHierarchy.mockReturnValue({
+    hierarchyCategories: [
+      {
+        id: 1, user_id: 1, category_code: "A01",
+        category_name_ko: "의류>여성의류>원피스",
+        category_name_zh: null, category_name_en: null, translation_status: "completed",
+      },
+    ],
+    hierarchyLoaded: true,
+    loadHierarchyCategories: vi.fn(),
   });
 });
 
@@ -197,5 +214,25 @@ describe("EmbedPage", () => {
   it("컬럼 헤더에 작업이 표시된다", () => {
     render(<EmbedPage />);
     expect(screen.getAllByText("작업").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("카테고리 유사도 검색 섹션 타이틀이 표시된다", () => {
+    render(<EmbedPage />);
+    const titles = screen.getAllByText("카테고리 유사도 검색");
+    expect(titles.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("필터 섹션 타이틀이 표시된다", () => {
+    render(<EmbedPage />);
+    const titles = screen.getAllByText("필터");
+    expect(titles.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("필터 섹션에 분류선택/검색 토글 버튼이 표시된다", () => {
+    render(<EmbedPage />);
+    const categoryButtons = screen.getAllByRole("button", { name: "분류선택" });
+    const searchButtons = screen.getAllByRole("button", { name: "검색" });
+    expect(categoryButtons.length).toBeGreaterThanOrEqual(1);
+    expect(searchButtons.length).toBeGreaterThanOrEqual(1);
   });
 });

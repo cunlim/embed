@@ -148,13 +148,28 @@ export function getCategories(
   page?: number,
   perPage?: number,
   filter?: string,
+  search?: string,
 ): Promise<CategoryListResponse> {
   const params = new URLSearchParams();
   if (page && page > 1) params.set("page", String(page));
   params.set("per_page", String(perPage ?? 20));
   if (filter) params.set("filter", filter);
+  if (search) params.set("search", search);
   const qs = params.toString();
   return request<CategoryListResponse>(`/categories?${qs}`, { token });
+}
+
+export interface HierarchyLevelItem {
+  대: string;
+  중: string;
+  소: string;
+  세: string | null;
+  categoryId: number;
+  categoryCode: string;
+}
+
+export function fetchCategoryLevels(): Promise<{ data: HierarchyLevelItem[] }> {
+  return request<{ data: HierarchyLevelItem[] }>("/categories/levels");
 }
 
 
