@@ -94,6 +94,8 @@ docker exec cl_embed_laravel supervisorctl status
 
 ## 알려진 이슈
 
+- **컨테이너 재시작 후 HMR 불통** — `docker compose stop` + `up -d` 후 브라우저 WebSocket이 502로 끊기면 Turbopack 재컴파일이 반영되지 않는다. Playwright는 `browser.newContext()`, 수동은 Ctrl+Shift+R로 복구.
+- **Subagent-Driven 시 동일 파일 작업 통합** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합 구현을 지시한다. 분할 dispatch 시 컨텍스트 충돌과 불필요한 재작업 발생.
 - **`execute.py` spawned Claude CLI 실패** — spawned Claude CLI가 `--dangerously-skip-permissions`를 사용해도 멈추거나(hang) 컨테이너에만 구현하고 호스트 `index.json`을 갱신하지 못해 "Step did not update status"로 실패할 수 있다. 실패 시 **컨테이너에 코드가 이미 구현되어 있는지 먼저 확인**하고, 있으면 호스트로 동기화 후 index.json을 수동 갱신한다. 진행이 없으면 `kill` 후 직접 step 구현.
 - **shadcn 컴포넌트 설치 시 confirm** — 기존 파일이 있으면 overwrite 확인(y/N)으로 배치 설치가 중단된다. `echo 'y' | npx shadcn@latest add <component>`로 회피.
 - **Docker 바인드 마운트 주의사항**:
