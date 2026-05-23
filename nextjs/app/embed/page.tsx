@@ -343,6 +343,7 @@ function EmbedPageInner() {
               initialHierarchy={initialHierarchy}
               initialKeyword={initialFilterKeyword}
               onFilterChange={handleFilterChange}
+              initial대Options={[]}
             />
 
             {/* 추가 */}

@@ -174,16 +174,6 @@ export interface CategoryLevelsResponse {
   세?: { 세: string; categoryId: number; categoryCode: string }[];
 }
 
-/** @deprecated useCategoryHierarchy 훅 제거(Task 3) 시 함께 삭제 */
-export interface HierarchyLevelItem {
-  대: string;
-  중: string;
-  소: string;
-  세: string | null;
-  categoryId: number;
-  categoryCode: string;
-}
-
 export function fetchCategoryLevels(
   params?: CategoryLevelsParams
 ): Promise<{ data: CategoryLevelsResponse }> {
