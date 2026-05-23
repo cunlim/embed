@@ -213,7 +213,7 @@ Feature card: `rounded-xl border bg-card/50`, hover 시 accent border + shadow. 
 
 ### 6.4 `/admin` 관리자 전용 페이지
 
-- **상태**: 모든 관리 기능이 `/embed`로 이전 완료. 로그인 + 관리자 확인 후 `/embed` 이동 안내 카드 표시.
+- **상태**: `/embed`의 관리 기능(카테고리 계층 필터, 일괄 처리, 코사인 상세)이 `/admin`으로 이전 완료.
 - **접근 제어**: **로그인 필수** + `isAdmin(user.id)` 확인. 비로그인 시 `/login?redirect=/admin`, 비관리자 시 `router.back()`.
 
 ### 6.5 공통 패턴

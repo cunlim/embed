@@ -15,7 +15,7 @@
 | 파일 | 작업 |
 |------|------|
 | `nextjs/components/admin/task-execution.tsx` | 신규 생성 — 일괄 처리 컴포넌트 |
-| `nextjs/components/admin/batch-translate.tsx` | 삭제 |
+| `nextjs/components/admin/batch-translate.tsx` | 삭제 (완료) |
 | `nextjs/app/embed/page.tsx` | 수정 — 체크박스 + TaskExecution 교체 |
 | `nextjs/lib/api.ts` | 수정 — 미사용 함수 제거 |
 
@@ -98,13 +98,13 @@ git commit -m "refactor: 미사용 API 함수 제거 (getAllCategories, translat
 **Files:**
 - Delete: `nextjs/components/admin/batch-translate.tsx`
 
-- [ ] **Step 1: 파일 삭제**
+- [x] **Step 1: 파일 삭제**
 
 ```bash
 rm nextjs/components/admin/batch-translate.tsx
 ```
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```bash
 git add nextjs/components/admin/batch-translate.tsx
