@@ -27,6 +27,7 @@ interface BatchProgress {
   completedCategories: number;
   failedCategories: number;
   totalSteps: number;
+  totalStepsInCategory: number;
   completedSteps: number;
   failedSteps: number;
   currentCategory: string;
@@ -88,6 +89,7 @@ export default function TaskExecution({
         completedCategories: 0,
         failedCategories: 0,
         totalSteps: 0,
+        totalStepsInCategory: 0,
         completedSteps: 0,
         failedSteps: 0,
         currentCategory: "준비 중...",
@@ -150,6 +152,10 @@ export default function TaskExecution({
       }
 
       // Phase 2: 카테고리별 step 순차 실행
+      setProgress((p) =>
+        p ? { ...p, totalSteps: queue.length } : p,
+      );
+
       let completedCategories = 0;
       let failedCategories = 0;
 
@@ -165,9 +171,7 @@ export default function TaskExecution({
             ? {
                 ...p,
                 currentCategory: catSteps[0].categoryName,
-                totalSteps: catSteps.length,
-                completedSteps: 0,
-                failedSteps: 0,
+                totalStepsInCategory: catSteps.length,
                 currentStepIndex: 0,
                 currentStep: "",
                 completedCategories,
@@ -290,10 +294,10 @@ export default function TaskExecution({
   }, [executeQueue]);
 
   const pct =
-    progress && progress.totalCategories > 0
+    progress && progress.totalSteps > 0
       ? Math.round(
-          ((progress.completedCategories + progress.failedCategories) /
-            progress.totalCategories) *
+          ((progress.completedSteps + progress.failedSteps) /
+            progress.totalSteps) *
             100,
         )
       : 0;
@@ -341,7 +345,7 @@ export default function TaskExecution({
                     현재 카테고리: &ldquo;{progress.currentCategory}&rdquo;
                   </p>
                   <p className="truncate">
-                    현재: [{progress.currentStepIndex}/{progress.totalSteps}]{" "}
+                    현재: [{progress.currentStepIndex}/{progress.totalStepsInCategory}]{" "}
                     {progress.currentStep}
                   </p>
                 </>
