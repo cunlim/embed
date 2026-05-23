@@ -10,6 +10,10 @@ CURRENT_BRANCH=$(git branch --show-current)
 echo "현재 브랜치: $CURRENT_BRANCH"
 
 echo ""
+echo "=== develop 브랜치 푸시 ==="
+git push origin develop
+
+echo ""
 echo "=== main 브랜치로 전환 ==="
 git switch main
 
