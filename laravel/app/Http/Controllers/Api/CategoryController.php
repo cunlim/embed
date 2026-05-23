@@ -94,29 +94,85 @@ class CategoryController extends Controller
         );
     }
 
-    public function levels(): JsonResponse
+    public function levels(Request $request): JsonResponse
     {
-        $categories = Category::query()
-            ->where('user_id', 1)
-            ->select('id', 'category_code', 'category_name_ko')
-            ->get();
+        $대 = $request->query('대');
+        $중 = $request->query('중');
+        $소 = $request->query('소');
 
-        $result = [];
-        foreach ($categories as $cat) {
-            $parts = explode('>', $cat->category_name_ko);
-            if (count($parts) >= 3) {
-                $result[] = [
-                    '대' => trim($parts[0]),
-                    '중' => trim($parts[1]),
-                    '소' => trim($parts[2]),
-                    '세' => isset($parts[3]) ? trim($parts[3]) : null,
-                    'categoryId' => $cat->id,
-                    'categoryCode' => $cat->category_code,
-                ];
-            }
+        $query = Category::query()->where('user_id', 1);
+
+        if ($대 === null) {
+            // 대 목록 반환 (중복 제거)
+            $대List = $query
+                ->select('category_name_ko')
+                ->get()
+                ->map(fn ($c) => explode('>', $c->category_name_ko)[0] ?? '')
+                ->map(fn ($s) => trim($s))
+                ->filter(fn ($s) => $s !== '')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            return response()->json(['data' => ['대' => $대List]]);
         }
 
-        return response()->json(['data' => $result]);
+        // 대 필터링 — DB 저장 포맷은 "대 > 중 > 소" (공백 포함)
+        $query->where('category_name_ko', 'like', $대.' >%');
+
+        if ($중 === null) {
+            $중List = $query
+                ->select('category_name_ko')
+                ->get()
+                ->map(fn ($c) => explode('>', $c->category_name_ko)[1] ?? '')
+                ->map(fn ($s) => trim($s))
+                ->filter(fn ($s) => $s !== '')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            return response()->json(['data' => ['중' => $중List]]);
+        }
+
+        $query->where('category_name_ko', 'like', $대.' > '.$중.' >%');
+
+        if ($소 === null) {
+            $소List = $query
+                ->select('category_name_ko')
+                ->get()
+                ->map(fn ($c) => explode('>', $c->category_name_ko)[2] ?? '')
+                ->map(fn ($s) => trim($s))
+                ->filter(fn ($s) => $s !== '')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            return response()->json(['data' => ['소' => $소List]]);
+        }
+
+        $query->where('category_name_ko', 'like', $대.' > '.$중.' > '.$소.'%');
+
+        // 세 목록 (categoryId, categoryCode 포함)
+        $세List = $query
+            ->select('id', 'category_code', 'category_name_ko')
+            ->get()
+            ->map(function ($c) {
+                $parts = explode('>', $c->category_name_ko);
+                if (count($parts) < 4) {
+                    return null;
+                }
+
+                return [
+                    '세' => trim($parts[3]),
+                    'categoryId' => $c->id,
+                    'categoryCode' => $c->category_code,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->toArray();
+
+        return response()->json(['data' => ['세' => $세List]]);
     }
 
     #[OA\Post(
