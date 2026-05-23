@@ -17,7 +17,7 @@ export function useCategoryHierarchy(): UseCategoryHierarchyReturn {
   const loadHierarchyCategories = useCallback(async () => {
     try {
       const res = await fetchCategoryLevels();
-      setHierarchyCategories(res.data);
+      setHierarchyCategories(res.data as unknown as HierarchyLevelItem[]);
       setHierarchyLoaded(true);
       loadedRef.current = true;
     } catch {

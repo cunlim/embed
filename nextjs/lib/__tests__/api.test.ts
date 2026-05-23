@@ -244,6 +244,34 @@ describe("API 클라이언트", () => {
     });
   });
 
+  describe("fetchCategoryLevels", () => {
+    it("파라미터 없이 호출하면 대 목록 GET 요청을 보낸다", async () => {
+      const mockData = { data: { 대: ["패션의류", "식품"] } };
+      mockResponse(mockData);
+
+      const result = await api.fetchCategoryLevels();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/categories/levels"),
+        expect.any(Object)
+      );
+      expect(result.data.대).toEqual(["패션의류", "식품"]);
+    });
+
+    it("대 파라미터를 전달하면 쿼리스트링에 포함된다", async () => {
+      const mockData = { data: { 중: ["여성의류", "남성의류"] } };
+      mockResponse(mockData);
+
+      const result = await api.fetchCategoryLevels({ 대: "패션의류" });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining(encodeURIComponent("대") + "=" + encodeURIComponent("패션의류")),
+        expect.any(Object)
+      );
+      expect(result.data.중).toEqual(["여성의류", "남성의류"]);
+    });
+  });
+
   describe("updateCategoryText", () => {
     it("올바른 URL과 body로 PUT 요청을 보낸다", async () => {
       const testResp = {

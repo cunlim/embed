@@ -4,10 +4,11 @@ interface RequestOptions {
   method?: string;
   body?: unknown;
   token?: string | null;
+  cache?: RequestCache;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, token } = options;
+  const { method = "GET", body, token, cache } = options;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -22,6 +23,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
+    ...(cache !== undefined ? { cache } : {}),
   });
 
   if (!res.ok) {
@@ -159,6 +161,20 @@ export function getCategories(
   return request<CategoryListResponse>(`/categories?${qs}`, { token });
 }
 
+export interface CategoryLevelsParams {
+  대?: string;
+  중?: string;
+  소?: string;
+}
+
+export interface CategoryLevelsResponse {
+  대?: string[];
+  중?: string[];
+  소?: string[];
+  세?: { 세: string; categoryId: number; categoryCode: string }[];
+}
+
+/** @deprecated useCategoryHierarchy 훅 제거(Task 3) 시 함께 삭제 */
 export interface HierarchyLevelItem {
   대: string;
   중: string;
@@ -168,8 +184,18 @@ export interface HierarchyLevelItem {
   categoryCode: string;
 }
 
-export function fetchCategoryLevels(): Promise<{ data: HierarchyLevelItem[] }> {
-  return request<{ data: HierarchyLevelItem[] }>("/categories/levels");
+export function fetchCategoryLevels(
+  params?: CategoryLevelsParams
+): Promise<{ data: CategoryLevelsResponse }> {
+  const searchParams = new URLSearchParams();
+  if (params?.대) searchParams.set("대", params.대);
+  if (params?.중) searchParams.set("중", params.중);
+  if (params?.소) searchParams.set("소", params.소);
+  const qs = searchParams.toString();
+  return request<{ data: CategoryLevelsResponse }>(
+    `/categories/levels${qs ? "?" + qs : ""}`,
+    { cache: "no-store" }
+  );
 }
 
 
