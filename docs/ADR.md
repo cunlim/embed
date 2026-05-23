@@ -1,5 +1,13 @@
 # Architecture Decision Records
 
+## 인프라
+
+5개 Docker 컨테이너 (Next.js, Laravel, Swagger UI, PostgreSQL 15+pgvector, Redis). 컨테이너명/포트는 `docker/docker-compose.yml` 참조.
+
+- **Nginx 라우팅**: `/` → Next.js, `/api/` → Laravel FPM, `/swagger/` → Swagger UI
+- **도메인**: `https://embed.cunlim.dev` (cloudflared tunnel)
+- **동시성 제어**: Redis `Cache::lock("category-translate:{categoryId}")`로 동일 카테고리 중복 실행 방지
+
 ## 철학
 MVP 속도를 최우선으로 하되, 벡터 검색(Embedding)을 통한 압도적인 검색 성능과 정확도를 제공한다. 외부 API 의존도를 최소화하여 비용을 절감하고, 독립적으로 작동하는 최소 구현을 선택한다. 백엔드(HTTP API, 데이터 파이프라인)와 프론트엔드의 철저한 역할 분리를 통해 대량 데이터 처리 시의 병목을 방지한다.
 

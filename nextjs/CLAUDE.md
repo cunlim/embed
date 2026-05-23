@@ -46,7 +46,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component>
 
 ## 페이지 구성
 
-5개 페이지 구성은 [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) 참조.
+5개 페이지 구성: `/`, `/login`, `/embed`, `/admin`, `/docs`.
 
 ## 디자인 시스템
 
@@ -135,7 +135,7 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 ## 관련 문서
 
 - 디자인 가이드: [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md)
-- 전체 아키텍처: [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
+- 전체 아키텍처: [`docs/ADR.md`](../docs/ADR.md)
 - 제품 요구사항: [`docs/PRD.md`](../docs/PRD.md)
 - 아키텍처 결정: [`docs/ADR.md`](../docs/ADR.md)
 - 프로젝트 루트: [`/CLAUDE.md`](../CLAUDE.md)
