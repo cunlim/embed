@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,7 +40,7 @@ import {
 import CategoryModal from "@/components/admin/category-modal";
 import StatusBadge from "@/components/admin/status-badge";
 import CategoryHierarchy from "@/components/admin/category-hierarchy";
-import BatchTranslate from "@/components/admin/batch-translate";
+import TaskExecution from "@/components/admin/task-execution";
 import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { isAdmin } from "@/lib/utils";
@@ -114,12 +115,18 @@ function EmbedPageInner() {
 
   const [perPage, setPerPage] = useState(initialPerPage);
   const [filter, setFilter] = useState<string | undefined>(undefined);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   // URL page 동기화
   useEffect(() => {
     if (!mounted) return;
     loadCategories(page, perPage, filter);
   }, [mounted, page, perPage, filter, loadCategories]);
+
+  // 페이지/필터 변경 시 selectedIds 초기화
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page, perPage, filter]);
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryCode, setNewCategoryCode] = useState("");
@@ -180,6 +187,25 @@ function EmbedPageInner() {
     if (!user) return false;
     return isAdmin(user) || ("user_id" in category && category.user_id === user.id);
   }, [user]);
+
+  const toggleSelectAll = useCallback(() => {
+    const modifiableIds = displayCategories
+      .filter((cat) => canModify(cat))
+      .map((cat) => cat.id);
+    setSelectedIds((prev) => {
+      const allChecked = modifiableIds.length > 0 && modifiableIds.every((id) => prev.has(id));
+      return allChecked ? new Set() : new Set(modifiableIds);
+    });
+  }, [displayCategories, canModify]);
+
+  const toggleSelect = useCallback((id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   const handleDelete = useCallback(async (cat: Category | Recommendation) => {
     if (!window.confirm(`"${cat.category_name_ko}" 카테고리를 삭제하시겠습니까?`)) return;
@@ -321,10 +347,17 @@ function EmbedPageInner() {
               </CardContent>
             </Card>
 
-            {/* 일괄 번역 */}
-            <BatchTranslate
+            {/* 작업 실행 */}
+            <TaskExecution
               token={token}
-              onComplete={() => loadCategories(page, perPage, filter)}
+              selectedIds={selectedIds}
+              categories={displayCategories}
+              filter={filter}
+              canModify={canModify}
+              onComplete={() => {
+                setSelectedIds(new Set());
+                loadCategories(page, perPage, filter);
+              }}
             />
           </div>
 
@@ -404,6 +437,18 @@ function EmbedPageInner() {
                     <Table className="table-fixed">
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-[40px]">
+                            <Checkbox
+                              checked={
+                                (() => {
+                                  const ids = displayCategories.filter((cat) => canModify(cat)).map((cat) => cat.id);
+                                  return ids.length > 0 && ids.every((id) => selectedIds.has(id));
+                                })()
+                              }
+                              onCheckedChange={toggleSelectAll}
+                              aria-label="전체 선택"
+                            />
+                          </TableHead>
                           <TableHead>
                             {searchLanguage === "ko"
                               ? "한국어 카테고리"
@@ -419,6 +464,14 @@ function EmbedPageInner() {
                       <TableBody>
                         {displayCategories.map((cat) => (
                           <TableRow key={cat.id}>
+                            <TableCell className="w-[40px]">
+                              <Checkbox
+                                checked={selectedIds.has(cat.id)}
+                                disabled={!canModify(cat)}
+                                onCheckedChange={() => toggleSelect(cat.id)}
+                                aria-label={`${cat.category_name_ko ?? cat.category_name} 선택`}
+                              />
+                            </TableCell>
                             <TableCell className="max-w-0 w-full truncate font-medium">
                               {searchLanguage === "ko"
                                 ? cat.category_name_ko ?? cat.category_name
@@ -489,7 +542,14 @@ function EmbedPageInner() {
                     {displayCategories.map((cat) => (
                       <Card key={cat.id} className="p-3">
                         <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0 mr-2">
+                            <Checkbox
+                              checked={selectedIds.has(cat.id)}
+                              disabled={!canModify(cat)}
+                              onCheckedChange={() => toggleSelect(cat.id)}
+                              aria-label={`${cat.category_name_ko ?? cat.category_name} 선택`}
+                            />
+                            <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">
                               {searchLanguage === "ko"
                                 ? cat.category_name_ko ?? cat.category_name
@@ -513,8 +573,9 @@ function EmbedPageInner() {
                             <div className="mt-1">
                               <StatusBadge status={cat.translation_status} />
                             </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-0.5">
+                          <div className="flex items-center gap-0.5 shrink-0">
                             {canModify(cat) && (
                               <Button
                                 variant="ghost"
