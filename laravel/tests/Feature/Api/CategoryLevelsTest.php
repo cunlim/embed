@@ -8,32 +8,32 @@ beforeEach(function () {
 
     Category::factory()->create([
         'user_id'          => 1,
-        'category_name_ko' => '패션의류 > 여성의류 > 원피스',
+        'category_name_ko' => '패션의류>여성의류>원피스',
         'category_code'    => 'A01',
     ]);
     Category::factory()->create([
         'user_id'          => 1,
-        'category_name_ko' => '패션의류 > 여성의류 > 티셔츠',
+        'category_name_ko' => '패션의류>여성의류>티셔츠',
         'category_code'    => 'A02',
     ]);
     Category::factory()->create([
         'user_id'          => 1,
-        'category_name_ko' => '패션의류 > 남성의류 > 셔츠',
+        'category_name_ko' => '패션의류>남성의류>셔츠',
         'category_code'    => 'A03',
     ]);
     Category::factory()->create([
         'user_id'          => 1,
-        'category_name_ko' => '식품 > 농산물 > 과일 > 사과',
+        'category_name_ko' => '식품>농산물>과일>사과',
         'category_code'    => 'A04',
     ]);
     Category::factory()->create([
         'user_id'          => 1,
-        'category_name_ko' => '식품 > 농산물 > 채소',
+        'category_name_ko' => '식품>농산물>채소',
         'category_code'    => 'A05',
     ]);
     Category::factory()->create([
         'user_id'          => 2,
-        'category_name_ko' => '타유저 > 중분류 > 소분류',
+        'category_name_ko' => '타유저>중분류>소분류',
         'category_code'    => 'A06',
     ]);
 });

@@ -117,8 +117,8 @@ class CategoryController extends Controller
             return response()->json(['data' => ['대' => $대List]]);
         }
 
-        // 대 필터링 — DB 저장 포맷은 "대 > 중 > 소" (공백 포함)
-        $query->where('category_name_ko', 'like', $대.' >%');
+        // 대 필터링 — DB 저장 포맷은 "대>중>소" (공백 없음)
+        $query->where('category_name_ko', 'like', $대.'>%');
 
         if ($중 === null) {
             $중List = $query
@@ -134,7 +134,7 @@ class CategoryController extends Controller
             return response()->json(['data' => ['중' => $중List]]);
         }
 
-        $query->where('category_name_ko', 'like', $대.' > '.$중.' >%');
+        $query->where('category_name_ko', 'like', $대.'>'.$중.'>%');
 
         if ($소 === null) {
             $소List = $query
@@ -150,7 +150,7 @@ class CategoryController extends Controller
             return response()->json(['data' => ['소' => $소List]]);
         }
 
-        $query->where('category_name_ko', 'like', $대.' > '.$중.' > '.$소.'%');
+        $query->where('category_name_ko', 'like', $대.'>'.$중.'>'.$소.'%');
 
         // 세 목록 (categoryId, categoryCode 포함)
         $세List = $query
