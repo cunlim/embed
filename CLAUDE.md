@@ -114,6 +114,13 @@ Next.js 관련 작업은 호스트에서 직접 실행하지 말고 반드시 `c
 - **WSL2 `networkingMode=mirrored`**: Windows 호스트와 WSL2가 동일한 네트워크를 공유. Docker 컨테이너 내부에서 `host.docker.internal`로 Windows 호스트의 Ollama(port 11434)에 접근 가능.
 - **Ollama**: Windows 호스트에서 실행 중인 Ollama(`host.docker.internal:11434`)를 Laravel 컨테이너가 호출한다.
 
+## Cloudflare CDN (embed.cunlim.dev)
+
+- **Cloudflare가 Cache-Control 헤더를 덮어씀** — 기본 설정에서 정적 리소스에 `max-age=14400`(4시간)을 적용하여 Next.js dev server의 `no-cache`를 무시한다. JS/CSS 청크가 브라우저에 캐싱되어 코드 변경 후 hard refresh 없이 반영되지 않는 원인.
+- **개발 환경: 전체 바이패스** — Cloudflare 대시보드 > cunlim.dev > Caching > Cache Rules > "모든 항목에 대해 캐시 바이패스" 템플릿으로 생성. 모든 응답의 `cf-cache-status: DYNAMIC` → 원본 헤더 그대로 전달.
+- **운영 환경: 바이패스 해제** — `next.config.ts`의 `Cache-Control: public, max-age=31536000, immutable`로 정적 에셋 영구 캐싱 (파일명에 content hash 포함되어 안전).
+- **진단 방법** — Playwright `page.evaluate()`로 `fetch(url, { cache: 'reload' })` → `response.headers.get('cf-cache-status')` 확인. `DYNAMIC`이면 바이패스 정상.
+
 ## Docker Compose
 
 **WSL2 `restart` 불가** — `docker compose restart` 시 바인드 마운트 경로가 무효화되어 `no such file or directory` 오류 발생. `stop` + `up -d` 조합을 사용할 것.
