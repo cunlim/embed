@@ -123,11 +123,6 @@ function EmbedPageInner() {
     loadCategories(page, perPage, filter);
   }, [mounted, page, perPage, filter, loadCategories]);
 
-  // 페이지/필터 변경 시 selectedIds 초기화
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [page, perPage, filter]);
-
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryCode, setNewCategoryCode] = useState("");
 
