@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/pagination";
 import CategoryModal from "@/components/admin/category-modal";
 import StatusBadge from "@/components/admin/status-badge";
-import CategoryHierarchy from "@/components/admin/category-hierarchy";
+import CategoryHierarchy, { type HierarchyFilterState } from "@/components/admin/category-hierarchy";
 import TaskExecution from "@/components/admin/task-execution";
 import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
 import { useAuth, getToken } from "@/hooks/useAuth";
@@ -112,6 +112,16 @@ function EmbedPageInner() {
     updateCategoryStatus,
     deleteCategory,
   } = useCategories(token);
+
+  // URL에서 필터 모드/상태 파싱
+  const urlMode = searchParams.get("mode");
+  const initialFilterMode = (urlMode === "hierarchy" || urlMode === "search") ? urlMode : "hierarchy";
+  const initialHierarchy: HierarchyFilterState = {
+    대: searchParams.get("cat1"),
+    중: searchParams.get("cat2"),
+    소: searchParams.get("cat3"),
+  };
+  const initialFilterKeyword = searchParams.get("q") ?? "";
 
   const [perPage, setPerPage] = useState(initialPerPage);
   const [filter, setFilter] = useState<string | undefined>(undefined);
@@ -192,6 +202,27 @@ function EmbedPageInner() {
     loadCategories(1, perPage, filter, keyword);
   }, [perPage, filter, loadCategories]);
 
+  // 필터 상태 변경 시 URL 업데이트
+  const handleFilterChange = useCallback(
+    (state: { mode: "hierarchy" | "search"; hierarchy: HierarchyFilterState; keyword: string }) => {
+      const params = new URLSearchParams();
+      params.set("mode", state.mode);
+      if (state.mode === "hierarchy") {
+        if (state.hierarchy.대) params.set("cat1", state.hierarchy.대);
+        if (state.hierarchy.중) params.set("cat2", state.hierarchy.중);
+        if (state.hierarchy.소) params.set("cat3", state.hierarchy.소);
+      } else {
+        if (state.keyword) params.set("q", state.keyword);
+      }
+      // 기존 page/per_page 보존
+      if (page > 1) params.set("page", String(page));
+      if (perPage !== 20) params.set("per_page", String(perPage));
+      const qs = params.toString();
+      router.replace(`/embed${qs ? "?" + qs : ""}`, { scroll: false });
+    },
+    [router, page, perPage]
+  );
+
   const canModify = useCallback((category: Category | Recommendation) => {
     if (!user) return false;
     return isAdmin(user) || ("user_id" in category && category.user_id === user.id);
@@ -225,9 +256,12 @@ function EmbedPageInner() {
     if (isSearchMode) {
       handleSearch(newPage);
     } else {
-      router.push(`/embed?page=${newPage}&per_page=${perPage}`);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", String(newPage));
+      params.set("per_page", String(perPage));
+      router.push(`/embed?${params.toString()}`);
     }
-  }, [isSearchMode, handleSearch, router, perPage]);
+  }, [isSearchMode, handleSearch, router, perPage, searchParams]);
 
   if (!mounted) return null;
 
@@ -305,6 +339,10 @@ function EmbedPageInner() {
                 setModalCategoryId(categoryId);
               }}
               onKeywordSearch={handleKeywordSearch}
+              initialMode={initialFilterMode}
+              initialHierarchy={initialHierarchy}
+              initialKeyword={initialFilterKeyword}
+              onFilterChange={handleFilterChange}
             />
 
             {/* 추가 */}
@@ -687,7 +725,10 @@ function EmbedPageInner() {
                                 if (isSearchMode) {
                                   handleSearch(1);
                                 } else {
-                                  router.push(`/embed?page=1&per_page=${newPerPage}`);
+                                  const params = new URLSearchParams(searchParams.toString());
+                                  params.set("page", "1");
+                                  params.set("per_page", String(newPerPage));
+                                  router.push(`/embed?${params.toString()}`);
                                 }
                               }}
                               className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
