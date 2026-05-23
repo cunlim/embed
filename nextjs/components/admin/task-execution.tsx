@@ -18,16 +18,22 @@ interface TaskExecutionProps {
   categories: (Category | Recommendation)[];
   filter: string | undefined;
   canModify: (cat: Category | Recommendation) => boolean;
-  onComplete: () => void;
+  onComplete: (wasStopped: boolean) => void;
+  onCategoryComplete?: () => void;
 }
 
 interface BatchProgress {
   totalCategories: number;
+  completedCategories: number;
+  failedCategories: number;
   totalSteps: number;
   completedSteps: number;
   failedSteps: number;
   currentCategory: string;
   currentStep: string;
+  currentStepIndex: number;
+  currentCategoryIndex: number;
+  queueEmpty: boolean;
 }
 
 interface StepJob {
@@ -60,26 +66,36 @@ export default function TaskExecution({
   filter,
   canModify,
   onComplete,
+  onCategoryComplete,
 }: TaskExecutionProps) {
   const [running, setRunning] = useState(false);
+  const [wasStopped, setWasStopped] = useState(false);
   const [progress, setProgress] = useState<BatchProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef(false);
+  const targetIdsRef = useRef<number[]>([]);
 
   const executeQueue = useCallback(
     async (targetCategoryIds: number[]) => {
       setRunning(true);
+      setWasStopped(false);
       setError(null);
       abortRef.current = false;
+      targetIdsRef.current = targetCategoryIds;
 
       // Phase 1: 카테고리별 누락 step 수집
       setProgress({
         totalCategories: targetCategoryIds.length,
+        completedCategories: 0,
+        failedCategories: 0,
         totalSteps: 0,
         completedSteps: 0,
         failedSteps: 0,
         currentCategory: "준비 중...",
         currentStep: "",
+        currentStepIndex: 0,
+        currentCategoryIndex: 0,
+        queueEmpty: false,
       });
 
       const queue: StepJob[] = [];
@@ -102,57 +118,130 @@ export default function TaskExecution({
 
       if (abortRef.current) {
         setRunning(false);
-        setProgress(null);
+        setWasStopped(true);
+        onComplete(true);
         return;
       }
 
       if (queue.length === 0) {
+        setProgress((p) =>
+          p
+            ? {
+                ...p,
+                queueEmpty: true,
+                completedCategories: targetCategoryIds.length,
+                currentCategory: "",
+                currentStep: "",
+              }
+            : p,
+        );
         setRunning(false);
-        setProgress(null);
+        onComplete(false);
         return;
       }
 
-      setProgress({
-        totalCategories: targetCategoryIds.length,
-        totalSteps: queue.length,
-        completedSteps: 0,
-        failedSteps: 0,
-        currentCategory: "",
-        currentStep: "",
-      });
-
-      // Phase 2: step 순차 실행
+      // 카테고리별로 step 그룹화 (순서 보존)
+      const orderedCategoryIds: number[] = [];
+      const stepsByCategory = new Map<number, StepJob[]>();
       for (const job of queue) {
+        if (!stepsByCategory.has(job.categoryId)) {
+          orderedCategoryIds.push(job.categoryId);
+          stepsByCategory.set(job.categoryId, []);
+        }
+        stepsByCategory.get(job.categoryId)!.push(job);
+      }
+
+      // Phase 2: 카테고리별 step 순차 실행
+      let completedCategories = 0;
+      let failedCategories = 0;
+
+      for (let ci = 0; ci < orderedCategoryIds.length; ci++) {
         if (abortRef.current) break;
+
+        const catId = orderedCategoryIds[ci];
+        const catSteps = stepsByCategory.get(catId) || [];
+        let catFailed = false;
 
         setProgress((p) =>
           p
-            ? { ...p, currentCategory: job.categoryName, currentStep: job.stepName }
+            ? {
+                ...p,
+                currentCategoryIndex: ci + 1,
+                currentCategory: catSteps[0].categoryName,
+                totalSteps: catSteps.length,
+                completedSteps: 0,
+                failedSteps: 0,
+                currentStepIndex: 0,
+                currentStep: "",
+                completedCategories,
+                failedCategories,
+              }
             : p,
         );
 
-        try {
-          const result = await runStep(job.categoryId, job.stepName, token);
-          if (result.status === "completed") {
-            setProgress((p) =>
-              p ? { ...p, completedSteps: p.completedSteps + 1 } : p,
-            );
-          } else {
+        for (let si = 0; si < catSteps.length; si++) {
+          if (abortRef.current) break;
+
+          const job = catSteps[si];
+
+          setProgress((p) =>
+            p
+              ? {
+                  ...p,
+                  currentStepIndex: si + 1,
+                  currentStep: job.stepName,
+                }
+              : p,
+          );
+
+          try {
+            const result = await runStep(job.categoryId, job.stepName, token);
+            if (result.status === "completed") {
+              setProgress((p) =>
+                p ? { ...p, completedSteps: p.completedSteps + 1 } : p,
+              );
+            } else {
+              setProgress((p) =>
+                p ? { ...p, failedSteps: p.failedSteps + 1 } : p,
+              );
+              catFailed = true;
+              break;
+            }
+          } catch {
             setProgress((p) =>
               p ? { ...p, failedSteps: p.failedSteps + 1 } : p,
             );
+            catFailed = true;
+            break;
           }
-        } catch {
-          setProgress((p) =>
-            p ? { ...p, failedSteps: p.failedSteps + 1 } : p,
-          );
         }
+
+        if (abortRef.current) break;
+
+        if (catFailed) {
+          failedCategories++;
+        } else {
+          completedCategories++;
+        }
+
+        setProgress((p) =>
+          p ? { ...p, completedCategories, failedCategories } : p,
+        );
+
+        onCategoryComplete?.();
+      }
+
+      if (abortRef.current) {
+        setRunning(false);
+        setWasStopped(true);
+        onComplete(true);
+        return;
       }
 
       setRunning(false);
-      onComplete();
+      onComplete(false);
     },
-    [token, onComplete],
+    [token, onComplete, onCategoryComplete],
   );
 
   const handleSelectedProcess = useCallback(async () => {
@@ -195,7 +284,13 @@ export default function TaskExecution({
 
   const handleStop = useCallback(() => {
     abortRef.current = true;
+    setWasStopped(true);
   }, []);
+
+  const handleRetry = useCallback(async () => {
+    if (targetIdsRef.current.length === 0) return;
+    await executeQueue(targetIdsRef.current);
+  }, [executeQueue]);
 
   const pct =
     progress && progress.totalSteps > 0
@@ -223,36 +318,59 @@ export default function TaskExecution({
           >
             전체 처리
           </Button>
-          <Button
-            onClick={handleStop}
-            disabled={!running}
-            variant="outline"
-            size="icon"
-            className="shrink-0"
-          >
-            <Square className="h-4 w-4" />
-          </Button>
         </div>
 
         {error && <p className="text-xs text-destructive">{error}</p>}
 
         {progress && (
           <div className="space-y-2">
-            <Progress value={pct} />
-            <div className="text-xs text-muted-foreground space-y-0.5">
-              <p>
-                전체 {progress.totalCategories}개 / 실행할 {progress.totalSteps}개
+            {!progress.queueEmpty ? (
+              <>
+                <Progress value={pct} />
+                <div className="text-xs text-muted-foreground space-y-0.5">
+                  <p>
+                    전체 {progress.totalCategories}개 / 완료{" "}
+                    {progress.completedCategories}개 / 실패{" "}
+                    {progress.failedCategories}개
+                  </p>
+                  {progress.currentCategory && (
+                    <>
+                      <p className="truncate">
+                        현재 카테고리: &ldquo;{progress.currentCategory}&rdquo;
+                      </p>
+                      <p className="truncate">
+                        현재: [{progress.currentStepIndex}/{progress.totalSteps}]{" "}
+                        {progress.currentStep}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                처리할 단계가 없습니다
               </p>
-              <p>
-                완료 {progress.completedSteps}개 / 실패 {progress.failedSteps}개
-              </p>
-              {progress.currentCategory && (
-                <p className="truncate">
-                  현재: &ldquo;{progress.currentCategory} &mdash;{" "}
-                  {progress.currentStep}&rdquo;
-                </p>
-              )}
-            </div>
+            )}
+
+            {running && (
+              <Button
+                onClick={handleStop}
+                variant="destructive"
+                className="w-full"
+              >
+                <Square className="mr-1.5 h-4 w-4" />
+                실행중지
+              </Button>
+            )}
+            {wasStopped && !running && (
+              <Button
+                onClick={handleRetry}
+                variant="outline"
+                className="w-full"
+              >
+                재실행
+              </Button>
+            )}
           </div>
         )}
       </div>
