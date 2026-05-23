@@ -290,8 +290,12 @@ export default function TaskExecution({
   }, [executeQueue]);
 
   const pct =
-    progress && progress.totalSteps > 0
-      ? Math.round((progress.completedSteps / progress.totalSteps) * 100)
+    progress && progress.totalCategories > 0
+      ? Math.round(
+          ((progress.completedCategories + progress.failedCategories) /
+            progress.totalCategories) *
+            100,
+        )
       : 0;
 
   return (
@@ -321,33 +325,28 @@ export default function TaskExecution({
 
         {progress && (
           <div className="space-y-2">
-            {!progress.queueEmpty ? (
-              <>
-                <Progress value={pct} />
-                <div className="text-xs text-muted-foreground space-y-0.5">
-                  <p>
-                    전체 {progress.totalCategories}개 / 완료{" "}
-                    {progress.completedCategories}개 / 실패{" "}
-                    {progress.failedCategories}개
-                  </p>
-                  {progress.currentCategory && (
-                    <>
-                      <p className="truncate">
-                        현재 카테고리: &ldquo;{progress.currentCategory}&rdquo;
-                      </p>
-                      <p className="truncate">
-                        현재: [{progress.currentStepIndex}/{progress.totalSteps}]{" "}
-                        {progress.currentStep}
-                      </p>
-                    </>
-                  )}
-                </div>
-              </>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                처리할 단계가 없습니다
+            <Progress value={progress.queueEmpty ? 100 : pct} />
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              <p>
+                전체 {progress.totalCategories}개 / 완료{" "}
+                {progress.completedCategories}개 / 실패{" "}
+                {progress.failedCategories}개
               </p>
-            )}
+              {progress.queueEmpty && (
+                <p>모든 카테고리가 이미 처리되었습니다</p>
+              )}
+              {!progress.queueEmpty && progress.currentCategory && (
+                <>
+                  <p className="truncate">
+                    현재 카테고리: &ldquo;{progress.currentCategory}&rdquo;
+                  </p>
+                  <p className="truncate">
+                    현재: [{progress.currentStepIndex}/{progress.totalSteps}]{" "}
+                    {progress.currentStep}
+                  </p>
+                </>
+              )}
+            </div>
 
             {running && (
               <Button
