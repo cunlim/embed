@@ -106,6 +106,8 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - `lib/__tests__/*.test.ts` — 순수 함수, API 클라이언트
 - `hooks/__tests__/*.test.ts` — 커스텀 훅 (@testing-library/react의 renderHook 사용)
 - API 호출을 모킹할 때는 `vi.mock("@/lib/api")`로 모듈 전체를 모킹
+- **shadcn Select는 `<select>`가 아님** — `role="combobox"` 기반 커스텀 컴포넌트. Playwright에서 `selectOption()` 대신 옵션 클릭 사용: `page.getByRole('option', { name: '...' }).click()`
+- **`CardTitle`은 `<div>` 요소** — `role="heading"`이 없으므로 테스트에서 `getByRole('heading', ...)`으로 찾을 수 없다. `getByText()` / `getAllByText()` 사용할 것.
 
 ## 알려진 이슈
 

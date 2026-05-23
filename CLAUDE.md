@@ -89,9 +89,10 @@ Next.js 관련 작업은 호스트에서 직접 실행하지 말고 반드시 `c
 - **shadcn 컴포넌트 설치 시 confirm** — 기존 파일이 있으면 overwrite 확인(y/N)으로 배치 설치가 중단된다. `echo 'y' | npx shadcn@latest add <component>`로 회피.
 - **Docker 바인드 마운트 주의사항**:
   - **동기화 불일치** — 호스트↔컨테이너 파일 변경이 즉시 반영되지 않을 수 있다. 파일 수정 후 **반드시 `wc -l`로 양쪽 라인 수를 비교**할 것.
-    - **단일 파일**: `cat <host-path> | base64 | docker exec -i <container> bash -c "base64 -d > <container-path>"`
+  - **신뢰 가능한 동기화 방법** — `docker exec cat > host`와 `docker cp`는 WSL2 바인드 마운트에서 0바이트 파일을 생성한다. **2단계 base64 방식만 사용할 것:**
+    - **호스트→컨테이너**: `cat <host-path> | base64 | docker exec -i <container> bash -c "base64 -d > <container-path>"`
+    - **컨테이너→호스트**: `docker exec cat <container-path> | base64 > /tmp/b64.txt && base64 -d /tmp/b64.txt > <host-path>`
     - **대량 파일 (tar 파이프)**: `tar -C <host-dir> --exclude='node_modules' --exclude='vendor' --exclude='.git' -cf - . | docker exec -i <container> tar -C <container-dir> -xf -`
-    - **컨테이너→호스트**: `docker exec cat <container-path> > <host-path>`
   - **신규 디렉토리** — 호스트에서 새 디렉토리를 만들면 컨테이너에 자동 반영되지 않을 수 있다. `docker exec cl_embed_laravel mkdir -p <path>`로 컨테이너에도 동일 디렉토리 생성.
     - **컨테이너→호스트 동기화 시 신규 디렉토리** — spawned Claude 등이 컨테이너에 새 디렉토리를 생성한 경우, 호스트에도 `mkdir -p`로 선행 생성 후 동기화해야 한다.
   - **`composer require` 후 동기화** — 컨테이너 내부에서 실행 시 생성/변경된 파일은 컨테이너에만 존재한다. `docker exec cl_embed_laravel cat <container-path> > <host-path>`로 호스트에 복사.
@@ -101,7 +102,9 @@ Next.js 관련 작업은 호스트에서 직접 실행하지 말고 반드시 `c
 - **root 소유 경로에 파일 복사** — `/etc/` 등 root 소유 디렉터리에 파일을 쓸 때는 `docker cp <host-path> <container>:/path/to/file`가 가장 간결하다.
 - **pgvector `<=>` distance 컬럼 미선택** — `orderByRaw('embedding <=> ?::vector', ...)`만 사용하면 distance 값이 SELECT 절에 포함되지 않아 모델 속성으로 접근할 수 없다. `selectRaw('*, embedding <=> ?::vector as distance', [...])`를 함께 사용해야 한다.
 - **Swagger 문서 stale** — CI/CD 배포 후 `storage/api-docs/api-docs.json`이 갱신되지 않아 Swagger UI에 일부 엔드포인트만 표시될 수 있다. `docker exec cl_embed_laravel php artisan l5-swagger:generate`로 재생성. deploy.yml에 자동화되어 있으나 수동 작업 환경에서는 별도 실행 필요.
-- **컨테이너 파일 변경 후 HMR 미감지** — `docker exec cl_embed_nextjs touch <container-path>`로 Turbopack Fast Refresh를 트리거할 수 있다.
+- **컨테이너 파일 변경 후 HMR 미감지** — `docker exec cl_embed_nextjs touch <container-path>`는 바인드 마운트에서 불안정하다. 코드 변경 후 **`.next/`를 삭제**하고 `docker compose stop` + `up -d`로 재시작할 것.
+- **Pint 바인드 마운트 파일 손상** — `vendor/bin/pint`가 바인드 마운트 경로의 파일을 0바이트로 만든다. `/tmp/` 경유 방식 사용: `docker exec cl_embed_laravel bash -c 'cp /var/www/html/path/file.php /tmp/ && vendor/bin/pint /tmp/file.php && cp /tmp/file.php /var/www/html/path/'` 후 base64로 호스트 동기화.
+- **브라우저 JS 청크 캐시** — Next.js 재시작 후에도 브라우저가 이전 JS 청크를 캐싱할 수 있다. Playwright 테스트 시 새 browser context(탭)를 생성할 것.
 - **hookify 플러그인 오버헤드** — hookify가 PreToolUse/PostToolUse/Stop/UserPromptSubmit 훅을 등록하지만, `.claude/hookify.*.local.md` 규칙이 없으면 빈 동작으로 시간만 소요된다. 불필요하면 `~/.claude/settings.json`에서 `"hookify@claude-plugins-official": false`로 비활성화.
 - **테스트 DB 오염 (duplicate table/migration)** — PostgreSQL 테스트 DB에 `migration`/`users` 테이블이 이미 존재한다는 오류 발생 시 `docker exec cl_embed_laravel php artisan migrate:fresh --env=testing --force`로 초기화.
 - **Playwright 인증 페이지 테스트** — `docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::first()->createToken("debug")->plainTextToken;'`로 Sanctum 토큰을 생성한 뒤, Playwright에서 `localStorage.setItem("auth_token", token)`으로 주입하고 `/embed`로 이동한다.

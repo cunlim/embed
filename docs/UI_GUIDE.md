@@ -14,7 +14,7 @@
 
 ### 1.1 색상 토큰 (CSS 변수) 및 특수효과
 
-모든 색상은 **oklch** 색 공간 사용, raw hex 금지. Light/Dark 모드, Gradient Text, Grid Background, Glow Orb 등은 `app/global.css`의 `@layer base` 참조.
+모든 색상은 **oklch** 색 공간 사용, raw hex 금지. Light/Dark 모드, Gradient Text, Grid Background, Glow Orb 등은 global.css의 `@layer base`에서 정의.
 
 ---
 
@@ -22,7 +22,7 @@
 
 ### 2.1 폰트 패밀리
 
-Heading: Archivo, Body/Mono: Space Grotesk, Fallback: Geist Mono. CSS 변수 및 Tailwind 매핑은 `app/layout.tsx` 참조.
+Heading: Archivo, Body/Mono: Space Grotesk, Fallback: Geist Mono.
 
 ### 2.2 타입 스케일
 
@@ -53,57 +53,15 @@ Heading: Archivo, Body/Mono: Space Grotesk, Fallback: Geist Mono. CSS 변수 및
 | Ghost | `Button variant="ghost"` | 테마 토글, 아이콘 버튼 |
 | Link | `Button variant="link"` | 인라인 텍스트 링크 |
 
-CTA 버튼 스타일:
-```tsx
-<Button
-  size="lg"
-  className="rounded-full px-6 shadow-lg shadow-accent/20
-             transition-all duration-300 hover:shadow-xl
-             hover:shadow-accent/30 hover:scale-105"
->
-  액션 텍스트
-  <ChevronRight className="h-4 w-4 transition-transform
-    duration-200 group-hover:translate-x-0.5" />
-</Button>
-```
+CTA 버튼 스타일: `size="lg"`, `rounded-full`, `shadow-lg shadow-accent/20`, hover 시 `scale-105` + shadow 확장. 우측 ChevronRight 아이콘 포함.
 
 ### 3.2 카드
 
-Feature card 패턴:
-```tsx
-<div className="group relative overflow-hidden rounded-xl
-                border border-border bg-card/50 p-4
-                transition-all duration-300
-                hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5">
-  {/* 호버 시 드러나는 그라데이션 오버레이 */}
-  <div className="absolute inset-0 bg-gradient-to-br
-                  from-{color}-500/20 to-{color}-600/10
-                  opacity-0 transition-opacity duration-300
-                  group-hover:opacity-100" />
-  <div className="relative z-10">{/* 콘텐츠 */}</div>
-</div>
-```
-
-카드 아이콘 컨테이너: `h-9 w-9 rounded-lg border border-border bg-background`.
+Feature card: `rounded-xl border bg-card/50`, hover 시 accent border + shadow. 내부에 그라데이션 오버레이(`bg-gradient-to-br`)가 opacity transition으로 드러남. 아이콘 컨테이너: `h-9 w-9 rounded-lg border`.
 
 ### 3.3 터미널 윈도우
 
-```tsx
-<div className="rounded-xl border border-border bg-card/50 backdrop-blur-sm">
-  <div className="flex gap-1.5 border-b border-border px-3 py-2">
-    <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-    <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-    <span className="ml-2 font-mono text-[10px] text-muted-foreground">
-      filename.sh
-    </span>
-  </div>
-  <div className="p-4 font-mono text-xs leading-relaxed sm:text-sm">
-    {/* 터미널 라인 */}
-    <span className="text-emerald-500">$</span> command
-  </div>
-</div>
-```
+`rounded-xl border bg-card/50 backdrop-blur-sm`. 상단 타이틀 바(빨강/노랑/초록 dot + 파일명), 본문은 `font-mono text-xs`에 `$` 프롬프트.
 
 ### 3.4 배지 (상태 표시)
 
@@ -199,16 +157,7 @@ Feature card 패턴:
 
 ### 5.3 prefers-reduced-motion
 
-```css
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-```
-모든 애니메이션은 `transform`과 `opacity`만 사용한다 (width/height/top/left 애니메이션 금지).
+`prefers-reduced-motion: reduce`에서 모든 애니메이션·트랜지션을 0.01ms로 억제. 애니메이션은 `transform`과 `opacity`만 사용한다 (layout-triggering 애니메이션 금지).
 
 ---
 
@@ -232,10 +181,7 @@ Feature card 패턴:
 - **핵심 요구사항**:
   - 이메일·비밀번호 로그인/회원가입 + Google, GitHub, Naver 소셜 로그인
   - OAuth 미가입자는 자동 회원가입 후 로그인
-- **컴포넌트 구조**:
-  - `components/site-header.tsx` — 공통 헤더. 로고 클릭 시 `/` 이동, ThemeToggle 항상 우측 고정, `badge`/`children` prop
-  - `components/social-login.tsx` — 소셜 로그인 버튼 그룹. 페이지 및 Modal 양쪽에서 재사용 가능
-  - `app/login/page.tsx` — 로그인 전용 페이지 (Card + SocialLogin)
+- **컴포넌트 구조**: 공통 헤더(SiteHeader), 소셜 로그인 버튼 그룹(SocialLogin, 페이지·Modal 재사용), 로그인 페이지(Card + SocialLogin)
 - **디자인 방향**:
   - 랜딩 페이지와 동일한 색상 토큰, 그리드 배경, 글로우 오브 사용
   - `SiteHeader` 컴포넌트로 모든 페이지 헤더 일관성 유지
@@ -256,8 +202,8 @@ Feature card 패턴:
   - **카테고리 목록**: shadcn Table (`table-fixed` + `truncate`로 컬럼 너비 제어), 페이지네이션 (10/20/50 per page, compact ellipsis, URL 쿼리 파라미터 동기화), 모바일 카드 뷰. 상태 컬럼은 `StatusBadge` 아이콘 전용 모드.
   - **카테고리 추가**: 카테고리 코드(optional) + 한국어 카테고리명 입력
   - **계층 탐색**: `CategoryHierarchy` 컴포넌트 — "대>중>소" 계층형 Select
-  - **카테고리 작업**: 각 행에 역할별 버튼 표시 — 소유자/admin은 삭제(Trash2) + 수정(Pencil), 비소유 일반회원은 보기(Eye)のみ. 수정 클릭 → `CategoryModal` 편집 모드, 보기 클릭 → 읽기 전용 모달
-  - **일괄 처리**: `TaskExecution` 컴포넌트 — 선택/전체 카테고리 번역 및 임베딩 step 순차 실행, 중지/재실행 지원
+  - **카테고리 작업**: 각 행에 역할별 버튼 표시 — 소유자/admin은 삭제(Trash2) + 수정(Pencil), 비소유 일반회원은 보기(Eye)のみ. 수정 시 편집 모달, 보기 시 읽기 전용 모달
+  - **일괄 처리**: 선택/전체 카테고리 번역 및 임베딩 step 순차 실행, 중지/재실행 지원
 - **디자인 방향**:
   - 랜딩 페이지와 동일한 디자인 시스템 (그리드 배경, 글로우 오브)
   - 빈 상태: Database 아이콘 + "등록된 카테고리가 없습니다"
