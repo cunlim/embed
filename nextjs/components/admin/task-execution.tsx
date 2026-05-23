@@ -32,7 +32,6 @@ interface BatchProgress {
   currentCategory: string;
   currentStep: string;
   currentStepIndex: number;
-  currentCategoryIndex: number;
   queueEmpty: boolean;
 }
 
@@ -94,7 +93,6 @@ export default function TaskExecution({
         currentCategory: "준비 중...",
         currentStep: "",
         currentStepIndex: 0,
-        currentCategoryIndex: 0,
         queueEmpty: false,
       });
 
@@ -166,7 +164,6 @@ export default function TaskExecution({
           p
             ? {
                 ...p,
-                currentCategoryIndex: ci + 1,
                 currentCategory: catSteps[0].categoryName,
                 totalSteps: catSteps.length,
                 completedSteps: 0,
