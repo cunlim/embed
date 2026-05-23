@@ -349,8 +349,13 @@ function EmbedPageInner() {
               categories={displayCategories}
               filter={filter}
               canModify={canModify}
-              onComplete={() => {
-                setSelectedIds(new Set());
+              onComplete={(wasStopped) => {
+                if (!wasStopped) {
+                  setSelectedIds(new Set());
+                }
+                loadCategories(page, perPage, filter);
+              }}
+              onCategoryComplete={() => {
                 loadCategories(page, perPage, filter);
               }}
             />
