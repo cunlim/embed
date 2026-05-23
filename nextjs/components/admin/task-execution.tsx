@@ -70,6 +70,7 @@ export default function TaskExecution({
 }: TaskExecutionProps) {
   const [running, setRunning] = useState(false);
   const [wasStopped, setWasStopped] = useState(false);
+  const [stopping, setStopping] = useState(false);
   const [progress, setProgress] = useState<BatchProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef(false);
@@ -79,6 +80,7 @@ export default function TaskExecution({
     async (targetCategoryIds: number[]) => {
       setRunning(true);
       setWasStopped(false);
+      setStopping(false);
       setError(null);
       abortRef.current = false;
       targetIdsRef.current = targetCategoryIds;
@@ -117,6 +119,7 @@ export default function TaskExecution({
       }
 
       if (abortRef.current) {
+        setStopping(false);
         setRunning(false);
         setWasStopped(true);
         onComplete(true);
@@ -135,6 +138,7 @@ export default function TaskExecution({
               }
             : p,
         );
+        setStopping(false);
         setRunning(false);
         onComplete(false);
         return;
@@ -233,6 +237,7 @@ export default function TaskExecution({
       }
 
       if (abortRef.current) {
+        setStopping(false);
         setRunning(false);
         setWasStopped(true);
         onComplete(true);
@@ -285,6 +290,7 @@ export default function TaskExecution({
 
   const handleStop = useCallback(() => {
     abortRef.current = true;
+    setStopping(true);
     setWasStopped(true);
   }, []);
 
@@ -329,19 +335,29 @@ export default function TaskExecution({
 
         {progress && (
           <div className="space-y-2">
-            <Progress value={progress.queueEmpty ? 100 : pct} />
+            <div className="flex items-center gap-2">
+              <Progress
+                value={progress.queueEmpty ? 100 : pct}
+                className="flex-1"
+              />
+              {!progress.queueEmpty && progress.totalSteps > 0 && (
+                <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+                  [{progress.completedSteps + progress.failedSteps}/
+                  {progress.totalSteps}]
+                </span>
+              )}
+              {progress.queueEmpty && (
+                <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+                  [{progress.totalCategories}/{progress.totalCategories}]
+                </span>
+              )}
+            </div>
             <div className="text-xs text-muted-foreground space-y-0.5">
               <p>
                 전체 {progress.totalCategories}개 / 완료{" "}
                 {progress.completedCategories}개 / 실패{" "}
                 {progress.failedCategories}개
               </p>
-              {!progress.queueEmpty && progress.totalSteps > 0 && (
-                <p>
-                  Step {progress.completedSteps + progress.failedSteps}/
-                  {progress.totalSteps}
-                </p>
-              )}
               {progress.queueEmpty && (
                 <p>모든 카테고리가 이미 처리되었습니다</p>
               )}
@@ -361,11 +377,12 @@ export default function TaskExecution({
             {running && (
               <Button
                 onClick={handleStop}
+                disabled={stopping}
                 variant="destructive"
                 className="w-full"
               >
                 <Square className="mr-1.5 h-4 w-4" />
-                실행중지
+                {stopping ? "중지 중..." : "실행중지"}
               </Button>
             )}
             {wasStopped && !running && (
