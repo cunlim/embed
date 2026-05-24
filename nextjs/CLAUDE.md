@@ -133,6 +133,8 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - **`useAuth()` 자동 사용자 로드** — 훅이 마운트 시 localStorage 토큰을 읽어 `GET /api/auth/user`를 자동 호출. `isLoading` 초기값은 `!!getToken()`으로 결정 (token 있으면 true, 없으면 false). effect 내 동기적 `setIsLoading()` 호출 금지.
 - **`useCategories(token)` auto-load** — token 변경 시 mount 시 자동 로드 (`loadedToken` ref로 변경 감지). 컴포넌트 effect에서 `loadCategories()` 호출 불필요. token이 null이어도 public 데이터 로드를 위해 자동 로드. `isLoaded` 플래그로 초기 로드 완료 확인 가능.
 - **`getUser()` 응답 envelope** — `/api/auth/user`는 `{data: {id, name, email, created_at}}` 형식. `lib/api.ts`의 `getUser()`에서 `res.data`로 추출 필요. 로그인/회원가입 응답과 동일한 패턴.
+- **`"use client"` 파일에 async 함수 금지** — ESLint `@next/next/no-async-client-component`. Server Component를 async로 만들려면 `"use client"` 없는 별도 파일로 분리하고 Client Component를 import할 것.
+- **Client Component export** — 테스트에서 Server Component를 우회할 수 있도록 Client Component(예: `EmbedPageInner`)는 `export function`으로 선언. 테스트는 Server Component 대신 Client Component를 직접 import.
 
 ## 관련 문서
 
