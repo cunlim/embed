@@ -295,8 +295,6 @@ export function EmbedPageInner({
     }
   }, [isSearchMode, handleSearch, router, perPage, searchParams]);
 
-  if (!mounted) return null;
-
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
       <div className="noise-overlay" />
