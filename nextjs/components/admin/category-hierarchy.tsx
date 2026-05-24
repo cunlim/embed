@@ -106,7 +106,11 @@ export default function CategoryHierarchy({
       onKeywordSearch(keywordPath);
 
       fetchCategoryLevels({ 대: 대! }, token ?? undefined).then((res) => {
-        set중Options(res.data.중 ?? []);
+        const 중List = res.data.중 ?? [];
+        if (중List.length === 0) {
+          onSelectLeafPath?.(대!, "", "", res.data.leafCategoryId ?? null);
+        }
+        set중Options(중List);
       }).catch(() => {});
 
       if (중) {
@@ -166,7 +170,11 @@ export default function CategoryHierarchy({
       setLoading중(true);
       try {
         const res = await fetchCategoryLevels({ 대: v }, token);
-        set중Options(res.data.중 ?? []);
+        const 중List = res.data.중 ?? [];
+        if (중List.length === 0) {
+          onSelectLeafPath?.(v, "", "", res.data.leafCategoryId ?? null);
+        }
+        set중Options(중List);
       } catch {
         // quietly ignore
       } finally {
@@ -385,7 +393,7 @@ export default function CategoryHierarchy({
                 <select
                   value={selected중 ?? ""}
                   onChange={(e) => handle중Change(e.target.value)}
-                  disabled={!selected대 || loading중}
+                  disabled={!selected대 || loading중 || (중Options.length === 0 && !!selected대 && !loading중)}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
                 >
                   <option value="">
@@ -405,7 +413,7 @@ export default function CategoryHierarchy({
                 <select
                   value={selected소 ?? ""}
                   onChange={(e) => handle소Change(e.target.value)}
-                  disabled={!selected중 || loading소}
+                  disabled={!selected중 || loading소 || (소Options.length === 0 && !!selected중 && !loading소)}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
                 >
                   <option value="">
