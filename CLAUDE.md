@@ -28,7 +28,7 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 ## 카테고리 접근 제어 규칙
 
 - **`user_id = 1`이 시스템 공개 카테고리 소유자** — 비로그인 시 `WHERE user_id = 1`만, 로그인+전체 시 `WHERE user_id IN (본인, 1)`, 내 카테고리 시 `WHERE user_id = 본인`
-- **신규 카테고리 조회 API는 `CategoryController::index()`와 동일한 user scope 규칙 적용** — RecommendController 등에서 누락 시 비로그인 사용자에게 타사용자 카테고리가 노출됨
+- **모든 카테고리 조회 API는 `CategoryController::index()`와 동일한 user scope 규칙 적용** — `levels()`, RecommendController 등에서 누락 시 비로그인 사용자에게 타사용자 카테고리가 노출됨. 특히 `index()` 수정 시 다른 쿼리 메서드도 함께 확인할 것.
 
 ## 레포지토리 구조
 
@@ -83,12 +83,11 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 - **WSL2 `networkingMode=mirrored`**: Docker 컨테이너 내부에서 `host.docker.internal`로 Windows 호스트의 Ollama(port 11434)에 접근.
 - **Cloudflare CDN JS 청크 캐시** — 개발 환경에서는 Cloudflare Cache Rule로 전체 바이패스 필수.
 - **Docker Compose**: WSL2에서 `restart` 불가. `stop` + `up -d` 사용.
-- **embed 필터 URL 파라미터** — `mode=hierarchy|search`, `cat1`/`cat2`/`cat3`/`cat4`(분류선택 경로), `q`(검색어). `page`와 `per_page`도 URL에 포함. `router.replace(url, {scroll: false})`로 갱신.
 - **CategoryHierarchy는 네이티브 `<select>` 사용** — shadcn Select와 달리 Playwright에서 `getByRole('combobox').nth(N).selectOption('value')`로 조작.
 - **`react-hooks/set-state-in-effect`** — URL→props→state 동기화 시 `useEffect`+`setState` 대신 `useState(initialValue)` 초기자 사용.
-- **DB 포맷은 실제 데이터로 확인** — LIKE 쿼리 작성 시 테스트 데이터 대신 프로덕션 DB를 `psql`로 먼저 조회할 것. 구분자(예: `>` vs ` > `) 차이로 빈 결과가 발생할 수 있다.
-- **CategoryHierarchy 키워드 포맷** — `onKeywordSearch`에 전달하는 검색어는 `>` 구분자(공백 없음) 사용. DB의 `category_name_ko`가 `대>중>소>세` 형식이므로 ` > `(공백 포함)로 검색 시 LIKE 불일치.
+- **DB 포맷은 실제 데이터로 확인** — LIKE 쿼리 작성 시 프로덕션 DB를 `psql`로 먼저 조회할 것. 구분자(예: `>` vs ` > `) 차이로 빈 결과가 발생할 수 있다. `category_name_ko`와 `onKeywordSearch` 모두 `>` 구분자(공백 없음) 사용.
 - **유사도 검색 `isSearchMode` 게이트** — `isSearchMode = searchResults !== null && !keywordSearchActive`이므로 `handleSearch` 호출 시 반드시 `setKeywordSearchActive(false)`를 선행해야 한다. 누락 시 유사도 컬럼이 렌더링되지 않는다.
+- **`onSelectLeafPath` 등 콜백 prop은 stale closure 주의** — 비동기 API 응답 후 실행되는 콜백에서 부모의 `displayCategories` 등 상태를 직접 참조하면 최신값이 아닐 수 있다. leaf categoryId를 API에서 직접 받아 전달하거나 ref로 우회할 것.
 
 ## CI/CD
 
