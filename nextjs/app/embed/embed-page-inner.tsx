@@ -194,7 +194,7 @@ export function EmbedPageInner({
   const handleKeywordSearch = useCallback((keyword: string) => {
     if (!keyword) {
       setKeywordSearchActive(false);
-      loadCategories(1, perPage, filter);
+      loadCategories(1, perPage, filter, "");
       return;
     }
     setSearchResults(null);

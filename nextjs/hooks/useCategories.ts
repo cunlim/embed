@@ -43,7 +43,7 @@ export function useCategories(token?: string | null): UseCategoriesReturn {
       currentPage.current = data.meta.current_page;
       currentPerPage.current = data.meta.per_page;
       currentFilter.current = filter;
-      currentSearch.current = search ?? currentSearch.current;
+      currentSearch.current = search !== undefined ? search : currentSearch.current;
       setIsLoaded(true);
     } catch (err) {
       setError(

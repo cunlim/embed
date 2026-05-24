@@ -73,7 +73,17 @@ export default function CategoryHierarchy({
 
   const handle대Change = useCallback(
     async (v: string) => {
-      if (!v) return;
+      if (!v) {
+        setSelected대(null);
+        setSelected중(null);
+        setSelected소(null);
+        set중Options([]);
+        set소Options([]);
+        set세Options([]);
+        onKeywordSearch("");
+        reportFilterChange(filterMode, null, null, null, keywordText);
+        return;
+      }
       setSelected대(v);
       setSelected중(null);
       setSelected소(null);
@@ -99,13 +109,26 @@ export default function CategoryHierarchy({
 
   const handle중Change = useCallback(
     async (v: string) => {
-      if (!v || !selected대) return;
+      if (!v || !selected대) {
+        setSelected중(null);
+        setSelected소(null);
+        set소Options([]);
+        set세Options([]);
+        if (selected대) {
+          onKeywordSearch(selected대);
+          reportFilterChange(filterMode, selected대, null, null, keywordText);
+        } else {
+          onKeywordSearch("");
+          reportFilterChange(filterMode, null, null, null, keywordText);
+        }
+        return;
+      }
       setSelected중(v);
       setSelected소(null);
       set소Options([]);
       set세Options([]);
 
-      onKeywordSearch(selected대 + " > " + v);
+      onKeywordSearch(selected대 + ">" + v);
       reportFilterChange(filterMode, selected대, v, null, keywordText);
 
       setLoading소(true);
@@ -123,11 +146,25 @@ export default function CategoryHierarchy({
 
   const handle소Change = useCallback(
     async (v: string) => {
-      if (!v || !selected대 || !selected중) return;
+      if (!v || !selected대 || !selected중) {
+        setSelected소(null);
+        set세Options([]);
+        if (selected대 && selected중) {
+          onKeywordSearch(selected대 + ">" + selected중);
+          reportFilterChange(filterMode, selected대, selected중, null, keywordText);
+        } else if (selected대) {
+          onKeywordSearch(selected대);
+          reportFilterChange(filterMode, selected대, null, null, keywordText);
+        } else {
+          onKeywordSearch("");
+          reportFilterChange(filterMode, null, null, null, keywordText);
+        }
+        return;
+      }
       setSelected소(v);
       set세Options([]);
 
-      onKeywordSearch(selected대 + " > " + selected중 + " > " + v);
+      onKeywordSearch(selected대 + ">" + selected중 + ">" + v);
       reportFilterChange(filterMode, selected대, selected중, v, keywordText);
 
       setLoading세(true);
@@ -172,17 +209,18 @@ export default function CategoryHierarchy({
     set중Options([]);
     set소Options([]);
     set세Options([]);
+    setKeywordText("");
     onKeywordSearch("");
-    reportFilterChange("hierarchy", null, null, null, keywordText);
-  }, [onKeywordSearch, keywordText, reportFilterChange]);
+    reportFilterChange("hierarchy", null, null, null, "");
+  }, [onKeywordSearch, reportFilterChange]);
 
   const switchToHierarchy = useCallback(() => {
     setFilterMode("hierarchy");
     if (selected대) {
       const keyword = selected소
-        ? selected대 + " > " + selected중 + " > " + selected소
+        ? selected대 + ">" + selected중 + ">" + selected소
         : selected중
-          ? selected대 + " > " + selected중
+          ? selected대 + ">" + selected중
           : selected대;
       onKeywordSearch(keyword);
       reportFilterChange("hierarchy", selected대, selected중, selected소, keywordText);
@@ -241,6 +279,7 @@ export default function CategoryHierarchy({
         <>
           {filterMode === "hierarchy" ? (
             <div className="space-y-2">
+              {/* 대분류 */}
               <select
                 value={selected대 ?? ""}
                 onChange={(e) => handle대Change(e.target.value)}
@@ -252,68 +291,65 @@ export default function CategoryHierarchy({
                 ))}
               </select>
 
-              {selected대 && (
-                <div className="relative">
-                  <select
-                    value={selected중 ?? ""}
-                    onChange={(e) => handle중Change(e.target.value)}
-                    disabled={loading중}
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
-                  >
-                    <option value="">
-                      {loading중 ? "로딩 중..." : 중Options.length === 0 ? "중분류 없음" : "카테고리 선택"}
-                    </option>
-                    {중Options.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                  {loading중 && (
-                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                  )}
-                </div>
-              )}
+              {/* 중분류 */}
+              <div className="relative">
+                <select
+                  value={selected중 ?? ""}
+                  onChange={(e) => handle중Change(e.target.value)}
+                  disabled={!selected대 || loading중}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
+                >
+                  <option value="">
+                    {!selected대 ? "대분류 선택 필요" : loading중 ? "로딩 중..." : 중Options.length === 0 ? "중분류 없음" : "카테고리 선택"}
+                  </option>
+                  {중Options.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+                {loading중 && (
+                  <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
 
-              {selected중 && (
-                <div className="relative">
-                  <select
-                    value={selected소 ?? ""}
-                    onChange={(e) => handle소Change(e.target.value)}
-                    disabled={loading소}
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
-                  >
-                    <option value="">
-                      {loading소 ? "로딩 중..." : 소Options.length === 0 ? "소분류 없음" : "카테고리 선택"}
-                    </option>
-                    {소Options.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                  {loading소 && (
-                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                  )}
-                </div>
-              )}
+              {/* 소분류 */}
+              <div className="relative">
+                <select
+                  value={selected소 ?? ""}
+                  onChange={(e) => handle소Change(e.target.value)}
+                  disabled={!selected중 || loading소}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
+                >
+                  <option value="">
+                    {!selected중 ? "중분류 선택 필요" : loading소 ? "로딩 중..." : 소Options.length === 0 ? "소분류 없음" : "카테고리 선택"}
+                  </option>
+                  {소Options.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+                {loading소 && (
+                  <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
 
-              {selected소 && (
-                <div className="relative">
-                  <select
-                    value=""
-                    onChange={(e) => handle세Change(e.target.value)}
-                    disabled={loading세 || 세Options.length === 0}
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
-                  >
-                    <option value="">
-                      {loading세 ? "로딩 중..." : 세Options.length === 0 ? "세분류 없음" : "카테고리 선택"}
-                    </option>
-                    {세Options.map((opt) => (
-                      <option key={opt.categoryCode} value={opt.categoryCode}>{opt.세}</option>
-                    ))}
-                  </select>
-                  {loading세 && (
-                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                  )}
-                </div>
-              )}
+              {/* 세분류 */}
+              <div className="relative">
+                <select
+                  value=""
+                  onChange={(e) => handle세Change(e.target.value)}
+                  disabled={!selected소 || loading세 || 세Options.length === 0}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
+                >
+                  <option value="">
+                    {!selected소 ? "소분류 선택 필요" : loading세 ? "로딩 중..." : 세Options.length === 0 ? "세분류 없음" : "카테고리 선택"}
+                  </option>
+                  {세Options.map((opt) => (
+                    <option key={opt.categoryCode} value={opt.categoryCode}>{opt.세}</option>
+                  ))}
+                </select>
+                {loading세 && (
+                  <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
 
               {hierarchyDirty && (
                 <Button
