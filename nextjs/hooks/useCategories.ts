@@ -31,6 +31,7 @@ export function useCategories(
   const [isLoading, setIsLoading] = useState(initialCategories ? false : !!token);
   const [isLoaded, setIsLoaded] = useState(!!initialCategories);
   const [error, setError] = useState<string | null>(null);
+  const hadInitialData = useRef(!!initialCategories?.length);
   const loadedToken = useRef<string | null | undefined>(undefined);
   const currentPage = useRef<number>(1);
   const currentPerPage = useRef<number>(20);
@@ -58,13 +59,15 @@ export function useCategories(
     }
   }, [token]);
 
-  // token 변경 시 상태 초기화 (데이터 로드는 컴포넌트가 담당)
+  // token 변경 시 상태 초기화 (SSR initial data 있으면 유지, 데이터 로드는 컴포넌트가 담당)
   useEffect(() => {
     if (loadedToken.current !== token) {
       loadedToken.current = token;
-      setCategories([]);
-      setMeta(null);
-      setIsLoaded(false);
+      if (!hadInitialData.current) {
+        setCategories([]);
+        setMeta(null);
+        setIsLoaded(false);
+      }
     }
   }, [token]);
 
