@@ -12,33 +12,34 @@
 
 ## 1. 디자인 시스템
 
-### 1.1 색상 토큰 (CSS 변수) 및 특수효과
+### 1.1 색상
 
-모든 색상은 **oklch** 색 공간 사용, raw hex 금지. Light/Dark 모드, Gradient Text, Grid Background, Glow Orb 등은 global.css의 `@layer base`에서 정의.
+모든 색상은 **oklch** 색 공간의 CSS 변수만 사용, raw hex 금지. Light/Dark 모드는 `global.css`의 `@layer base`에서 정의.
+
+### 1.2 특수효과
+
+Gradient Text, Grid Background, Glow Orb, Noise Overlay 등은 `global.css`에서 정의. 컴포넌트에서 클래스로 참조.
 
 ---
 
 ## 2. 타이포그래피
 
-### 2.1 폰트 패밀리
+| 항목 | 값 |
+|------|-----|
+| Heading 폰트 | Archivo |
+| Body/Mono 폰트 | Space Grotesk, fallback: Geist Mono |
+| Body 행간 | `leading-relaxed` (1.625) |
+| Heading 행간 | `leading-tight` (1.25) |
 
-Heading: Archivo, Body/Mono: Space Grotesk, Fallback: Geist Mono.
+### 타입 스케일
 
-### 2.2 타입 스케일
-
-| 타입 | 모바일 | 데스크톱 | Tailwind |
-|------|--------|----------|----------|
-| Display/H1 | text-4xl (2.25rem) | text-6xl~7xl (3.75~4.5rem) | `text-4xl sm:text-6xl lg:text-7xl` |
-| H2 | text-2xl | text-3xl | - |
-| H3 | text-base | text-sm | feature card heading |
-| Body | text-base | text-lg | - |
-| Meta | text-xs | text-xs | 보조 정보, 법적 고지 |
-| Mono | text-xs | text-sm | 터미널 윈도우 |
-
-### 2.3 행간
-
-- Body: `leading-relaxed` (1.625)
-- Heading: `leading-tight` (1.25) 또는 `tracking-tight`
+| 타입 | 모바일 | 데스크톱 |
+|------|--------|----------|
+| Display/H1 | text-4xl | text-6xl~7xl |
+| H2 | text-2xl | text-3xl |
+| H3 | text-base | text-sm |
+| Body | text-base | text-lg |
+| Meta | text-xs | text-xs |
 
 ---
 
@@ -46,118 +47,47 @@ Heading: Archivo, Body/Mono: Space Grotesk, Fallback: Geist Mono.
 
 ### 3.1 버튼
 
-| 변형 | 클래스 | 용도 |
-|------|--------|------|
-| Primary | `Button variant="default"` | 주요 CTA, `shadow-lg shadow-accent/20` |
-| Outline | `Button variant="outline"` | 보조 액션 |
-| Ghost | `Button variant="ghost"` | 테마 토글, 아이콘 버튼 |
-| Link | `Button variant="link"` | 인라인 텍스트 링크 |
+| 변형 | 용도 |
+|------|------|
+| `default` | 주요 CTA, `shadow-lg shadow-accent/20` |
+| `outline` | 보조 액션. **hover 시 `hover:bg-muted hover:text-foreground` 필수** — 기본 `hover:text-accent-foreground`는 light 모드에서 텍스트 invisible |
+| `ghost` | 테마 토글, 아이콘 버튼 |
+| `link` | 인라인 텍스트 링크 |
 
-CTA 버튼 스타일: `size="lg"`, `rounded-full`, `shadow-lg shadow-accent/20`, hover 시 `scale-105` + shadow 확장. 우측 ChevronRight 아이콘 포함.
+CTA 버튼: `size="lg"`, `rounded-full`, hover 시 `scale-105`.
 
-### 3.2 카드
+### 3.2 StatusBadge
 
-Feature card: `rounded-xl border bg-card/50`, hover 시 accent border + shadow. 내부에 그라데이션 오버레이(`bg-gradient-to-br`)가 opacity transition으로 드러남. 아이콘 컨테이너: `h-9 w-9 rounded-lg border`.
+카테고리 테이블에서 번역 상태를 아이콘만으로 표시. 라벨 텍스트 없이 `aria-label`로 접근성 제공.
+- 완료: `CheckCircle2` (green)
+- 진행중/부분: `Clock` (blue)
+- 미처리: `Minus` (muted)
 
-### 3.3 터미널 윈도우
+### 3.3 기존 컴포넌트 참고
 
-`rounded-xl border bg-card/50 backdrop-blur-sm`. 상단 타이틀 바(빨강/노랑/초록 dot + 파일명), 본문은 `font-mono text-xs`에 `$` 프롬프트.
-
-### 3.4 배지 (상태 표시)
-
-일반 배지 패턴:
-```tsx
-<div className="inline-flex items-center gap-1.5 rounded-full
-                border border-border bg-muted/50 px-3 py-1
-                text-xs font-medium text-muted-foreground">
-  <span className="relative flex h-2 w-2">
-    <span className="absolute inline-flex h-full w-full
-                     animate-ping rounded-full bg-emerald-400 opacity-75" />
-    <span className="relative inline-flex h-2 w-2
-                     rounded-full bg-emerald-500" />
-  </span>
-  라벨 텍스트
-</div>
-```
-
-**StatusBadge (아이콘 전용)**: 카테고리 테이블에서 번역 상태를 아이콘만으로 표시. 라벨 텍스트 없이 `aria-label`으로 접근성 제공. 상태별 아이콘: `CheckCircle2`(완료, green), `Clock`(진행중/부분, blue), `Minus`(미처리, muted).
-
-### 3.5 네비게이션 바
-
-- 모바일: 심플 헤더 (로고 + 테마토글 + 메뉴)
-- 데스크톱: 헤더 + 탐색 링크 (선택사항)
-- 로고: `h-8 w-8 rounded-lg bg-primary text-primary-foreground text-xs font-bold`
+버튼, 카드, 배지, 터미널 윈도우, 네비게이션 바의 구체적인 Tailwind 클래스는 이미 구현된 컴포넌트 코드를 참고한다.
 
 ---
 
-## 4. 레이아웃 규칙
+## 4. 레이아웃
 
-### 4.1 반응형 브레이크포인트
-
-| 브레이크포인트 | Tailwind | 레이아웃 변화 |
-|---------------|----------|--------------|
-| < 640px (모바일) | default | 1열, 스택, full-width |
-| 640px+ (태블릿) | `sm:` | 2열 그리드, horizontal CTA |
-| 1024px+ (데스크톱) | `lg:` | max-w-5xl 제한 |
+| 브레이크포인트 | Tailwind | 레이아웃 |
+|---------------|----------|---------|
+| < 640px | default | 1열, full-width |
+| 640px+ | `sm:` | 2열 그리드 |
+| 1024px+ | `lg:` | `max-w-5xl` 제한 |
 | 1280px+ | `xl:` | 더 넓은 여백 |
 
-### 4.2 컨테이너
-
-- 메인 콘텐츠: `max-w-5xl mx-auto`
+- 메인 컨테이너: `max-w-5xl mx-auto`
 - 패딩: 모바일 `px-6`, 데스크톱 `sm:px-8`
-- 섹션 간격: `pb-24` (하단), `py-12` (상하)
-
-### 4.3 그리드
-
-```html
-<!-- 2열 레이아웃 -->
-<div className="grid gap-6 md:grid-cols-2">
-  <!-- 터미널 (좌) -->
-  <!-- 피처 카드 (우) -->
-</div>
-
-<!-- 2x2 피처 카드 -->
-<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-  <!-- 4개 카드 -->
-</div>
-```
-
-### 4.4 통계 표시줄
-
-```html
-<div className="flex items-center divide-x divide-border">
-  <div className="flex flex-col items-center px-4 sm:px-8">
-    <span className="font-mono text-lg font-bold sm:text-xl">값</span>
-    <span className="text-xs text-muted-foreground">라벨</span>
-  </div>
-  <!-- ×3 -->
-</div>
-```
 
 ---
 
-## 5. 애니메이션 가이드라인
+## 5. 애니메이션
 
-### 5.1 지속 시간 & 타이밍
-
-| 종류 | 지속 시간 | Easing |
-|------|----------|--------|
-| 호버 효과 | 200-300ms | `duration-200` ~ `duration-300` |
-| 페이지 진입 | 400-500ms | `duration-500` |
-| 스크롤 진입 | 500ms | `duration-500` + translate |
-| 테마 전환 | 200ms | `duration-200` |
-
-### 5.2 Developer 효과
-
-- **타이핑 효과**: `setInterval 50ms` → 텍스트 한 글자씩 표시, 깜빡이는 커서
-- **터미널 라인 진입**: stagger 600ms, `translate-x-2 → 0`, `opacity-0 → 100`
-- **그리드 페이드**: `8s ease-in-out infinite alternate` (grid background)
-- **글로우 오브**: `3s ease-in-out infinite alternate` (scale + opacity)
-- **상태 닷**: `animate-ping` (online indicator)
-
-### 5.3 prefers-reduced-motion
-
-`prefers-reduced-motion: reduce`에서 모든 애니메이션·트랜지션을 0.01ms로 억제. 애니메이션은 `transform`과 `opacity`만 사용한다 (layout-triggering 애니메이션 금지).
+- `transform`과 `opacity`만 사용 (layout-triggering 금지)
+- `prefers-reduced-motion: reduce`에서 모든 애니메이션 0.01ms로 억제
+- 호버: 200-300ms, 페이지 진입: 400-500ms
 
 ---
 
@@ -167,102 +97,57 @@ Feature card: `rounded-xl border bg-card/50`, hover 시 accent border + shadow. 
 
 - **목적**: 기술 포트폴리오 소개, 프로젝트 첫인상
 - **분위기**: 개발자 포트폴리오 + AI 기술 시연
-- **구성**:
-  1. 네비게이션 바 (로고 + 테마 토글)
-  2. 히어로 섹션 (타이틀, 타이핑 효과, 서브텍스트, CTA 버튼 2개, 통계 수치)
-  3. 피처 섹션 (터미널 윈도우 + 4개 기능 카드)
-  4. 푸터 (카피라이트 + 링크)
-- **특수효과**: 그리드 배경, 글로우 오브, 타이핑 애니메이션, 터미널 라인 stagger, 노이즈 오버레이
-- **주의**: height 길게 불필요, 한 화면에 핵심 정보를 컴팩트하게 배치
+- **구성**: 네비게이션 바 → 히어로(타이핑 효과, CTA) → 피처 섹션(터미널+카드) → 푸터
+- **주의**: 한 화면에 핵심 정보를 컴팩트하게 배치
 
 ### 6.2 로그인 페이지
 
-- **목적**: 이메일/비밀번호 및 OAuth 소셜 계정 인증
-- **핵심 요구사항**:
-  - 이메일·비밀번호 로그인/회원가입 + Google, GitHub, Naver 소셜 로그인
-  - OAuth 미가입자는 자동 회원가입 후 로그인
-- **컴포넌트 구조**: 공통 헤더(SiteHeader), 소셜 로그인 버튼 그룹(SocialLogin, 페이지·Modal 재사용), 로그인 페이지(Card + SocialLogin)
-- **디자인 방향**:
-  - 랜딩 페이지와 동일한 색상 토큰, 그리드 배경, 글로우 오브 사용
-  - `SiteHeader` 컴포넌트로 모든 페이지 헤더 일관성 유지
-  - 중앙 정렬 `max-w-sm` 카드 레이아웃, 카드 상단에 "CL Embed" 제목
-  - 소셜 로그인 버튼: `variant="outline"`, `size="lg"`, `cursor-pointer`
-  - 버튼 호버: `hover:border-accent/30 hover:bg-muted hover:text-foreground` + `transition-all duration-200`
-    - `hover:bg-accent/5` 사용 금지 — light 모드에서 `hover:text-accent-foreground`(흰색)과 조합 시 텍스트 invisible
-  - 넉넉한 여백: 카드 `pt-8 pb-8`, 버튼 간 `gap-4`, 버튼 내부 `px-6 py-6`
-  - 에러 상태: `role="alert"`, 빨간색 텍스트 + AlertCircle 아이콘
-  - 로딩 상태: 모든 버튼 disabled + spinner
+- **목적**: 이메일/비밀번호 및 OAuth 인증
+- **레이아웃**: 중앙 정렬 `max-w-sm` 카드, 카드 상단 "CL Embed" 제목
+- **소셜 로그인 버튼**: `variant="outline"`, `size="lg"`. hover: `hover:border-accent/30 hover:bg-muted hover:text-foreground`
+- **에러**: `role="alert"`, AlertCircle 아이콘 + 빨간색 텍스트
+- **로딩**: 모든 버튼 disabled + spinner
+- `SiteHeader` 컴포넌트로 모든 페이지 헤더 일관성 유지
 
 ### 6.3 `/embed` 기술 시연 페이지
 
-- **목적**: 검색 키워드 입력 및 카테고리 추천 결과 시각화, 카테고리 CRUD, 번역/임베딩 실행
-- **레이아웃**: 좌측 사이드바 (검색 + 계층 탐색 + 카테고리 추가 + 일괄 처리) + 우측 카테고리 목록 테이블 (lg:col-span-2)
+- **목적**: 카테고리 추천, CRUD, 번역/임베딩 실행
+- **레이아웃**: 좌측 사이드바 + 우측 테이블 (`lg:col-span-2`)
 - **핵심 기능**:
-  - **카테고리 검색**: 언어 탭(ko/zh/en) + 검색어 입력 → `POST /api/recommend` 추천 결과. 유사도 % 클릭 시 `CosineDetailDialog`로 코사인 유사도 상세 확인
-  - **카테고리 목록**: shadcn Table (`table-fixed` + `truncate`로 컬럼 너비 제어), 페이지네이션 (10/20/50 per page, compact ellipsis, URL 쿼리 파라미터 동기화), 모바일 카드 뷰. 상태 컬럼은 `StatusBadge` 아이콘 전용 모드.
-  - **카테고리 추가**: 카테고리 코드(optional) + 한국어 카테고리명 입력
-  - **계층 탐색**: `CategoryHierarchy` 컴포넌트 — "대>중>소" 계층형 Select
-  - **카테고리 작업**: 각 행에 역할별 버튼 표시 — 소유자/admin은 삭제(Trash2) + 수정(Pencil), 비소유 일반회원은 보기(Eye)のみ. 수정 시 편집 모달, 보기 시 읽기 전용 모달
-  - **일괄 처리**: 선택/전체 카테고리 번역 및 임베딩 step 순차 실행, 중지/재실행 지원
-- **디자인 방향**:
-  - 랜딩 페이지와 동일한 디자인 시스템 (그리드 배경, 글로우 오브)
-  - 빈 상태: Database 아이콘 + "등록된 카테고리가 없습니다"
-  - 로딩: Skeleton
-  - 에러: AlertCircle + inline error + 재시도 버튼
-  - 복사: `navigator.clipboard.writeText` + sonner toast ("클립보드에 복사되었습니다")
+  - 카테고리 검색 (ko/zh/en 탭 + `POST /api/recommend`)
+  - 카테고리 목록 (shadcn Table, 페이지네이션 10/20/50, URL 동기화)
+  - 계층 탐색 (CategoryHierarchy — 4단계 select, `>` 구분자)
+  - 카테고리 추가·수정·삭제 (권한 기반)
+  - 일괄 처리 (step 순차 실행, 중지/재실행)
+- **상태 표시**: 빈 상태(Database 아이콘), 로딩(Skeleton), 에러(AlertCircle + 재시도)
 
-### 6.4 `/admin` 관리자 전용 페이지
+### 6.4 `/admin` 관리자 페이지
 
-- **상태**: `/embed`의 관리 기능(카테고리 계층 필터, 일괄 처리, 코사인 상세)이 `/admin`으로 이전 완료.
-- **접근 제어**: **로그인 필수** + `isAdmin(user.id)` 확인. 비로그인 시 `/login?redirect=/admin`, 비관리자 시 `router.back()`.
+- `/embed`의 관리 기능 이전 완료. **로그인 필수** + `isAdmin()` 확인.
 
 ### 6.5 공통 패턴
 
-모든 페이지에서 일관되게 적용할 패턴:
-- **로고**: 좌상단에 `h-8 w-8 rounded-lg bg-primary text-primary-foreground`
-- **테마 토글**: 우상단, Sun/Moon 아이콘 전환, `variant="ghost" size="icon"`
-- **폼 필드**: visible label, error below field, helper text
-- **로딩**: `animate-pulse` 또는 shadcn Skeleton
+- **로고**: 좌상단 `h-8 w-8 rounded-lg bg-primary text-primary-foreground`
+- **테마 토글**: 우상단 Sun/Moon, `variant="ghost" size="icon"`
+- **아이콘**: lucide-react만 사용, 이모지 금지
+- **로딩**: Skeleton 또는 `animate-pulse`
 - **빈 상태**: 아이콘 + 설명 + CTA
 - **에러**: inline error + retry button + `aria-live="polite"`
-- **아이콘**: lucide-react (Lucide 아이콘)만 사용, 절대 이모지 금지
 
 ---
 
 ## 7. 성능 & 접근성
 
-### 7.1 성능
+### 성능
+- 이미지: `next/image`, `loading="lazy"`
+- 폰트: `next/font/google` 번들링
+- 번들: 동적 임포트로 코드 분할
 
-- 이미지: `loading="lazy"`, `next/image` 사용
-- 폰트: `next/font/google`으로 빌드 시 번들링
-- 애니메이션: transform/opacity만 애니메이션, layout shift 유발 금지
-- 번들: 동적 임포트로 페이지별 코드 분할
-
-### 7.2 접근성
-
-- 대비: 일반 텍스트 4.5:1, 큰 텍스트 3:1 (light/dark 모두 검증)
-- 포커스: `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`
+### 접근성
+- 대비: 일반 4.5:1, 큰 텍스트 3:1 (light/dark 모두)
+- 포커스: `focus-visible:ring-2 focus-visible:ring-ring`
 - 키보드: Tab 순서 = 시각적 순서
-- 스크린리더: `aria-label` on icon-only buttons, `aria-live` on dynamic content
-- 폼: `<label htmlFor="...">` + `<input id="...">` 연결
+- 스크린리더: icon-only button에 `aria-label`, 동적 콘텐츠에 `aria-live`
+- 폼: `<label htmlFor>` + `<input id>` 연결
 - 터치: 버튼/링크 최소 44x44px
-- 폰트 크기: 모바일 body 최소 16px (iOS 자동 줌 방지)
-
----
-
-## 8. 구현 체크리스트
-
-새 페이지 또는 컴포넌트 제작 시 확인할 항목:
-
-- [ ] shadcn/ui 컴포넌트 사용 확인
-- [ ] CSS 변수로 색상 참조 (raw hex 금지)
-- [ ] light/dark 모드 모두 테스트
-- [ ] 375px 모바일 + 1280px 데스크톱 반응형 확인
-- [ ] `prefers-reduced-motion` 처리
-- [ ] aria-label 누락 없는지 확인
-- [ ] SVG 아이콘 사용 (이모지 금지)
-- [ ] 버튼/링크 hover + focus 상태 구현
-- [ ] 빈 상태/로딩/에러 상태 처리
-- [ ] 브라우저 콘솔 에러 0 확인
-- [ ] Playwright로 시각적 검증
-- [ ] 빌드 에러 없는지 확인
+- 폰트: 모바일 body 최소 16px (iOS 자동 줌 방지)
