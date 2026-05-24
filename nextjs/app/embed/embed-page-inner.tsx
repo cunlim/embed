@@ -152,6 +152,7 @@ export function EmbedPageInner({
   useEffect(() => { perPageRef.current = perPage });
   const filterRef = useRef(filter);
   useEffect(() => { filterRef.current = filter });
+  const keywordRef = useRef(initialFilterKeyword);
 
   // URL에 초기 필터 파라미터가 있으면 첫 loadCategories를 건너뛴다 (CategoryHierarchy mount effect가 대신 처리)
   const skipInitialLoad = useRef(!!initialHierarchy.대 || !!initialFilterKeyword);
@@ -179,7 +180,7 @@ export function EmbedPageInner({
     setSearchError(null);
     setKeywordSearchActive(false);
     try {
-      const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current, filterRef.current, keyword);
+      const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current, filterRef.current, keyword ?? (keywordRef.current || undefined));
       setSearchResults(data.data);
       setSearchMeta(data.meta);
     } catch (err) {
@@ -200,7 +201,8 @@ export function EmbedPageInner({
     if (searchResultsRef.current !== null) {
       handleSearch(page);
     } else {
-      loadCategories(page, perPage, filter);
+      const kw = keywordRef.current || undefined;
+      loadCategories(page, perPage, filter, kw);
     }
   }, [mounted, page, perPage, filter, loadCategories, handleSearch]);
 
@@ -212,6 +214,7 @@ export function EmbedPageInner({
   }, []);
 
   const handleKeywordSearch = useCallback((keyword: string) => {
+    keywordRef.current = keyword;
     if (searchResults !== null) {
       // 시맨틱 검색 활성 상태: 검색 재실행 (필터 컨텍스트는 URL/state로 이미 갱신됨)
       handleSearch(1, keyword || undefined);
