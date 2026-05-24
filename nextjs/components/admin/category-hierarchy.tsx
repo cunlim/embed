@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ export interface HierarchyFilterState {
 interface CategoryHierarchyProps {
   onSelectCategory: (categoryId: number) => void;
   onKeywordSearch: (keyword: string) => void;
-  onSelectLeafPath?: (대: string, 중: string, 소: string) => void;
+  onSelectLeafPath?: (대: string, 중: string, 소: string, categoryId?: number | null) => void;
   /** URL 등 외부에서 초기값 주입 */
   initialMode?: "hierarchy" | "search";
   initialHierarchy?: HierarchyFilterState;
@@ -33,6 +33,10 @@ interface CategoryHierarchyProps {
     hierarchy: HierarchyFilterState;
     keyword: string;
   }) => void;
+  /** 대Options 갱신 트리거 (카테고리 추가/삭제 시 증가) */
+  refreshKey?: number;
+  /** 인증 토큰 (refreshKey 기반 refetch에 필요) */
+  token?: string | null;
 }
 
 export default function CategoryHierarchy({
@@ -47,6 +51,8 @@ export default function CategoryHierarchy({
   initial세Options = [],
   onFilterChange,
   onSelectLeafPath,
+  refreshKey = 0,
+  token,
 }: CategoryHierarchyProps) {
   const [filterMode, setFilterMode] = useState<"hierarchy" | "search">(initialMode);
   const [selected대, setSelected대] = useState<string | null>(initialHierarchy?.대 ?? null);
@@ -56,7 +62,7 @@ export default function CategoryHierarchy({
   const [keywordText, setKeywordText] = useState(initialKeyword);
 
   // 단계별 옵션 (SSR 초기값 + API 응답)
-  const [대Options] = useState<string[]>(initial대Options);
+  const [대Options, set대Options] = useState<string[]>(initial대Options);
   const [중Options, set중Options] = useState<string[]>(initial중Options);
   const [소Options, set소Options] = useState<string[]>(initial소Options);
   const [세Options, set세Options] = useState<{ 세: string; categoryId: number; categoryCode: string }[]>(
@@ -67,6 +73,17 @@ export default function CategoryHierarchy({
   const [loading중, setLoading중] = useState(false);
   const [loading소, setLoading소] = useState(false);
   const [loading세, setLoading세] = useState(false);
+
+  // refreshKey 변경 시 대Options 다시 조회
+  useEffect(() => {
+    if (refreshKey > 0) {
+      fetchCategoryLevels(undefined, token).then((res) => {
+        set대Options(res.data.대 ?? []);
+      }).catch(() => {
+        // quietly ignore
+      });
+    }
+  }, [refreshKey, token]);
 
   const reportFilterChange = useCallback(
     (mode: "hierarchy" | "search", 대: string | null, 중: string | null, 소: string | null, 세: string | null, kw: string) => {
@@ -179,10 +196,10 @@ export default function CategoryHierarchy({
 
       setLoading세(true);
       try {
-        const res = await fetchCategoryLevels({ 대: selected대, 중: selected중, 소: v });
+        const res = await fetchCategoryLevels({ 대: selected대, 중: selected중, 소: v }, token);
         const 세List = res.data.세 ?? [];
         if (세List.length === 0) {
-          onSelectLeafPath?.(selected대, selected중, v);
+          onSelectLeafPath?.(selected대, selected중, v, res.data.leafCategoryId ?? null);
         }
         set세Options(세List);
       } catch {
@@ -191,13 +208,13 @@ export default function CategoryHierarchy({
         setLoading세(false);
       }
     },
-    [selected대, selected중, onKeywordSearch, filterMode, keywordText, reportFilterChange]
+    [selected대, selected중, onKeywordSearch, filterMode, keywordText, reportFilterChange, token, onSelectLeafPath]
   );
 
   const handle세Change = useCallback(
     (v: string) => {
       if (!v || !selected대 || !selected중 || !selected소) return;
-      const found = 세Options.find((o) => o.categoryCode === v);
+      const found = 세Options.find((o) => o.세 === v);
       if (!found) return;
       setSelected세(v);
       const keyword = selected대 + ">" + selected중 + ">" + selected소 + ">" + found.세;
@@ -365,7 +382,7 @@ export default function CategoryHierarchy({
                     {!selected소 ? "소분류 선택 필요" : loading세 ? "로딩 중..." : 세Options.length === 0 ? "세분류 없음" : "카테고리 선택"}
                   </option>
                   {세Options.map((opt) => (
-                    <option key={opt.categoryCode} value={opt.categoryCode}>{opt.세}</option>
+                    <option key={opt.categoryCode} value={opt.세}>{opt.세}</option>
                   ))}
                 </select>
                 {loading세 && (

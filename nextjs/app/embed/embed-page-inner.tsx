@@ -130,12 +130,7 @@ export function EmbedPageInner({
   const [filter, setFilter] = useState<string | undefined>(undefined);
   const [keywordSearchActive, setKeywordSearchActive] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-
-  // URL page 동기화
-  useEffect(() => {
-    if (!mounted) return;
-    loadCategories(page, perPage, filter);
-  }, [mounted, page, perPage, filter, loadCategories]);
+  const [hierarchyRefreshKey, setHierarchyRefreshKey] = useState(0);
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryCode, setNewCategoryCode] = useState("");
@@ -144,6 +139,9 @@ export function EmbedPageInner({
   const [searchText, setSearchText] = useState("");
   const [searchLanguage, setSearchLanguage] = useState("ko");
   const [searchResults, setSearchResults] = useState<Recommendation[] | null>(null);
+  // useRef로 searchResults 참조 — useEffect 의존성 배열에 추가하지 않고 최신값 읽기
+  const searchResultsRef = useRef(searchResults);
+  searchResultsRef.current = searchResults;
   const [searchMeta, setSearchMeta] = useState<PaginationMeta | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -166,6 +164,7 @@ export function EmbedPageInner({
     await addCategory(newCategoryName.trim(), newCategoryCode.trim() || undefined);
     setNewCategoryName("");
     setNewCategoryCode("");
+    setHierarchyRefreshKey(prev => prev + 1);
   }, [newCategoryName, newCategoryCode, addCategory]);
 
   const handleSearch = useCallback(async (page?: number) => {
@@ -186,6 +185,16 @@ export function EmbedPageInner({
     }
   }, [searchText, searchLanguage, token, filter]);
 
+  // URL page 동기화 (시맨틱 검색 결과가 있으면 필터 변경 시 재검색)
+  useEffect(() => {
+    if (!mounted) return;
+    if (searchResultsRef.current !== null) {
+      handleSearch(page);
+    } else {
+      loadCategories(page, perPage, filter);
+    }
+  }, [mounted, page, perPage, filter, loadCategories, handleSearch]);
+
   const handleReset = useCallback(() => {
     setSearchText("");
     setSearchResults(null);
@@ -194,6 +203,11 @@ export function EmbedPageInner({
   }, []);
 
   const handleKeywordSearch = useCallback((keyword: string) => {
+    if (searchResults !== null) {
+      // 시맨틱 검색 활성 상태: 검색 재실행 (필터 컨텍스트는 URL/state로 이미 갱신됨)
+      handleSearch(1);
+      return;
+    }
     if (!keyword) {
       setKeywordSearchActive(false);
       loadCategories(1, perPage, filter, "");
@@ -204,7 +218,7 @@ export function EmbedPageInner({
     setSearchError(null);
     setKeywordSearchActive(true);
     loadCategories(1, perPage, filter, keyword);
-  }, [perPage, filter, loadCategories]);
+  }, [perPage, filter, loadCategories, searchResults, handleSearch]);
 
   // 필터 상태 변경 시 URL 업데이트
   const handleFilterChange = useCallback(
@@ -255,6 +269,7 @@ export function EmbedPageInner({
   const handleDelete = useCallback(async (cat: Category | Recommendation) => {
     if (!window.confirm(`"${cat.category_name_ko}" 카테고리를 삭제하시겠습니까?`)) return;
     await deleteCategory(cat.id);
+    setHierarchyRefreshKey(prev => prev + 1);
   }, [deleteCategory]);
 
   const handlePageChange = useCallback((newPage: number) => {
@@ -343,12 +358,19 @@ export function EmbedPageInner({
                 setModalReadOnly(cat ? !canModify(cat) : false);
                 setModalCategoryId(categoryId);
               }}
-              onSelectLeafPath={(대, 중, 소) => {
-                const path = [대, 중, 소].join(">");
-                const cat = displayCategories.find(c => c.category_name_ko === path);
-                if (cat) {
-                  setModalReadOnly(!canModify(cat));
-                  setModalCategoryId(cat.id);
+              onSelectLeafPath={(대, 중, 소, categoryId) => {
+                if (categoryId) {
+                  // ID로 직접 조회 (stale closure 회피)
+                  setModalReadOnly(!canModify({ id: categoryId } as Category | Recommendation));
+                  setModalCategoryId(categoryId);
+                } else {
+                  // 폴백: 경로 문자열로 검색
+                  const path = [대, 중, 소].join(">");
+                  const cat = displayCategories.find(c => c.category_name_ko === path);
+                  if (cat) {
+                    setModalReadOnly(!canModify(cat));
+                    setModalCategoryId(cat.id);
+                  }
                 }
               }}
               onKeywordSearch={handleKeywordSearch}
@@ -360,6 +382,8 @@ export function EmbedPageInner({
               initial중Options={server중Options}
               initial소Options={server소Options}
               initial세Options={server세Options}
+              refreshKey={hierarchyRefreshKey}
+              token={token}
             />
 
             {/* 추가 */}

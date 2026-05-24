@@ -174,10 +174,12 @@ export interface CategoryLevelsResponse {
   중?: string[];
   소?: string[];
   세?: { 세: string; categoryId: number; categoryCode: string }[];
+  leafCategoryId?: number | null;
 }
 
 export function fetchCategoryLevels(
-  params?: CategoryLevelsParams
+  params?: CategoryLevelsParams,
+  token?: string | null
 ): Promise<{ data: CategoryLevelsResponse }> {
   const searchParams = new URLSearchParams();
   if (params?.대) searchParams.set("대", params.대);
@@ -186,7 +188,7 @@ export function fetchCategoryLevels(
   const qs = searchParams.toString();
   return request<{ data: CategoryLevelsResponse }>(
     `/categories/levels${qs ? "?" + qs : ""}`,
-    { cache: "no-store" }
+    { cache: "no-store", token }
   );
 }
 

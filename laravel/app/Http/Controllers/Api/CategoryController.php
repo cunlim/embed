@@ -100,7 +100,13 @@ class CategoryController extends Controller
         $중 = $request->query('중');
         $소 = $request->query('소');
 
-        $query = Category::query()->where('user_id', 1);
+        $query = Category::query();
+        $user = $request->user();
+        if ($user) {
+            $query->whereIn('user_id', [$user->id, 1]);
+        } else {
+            $query->where('user_id', 1);
+        }
 
         if ($대 === null) {
             // 대 목록 반환 (중복 제거)
@@ -172,7 +178,20 @@ class CategoryController extends Controller
             ->values()
             ->toArray();
 
-        return response()->json(['data' => ['세' => $세List]]);
+        // 세 목록이 비어 있으면 3단계 카테고리 ID 반환 (leaf 노드)
+        $leafCategoryId = null;
+        if (empty($세List)) {
+            $leafQuery = Category::query();
+            if ($user) {
+                $leafQuery->whereIn('user_id', [$user->id, 1]);
+            } else {
+                $leafQuery->where('user_id', 1);
+            }
+            $leafCategory = $leafQuery->where('category_name_ko', $대.'>'.$중.'>'.$소)->first();
+            $leafCategoryId = $leafCategory?->id;
+        }
+
+        return response()->json(['data' => ['세' => $세List, 'leafCategoryId' => $leafCategoryId]]);
     }
 
     #[OA\Post(
