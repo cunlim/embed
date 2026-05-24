@@ -226,9 +226,7 @@ export function EmbedPageInner({
     if ("q" in overrides) apply("q", overrides.q);
 
     if (page > 1) params.set("page", String(page));
-    else params.delete("page");
     if (perPage !== 20) params.set("per_page", String(perPage));
-    else params.delete("per_page");
 
     const qs = params.toString();
     router.replace(`/embed${qs ? "?" + qs : ""}`, { scroll: false });
