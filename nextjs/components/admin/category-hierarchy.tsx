@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -74,9 +74,12 @@ export default function CategoryHierarchy({
   const [loading소, setLoading소] = useState(false);
   const [loading세, setLoading세] = useState(false);
 
-  // refreshKey 변경 시 대Options 다시 조회
+  // refreshKey 변경 또는 token 최초 확보 시 대Options 다시 조회
+  const prevTokenRef = useRef(token);
   useEffect(() => {
-    if (refreshKey > 0) {
+    const tokenChanged = token !== prevTokenRef.current;
+    prevTokenRef.current = token;
+    if (token && (refreshKey > 0 || tokenChanged)) {
       fetchCategoryLevels(undefined, token).then((res) => {
         set대Options(res.data.대 ?? []);
       }).catch(() => {
