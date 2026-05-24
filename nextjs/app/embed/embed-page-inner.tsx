@@ -172,6 +172,7 @@ export function EmbedPageInner({
     searchPageRef.current = currentPage;
     setIsSearching(true);
     setSearchError(null);
+    setKeywordSearchActive(false);
     try {
       const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current);
       setSearchResults(data.data);
@@ -339,6 +340,14 @@ export function EmbedPageInner({
                 const cat = displayCategories.find(c => c.id === categoryId);
                 setModalReadOnly(cat ? !canModify(cat) : false);
                 setModalCategoryId(categoryId);
+              }}
+              onSelectLeafPath={(대, 중, 소) => {
+                const path = [대, 중, 소].join(">");
+                const cat = displayCategories.find(c => c.category_name_ko === path);
+                if (cat) {
+                  setModalReadOnly(!canModify(cat));
+                  setModalCategoryId(cat.id);
+                }
               }}
               onKeywordSearch={handleKeywordSearch}
               initialMode={initialFilterMode}

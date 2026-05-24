@@ -16,6 +16,7 @@ export interface HierarchyFilterState {
 interface CategoryHierarchyProps {
   onSelectCategory: (categoryId: number) => void;
   onKeywordSearch: (keyword: string) => void;
+  onSelectLeafPath?: (대: string, 중: string, 소: string) => void;
   /** URL 등 외부에서 초기값 주입 */
   initialMode?: "hierarchy" | "search";
   initialHierarchy?: HierarchyFilterState;
@@ -44,6 +45,7 @@ export default function CategoryHierarchy({
   initial소Options = [],
   initial세Options = [],
   onFilterChange,
+  onSelectLeafPath,
 }: CategoryHierarchyProps) {
   const [filterMode, setFilterMode] = useState<"hierarchy" | "search">(initialMode);
   const [selected대, setSelected대] = useState<string | null>(initialHierarchy?.대 ?? null);
@@ -170,7 +172,11 @@ export default function CategoryHierarchy({
       setLoading세(true);
       try {
         const res = await fetchCategoryLevels({ 대: selected대, 중: selected중, 소: v });
-        set세Options(res.data.세 ?? []);
+        const 세List = res.data.세 ?? [];
+        if (세List.length === 0) {
+          onSelectLeafPath?.(selected대, selected중, v);
+        }
+        set세Options(세List);
       } catch {
         // quietly ignore
       } finally {
@@ -351,17 +357,16 @@ export default function CategoryHierarchy({
                 )}
               </div>
 
-              {hierarchyDirty && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleHierarchyReset}
-                  className="w-full h-8 text-xs"
-                >
-                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                  초기화
-                </Button>
-              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleHierarchyReset}
+                disabled={!hierarchyDirty}
+                className="w-full h-8 text-xs"
+              >
+                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                초기화
+              </Button>
             </div>
           ) : (
             <div className="space-y-2">

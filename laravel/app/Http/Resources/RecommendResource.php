@@ -16,6 +16,7 @@ class RecommendResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'user_id' => $this->user_id,
             'category_code' => $this->category_code,
             'category_name_ko' => $this->category_name_ko,
             'category_name_zh' => $this->category_name_zh,
