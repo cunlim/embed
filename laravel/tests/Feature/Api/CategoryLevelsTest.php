@@ -36,6 +36,11 @@ beforeEach(function () {
         'category_name_ko' => '타유저>중분류>소분류',
         'category_code' => 'A06',
     ]);
+    Category::factory()->create([
+        'user_id' => 1,
+        'category_name_ko' => '테스트리프',
+        'category_code' => 'A07',
+    ]);
 });
 
 describe('GET /api/categories/levels', function () {
@@ -51,7 +56,7 @@ describe('GET /api/categories/levels', function () {
         // user_id=2의 카테고리는 제외
         expect($data['대'])->not->toContain('타유저');
         // 중복 제거
-        expect(count($data['대']))->toBe(2);
+        expect(count($data['대']))->toBe(3);
     });
 
     test('대 파라미터가 있으면 중 목록을 반환한다', function () {
@@ -102,5 +107,26 @@ describe('GET /api/categories/levels', function () {
         $data = $response->json('data');
         expect($data['중'])->toBeArray();
         expect($data['중'])->toHaveLength(0);
+    });
+
+    test('대만 제공하고 중 목록이 비어 있으면 leafCategoryId를 반환한다', function () {
+        $response = $this->getJson('/api/categories/levels?대=테스트리프');
+
+        $response->assertOk();
+        $data = $response->json('data');
+        expect($data)->toHaveKey('중');
+        expect($data['중'])->toBeArray();
+        expect($data['중'])->toHaveLength(0);
+        expect($data)->toHaveKey('leafCategoryId');
+        expect($data['leafCategoryId'])->not->toBeNull();
+    });
+
+    test('대만 제공하고 중 목록이 있으면 leafCategoryId는 null이다', function () {
+        $response = $this->getJson('/api/categories/levels?대=패션의류');
+
+        $response->assertOk();
+        $data = $response->json('data');
+        expect($data)->toHaveKey('leafCategoryId');
+        expect($data['leafCategoryId'])->toBeNull();
     });
 });

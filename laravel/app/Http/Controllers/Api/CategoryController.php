@@ -141,7 +141,22 @@ class CategoryController extends Controller
                 ->values()
                 ->toArray();
 
-            return response()->json(['data' => ['중' => $중List]]);
+            // 중 목록이 비어 있으면 대분류만 있는 leaf 카테고리이므로 ID 반환
+            $leafCategoryId = null;
+            if (empty($중List)) {
+                $leafQuery = Category::query();
+                if ($user && $user->isAdmin()) {
+                    // admin/superadmin: no user_id restriction
+                } elseif ($user) {
+                    $leafQuery->whereIn('user_id', [$user->id, 1]);
+                } else {
+                    $leafQuery->where('user_id', 1);
+                }
+                $leafCategory = $leafQuery->where('category_name_ko', $대)->first();
+                $leafCategoryId = $leafCategory?->id;
+            }
+
+            return response()->json(['data' => ['중' => $중List, 'leafCategoryId' => $leafCategoryId]]);
         }
 
         $query->where('category_name_ko', 'like', $대.'>'.$중.'>%');
