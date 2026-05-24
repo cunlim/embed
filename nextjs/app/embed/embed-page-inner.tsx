@@ -79,6 +79,7 @@ export function EmbedPageInner({
   server세Options,
   serverCategories,
   serverMeta,
+  serverHadToken,
 }: {
   server대Options: string[];
   server중Options: string[];
@@ -86,6 +87,7 @@ export function EmbedPageInner({
   server세Options: { 세: string; categoryId: number; categoryCode: string }[];
   serverCategories: Category[];
   serverMeta: PaginationMeta | null;
+  serverHadToken: boolean;
 }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -161,8 +163,8 @@ export function EmbedPageInner({
 
   // URL에 초기 필터 파라미터가 있으면 첫 loadCategories를 건너뛴다 (CategoryHierarchy mount effect가 대신 처리)
   const skipInitialLoad = useRef(!!initialHierarchy.대 || !!initialFilterKeyword);
-  // SSR 초기 데이터가 있으면 첫 loadCategories 건너뜀
-  const hadServerCategories = useRef(serverCategories.length > 0);
+  // SSR 데이터가 있고 토큰도 있었으면 CSR 재요청 건너뜀 (마이그레이션 대응)
+  const hadServerCategories = useRef(serverCategories.length > 0 && serverHadToken);
 
   const isSearchMode = searchResults !== null && !keywordSearchActive;
   const displayCategories = isSearchMode ? searchResults : categories;

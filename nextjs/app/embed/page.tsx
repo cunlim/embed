@@ -79,6 +79,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
         server세Options={세Options}
         serverCategories={serverCategories}
         serverMeta={serverMeta}
+        serverHadToken={!!token}
       />
     </Suspense>
   );

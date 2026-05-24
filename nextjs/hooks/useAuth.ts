@@ -14,8 +14,13 @@ function getToken(): string | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]*)/);
   if (match) return decodeURIComponent(match[1]);
-  // 기존 localStorage 토큰 (마이그레이션용)
-  return localStorage.getItem("auth_token");
+  const legacyToken = localStorage.getItem("auth_token");
+  if (legacyToken) {
+    // localStorage → cookie 자동 마이그레이션
+    setToken(legacyToken);
+    return legacyToken;
+  }
+  return null;
 }
 
 function setToken(token: string) {
