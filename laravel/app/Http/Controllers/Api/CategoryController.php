@@ -75,7 +75,9 @@ class CategoryController extends Controller
                 $query->whereRaw('1 = 0');
             }
         } else {
-            if ($user) {
+            if ($user && $user->isAdmin()) {
+                // admin/superadmin: no user_id restriction
+            } elseif ($user) {
                 $query->where(function ($q) use ($user) {
                     $q->where('user_id', $user->id)
                         ->orWhere('user_id', 1);
@@ -102,7 +104,9 @@ class CategoryController extends Controller
 
         $query = Category::query();
         $user = $request->user('sanctum');
-        if ($user) {
+        if ($user && $user->isAdmin()) {
+            // admin/superadmin: no user_id restriction
+        } elseif ($user) {
             $query->whereIn('user_id', [$user->id, 1]);
         } else {
             $query->where('user_id', 1);
@@ -153,7 +157,22 @@ class CategoryController extends Controller
                 ->values()
                 ->toArray();
 
-            return response()->json(['data' => ['소' => $소List]]);
+            // 소 목록이 비어 있으면 2단계 카테고리이므로 leaf ID 반환
+            $leafCategoryId = null;
+            if (empty($소List)) {
+                $leafQuery = Category::query();
+                if ($user && $user->isAdmin()) {
+                    // admin/superadmin: no user_id restriction
+                } elseif ($user) {
+                    $leafQuery->whereIn('user_id', [$user->id, 1]);
+                } else {
+                    $leafQuery->where('user_id', 1);
+                }
+                $leafCategory = $leafQuery->where('category_name_ko', $대.'>'.$중)->first();
+                $leafCategoryId = $leafCategory?->id;
+            }
+
+            return response()->json(['data' => ['소' => $소List, 'leafCategoryId' => $leafCategoryId]]);
         }
 
         $query->where('category_name_ko', 'like', $대.'>'.$중.'>'.$소.'%');
@@ -182,7 +201,9 @@ class CategoryController extends Controller
         $leafCategoryId = null;
         if (empty($세List)) {
             $leafQuery = Category::query();
-            if ($user) {
+            if ($user && $user->isAdmin()) {
+                // admin/superadmin: no user_id restriction
+            } elseif ($user) {
                 $leafQuery->whereIn('user_id', [$user->id, 1]);
             } else {
                 $leafQuery->where('user_id', 1);
@@ -242,7 +263,7 @@ class CategoryController extends Controller
                 ? $request->category_code
                 : Category::generateCode(),
             'category_name_ko' => $request->category_name_ko,
-            'user_id' => $request->user()->id,
+            'user_id' => $request->user('sanctum')->id,
         ]);
 
         return new CategoryResource($category);
@@ -638,7 +659,7 @@ class CategoryController extends Controller
     public function destroy(Category $category): JsonResponse
     {
         /** @var User $user */
-        $user = request()->user();
+        $user = request()->user('sanctum');
 
         if (! $this->canModify($user, $category)) {
             return response()->json(['message' => '이 카테고리를 삭제할 권한이 없습니다.'], 403);

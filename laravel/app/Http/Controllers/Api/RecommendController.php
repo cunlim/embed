@@ -79,8 +79,12 @@ class RecommendController extends Controller
                 ]);
             }
         } else {
-            // 전체: 로그인 → 자신 + user_id=1, 비로그인 → user_id=1만
-            $scopeUserId = $user ? [$user->id, 1] : [1];
+            // 전체: admin → 제한 없음, 로그인 → 자신 + user_id=1, 비로그인 → user_id=1만
+            if ($user && $user->isAdmin()) {
+                $scopeUserId = null;  // RecommendationService handles null as no restriction
+            } else {
+                $scopeUserId = $user ? [$user->id, 1] : [1];
+            }
         }
 
         // text가 없거나 빈 문자열이면 일반 카테고리 목록 반환
