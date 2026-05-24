@@ -54,7 +54,7 @@ class RecommendationService
      *
      * @param  int|array<int>|null  $userId  단일 사용자 ID, 배열, 또는 null(제한 없음)
      */
-    public function recommendPaginated(SearchLog $searchLog, string $targetLanguage, int $perPage = 20, int $page = 1, int|array|null $userId = null): LengthAwarePaginator
+    public function recommendPaginated(SearchLog $searchLog, string $targetLanguage, int $perPage = 20, int $page = 1, int|array|null $userId = null, ?string $keyword = null): LengthAwarePaginator
     {
         $embedding = $searchLog->embedding->toArray();
         $vectorLiteral = '['.implode(',', $embedding).']';
@@ -72,6 +72,10 @@ class RecommendationService
             } else {
                 $query->where('categories.user_id', $userId);
             }
+        }
+
+        if ($keyword) {
+            $query->where('categories.category_name_ko', 'like', $keyword.'%');
         }
 
         $paginator = $query->orderByRaw('ce.embedding <=> ?::vector', [$vectorLiteral])

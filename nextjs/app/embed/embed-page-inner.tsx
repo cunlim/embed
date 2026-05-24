@@ -172,14 +172,14 @@ export function EmbedPageInner({
     setHierarchyRefreshKey(prev => prev + 1);
   }, [newCategoryName, newCategoryCode, addCategory]);
 
-  const handleSearch = useCallback(async (page?: number) => {
+  const handleSearch = useCallback(async (page?: number, keyword?: string) => {
     const currentPage = page ?? 1;
     searchPageRef.current = currentPage;
     setIsSearching(true);
     setSearchError(null);
     setKeywordSearchActive(false);
     try {
-      const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current, filterRef.current);
+      const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current, filterRef.current, keyword);
       setSearchResults(data.data);
       setSearchMeta(data.meta);
     } catch (err) {
@@ -214,7 +214,7 @@ export function EmbedPageInner({
   const handleKeywordSearch = useCallback((keyword: string) => {
     if (searchResults !== null) {
       // 시맨틱 검색 활성 상태: 검색 재실행 (필터 컨텍스트는 URL/state로 이미 갱신됨)
-      handleSearch(1);
+      handleSearch(1, keyword || undefined);
       return;
     }
     if (!keyword) {
@@ -817,7 +817,12 @@ export function EmbedPageInner({
         error={detailError}
         token={token}
         onUpdateData={setData}
-        onUpdateListRow={(row) => updateCategoryStatus(row.id, { translation_status: row.translation_status as Category["translation_status"] })}
+        onUpdateListRow={(row) => updateCategoryStatus(row.id, {
+          translation_status: row.translation_status as Category["translation_status"],
+          category_name_ko: row.category_name_ko,
+          category_name_zh: row.category_name_zh,
+          category_name_en: row.category_name_en,
+        })}
         execState={modalCategoryId ? getState(modalCategoryId) : null}
         onSingleAction={async (stepName) => {
           if (modalCategoryId !== null) {

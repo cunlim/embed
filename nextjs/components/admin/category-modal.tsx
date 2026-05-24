@@ -21,7 +21,7 @@ interface Props {
   error: string | null;
   token?: string | null;
   onUpdateData?: (data: CategoryTranslations) => void;
-  onUpdateListRow?: (row: { id: number; translation_status: string }) => void;
+  onUpdateListRow?: (row: { id: number; translation_status: string; category_name_ko: string; category_name_zh: string | null; category_name_en: string | null }) => void;
   // New props from useCategoryExecution
   execState: CatExecState | null;
   onSingleAction: (stepName: StepName) => Promise<void>;

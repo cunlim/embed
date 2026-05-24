@@ -46,7 +46,7 @@ test('POST /api/recommend — 유효한 검색어는 RecommendationService를 �
     $mockRecommend = Mockery::mock(RecommendationService::class);
     $mockRecommend->shouldReceive('recommendPaginated')
         ->once()
-        ->with(Mockery::type(SearchLog::class), 'ko', 20, 1, [1])
+        ->with(Mockery::type(SearchLog::class), 'ko', 20, 1, [1], null)
         ->andReturn($paginator);
     app()->instance(RecommendationService::class, $mockRecommend);
 

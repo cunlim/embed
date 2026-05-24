@@ -22,6 +22,7 @@ class RecommendRequest extends FormRequest
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'filter' => ['nullable', 'string', 'in:my'],
+            'keyword' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

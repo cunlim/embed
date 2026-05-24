@@ -101,11 +101,13 @@ export function recommend(
   page?: number,
   perPage?: number,
   filter?: string,
+  keyword?: string,
 ): Promise<RecommendResponse> {
   const body: Record<string, string | number> = { text, target_language: targetLanguage };
   if (page) body.page = page;
   if (perPage) body.per_page = perPage;
   if (filter) body.filter = filter;
+  if (keyword) body.keyword = keyword;
   return request<RecommendResponse>("/recommend", {
     method: "POST",
     body,
