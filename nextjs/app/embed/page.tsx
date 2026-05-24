@@ -70,7 +70,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   let serverSearchMeta: PaginationMeta | null = null;
   if (searchText) {
     try {
-      const searchRes = await recommend(searchText, searchLang, token);
+      const searchRes = await recommend(searchText, searchLang, token, 1, 20, filter);
       serverSearchResults = searchRes.data;
       serverSearchMeta = searchRes.meta;
     } catch {}
