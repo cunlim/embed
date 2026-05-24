@@ -1,6 +1,7 @@
 import { Suspense } from "react";
-import { fetchCategoryLevels } from "@/lib/api";
+import { fetchCategoryLevels, getCategories } from "@/lib/api";
 import { EmbedPageInner } from "./embed-page-inner";
+import type { Category, PaginationMeta } from "@/lib/api";
 
 export default async function EmbedPage({
   searchParams,
@@ -39,6 +40,17 @@ export default async function EmbedPage({
     // prefetch 실패 시 클라이언트에서 빈 배열로 시작
   }
 
+  // 카테고리 목록 prefetch (토큰 없음 → user_id=1 공개 데이터)
+  let serverCategories: Category[] = [];
+  let serverMeta: PaginationMeta | null = null;
+  try {
+    const categoriesRes = await getCategories(null, 1, 20);
+    serverCategories = categoriesRes.data;
+    serverMeta = categoriesRes.meta;
+  } catch {
+    // prefetch 실패 시 빈 배열로 시작
+  }
+
   return (
     <Suspense>
       <EmbedPageInner
@@ -46,6 +58,8 @@ export default async function EmbedPage({
         server중Options={중Options}
         server소Options={소Options}
         server세Options={세Options}
+        serverCategories={serverCategories}
+        serverMeta={serverMeta}
       />
     </Suspense>
   );

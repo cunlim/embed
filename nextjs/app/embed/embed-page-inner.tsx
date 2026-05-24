@@ -76,11 +76,15 @@ export function EmbedPageInner({
   server중Options,
   server소Options,
   server세Options,
+  serverCategories,
+  serverMeta,
 }: {
   server대Options: string[];
   server중Options: string[];
   server소Options: string[];
   server세Options: { 세: string; categoryId: number; categoryCode: string }[];
+  serverCategories: Category[];
+  serverMeta: PaginationMeta | null;
 }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -113,7 +117,7 @@ export function EmbedPageInner({
     addCategory,
     updateCategoryStatus,
     deleteCategory,
-  } = useCategories(token);
+  } = useCategories(token, serverCategories, serverMeta);
 
   // URL에서 필터 모드/상태 파싱
   const urlMode = searchParams.get("mode");

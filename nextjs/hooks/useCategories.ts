@@ -21,11 +21,15 @@ interface UseCategoriesReturn {
   deleteCategory: (id: number) => Promise<void>;
 }
 
-export function useCategories(token?: string | null): UseCategoriesReturn {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [meta, setMeta] = useState<PaginationMeta | null>(null);
-  const [isLoading, setIsLoading] = useState(!!token);
-  const [isLoaded, setIsLoaded] = useState(false);
+export function useCategories(
+  token?: string | null,
+  initialCategories?: Category[],
+  initialMeta?: PaginationMeta | null,
+): UseCategoriesReturn {
+  const [categories, setCategories] = useState<Category[]>(initialCategories ?? []);
+  const [meta, setMeta] = useState<PaginationMeta | null>(initialMeta ?? null);
+  const [isLoading, setIsLoading] = useState(initialCategories ? false : !!token);
+  const [isLoaded, setIsLoaded] = useState(!!initialCategories);
   const [error, setError] = useState<string | null>(null);
   const loadedToken = useRef<string | null | undefined>(undefined);
   const currentPage = useRef<number>(1);
