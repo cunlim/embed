@@ -76,6 +76,7 @@ export default function CategoryHierarchy({
 
   // refreshKey 변경 또는 token 최초 확보 시 대Options 다시 조회
   const prevTokenRef = useRef<string | null | undefined>(null);
+  const hasRestoredRef = useRef(false);
   useEffect(() => {
     const tokenChanged = token !== prevTokenRef.current;
     prevTokenRef.current = token;
@@ -87,6 +88,48 @@ export default function CategoryHierarchy({
       });
     }
   }, [refreshKey, token]);
+
+  // 페이지 새로고침 시 초기 hierarchy 필터 복원
+  useEffect(() => {
+    if (hasRestoredRef.current) return;
+    if (initialMode === "hierarchy" && initialHierarchy?.대) {
+      hasRestoredRef.current = true;
+      const { 대, 중, 소, 세 } = initialHierarchy;
+
+      const keywordPath = 세
+        ? `${대}>${중}>${소}>${세}`
+        : 소
+          ? `${대}>${중}>${소}`
+          : 중
+            ? `${대}>${중}`
+            : 대!;
+      onKeywordSearch(keywordPath);
+
+      fetchCategoryLevels({ 대: 대! }, token ?? undefined).then((res) => {
+        set중Options(res.data.중 ?? []);
+      }).catch(() => {});
+
+      if (중) {
+        fetchCategoryLevels({ 대: 대!, 중 }, token ?? undefined).then((res) => {
+          const 소List = res.data.소 ?? [];
+          set소Options(소List);
+          if (소List.length === 0) {
+            onSelectLeafPath?.(대!, 중, "", res.data.leafCategoryId ?? null);
+          }
+        }).catch(() => {});
+      }
+
+      if (소) {
+        fetchCategoryLevels({ 대: 대!, 중: 중!, 소 }, token ?? undefined).then((res) => {
+          const 세List = res.data.세 ?? [];
+          set세Options(세List);
+          if (세List.length === 0) {
+            onSelectLeafPath?.(대!, 중!, 소, res.data.leafCategoryId ?? null);
+          }
+        }).catch(() => {});
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const reportFilterChange = useCallback(
     (mode: "hierarchy" | "search", 대: string | null, 중: string | null, 소: string | null, 세: string | null, kw: string) => {
@@ -122,7 +165,7 @@ export default function CategoryHierarchy({
 
       setLoading중(true);
       try {
-        const res = await fetchCategoryLevels({ 대: v });
+        const res = await fetchCategoryLevels({ 대: v }, token);
         set중Options(res.data.중 ?? []);
       } catch {
         // quietly ignore
@@ -130,7 +173,7 @@ export default function CategoryHierarchy({
         setLoading중(false);
       }
     },
-    [onKeywordSearch, filterMode, keywordText, reportFilterChange]
+    [onKeywordSearch, filterMode, keywordText, reportFilterChange, token]
   );
 
   const handle중Change = useCallback(
@@ -161,15 +204,19 @@ export default function CategoryHierarchy({
 
       setLoading소(true);
       try {
-        const res = await fetchCategoryLevels({ 대: selected대, 중: v });
-        set소Options(res.data.소 ?? []);
+        const res = await fetchCategoryLevels({ 대: selected대, 중: v }, token);
+        const 소List = res.data.소 ?? [];
+        if (소List.length === 0) {
+          onSelectLeafPath?.(selected대, v, "", res.data.leafCategoryId ?? null);
+        }
+        set소Options(소List);
       } catch {
         // quietly ignore
       } finally {
         setLoading소(false);
       }
     },
-    [selected대, onKeywordSearch, filterMode, keywordText, reportFilterChange]
+    [selected대, onKeywordSearch, filterMode, keywordText, reportFilterChange, token, onSelectLeafPath]
   );
 
   const handle소Change = useCallback(

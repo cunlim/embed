@@ -150,6 +150,11 @@ export function EmbedPageInner({
   const searchPageRef = useRef(1);
   const perPageRef = useRef(perPage);
   useEffect(() => { perPageRef.current = perPage });
+  const filterRef = useRef(filter);
+  useEffect(() => { filterRef.current = filter });
+
+  // URL에 초기 필터 파라미터가 있으면 첫 loadCategories를 건너뛴다 (CategoryHierarchy mount effect가 대신 처리)
+  const skipInitialLoad = useRef(!!initialHierarchy.대 || !!initialFilterKeyword);
 
   const isSearchMode = searchResults !== null && !keywordSearchActive;
   const displayCategories = isSearchMode ? searchResults : categories;
@@ -174,7 +179,7 @@ export function EmbedPageInner({
     setSearchError(null);
     setKeywordSearchActive(false);
     try {
-      const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current, filter);
+      const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current, filterRef.current);
       setSearchResults(data.data);
       setSearchMeta(data.meta);
     } catch (err) {
@@ -183,11 +188,15 @@ export function EmbedPageInner({
     } finally {
       setIsSearching(false);
     }
-  }, [searchText, searchLanguage, token, filter]);
+  }, [searchText, searchLanguage, token]);
 
   // URL page 동기화 (시맨틱 검색 결과가 있으면 필터 변경 시 재검색)
   useEffect(() => {
     if (!mounted) return;
+    if (skipInitialLoad.current) {
+      skipInitialLoad.current = false;
+      return;
+    }
     if (searchResultsRef.current !== null) {
       handleSearch(page);
     } else {
@@ -364,8 +373,8 @@ export function EmbedPageInner({
                   setModalReadOnly(!canModify({ id: categoryId } as Category | Recommendation));
                   setModalCategoryId(categoryId);
                 } else {
-                  // 폴백: 경로 문자열로 검색
-                  const path = [대, 중, 소].join(">");
+                  // 폴백: 경로 문자열로 검색 (빈 세그먼트 제외)
+                  const path = [대, 중, 소].filter(Boolean).join(">");
                   const cat = displayCategories.find(c => c.category_name_ko === path);
                   if (cat) {
                     setModalReadOnly(!canModify(cat));
