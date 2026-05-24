@@ -32,6 +32,11 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   const cat2 = reader.get("cat2");
   const cat3 = reader.get("cat3");
 
+  const urlPage = parseInt(reader.get("page") ?? "1", 10);
+  const page = Number.isNaN(urlPage) || urlPage < 1 ? 1 : urlPage;
+  const urlPerPage = parseInt(reader.get("per_page") ?? "20", 10);
+  const perPage = [10, 20, 50].includes(urlPerPage) ? urlPerPage : 20;
+
   // 계층별 옵션 prefetch
   let 대Options: string[] = [];
   let 중Options: string[] = [];
@@ -60,7 +65,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   let serverCategories: Category[] = [];
   let serverMeta: PaginationMeta | null = null;
   try {
-    const categoriesRes = await getCategories(token, 1, 20, filter, keyword ?? undefined);
+    const categoriesRes = await getCategories(token, page, perPage, filter, keyword ?? undefined);
     serverCategories = categoriesRes.data;
     serverMeta = categoriesRes.meta;
   } catch {}
@@ -70,7 +75,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   let serverSearchMeta: PaginationMeta | null = null;
   if (searchText) {
     try {
-      const searchRes = await recommend(searchText, searchLang, token, 1, 20, filter);
+      const searchRes = await recommend(searchText, searchLang, token, page, perPage, filter, keyword ?? undefined);
       serverSearchResults = searchRes.data;
       serverSearchMeta = searchRes.meta;
     } catch {}
