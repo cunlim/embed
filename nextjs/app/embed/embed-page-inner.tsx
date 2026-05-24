@@ -44,6 +44,7 @@ import TaskExecution from "@/components/admin/task-execution";
 import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { isAdmin } from "@/lib/utils";
+import { parseEmbedKeyword } from "@/lib/embed-params";
 import { useCategories } from "@/hooks/useCategories";
 import { useCategoryDetail } from "@/hooks/useCategoryDetail";
 import { useCategoryExecution } from "@/hooks/useCategoryExecution";
@@ -105,7 +106,7 @@ export function EmbedPageInner({
   const validPerPageValues = [10, 20, 50];
   const initialPerPage = validPerPageValues.includes(urlPerPage) ? urlPerPage : 20;
 
-  const token = mounted ? getToken() : null;
+  const token = getToken();
   const { getState, handleSingleAction, handleRunAll, handleCancelPending, clearStep } =
     useCategoryExecution(token);
   const {
@@ -128,7 +129,7 @@ export function EmbedPageInner({
     소: searchParams.get("cat3"),
     세: searchParams.get("cat4"),
   };
-  const initialFilterKeyword = searchParams.get("q") ?? "";
+  const initialFilterKeyword = parseEmbedKeyword(searchParams) ?? "";
 
   const [perPage, setPerPage] = useState(initialPerPage);
   const [filter, setFilter] = useState<string | undefined>(undefined);
@@ -160,7 +161,7 @@ export function EmbedPageInner({
 
   // URL에 초기 필터 파라미터가 있으면 첫 loadCategories를 건너뛴다 (CategoryHierarchy mount effect가 대신 처리)
   const skipInitialLoad = useRef(!!initialHierarchy.대 || !!initialFilterKeyword);
-  // SSR 초기 데이터가 있고 비로그인이면 첫 loadCategories 건너뜀
+  // SSR 초기 데이터가 있으면 첫 loadCategories 건너뜀
   const hadServerCategories = useRef(serverCategories.length > 0);
 
   const isSearchMode = searchResults !== null && !keywordSearchActive;
@@ -204,10 +205,10 @@ export function EmbedPageInner({
       skipInitialLoad.current = false;
       return;
     }
-    // SSR 데이터가 있고 비로그인이면 reload 건너뜀
+    // SSR 데이터가 이미 있으면 reload 건너뜀
     if (hadServerCategories.current) {
       hadServerCategories.current = false;
-      if (!token) return;
+      return;
     }
     if (searchResultsRef.current !== null) {
       handleSearch(page);
@@ -215,8 +216,6 @@ export function EmbedPageInner({
       const kw = keywordRef.current || undefined;
       loadCategories(page, perPage, filter, kw);
     }
-  // token은 mounted 전환 시에만 체크하므로 deps에서 제외
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, page, perPage, filter, loadCategories, handleSearch]);
 
   const handleReset = useCallback(() => {
@@ -227,6 +226,10 @@ export function EmbedPageInner({
   }, []);
 
   const handleKeywordSearch = useCallback((keyword: string) => {
+    // SSR 데이터가 이미 있고 같은 키워드면 재요청 건너뜀
+    if (keyword === keywordRef.current && hadServerCategories.current) {
+      return;
+    }
     keywordRef.current = keyword;
     if (searchResults !== null) {
       // 시맨틱 검색 활성 상태: 검색 재실행 (필터 컨텍스트는 URL/state로 이미 갱신됨)

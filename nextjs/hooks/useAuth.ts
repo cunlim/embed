@@ -11,16 +11,24 @@ interface UseAuthReturn {
 }
 
 function getToken(): string | null {
-  if (typeof window === "undefined") return null;
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]*)/);
+  if (match) return decodeURIComponent(match[1]);
+  // 기존 localStorage 토큰 (마이그레이션용)
   return localStorage.getItem("auth_token");
 }
 
 function setToken(token: string) {
-  localStorage.setItem("auth_token", token);
+  if (typeof document === "undefined") return;
+  const expires = new Date(Date.now() + 30 * 864e5).toUTCString();
+  document.cookie = `auth_token=${encodeURIComponent(token)}; path=/; expires=${expires}; SameSite=Lax`;
+  try { localStorage.removeItem("auth_token"); } catch {}
 }
 
 function removeToken() {
-  localStorage.removeItem("auth_token");
+  if (typeof document === "undefined") return;
+  document.cookie = "auth_token=; path=/; max-age=0; SameSite=Lax";
+  try { localStorage.removeItem("auth_token"); } catch {}
 }
 
 export function useAuth(): UseAuthReturn {
