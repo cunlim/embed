@@ -141,7 +141,7 @@ export function EmbedPageInner({
   const [searchResults, setSearchResults] = useState<Recommendation[] | null>(null);
   // useRef로 searchResults 참조 — useEffect 의존성 배열에 추가하지 않고 최신값 읽기
   const searchResultsRef = useRef(searchResults);
-  searchResultsRef.current = searchResults;
+  useEffect(() => { searchResultsRef.current = searchResults });
   const [searchMeta, setSearchMeta] = useState<PaginationMeta | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);

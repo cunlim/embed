@@ -181,7 +181,7 @@ export default function CategoryHierarchy({
         setLoading중(false);
       }
     },
-    [onKeywordSearch, filterMode, keywordText, reportFilterChange, token]
+    [onKeywordSearch, filterMode, keywordText, reportFilterChange, token, onSelectLeafPath]
   );
 
   const handle중Change = useCallback(
