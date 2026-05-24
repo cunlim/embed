@@ -101,7 +101,7 @@ class CategoryController extends Controller
         $소 = $request->query('소');
 
         $query = Category::query();
-        $user = $request->user();
+        $user = $request->user('sanctum');
         if ($user) {
             $query->whereIn('user_id', [$user->id, 1]);
         } else {
@@ -454,7 +454,7 @@ class CategoryController extends Controller
     public function runStep(RunStepRequest $request, Category $category): JsonResponse
     {
         /** @var User $user */
-        $user = $request->user();
+        $user = $request->user('sanctum');
 
         if (! $this->canModify($user, $category)) {
             return response()->json(['message' => '이 카테고리의 번역·임베딩을 실행할 권한이 없습니다.'], 403);
@@ -580,7 +580,7 @@ class CategoryController extends Controller
     public function updateText(CategoryUpdateTextRequest $request, Category $category): JsonResponse
     {
         /** @var User $user */
-        $user = $request->user();
+        $user = $request->user('sanctum');
 
         if (! $this->canModify($user, $category)) {
             return response()->json(['message' => '이 카테고리를 수정할 권한이 없습니다.'], 403);

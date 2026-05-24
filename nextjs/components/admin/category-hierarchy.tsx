@@ -75,7 +75,7 @@ export default function CategoryHierarchy({
   const [loading세, setLoading세] = useState(false);
 
   // refreshKey 변경 또는 token 최초 확보 시 대Options 다시 조회
-  const prevTokenRef = useRef(token);
+  const prevTokenRef = useRef<string | null | undefined>(null);
   useEffect(() => {
     const tokenChanged = token !== prevTokenRef.current;
     prevTokenRef.current = token;
