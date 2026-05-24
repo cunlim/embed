@@ -81,12 +81,12 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 - **`bootstrap/cache/config.php` 운영DB 오염 위험** — `php artisan config:cache` 실행 후 캐시된 설정은 `phpunit.xml`의 `<env>` 오버라이드와 `.env.testing`을 **무시**한다. 이 상태에서 `php artisan test`를 실행하면 `RefreshDatabase` trait이 운영DB에 `migrate:fresh`를 실행하여 모든 데이터가 소실된다. **반드시 `php artisan config:clear`로 캐시를 제거한 후 테스트를 실행할 것.** Stop 훅(`run-all-checks.sh`)에서 자동으로 `config:clear`를 선행 실행하도록 설정되어 있다.
 - **WSL2 `networkingMode=mirrored`**: Docker 컨테이너 내부에서 `host.docker.internal`로 Windows 호스트의 Ollama(port 11434)에 접근.
 - **Docker Compose**: WSL2에서 `restart` 불가. `stop` + `up -d` 사용.
-- **CategoryHierarchy는 네이티브 `<select>` 사용** — shadcn Select와 달리 Playwright에서 `getByRole('combobox').nth(N).selectOption('value')`로 조작.
 - **`react-hooks/set-state-in-effect`** — URL→props→state 동기화 시 `useEffect`+`setState` 대신 `useState(initialValue)` 초기자 사용.
 - **DB 포맷은 실제 데이터로 확인** — LIKE 쿼리 작성 시 프로덕션 DB를 `psql`로 먼저 조회할 것. 구분자(예: `>` vs ` > `) 차이로 빈 결과가 발생할 수 있다. `category_name_ko`와 `onKeywordSearch` 모두 `>` 구분자(공백 없음) 사용.
 - **유사도 검색 `isSearchMode` 게이트** — `isSearchMode = searchResults !== null && !keywordSearchActive`이므로 `handleSearch` 호출 시 반드시 `setKeywordSearchActive(false)`를 선행해야 한다. 누락 시 유사도 컬럼이 렌더링되지 않는다.
 - **`onSelectLeafPath` 등 콜백 prop은 stale closure 주의** — 비동기 API 응답 후 실행되는 콜백에서 부모의 `displayCategories` 등 상태를 직접 참조하면 최신값이 아닐 수 있다. leaf categoryId를 API에서 직접 받아 전달하거나 ref로 우회할 것.
-- **`filterRef` 패턴** — `useCallback` async 함수에서 state를 직접 참조하면 stale closure로 API 요청에 최신값이 반영되지 않는다. `useRef` + `useEffect`로 ref를 최신 상태로 유지하고 함수 내에서 `ref.current`로 참조할 것. (`embed-page-inner.tsx`의 `filterRef` 참고)
+- **`filterRef` / `keywordRef` 패턴** — `useCallback` async 함수에서 state를 직접 참조하면 stale closure로 API 요청에 최신값이 반영되지 않는다. `useRef`로 최신 상태를 추적하고 함수 내에서 `ref.current`로 참조할 것. 자식 컴포넌트 상태를 부모 콜백이 알아야 할 때도 동일 패턴 사용. (`embed-page-inner.tsx`의 `filterRef`, `keywordRef` 참고)
+- **TypeScript `??`/`||` 혼합 금지** — `a ?? b || c`는 TS5076 에러. `a ?? (b || c)`처럼 괄호로 우선순위 명시할 것.
 - **초기 필터 파라미터 경쟁 상태** — URL에 cat1/q 등이 있으면 부모 `useEffect`의 `loadCategories()`(keyword 없음)와 `CategoryHierarchy` mount effect의 `onKeywordSearch`(keyword 있음)가 경쟁하여 필터 없는 결과가 최종 노출된다. `skipInitialLoadRef`로 첫 로드를 건너뛰고 child mount effect에 위임할 것.
 
 ## CI/CD
