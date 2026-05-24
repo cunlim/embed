@@ -73,7 +73,6 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 - **Swagger 문서 stale** — CI/CD 배포 후 `storage/api-docs/api-docs.json`이 갱신되지 않아 Swagger UI에 일부 엔드포인트만 표시될 수 있다. `docker exec cl_embed_laravel php artisan l5-swagger:generate`로 재생성. deploy.yml에 자동화되어 있으나 수동 작업 환경에서는 별도 실행 필요.
 - **컨테이너 파일 변경 후 HMR 미감지** — `docker exec cl_embed_nextjs touch <container-path>`는 바인드 마운트에서 불안정하다. 코드 변경 후 **`.next/`를 삭제**하고 `docker compose stop` + `up -d`로 재시작할 것.
 - **Pint 바인드 마운트 파일 손상** — `vendor/bin/pint`가 바인드 마운트 경로의 파일을 0바이트로 만든다. `/tmp/` 경유 방식 사용: `docker exec cl_embed_laravel bash -c 'cp /var/www/html/path/file.php /tmp/ && vendor/bin/pint /tmp/file.php && cp /tmp/file.php /var/www/html/path/'` 후 base64로 호스트 동기화.
-- **브라우저 JS 청크 캐시** — Next.js 재시작 후에도 브라우저가 이전 JS 청크를 캐싱할 수 있다. Playwright 테스트 시 새 browser context(탭)를 생성할 것.
 - **hookify 플러그인 오버헤드** — hookify가 PreToolUse/PostToolUse/Stop/UserPromptSubmit 훅을 등록하지만, `.claude/hookify.*.local.md` 규칙이 없으면 빈 동작으로 시간만 소요된다. 불필요하면 `~/.claude/settings.json`에서 `"hookify@claude-plugins-official": false`로 비활성화.
 - **테스트 DB 오염 (duplicate table/migration)** — PostgreSQL 테스트 DB에 `migration`/`users` 테이블이 이미 존재한다는 오류 발생 시 `docker exec cl_embed_laravel php artisan migrate:fresh --env=testing --force`로 초기화.
 - **Playwright 인증 페이지 테스트** — `docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::first()->createToken("debug")->plainTextToken;'`로 Sanctum 토큰을 생성한 뒤, Playwright에서 `localStorage.setItem("auth_token", token)`으로 주입하고 `/embed`로 이동한다.
@@ -81,7 +80,6 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 - **테스트 DB 사용자 격리** — `dbeaver_lim_test`는 `cl_embed`에 CONNECT 권한이 없다. `.env.testing`(`DB_USERNAME=dbeaver_lim_test`)이 적용된 환경에서는 실수로 `migrate:fresh`를 실행해도 PostgreSQL이 `permission denied`를 반환하여 운영DB가 보호된다. `.env.testing`은 gitignore, `.env.testing.example`만 커밋, CI에서 `$LIVE_ROOT`로부터 복사한다.
 - **`bootstrap/cache/config.php` 운영DB 오염 위험** — `php artisan config:cache` 실행 후 캐시된 설정은 `phpunit.xml`의 `<env>` 오버라이드와 `.env.testing`을 **무시**한다. 이 상태에서 `php artisan test`를 실행하면 `RefreshDatabase` trait이 운영DB에 `migrate:fresh`를 실행하여 모든 데이터가 소실된다. **반드시 `php artisan config:clear`로 캐시를 제거한 후 테스트를 실행할 것.** Stop 훅(`run-all-checks.sh`)에서 자동으로 `config:clear`를 선행 실행하도록 설정되어 있다.
 - **WSL2 `networkingMode=mirrored`**: Docker 컨테이너 내부에서 `host.docker.internal`로 Windows 호스트의 Ollama(port 11434)에 접근.
-- **Cloudflare CDN JS 청크 캐시** — 개발 환경에서는 Cloudflare Cache Rule로 전체 바이패스 필수.
 - **Docker Compose**: WSL2에서 `restart` 불가. `stop` + `up -d` 사용.
 - **CategoryHierarchy는 네이티브 `<select>` 사용** — shadcn Select와 달리 Playwright에서 `getByRole('combobox').nth(N).selectOption('value')`로 조작.
 - **`react-hooks/set-state-in-effect`** — URL→props→state 동기화 시 `useEffect`+`setState` 대신 `useState(initialValue)` 초기자 사용.
