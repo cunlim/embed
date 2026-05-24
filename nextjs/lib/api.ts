@@ -100,10 +100,12 @@ export function recommend(
   token?: string | null,
   page?: number,
   perPage?: number,
+  filter?: string,
 ): Promise<RecommendResponse> {
   const body: Record<string, string | number> = { text, target_language: targetLanguage };
   if (page) body.page = page;
   if (perPage) body.per_page = perPage;
+  if (filter) body.filter = filter;
   return request<RecommendResponse>("/recommend", {
     method: "POST",
     body,

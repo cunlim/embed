@@ -51,18 +51,30 @@ class RecommendationService
     /**
      * pgvector JOIN pagination으로 유사도 검색 결과를 반환한다.
      * Category + CategoryEmbedding을 language로 JOIN하여 distance를 계산한다.
+     *
+     * @param  int|array<int>|null  $userId  단일 사용자 ID, 배열, 또는 null(제한 없음)
      */
-    public function recommendPaginated(SearchLog $searchLog, string $targetLanguage, int $perPage = 20, int $page = 1): LengthAwarePaginator
+    public function recommendPaginated(SearchLog $searchLog, string $targetLanguage, int $perPage = 20, int $page = 1, int|array|null $userId = null): LengthAwarePaginator
     {
         $embedding = $searchLog->embedding->toArray();
         $vectorLiteral = '['.implode(',', $embedding).']';
 
-        $paginator = Category::select('categories.*')
-            ->selectRaw('MIN(ce.embedding <=> ?::vector) as distance', [$vectorLiteral])
-            ->join('category_embeddings as ce', 'ce.category_id', '=', 'categories.id')
-            ->where('ce.language', $targetLanguage)
-            ->groupBy('categories.id')
-            ->orderByRaw('MIN(ce.embedding <=> ?::vector)', [$vectorLiteral])
+        $query = Category::select('categories.*')
+            ->selectRaw('ce.embedding <=> ?::vector as distance', [$vectorLiteral])
+            ->join('category_embeddings as ce', function ($join) use ($targetLanguage) {
+                $join->on('ce.category_id', '=', 'categories.id')
+                    ->where('ce.language', '=', $targetLanguage);
+            });
+
+        if ($userId !== null) {
+            if (is_array($userId)) {
+                $query->whereIn('categories.user_id', $userId);
+            } else {
+                $query->where('categories.user_id', $userId);
+            }
+        }
+
+        $paginator = $query->orderByRaw('ce.embedding <=> ?::vector', [$vectorLiteral])
             ->paginate(perPage: $perPage, page: $page);
 
         $items = $paginator->getCollection()->map(function (Category $category) {

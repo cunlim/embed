@@ -64,16 +64,39 @@ class RecommendController extends Controller
         $targetLanguage = $request->validated('target_language');
         $page = (int) $request->input('page', 1);
         $perPage = (int) $request->input('per_page', 20);
+        $filter = $request->validated('filter');
+        $user = auth('sanctum')->user();
+
+        // CategoryController::index()와 동일한 접근 제어 규칙 적용
+        if ($filter === 'my') {
+            if ($user) {
+                $scopeUserId = $user->id;
+            } else {
+                // 비로그인 + 내 카테고리 → 빈 결과
+                return response()->json([
+                    'data' => [],
+                    'meta' => ['current_page' => 1, 'last_page' => 1, 'total' => 0, 'per_page' => $perPage],
+                ]);
+            }
+        } else {
+            // 전체: 로그인 → 자신 + user_id=1, 비로그인 → user_id=1만
+            $scopeUserId = $user ? [$user->id, 1] : [1];
+        }
 
         // text가 없거나 빈 문자열이면 일반 카테고리 목록 반환
         if (empty(trim((string) $text))) {
-            $categories = Category::orderBy("category_name_{$targetLanguage}")
-                ->paginate(perPage: $perPage, page: $page);
+            $query = Category::orderBy("category_name_{$targetLanguage}");
 
-            return RecommendResource::collection($categories)->response();
+            if (is_array($scopeUserId)) {
+                $query->whereIn('user_id', $scopeUserId);
+            } else {
+                $query->where('user_id', $scopeUserId);
+            }
+
+            return RecommendResource::collection($query->paginate(perPage: $perPage, page: $page))->response();
         }
 
-        $userId = auth('sanctum')->id();
+        $userId = $user?->id;
         $modelName = config('services.ollama.embedding_model', 'bge-m3:latest');
 
         $searchLog = $this->embeddingCache->getOrCreateEmbedding(
@@ -81,7 +104,7 @@ class RecommendController extends Controller
         );
 
         $results = $this->recommendation->recommendPaginated(
-            $searchLog, $targetLanguage, $perPage, $page
+            $searchLog, $targetLanguage, $perPage, $page, $scopeUserId
         );
 
         return RecommendResource::collection($results)->response();

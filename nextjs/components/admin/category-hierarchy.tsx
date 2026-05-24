@@ -11,6 +11,7 @@ export interface HierarchyFilterState {
   대: string | null;
   중: string | null;
   소: string | null;
+  세: string | null;
 }
 
 interface CategoryHierarchyProps {
@@ -51,6 +52,7 @@ export default function CategoryHierarchy({
   const [selected대, setSelected대] = useState<string | null>(initialHierarchy?.대 ?? null);
   const [selected중, setSelected중] = useState<string | null>(initialHierarchy?.중 ?? null);
   const [selected소, setSelected소] = useState<string | null>(initialHierarchy?.소 ?? null);
+  const [selected세, setSelected세] = useState<string | null>(initialHierarchy?.세 ?? null);
   const [keywordText, setKeywordText] = useState(initialKeyword);
 
   // 단계별 옵션 (SSR 초기값 + API 응답)
@@ -67,8 +69,8 @@ export default function CategoryHierarchy({
   const [loading세, setLoading세] = useState(false);
 
   const reportFilterChange = useCallback(
-    (mode: "hierarchy" | "search", 대: string | null, 중: string | null, 소: string | null, kw: string) => {
-      onFilterChange?.({ mode, hierarchy: { 대, 중, 소 }, keyword: kw });
+    (mode: "hierarchy" | "search", 대: string | null, 중: string | null, 소: string | null, 세: string | null, kw: string) => {
+      onFilterChange?.({ mode, hierarchy: { 대, 중, 소, 세 }, keyword: kw });
     },
     [onFilterChange]
   );
@@ -79,22 +81,24 @@ export default function CategoryHierarchy({
         setSelected대(null);
         setSelected중(null);
         setSelected소(null);
+        setSelected세(null);
         set중Options([]);
         set소Options([]);
         set세Options([]);
         onKeywordSearch("");
-        reportFilterChange(filterMode, null, null, null, keywordText);
+        reportFilterChange(filterMode, null, null, null, null, keywordText);
         return;
       }
       setSelected대(v);
       setSelected중(null);
       setSelected소(null);
+      setSelected세(null);
       set중Options([]);
       set소Options([]);
       set세Options([]);
 
       onKeywordSearch(v);
-      reportFilterChange(filterMode, v, null, null, keywordText);
+      reportFilterChange(filterMode, v, null, null, null, keywordText);
 
       setLoading중(true);
       try {
@@ -114,24 +118,26 @@ export default function CategoryHierarchy({
       if (!v || !selected대) {
         setSelected중(null);
         setSelected소(null);
+        setSelected세(null);
         set소Options([]);
         set세Options([]);
         if (selected대) {
           onKeywordSearch(selected대);
-          reportFilterChange(filterMode, selected대, null, null, keywordText);
+          reportFilterChange(filterMode, selected대, null, null, null, keywordText);
         } else {
           onKeywordSearch("");
-          reportFilterChange(filterMode, null, null, null, keywordText);
+          reportFilterChange(filterMode, null, null, null, null, keywordText);
         }
         return;
       }
       setSelected중(v);
       setSelected소(null);
+      setSelected세(null);
       set소Options([]);
       set세Options([]);
 
       onKeywordSearch(selected대 + ">" + v);
-      reportFilterChange(filterMode, selected대, v, null, keywordText);
+      reportFilterChange(filterMode, selected대, v, null, null, keywordText);
 
       setLoading소(true);
       try {
@@ -150,24 +156,26 @@ export default function CategoryHierarchy({
     async (v: string) => {
       if (!v || !selected대 || !selected중) {
         setSelected소(null);
+        setSelected세(null);
         set세Options([]);
         if (selected대 && selected중) {
           onKeywordSearch(selected대 + ">" + selected중);
-          reportFilterChange(filterMode, selected대, selected중, null, keywordText);
+          reportFilterChange(filterMode, selected대, selected중, null, null, keywordText);
         } else if (selected대) {
           onKeywordSearch(selected대);
-          reportFilterChange(filterMode, selected대, null, null, keywordText);
+          reportFilterChange(filterMode, selected대, null, null, null, keywordText);
         } else {
           onKeywordSearch("");
-          reportFilterChange(filterMode, null, null, null, keywordText);
+          reportFilterChange(filterMode, null, null, null, null, keywordText);
         }
         return;
       }
       setSelected소(v);
+      setSelected세(null);
       set세Options([]);
 
       onKeywordSearch(selected대 + ">" + selected중 + ">" + v);
-      reportFilterChange(filterMode, selected대, selected중, v, keywordText);
+      reportFilterChange(filterMode, selected대, selected중, v, null, keywordText);
 
       setLoading세(true);
       try {
@@ -188,64 +196,72 @@ export default function CategoryHierarchy({
 
   const handle세Change = useCallback(
     (v: string) => {
-      if (!v) return;
+      if (!v || !selected대 || !selected중 || !selected소) return;
       const found = 세Options.find((o) => o.categoryCode === v);
-      if (found) onSelectCategory(found.categoryId);
+      if (!found) return;
+      setSelected세(v);
+      const keyword = selected대 + ">" + selected중 + ">" + selected소 + ">" + found.세;
+      onKeywordSearch(keyword);
+      reportFilterChange(filterMode, selected대, selected중, selected소, v, keywordText);
+      onSelectCategory(found.categoryId);
     },
-    [세Options, onSelectCategory]
+    [세Options, onSelectCategory, selected대, selected중, selected소, onKeywordSearch, filterMode, keywordText, reportFilterChange]
   );
 
   const handleKeywordSubmit = useCallback(() => {
     if (keywordText.trim()) {
       onKeywordSearch(keywordText.trim());
-      reportFilterChange("search", selected대, selected중, selected소, keywordText.trim());
+      reportFilterChange("search", selected대, selected중, selected소, selected세, keywordText.trim());
     }
-  }, [keywordText, onKeywordSearch, selected대, selected중, selected소, reportFilterChange]);
+  }, [keywordText, onKeywordSearch, selected대, selected중, selected소, selected세, reportFilterChange]);
 
   const handleKeywordClear = useCallback(() => {
     setKeywordText("");
     onKeywordSearch("");
-    reportFilterChange("search", selected대, selected중, selected소, "");
-  }, [onKeywordSearch, selected대, selected중, selected소, reportFilterChange]);
+    reportFilterChange("search", selected대, selected중, selected소, selected세, "");
+  }, [onKeywordSearch, selected대, selected중, selected소, selected세, reportFilterChange]);
 
   const handleHierarchyReset = useCallback(() => {
     setSelected대(null);
     setSelected중(null);
     setSelected소(null);
+    setSelected세(null);
     set중Options([]);
     set소Options([]);
     set세Options([]);
     setKeywordText("");
     onKeywordSearch("");
-    reportFilterChange("hierarchy", null, null, null, "");
+    reportFilterChange("hierarchy", null, null, null, null, "");
   }, [onKeywordSearch, reportFilterChange]);
 
   const switchToHierarchy = useCallback(() => {
     setFilterMode("hierarchy");
     if (selected대) {
-      const keyword = selected소
-        ? selected대 + ">" + selected중 + ">" + selected소
-        : selected중
-          ? selected대 + ">" + selected중
-          : selected대;
+      const keyword = selected세
+        ? selected대 + ">" + selected중 + ">" + selected소 + ">" + selected세
+        : selected소
+          ? selected대 + ">" + selected중 + ">" + selected소
+          : selected중
+            ? selected대 + ">" + selected중
+            : selected대;
       onKeywordSearch(keyword);
-      reportFilterChange("hierarchy", selected대, selected중, selected소, keywordText);
+      reportFilterChange("hierarchy", selected대, selected중, selected소, selected세, keywordText);
     } else {
       onKeywordSearch("");
-      reportFilterChange("hierarchy", null, null, null, keywordText);
+      reportFilterChange("hierarchy", null, null, null, null, keywordText);
     }
-  }, [selected대, selected중, selected소, onKeywordSearch, keywordText, reportFilterChange]);
+  }, [selected대, selected중, selected소, selected세, onKeywordSearch, keywordText, reportFilterChange]);
 
   const switchToSearch = useCallback(() => {
     setFilterMode("search");
     if (keywordText.trim()) {
       onKeywordSearch(keywordText.trim());
-      reportFilterChange("search", selected대, selected중, selected소, keywordText);
+      reportFilterChange("search", selected대, selected중, selected소, selected세, keywordText);
     } else {
       onKeywordSearch("");
-      reportFilterChange("search", selected대, selected중, selected소, "");
+      reportFilterChange("search", selected대, selected중, selected소, selected세, "");
     }
-  }, [keywordText, onKeywordSearch, selected대, selected중, selected소, reportFilterChange]);
+  }, [keywordText, onKeywordSearch, selected대, selected중, selected소, selected세, reportFilterChange]);
 
   const hierarchyDirty = selected대 !== null;
 
@@ -340,7 +356,7 @@ export default function CategoryHierarchy({
               {/* 세분류 */}
               <div className="relative">
                 <select
-                  value=""
+                  value={selected세 ?? ""}
                   onChange={(e) => handle세Change(e.target.value)}
                   disabled={!selected소 || loading세 || 세Options.length === 0}
                   className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"

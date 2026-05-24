@@ -122,6 +122,7 @@ export function EmbedPageInner({
     대: searchParams.get("cat1"),
     중: searchParams.get("cat2"),
     소: searchParams.get("cat3"),
+    세: searchParams.get("cat4"),
   };
   const initialFilterKeyword = searchParams.get("q") ?? "";
 
@@ -174,7 +175,7 @@ export function EmbedPageInner({
     setSearchError(null);
     setKeywordSearchActive(false);
     try {
-      const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current);
+      const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current, filter);
       setSearchResults(data.data);
       setSearchMeta(data.meta);
     } catch (err) {
@@ -183,7 +184,7 @@ export function EmbedPageInner({
     } finally {
       setIsSearching(false);
     }
-  }, [searchText, searchLanguage, token]);
+  }, [searchText, searchLanguage, token, filter]);
 
   const handleReset = useCallback(() => {
     setSearchText("");
@@ -214,6 +215,7 @@ export function EmbedPageInner({
         if (state.hierarchy.대) params.set("cat1", state.hierarchy.대);
         if (state.hierarchy.중) params.set("cat2", state.hierarchy.중);
         if (state.hierarchy.소) params.set("cat3", state.hierarchy.소);
+        if (state.hierarchy.세) params.set("cat4", state.hierarchy.세);
       } else {
         if (state.keyword) params.set("q", state.keyword);
       }

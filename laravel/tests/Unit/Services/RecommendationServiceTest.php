@@ -94,3 +94,125 @@ test('recommendPaginated — 페이지네이션 결과를 반환한다', functio
     expect($result->items()[0]->id)->toBe($category->id);
     expect($result->items()[0]->similarity_score)->toBeGreaterThan(0);
 });
+
+test('recommendPaginated — userId 필터가 적용되면 해당 사용자의 카테고리만 반환한다', function () {
+    $myCategory = Category::factory()->create([
+        'category_code' => '50000000',
+        'category_name_ko' => '패션의류',
+        'user_id' => 1,
+    ]);
+
+    $otherCategory = Category::factory()->create([
+        'category_code' => '50000001',
+        'category_name_ko' => '식품',
+        'user_id' => 2,
+    ]);
+
+    // 두 카테고리 모두에 임베딩 생성
+    foreach ([$myCategory, $otherCategory] as $cat) {
+        $embedding = new Vector(array_fill(0, 1024, 0.1));
+        $categoryEmbedding = new CategoryEmbedding;
+        $categoryEmbedding->category_id = $cat->id;
+        $categoryEmbedding->language = 'ko';
+        $categoryEmbedding->embed_model_name = 'bge-m3:latest';
+        $categoryEmbedding->embedding = $embedding;
+        $categoryEmbedding->save();
+    }
+
+    $searchLog = new SearchLog([
+        'search_keyword' => '청바지',
+        'normalized_keyword' => '청바지',
+        'embed_model_name' => 'bge-m3:latest',
+    ]);
+    $searchLog->embedding = array_fill(0, 1024, 0.05);
+
+    $service = new RecommendationService;
+    $result = $service->recommendPaginated($searchLog, 'ko', 20, 1, 1);
+
+    expect($result->total())->toBe(1);
+    expect($result->items()[0]->id)->toBe($myCategory->id);
+});
+
+test('recommendPaginated — userId가 null이면 모든 사용자의 카테고리를 반환한다', function () {
+    $category1 = Category::factory()->create([
+        'category_code' => '50000000',
+        'category_name_ko' => '패션의류',
+        'user_id' => 1,
+    ]);
+
+    $category2 = Category::factory()->create([
+        'category_code' => '50000001',
+        'category_name_ko' => '식품',
+        'user_id' => 2,
+    ]);
+
+    // 두 카테고리 모두에 임베딩 생성
+    foreach ([$category1, $category2] as $cat) {
+        $embedding = new Vector(array_fill(0, 1024, 0.1));
+        $categoryEmbedding = new CategoryEmbedding;
+        $categoryEmbedding->category_id = $cat->id;
+        $categoryEmbedding->language = 'ko';
+        $categoryEmbedding->embed_model_name = 'bge-m3:latest';
+        $categoryEmbedding->embedding = $embedding;
+        $categoryEmbedding->save();
+    }
+
+    $searchLog = new SearchLog([
+        'search_keyword' => '청바지',
+        'normalized_keyword' => '청바지',
+        'embed_model_name' => 'bge-m3:latest',
+    ]);
+    $searchLog->embedding = array_fill(0, 1024, 0.05);
+
+    $service = new RecommendationService;
+    $result = $service->recommendPaginated($searchLog, 'ko', 20, 1, null);
+
+    expect($result->total())->toBe(2);
+});
+
+test('recommendPaginated — userId 배열로 여러 사용자의 카테고리를 필터링한다', function () {
+    $category1 = Category::factory()->create([
+        'category_code' => '50000000',
+        'category_name_ko' => '패션의류',
+        'user_id' => 1,
+    ]);
+
+    $category2 = Category::factory()->create([
+        'category_code' => '50000001',
+        'category_name_ko' => '식품',
+        'user_id' => 2,
+    ]);
+
+    $category3 = Category::factory()->create([
+        'category_code' => '50000002',
+        'category_name_ko' => '디지털/가전',
+        'user_id' => 3,
+    ]);
+
+    // 모든 카테고리에 임베딩 생성
+    foreach ([$category1, $category2, $category3] as $cat) {
+        $embedding = new Vector(array_fill(0, 1024, 0.1));
+        $categoryEmbedding = new CategoryEmbedding;
+        $categoryEmbedding->category_id = $cat->id;
+        $categoryEmbedding->language = 'ko';
+        $categoryEmbedding->embed_model_name = 'bge-m3:latest';
+        $categoryEmbedding->embedding = $embedding;
+        $categoryEmbedding->save();
+    }
+
+    $searchLog = new SearchLog([
+        'search_keyword' => '청바지',
+        'normalized_keyword' => '청바지',
+        'embed_model_name' => 'bge-m3:latest',
+    ]);
+    $searchLog->embedding = array_fill(0, 1024, 0.05);
+
+    $service = new RecommendationService;
+    $result = $service->recommendPaginated($searchLog, 'ko', 20, 1, [1, 2]);
+
+    // user_id 1, 2만 포함, user_id 3은 제외
+    expect($result->total())->toBe(2);
+    $ids = collect($result->items())->pluck('id')->toArray();
+    expect($ids)->toContain($category1->id);
+    expect($ids)->toContain($category2->id);
+});
