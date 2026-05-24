@@ -27,8 +27,8 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 
 ## 카테고리 접근 제어 규칙
 
-- **`user_id = 1`이 시스템 공개 카테고리 소유자** — 비로그인 시 `WHERE user_id = 1`만, 로그인+전체 시 `WHERE user_id IN (본인, 1)`, 내 카테고리 시 `WHERE user_id = 본인`
-- **모든 카테고리 조회 API는 `CategoryController::index()`와 동일한 user scope 규칙 적용** — `levels()`, RecommendController 등에서 누락 시 비로그인 사용자에게 타사용자 카테고리가 노출됨. 특히 `index()` 수정 시 다른 쿼리 메서드도 함께 확인할 것.
+- **`user_id = 1`이 시스템 공개 카테고리 소유자** — 비로그인 시 `WHERE user_id = 1`만, 로그인+전체 시 `WHERE user_id IN (본인, 1)` (단, admin/superadmin은 user_id 제한 없이 전체 접근), 내 카테고리 시 `WHERE user_id = 본인`
+- **모든 카테고리 조회 API는 `CategoryController::index()`와 동일한 user scope 규칙 적용** — `levels()`, RecommendController 등에서 누락 시 비로그인 사용자에게 타사용자 카테고리가 노출됨. admin/superadmin bypass도 모든 쿼리 메서드에 일관되게 적용할 것.
 
 ## 레포지토리 구조
 
@@ -88,6 +88,8 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 - **DB 포맷은 실제 데이터로 확인** — LIKE 쿼리 작성 시 프로덕션 DB를 `psql`로 먼저 조회할 것. 구분자(예: `>` vs ` > `) 차이로 빈 결과가 발생할 수 있다. `category_name_ko`와 `onKeywordSearch` 모두 `>` 구분자(공백 없음) 사용.
 - **유사도 검색 `isSearchMode` 게이트** — `isSearchMode = searchResults !== null && !keywordSearchActive`이므로 `handleSearch` 호출 시 반드시 `setKeywordSearchActive(false)`를 선행해야 한다. 누락 시 유사도 컬럼이 렌더링되지 않는다.
 - **`onSelectLeafPath` 등 콜백 prop은 stale closure 주의** — 비동기 API 응답 후 실행되는 콜백에서 부모의 `displayCategories` 등 상태를 직접 참조하면 최신값이 아닐 수 있다. leaf categoryId를 API에서 직접 받아 전달하거나 ref로 우회할 것.
+- **`filterRef` 패턴** — `useCallback` async 함수에서 state를 직접 참조하면 stale closure로 API 요청에 최신값이 반영되지 않는다. `useRef` + `useEffect`로 ref를 최신 상태로 유지하고 함수 내에서 `ref.current`로 참조할 것. (`embed-page-inner.tsx`의 `filterRef` 참고)
+- **초기 필터 파라미터 경쟁 상태** — URL에 cat1/q 등이 있으면 부모 `useEffect`의 `loadCategories()`(keyword 없음)와 `CategoryHierarchy` mount effect의 `onKeywordSearch`(keyword 있음)가 경쟁하여 필터 없는 결과가 최종 노출된다. `skipInitialLoadRef`로 첫 로드를 건너뛰고 child mount effect에 위임할 것.
 
 ## CI/CD
 

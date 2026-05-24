@@ -50,16 +50,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component>
 
 ## 디자인 시스템
 
-모든 UI 작업은 `ui-ux-pro-max:ui-ux-pro-max` plugin을 활성화하여 수행한다.
-디자인 상세는 [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md)를 엄격히 준수한다.
-
-핵심 제약:
-- **색상**: CSS 변수만 사용 (oklch 색 공간). raw hex 금지.
-- **아이콘**: lucide-react만 사용. 이모지 금지.
-- **반응형**: mobile-first (375px → 768px → 1280px+)
-- **다크 모드**: `next-themes` class 전략. light/dark 모두 지원 필수.
-- **애니메이션**: transform/opacity만 사용. `prefers-reduced-motion` 대응.
-- **shadcn/ui**: `base-nova` 스타일, RSC 호환, TypeScript.
+디자인 상세는 [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md)를 엄격히 준수한다 (색상, 아이콘, 반응형, 다크모드, 애니메이션, shadcn/ui).
 
 ## 코드 컨벤션
 
@@ -143,6 +134,5 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - 디자인 가이드: [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md)
 - 전체 아키텍처: [`docs/ADR.md`](../docs/ADR.md)
 - 제품 요구사항: [`docs/PRD.md`](../docs/PRD.md)
-- 아키텍처 결정: [`docs/ADR.md`](../docs/ADR.md)
 - 프로젝트 루트: [`/CLAUDE.md`](../CLAUDE.md)
 - 백엔드 가이드라인: [`laravel/CLAUDE.md`](../laravel/CLAUDE.md)
