@@ -51,6 +51,3 @@
 
 8개 Phase로 구성. 각 Phase의 step별 진행 상황과 상세는 `phases/index.json` 참조.
 
-## 5. 테스트 및 배포 (CI/CD)
-* **테스트 코드:** 백엔드 핵심 파이프라인(분할 조립, 예외 처리, Chaining, Lock, Rate Limit 방어) 테스트 코드 의무화.
-* **자동화 배포:** GitHub CI/CD 구성(테스트 실행). 현재 구동 중인 WSL2 환경 내 내부 러너를 통해 컨테이너(WATCHPACK_POLLING 볼륨 연동) 재시작 및 백그라운드 데몬 구동 자동화.

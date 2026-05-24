@@ -6,7 +6,6 @@
 2. **반응형 디자인**: 모바일(375px) → 태블릿(768px) → 데스크톱(1280px+) 순으로 mobile-first 디자인.
 3. **화이트/다크 모드**: `next-themes` 기반 class 전략으로 light/dark 모두 지원.
 4. **랜딩 페이지 스타일 비중**: 깔끔함 50% + 특수효과/개발자스러운 스타일 50%.
-5. **브라우저 검증**: Playwright MCP 플러그인 사용, `https://embed.cunlim.dev`로 접속.
 
 ---
 
