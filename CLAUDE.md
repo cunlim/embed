@@ -30,6 +30,12 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 - **`user_id = 1`이 시스템 공개 카테고리 소유자** — 비로그인 시 `WHERE user_id = 1`만, 로그인+전체 시 `WHERE user_id IN (본인, 1)` (단, admin/superadmin은 user_id 제한 없이 전체 접근), 내 카테고리 시 `WHERE user_id = 본인`
 - **모든 카테고리 조회 API는 `CategoryController::index()`와 동일한 user scope 규칙 적용** — `levels()`, RecommendController 등에서 누락 시 비로그인 사용자에게 타사용자 카테고리가 노출됨. admin/superadmin bypass도 모든 쿼리 메서드에 일관되게 적용할 것.
 
+## SSR (Server Components)
+
+- **`useSyncExternalStore` mount guard 제거로 SSR 활성화** — `if (!mounted) return null`을 제거해도 hydration mismatch가 발생하지 않는다. React가 hydration 중 server snapshot을, 완료 후 client snapshot을 사용하기 때문.
+- **SSR 데이터 prefetch 패턴** — Server Component(`page.tsx`)에서 `getCategories(null)`(토큰 없이 공개 데이터) → Client Component props → `useCategories(token, initialCategories, initialMeta)`로 초기값 전달. `isLoading`은 `initialCategories ? false : !!token`.
+- **컴포넌트 props 추가 시 테스트 파일 갱신 필수** — `npm test`는 모킹으로 타입 체크를 우회하므로 테스트 파일의 prop 누락이 감지되지 않는다. `npx tsc --noEmit` 또는 `run-all-checks.sh`(`.claude/hooks/test-results/nextjs-tsc.txt`)로 반드시 확인할 것.
+
 ## 레포지토리 구조
 
 `nextjs/`(Next.js 16), `laravel/`(Laravel 13), `docker/`(5개 서비스), `docs/`(설계 문서), `phases/`(Phase 산출물)
@@ -55,18 +61,12 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 - **컨테이너 재시작 후 HMR 불통** — `docker compose stop` + `up -d` 후 브라우저 WebSocket이 502로 끊기면 Turbopack 재컴파일이 반영되지 않는다. Playwright는 `browser.newContext()`, 수동은 Ctrl+Shift+R로 복구.
 - **Subagent-Driven 시 동일 파일 작업 통합** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합 구현을 지시한다. 분할 dispatch 시 컨텍스트 충돌과 불필요한 재작업 발생.
 - **`execute.py` spawned Claude CLI 실패** — spawned Claude CLI가 `--dangerously-skip-permissions`를 사용해도 멈추거나(hang) 컨테이너에만 구현하고 호스트 `index.json`을 갱신하지 못해 "Step did not update status"로 실패할 수 있다. 실패 시 **컨테이너에 코드가 이미 구현되어 있는지 먼저 확인**하고, 있으면 호스트로 동기화 후 index.json을 수동 갱신한다. 진행이 없으면 `kill` 후 직접 step 구현.
-- **shadcn 컴포넌트 설치 시 confirm** — 기존 파일이 있으면 overwrite 확인(y/N)으로 배치 설치가 중단된다. `echo 'y' | npx shadcn@latest add <component>`로 회피.
+- **shadcn 컴포넌트 설치 시 confirm** — `echo 'y' | npx shadcn@latest add <component>`로 회피. 설치 후 `git diff --stat`으로 `package.json` 변경 확인.
 - **Docker 바인드 마운트 주의사항**:
   - **동기화 불일치** — 호스트↔컨테이너 파일 변경이 즉시 반영되지 않을 수 있다. 파일 수정 후 **반드시 `wc -l`로 양쪽 라인 수를 비교**할 것.
-  - **신뢰 가능한 동기화 방법** — `docker exec cat > host`와 `docker cp`는 WSL2 바인드 마운트에서 0바이트 파일을 생성한다. **2단계 base64 방식만 사용할 것:**
-    - **호스트→컨테이너**: `cat <host-path> | base64 | docker exec -i <container> bash -c "base64 -d > <container-path>"`
-    - **컨테이너→호스트**: `docker exec cat <container-path> | base64 > /tmp/b64.txt && base64 -d /tmp/b64.txt > <host-path>`
-    - **대량 파일 (tar 파이프)**: `tar -C <host-dir> --exclude='node_modules' --exclude='vendor' --exclude='.git' -cf - . | docker exec -i <container> tar -C <container-dir> -xf -`
-  - **신규 디렉토리** — 호스트에서 새 디렉토리를 만들면 컨테이너에 자동 반영되지 않을 수 있다. `docker exec cl_embed_laravel mkdir -p <path>`로 컨테이너에도 동일 디렉토리 생성.
-    - **컨테이너→호스트 동기화 시 신규 디렉토리** — spawned Claude 등이 컨테이너에 새 디렉토리를 생성한 경우, 호스트에도 `mkdir -p`로 선행 생성 후 동기화해야 한다.
-  - **`composer require` 후 동기화** — 컨테이너 내부에서 실행 시 생성/변경된 파일은 컨테이너에만 존재한다. `docker exec cl_embed_laravel cat <container-path> > <host-path>`로 호스트에 복사.
-- **`npx shadcn add` 후 `package.json`/`package-lock.json` 확인** — shadcn 컴포넌트 추가 시 의존성 변경이 발생하면 두 파일이 수정된다. `git diff --stat`으로 누락 없이 커밋되었는지 확인할 것.
-  - **bind mount 디렉토리는 daemon(root)이 생성** — `docker compose up -d` 시 bind mount 소스 디렉토리가 없으면 Docker daemon이 root 소유로 생성. 새 bind mount 추가 시 CI에서 `mkdir -p`로 미리 생성할 것.
+  - **동기화는 base64 방식만 사용** — `docker exec cat > host`와 `docker cp`는 WSL2 바인드 마운트에서 0바이트 파일 생성. `cat <host> \| base64 \| docker exec -i <container> bash -c "base64 -d > <container>"` (호스트→컨테이너), 반대도 동일 패턴.
+  - **신규 디렉토리** — 호스트·컨테이너 한쪽에서만 생성 시 자동 반영되지 않는다. 양쪽에 각각 `mkdir -p` 필요.
+- **bind mount 디렉토리는 daemon(root)이 생성** — 새 bind mount 추가 시 CI에서 `mkdir -p`로 미리 생성할 것.
 - **API 라우트에는 세션 미들웨어 없음** — `routes/api.php`는 `StartSession` 미들웨어가 기본 포함되지 않는다. `$request->session()`뿐 아니라 `$request->user()`도 web guard(세션 기반)를 사용하므로 API 컨트롤러에서 항상 null을 반환한다. 사용자 resolve가 필요하면 `$request->user('sanctum')` 또는 `auth('sanctum')->user()`를 사용할 것.
 - **root 소유 경로에 파일 복사** — `/etc/` 등 root 소유 디렉터리에 파일을 쓸 때는 `docker cp <host-path> <container>:/path/to/file`가 가장 간결하다.
 - **pgvector `<=>` distance 컬럼 미선택** — `orderByRaw('embedding <=> ?::vector', ...)`만 사용하면 distance 값이 SELECT 절에 포함되지 않아 모델 속성으로 접근할 수 없다. `selectRaw('*, embedding <=> ?::vector as distance', [...])`를 함께 사용해야 한다.
