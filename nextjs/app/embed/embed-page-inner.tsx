@@ -192,7 +192,7 @@ export function EmbedPageInner({
     setHierarchyRefreshKey(prev => prev + 1);
   }, [newCategoryName, newCategoryCode, addCategory]);
 
-  // URL 업데이트 (ref로 최신 state 참조하여 stale closure 방지)
+  // URL 업데이트 (현재 URL 보존 + 오버라이드만 적용)
   const updateURL = useCallback((overrides: {
     filter?: string | undefined;
     searchText?: string;
@@ -201,24 +201,38 @@ export function EmbedPageInner({
     cat1?: string | null; cat2?: string | null; cat3?: string | null; cat4?: string | null;
     q?: string;
   }) => {
-    const params = new URLSearchParams();
-    const f = overrides.filter !== undefined ? overrides.filter : filterRef.current;
-    const st = overrides.searchText !== undefined ? overrides.searchText : searchText;
-    const sl = overrides.searchLanguage !== undefined ? overrides.searchLanguage : searchLanguage;
-    if (f) params.set("filter", f);
-    if (st) params.set("stext", st);
-    if (sl !== "ko") params.set("slang", sl);
-    if (overrides.mode) params.set("mode", overrides.mode);
-    if (overrides.cat1) params.set("cat1", overrides.cat1);
-    if (overrides.cat2) params.set("cat2", overrides.cat2);
-    if (overrides.cat3) params.set("cat3", overrides.cat3);
-    if (overrides.cat4) params.set("cat4", overrides.cat4);
-    if (overrides.q) params.set("q", overrides.q);
+    const params = new URLSearchParams(searchParams.toString());
+
+    const apply = (key: string, value: string | null | undefined, clearChildren?: string[]) => {
+      if (value) { params.set(key, value); return; }
+      params.delete(key);
+      if (clearChildren) clearChildren.forEach(k => params.delete(k));
+    };
+
+    if ("filter" in overrides) apply("filter", overrides.filter);
+    if ("searchText" in overrides) {
+      if (overrides.searchText) params.set("stext", overrides.searchText);
+      else { params.delete("stext"); params.delete("slang"); }
+    }
+    if ("searchLanguage" in overrides) {
+      if (overrides.searchLanguage && overrides.searchLanguage !== "ko") params.set("slang", overrides.searchLanguage);
+      else params.delete("slang");
+    }
+    if ("mode" in overrides && overrides.mode) params.set("mode", overrides.mode);
+    if ("cat1" in overrides) apply("cat1", overrides.cat1, ["cat2", "cat3", "cat4"]);
+    if ("cat2" in overrides) apply("cat2", overrides.cat2, ["cat3", "cat4"]);
+    if ("cat3" in overrides) apply("cat3", overrides.cat3, ["cat4"]);
+    if ("cat4" in overrides) apply("cat4", overrides.cat4);
+    if ("q" in overrides) apply("q", overrides.q);
+
     if (page > 1) params.set("page", String(page));
+    else params.delete("page");
     if (perPage !== 20) params.set("per_page", String(perPage));
+    else params.delete("per_page");
+
     const qs = params.toString();
     router.replace(`/embed${qs ? "?" + qs : ""}`, { scroll: false });
-  }, [router, page, perPage, searchText, searchLanguage]);
+  }, [router, searchParams, page, perPage]);
 
   const handleSearch = useCallback(async (page?: number, keyword?: string) => {
     const currentPage = page ?? 1;
