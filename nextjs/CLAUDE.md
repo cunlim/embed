@@ -136,6 +136,8 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - **`"use client"` 파일에 async 함수 금지** — ESLint `@next/next/no-async-client-component`. Server Component를 async로 만들려면 `"use client"` 없는 별도 파일로 분리하고 Client Component를 import할 것.
 - **Client Component export** — 테스트에서 Server Component를 우회할 수 있도록 Client Component(예: `EmbedPageInner`)는 `export function`으로 선언. 테스트는 Server Component 대신 Client Component를 직접 import.
 
+- **RecommendResource에 user_id 필수** — `canModify`가 `"user_id" in category && category.user_id === user.id`로 소유권을 판별하므로, `RecommendResource::toArray()`에 `user_id`가 누락되면 유사도 검색 결과의 모든 행이 보기 전용(체크박스 disabled, 수정 불가)으로 처리된다.
+
 ## 관련 문서
 
 - 디자인 가이드: [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md)
