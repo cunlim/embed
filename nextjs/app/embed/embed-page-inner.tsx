@@ -44,7 +44,7 @@ import TaskExecution from "@/components/admin/task-execution";
 import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { isAdmin } from "@/lib/utils";
-import { parseEmbedKeyword } from "@/lib/embed-params";
+import { parseEmbedParams } from "@/lib/embed-params";
 import { useCategories } from "@/hooks/useCategories";
 import { useCategoryDetail } from "@/hooks/useCategoryDetail";
 import { useCategoryExecution } from "@/hooks/useCategoryExecution";
@@ -80,6 +80,11 @@ export function EmbedPageInner({
   serverCategories,
   serverMeta,
   serverHadToken,
+  serverFilter,
+  serverSearchResults,
+  serverSearchMeta,
+  serverSearchText,
+  serverSearchLang,
 }: {
   server대Options: string[];
   server중Options: string[];
@@ -88,6 +93,11 @@ export function EmbedPageInner({
   serverCategories: Category[];
   serverMeta: PaginationMeta | null;
   serverHadToken: boolean;
+  serverFilter: string | null;
+  serverSearchResults: Recommendation[] | null;
+  serverSearchMeta: PaginationMeta | null;
+  serverSearchText: string | null;
+  serverSearchLang: string;
 }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -122,19 +132,19 @@ export function EmbedPageInner({
     deleteCategory,
   } = useCategories(token, serverCategories, serverMeta);
 
-  // URL에서 필터 모드/상태 파싱
-  const urlMode = searchParams.get("mode");
-  const initialFilterMode = (urlMode === "hierarchy" || urlMode === "search") ? urlMode : "hierarchy";
+  // URL에서 파라미터 파싱
+  const embedParams = parseEmbedParams(searchParams);
+  const initialFilterMode = embedParams.mode;
   const initialHierarchy: HierarchyFilterState = {
     대: searchParams.get("cat1"),
     중: searchParams.get("cat2"),
     소: searchParams.get("cat3"),
     세: searchParams.get("cat4"),
   };
-  const initialFilterKeyword = parseEmbedKeyword(searchParams) ?? "";
+  const initialFilterKeyword = embedParams.keyword ?? "";
 
   const [perPage, setPerPage] = useState(initialPerPage);
-  const [filter, setFilter] = useState<string | undefined>(undefined);
+  const [filter, setFilter] = useState<string | undefined>(embedParams.filter);
   const [keywordSearchActive, setKeywordSearchActive] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [hierarchyRefreshKey, setHierarchyRefreshKey] = useState(0);
@@ -142,14 +152,14 @@ export function EmbedPageInner({
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryCode, setNewCategoryCode] = useState("");
 
-  // 검색 state
-  const [searchText, setSearchText] = useState("");
-  const [searchLanguage, setSearchLanguage] = useState("ko");
-  const [searchResults, setSearchResults] = useState<Recommendation[] | null>(null);
+  // 검색 state (URL 및 SSR prefetch에서 초기값)
+  const [searchText, setSearchText] = useState(serverSearchText ?? embedParams.searchText ?? "");
+  const [searchLanguage, setSearchLanguage] = useState(serverSearchLang ?? embedParams.searchLang);
+  const [searchResults, setSearchResults] = useState<Recommendation[] | null>(serverSearchResults ?? null);
   // useRef로 searchResults 참조 — useEffect 의존성 배열에 추가하지 않고 최신값 읽기
   const searchResultsRef = useRef(searchResults);
   useEffect(() => { searchResultsRef.current = searchResults });
-  const [searchMeta, setSearchMeta] = useState<PaginationMeta | null>(null);
+  const [searchMeta, setSearchMeta] = useState<PaginationMeta | null>(serverSearchMeta ?? null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [cosineDialogOpen, setCosineDialogOpen] = useState(false);
@@ -182,12 +192,41 @@ export function EmbedPageInner({
     setHierarchyRefreshKey(prev => prev + 1);
   }, [newCategoryName, newCategoryCode, addCategory]);
 
+  // URL 업데이트 (ref로 최신 state 참조하여 stale closure 방지)
+  const updateURL = useCallback((overrides: {
+    filter?: string | undefined;
+    searchText?: string;
+    searchLanguage?: string;
+    mode?: string;
+    cat1?: string | null; cat2?: string | null; cat3?: string | null; cat4?: string | null;
+    q?: string;
+  }) => {
+    const params = new URLSearchParams();
+    const f = overrides.filter !== undefined ? overrides.filter : filterRef.current;
+    const st = overrides.searchText !== undefined ? overrides.searchText : searchText;
+    const sl = overrides.searchLanguage !== undefined ? overrides.searchLanguage : searchLanguage;
+    if (f) params.set("filter", f);
+    if (st) params.set("stext", st);
+    if (sl !== "ko") params.set("slang", sl);
+    if (overrides.mode) params.set("mode", overrides.mode);
+    if (overrides.cat1) params.set("cat1", overrides.cat1);
+    if (overrides.cat2) params.set("cat2", overrides.cat2);
+    if (overrides.cat3) params.set("cat3", overrides.cat3);
+    if (overrides.cat4) params.set("cat4", overrides.cat4);
+    if (overrides.q) params.set("q", overrides.q);
+    if (page > 1) params.set("page", String(page));
+    if (perPage !== 20) params.set("per_page", String(perPage));
+    const qs = params.toString();
+    router.replace(`/embed${qs ? "?" + qs : ""}`, { scroll: false });
+  }, [router, page, perPage, searchText, searchLanguage]);
+
   const handleSearch = useCallback(async (page?: number, keyword?: string) => {
     const currentPage = page ?? 1;
     searchPageRef.current = currentPage;
     setIsSearching(true);
     setSearchError(null);
     setKeywordSearchActive(false);
+    updateURL({ searchText, searchLanguage });
     try {
       const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current, filterRef.current, keyword ?? (keywordRef.current || undefined));
       setSearchResults(data.data);
@@ -198,7 +237,7 @@ export function EmbedPageInner({
     } finally {
       setIsSearching(false);
     }
-  }, [searchText, searchLanguage, token]);
+  }, [searchText, searchLanguage, token, updateURL]);
 
   // URL page 동기화 (시맨틱 검색 결과가 있으면 필터 변경 시 재검색)
   useEffect(() => {
@@ -225,7 +264,8 @@ export function EmbedPageInner({
     setSearchResults(null);
     setSearchMeta(null);
     setSearchError(null);
-  }, []);
+    updateURL({ searchText: "", searchLanguage: "ko" });
+  }, [updateURL]);
 
   const handleKeywordSearch = useCallback((keyword: string) => {
     // SSR 데이터가 이미 있고 같은 키워드면 재요청 건너뜀
@@ -253,23 +293,14 @@ export function EmbedPageInner({
   // 필터 상태 변경 시 URL 업데이트
   const handleFilterChange = useCallback(
     (state: { mode: "hierarchy" | "search"; hierarchy: HierarchyFilterState; keyword: string }) => {
-      const params = new URLSearchParams();
-      params.set("mode", state.mode);
-      if (state.mode === "hierarchy") {
-        if (state.hierarchy.대) params.set("cat1", state.hierarchy.대);
-        if (state.hierarchy.중) params.set("cat2", state.hierarchy.중);
-        if (state.hierarchy.소) params.set("cat3", state.hierarchy.소);
-        if (state.hierarchy.세) params.set("cat4", state.hierarchy.세);
-      } else {
-        if (state.keyword) params.set("q", state.keyword);
-      }
-      // 기존 page/per_page 보존
-      if (page > 1) params.set("page", String(page));
-      if (perPage !== 20) params.set("per_page", String(perPage));
-      const qs = params.toString();
-      router.replace(`/embed${qs ? "?" + qs : ""}`, { scroll: false });
+      updateURL({
+        mode: state.mode,
+        cat1: state.hierarchy.대, cat2: state.hierarchy.중,
+        cat3: state.hierarchy.소, cat4: state.hierarchy.세,
+        q: state.keyword || undefined,
+      });
     },
-    [router, page, perPage]
+    [updateURL]
   );
 
   const canModify = useCallback((category: Category | Recommendation) => {
@@ -488,7 +519,7 @@ export function EmbedPageInner({
                 <Button
                   variant={filter === undefined ? "secondary" : "ghost"}
                   size="sm"
-                  onClick={() => setFilter(undefined)}
+                  onClick={() => { setFilter(undefined); updateURL({ filter: undefined }); }}
                 >
                   전체
                 </Button>
@@ -497,7 +528,7 @@ export function EmbedPageInner({
                   size="sm"
                   onClick={() => {
                     if (!user) { alert("로그인이 필요합니다"); return; }
-                    setFilter("my");
+                    setFilter("my"); updateURL({ filter: "my" });
                   }}
                 >
                   내 카테고리

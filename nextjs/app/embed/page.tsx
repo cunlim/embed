@@ -1,11 +1,10 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import { fetchCategoryLevels, getCategories } from "@/lib/api";
-import { parseEmbedKeyword, type EmbedParamsReader } from "@/lib/embed-params";
+import { fetchCategoryLevels, getCategories, recommend } from "@/lib/api";
+import { parseEmbedParams, type EmbedParamsReader } from "@/lib/embed-params";
 import { EmbedPageInner } from "./embed-page-inner";
-import type { Category, PaginationMeta } from "@/lib/api";
+import type { Category, PaginationMeta, Recommendation } from "@/lib/api";
 
-/** Server Component의 searchParams를 { get(key) => string | null }로 감싼다 */
 function serverParamsReader(
   sp: Awaited<EmbedPageParams["searchParams"]>
 ): EmbedParamsReader {
@@ -24,6 +23,7 @@ type EmbedPageParams = {
 export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   const sp = await searchParams;
   const reader = serverParamsReader(sp);
+  const { keyword, filter, searchText, searchLang } = parseEmbedParams(reader);
 
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value ?? null;
@@ -32,7 +32,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   const cat2 = reader.get("cat2");
   const cat3 = reader.get("cat3");
 
-  // 대 옵션 항상 prefetch
+  // 계층별 옵션 prefetch
   let 대Options: string[] = [];
   let 중Options: string[] = [];
   let 소Options: string[] = [];
@@ -54,20 +54,26 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
       const 세Res = await fetchCategoryLevels({ 대: cat1, 중: cat2, 소: cat3 }, token);
       세Options = 세Res.data.세 ?? [];
     }
-  } catch {
-    // prefetch 실패 시 클라이언트에서 빈 배열로 시작
-  }
+  } catch {}
 
   // 카테고리 목록 prefetch
   let serverCategories: Category[] = [];
   let serverMeta: PaginationMeta | null = null;
   try {
-    const keyword = parseEmbedKeyword(reader) ?? undefined;
-    const categoriesRes = await getCategories(token, 1, 20, undefined, keyword);
+    const categoriesRes = await getCategories(token, 1, 20, filter, keyword ?? undefined);
     serverCategories = categoriesRes.data;
     serverMeta = categoriesRes.meta;
-  } catch {
-    // prefetch 실패 시 빈 배열로 시작
+  } catch {}
+
+  // 유사도 검색 prefetch
+  let serverSearchResults: Recommendation[] | null = null;
+  let serverSearchMeta: PaginationMeta | null = null;
+  if (searchText) {
+    try {
+      const searchRes = await recommend(searchText, searchLang, token);
+      serverSearchResults = searchRes.data;
+      serverSearchMeta = searchRes.meta;
+    } catch {}
   }
 
   return (
@@ -80,6 +86,11 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
         serverCategories={serverCategories}
         serverMeta={serverMeta}
         serverHadToken={!!token}
+        serverFilter={filter ?? null}
+        serverSearchResults={serverSearchResults}
+        serverSearchMeta={serverSearchMeta}
+        serverSearchText={searchText}
+        serverSearchLang={searchLang}
       />
     </Suspense>
   );
