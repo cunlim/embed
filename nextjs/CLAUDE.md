@@ -121,7 +121,9 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - **훅 메서드 간 호출 시 이중 상태 업데이트** — `addCategory` 내부에서 `loadCategories()`를 호출하면 `setIsLoading(true)`가 이중 호출되어 불필요한 렌더링 발생. 대신 API 함수(`getCategories(token)`)를 직접 호출하고 `setCategories(data.data)`로 상태를 직접 설정할 것.
 - **`renderHook` + `act()` 중간 상태 테스트 불가** — pending Promise로 `isLoading`의 중간 true 상태를 검증하려는 테스트는 `act()`가 Promise 완료까지 대기하여 항상 false가 반환됨. `await act(async () => { await result.current.method(); })` 패턴으로 최종 상태만 검증할 것. 중간 상태 검증이 필요하면 deferred promise 대신 `waitFor` 사용.
 - **컨테이너 재생성 후 타입 재평가** — `docker compose stop` + `up -d`로 컨테이너 재생성 시 npm 의존성 타입이 재평가되어 이전에 통과하던 TypeScript 체크가 실패할 수 있다. 재생성 후 반드시 `npm run build`로 타입 체크를 확인할 것.
-- **`useAuth()` 자동 사용자 로드** — 훅이 마운트 시 localStorage 토큰을 읽어 `GET /api/auth/user`를 자동 호출. `isLoading` 초기값은 `!!getToken()`으로 결정 (token 있으면 true, 없으면 false). effect 내 동기적 `setIsLoading()` 호출 금지.
+- **`useAuth()` 자동 사용자 로드** — 훅이 마운트 시 쿠키의 `auth_token`을 읽어 `GET /api/auth/user`를 자동 호출 (localStorage fallback 있음). `isLoading` 초기값은 `!!getToken()`으로 결정. `setToken()` 호출 시 쿠키에도 저장되므로 SSR `page.tsx`에서 `cookies().get("auth_token")`으로 접근 가능.
+- **`getToken()`은 `mounted` 게이트 불필요** — `typeof document === "undefined"` 체크로 이미 SSR 안전. `const token = mounted ? getToken() : null` 대신 `const token = getToken()` 사용.
+- **SSR prefetch 파라미터 일치 필수** — `page.tsx`의 `getCategories()`·`recommend()` 호출 인자(token, filter, keyword, page, perPage)가 CSR과 정확히 일치해야 불일치가 발생하지 않는다.
 - **`useCategories(token)` auto-load** — token 변경 시 mount 시 자동 로드 (`loadedToken` ref로 변경 감지). 컴포넌트 effect에서 `loadCategories()` 호출 불필요. token이 null이어도 public 데이터 로드를 위해 자동 로드. `isLoaded` 플래그로 초기 로드 완료 확인 가능.
 - **`getUser()` 응답 envelope** — `/api/auth/user`는 `{data: {id, name, email, created_at}}` 형식. `lib/api.ts`의 `getUser()`에서 `res.data`로 추출 필요. 로그인/회원가입 응답과 동일한 패턴.
 - **`"use client"` 파일에 async 함수 금지** — ESLint `@next/next/no-async-client-component`. Server Component를 async로 만들려면 `"use client"` 없는 별도 파일로 분리하고 Client Component를 import할 것.

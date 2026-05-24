@@ -33,7 +33,9 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 ## SSR (Server Components)
 
 - **`useSyncExternalStore` mount guard 제거로 SSR 활성화** — `if (!mounted) return null`을 제거해도 hydration mismatch가 발생하지 않는다. React가 hydration 중 server snapshot을, 완료 후 client snapshot을 사용하기 때문.
-- **SSR 데이터 prefetch 패턴** — Server Component(`page.tsx`)에서 `getCategories(null)`(토큰 없이 공개 데이터) → Client Component props → `useCategories(token, initialCategories, initialMeta)`로 초기값 전달. `isLoading`은 `initialCategories ? false : !!token`.
+- **SSR prefetch 시 CSR과 동일 파라미터 전달** — `page.tsx`의 API 호출이 CSR과 동일한 인자(token, filter, keyword, page, perPage)를 전달해야 SSR/CSR 불일치를 방지한다. `parseEmbedParams()`로 URL 파라미터를 SSR/CSR 공통 추출.
+- **auth_token 쿠키 저장** — `useAuth.ts`의 `setToken()`이 쿠키에 토큰을 저장하므로 `page.tsx`에서 `cookies().get("auth_token")`로 읽을 수 있다. `getToken()`은 `typeof document === "undefined"` 체크로 SSR 안전 → `mounted ? getToken() : null` 불필요.
+- **URL 파라미터 갱신 시 기존 파라미터 보존** — URL 동기화 함수는 `new URLSearchParams(searchParams.toString())`로 시작하여 명시된 키만 변경하고 나머지는 그대로 유지할 것. `new URLSearchParams()`로 새로 만들면 필터 토글 시 mode/cat1/page/per_page 등이 소실된다.
 - **컴포넌트 props 추가 시 테스트 파일 갱신 필수** — `npm test`는 모킹으로 타입 체크를 우회하므로 테스트 파일의 prop 누락이 감지되지 않는다. `npx tsc --noEmit` 또는 `run-all-checks.sh`(`.claude/hooks/test-results/nextjs-tsc.txt`)로 반드시 확인할 것.
 
 ## 레포지토리 구조
@@ -82,10 +84,10 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 - **WSL2 `networkingMode=mirrored`**: Docker 컨테이너 내부에서 `host.docker.internal`로 Windows 호스트의 Ollama(port 11434)에 접근.
 - **Docker Compose**: WSL2에서 `restart` 불가. `stop` + `up -d` 사용.
 - **`react-hooks/set-state-in-effect`** — URL→props→state 동기화 시 `useEffect`+`setState` 대신 `useState(initialValue)` 초기자 사용.
+- **`filterRef` / `keywordRef` / `searchTextRef` 패턴** — `useCallback` async 함수에서 state 직접 참조는 stale closure 유발. `useRef`로 최신 상태를 추적하고 `ref.current`로 참조할 것. (`embed-page-inner.tsx` 참고)
 - **DB 포맷은 실제 데이터로 확인** — LIKE 쿼리 작성 시 프로덕션 DB를 `psql`로 먼저 조회할 것. 구분자(예: `>` vs ` > `) 차이로 빈 결과가 발생할 수 있다. `category_name_ko`와 `onKeywordSearch` 모두 `>` 구분자(공백 없음) 사용.
 - **유사도 검색 `isSearchMode` 게이트** — `isSearchMode = searchResults !== null && !keywordSearchActive`이므로 `handleSearch` 호출 시 반드시 `setKeywordSearchActive(false)`를 선행해야 한다. 누락 시 유사도 컬럼이 렌더링되지 않는다.
 - **`onSelectLeafPath` 등 콜백 prop은 stale closure 주의** — 비동기 API 응답 후 실행되는 콜백에서 부모의 `displayCategories` 등 상태를 직접 참조하면 최신값이 아닐 수 있다. leaf categoryId를 API에서 직접 받아 전달하거나 ref로 우회할 것.
-- **`filterRef` / `keywordRef` 패턴** — `useCallback` async 함수에서 state를 직접 참조하면 stale closure로 API 요청에 최신값이 반영되지 않는다. `useRef`로 최신 상태를 추적하고 함수 내에서 `ref.current`로 참조할 것. 자식 컴포넌트 상태를 부모 콜백이 알아야 할 때도 동일 패턴 사용. (`embed-page-inner.tsx`의 `filterRef`, `keywordRef` 참고)
 - **TypeScript `??`/`||` 혼합 금지** — `a ?? b || c`는 TS5076 에러. `a ?? (b || c)`처럼 괄호로 우선순위 명시할 것.
 - **초기 필터 파라미터 경쟁 상태** — URL에 cat1/q 등이 있으면 부모 `useEffect`의 `loadCategories()`(keyword 없음)와 `CategoryHierarchy` mount effect의 `onKeywordSearch`(keyword 있음)가 경쟁하여 필터 없는 결과가 최종 노출된다. `skipInitialLoadRef`로 첫 로드를 건너뛰고 child mount effect에 위임할 것.
 
