@@ -160,6 +160,8 @@ export function EmbedPageInner({
 
   // URL에 초기 필터 파라미터가 있으면 첫 loadCategories를 건너뛴다 (CategoryHierarchy mount effect가 대신 처리)
   const skipInitialLoad = useRef(!!initialHierarchy.대 || !!initialFilterKeyword);
+  // SSR 초기 데이터가 있고 비로그인이면 첫 loadCategories 건너뜀
+  const hadServerCategories = useRef(serverCategories.length > 0);
 
   const isSearchMode = searchResults !== null && !keywordSearchActive;
   const displayCategories = isSearchMode ? searchResults : categories;
@@ -202,12 +204,19 @@ export function EmbedPageInner({
       skipInitialLoad.current = false;
       return;
     }
+    // SSR 데이터가 있고 비로그인이면 reload 건너뜀
+    if (hadServerCategories.current) {
+      hadServerCategories.current = false;
+      if (!token) return;
+    }
     if (searchResultsRef.current !== null) {
       handleSearch(page);
     } else {
       const kw = keywordRef.current || undefined;
       loadCategories(page, perPage, filter, kw);
     }
+  // token은 mounted 전환 시에만 체크하므로 deps에서 제외
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, page, perPage, filter, loadCategories, handleSearch]);
 
   const handleReset = useCallback(() => {

@@ -77,10 +77,13 @@ export default function CategoryHierarchy({
   // refreshKey 변경 또는 token 최초 확보 시 대Options 다시 조회
   const prevTokenRef = useRef<string | null | undefined>(null);
   const hasRestoredRef = useRef(false);
+  const hadInitial대 = useRef(initial대Options.length > 0);
   useEffect(() => {
     const tokenChanged = token !== prevTokenRef.current;
     prevTokenRef.current = token;
-    if (token && (refreshKey > 0 || tokenChanged)) {
+    const skipInitial = hadInitial대.current;
+    hadInitial대.current = false;
+    if (token && (refreshKey > 0 || (tokenChanged && !skipInitial))) {
       fetchCategoryLevels(undefined, token).then((res) => {
         set대Options(res.data.대 ?? []);
       }).catch(() => {
