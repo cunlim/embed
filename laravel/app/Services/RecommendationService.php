@@ -63,6 +63,9 @@ class RecommendationService
             ->selectRaw('ce_ko.embedding <=> ?::vector as distance_ko', [$vectorLiteral])
             ->selectRaw('ce_en.embedding <=> ?::vector as distance_en', [$vectorLiteral])
             ->selectRaw('ce_zh.embedding <=> ?::vector as distance_zh', [$vectorLiteral])
+            ->selectRaw('RANK() OVER (ORDER BY ce_ko.embedding <=> ?::vector) as rank_ko', [$vectorLiteral])
+            ->selectRaw('RANK() OVER (ORDER BY ce_en.embedding <=> ?::vector) as rank_en', [$vectorLiteral])
+            ->selectRaw('RANK() OVER (ORDER BY ce_zh.embedding <=> ?::vector) as rank_zh', [$vectorLiteral])
             ->selectRaw("ce_{$targetLanguage}.embedding::text as category_embedding_raw")
             ->leftJoin('category_embeddings as ce_ko', function ($join) {
                 $join->on('ce_ko.category_id', '=', 'categories.id')
@@ -108,6 +111,7 @@ class RecommendationService
                 $category->{"similarity_score_{$lang}"} = $dist !== null
                     ? round(1.0 - (float) $dist, 4)
                     : null;
+                $category->{"rank_{$lang}"} = $category->{"rank_{$lang}"} ?? null;
             }
 
             return $category;
