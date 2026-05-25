@@ -51,6 +51,7 @@
 - 완료: `CheckCircle2` (green)
 - 진행중/부분: `Clock` (blue)
 - 미처리: `Minus` (muted)
+- 모든 상태: `flex items-center justify-center` — 테이블 셀 내 중앙정렬
 
 ---
 
@@ -121,16 +122,7 @@
 
 ## 7. 성능 & 접근성
 
-### 성능
-- 이미지: `next/image`, `loading="lazy"`
-- 폰트: `next/font/google` 번들링
-- 번들: 동적 임포트로 코드 분할
-
-### 접근성
-- 대비: 일반 4.5:1, 큰 텍스트 3:1 (light/dark 모두)
-- 포커스: `focus-visible:ring-2 focus-visible:ring-ring`
-- 키보드: Tab 순서 = 시각적 순서
-- 스크린리더: icon-only button에 `aria-label`, 동적 콘텐츠에 `aria-live`
-- 폼: `<label htmlFor>` + `<input id>` 연결
-- 터치: 버튼/링크 최소 44x44px
-- 폰트: 모바일 body 최소 16px (iOS 자동 줌 방지)
+- 이미지: `next/image`, 폰트: `next/font/google`, 번들: 동적 임포트
+- 대비: 4.5:1 (일반) / 3:1 (큰 텍스트), 포커스: `focus-visible:ring-2 focus-visible:ring-ring`
+- 터치 타겟 최소 44x44px, 모바일 body 최소 16px
+- icon-only button은 `aria-label` 필수

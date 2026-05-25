@@ -98,6 +98,8 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - `hooks/__tests__/*.test.ts` — 커스텀 훅 (@testing-library/react의 renderHook 사용)
 - API 호출을 모킹할 때는 `vi.mock("@/lib/api")`로 모듈 전체를 모킹
 - **shadcn Select는 `<select>`가 아님** — `role="combobox"` 기반 커스텀 컴포넌트. Playwright에서 `selectOption()` 대신 옵션 클릭 사용: `page.getByRole('option', { name: '...' }).click()`
+- **shadcn Select 초기화용 항목 누락** — native `<select>`의 `<option value="">`과 달리 shadcn Select의 `placeholder`는 드롭다운에 표시되지 않는다. 선택 초기화가 필요하면 `<SelectContent>`에 `<SelectItem value="">` 항목을 명시적으로 추가할 것.
+- **`onValueChange` 타입: `string | null`** — base-ui Select의 `onValueChange` 콜백은 `string | null`을 전달하므로, `string` 파라미터를 받는 핸들러에 전달 시 `value ?? ""`로 null 처리할 것.
 - **`CardTitle`은 `<div>` 요소** — `role="heading"`이 없으므로 테스트에서 `getByRole('heading', ...)`으로 찾을 수 없다. `getByText()` / `getAllByText()` 사용할 것.
 
 ## 알려진 이슈
@@ -106,7 +108,7 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 
 - **Laravel API 응답 형식과 프론트엔드 타입 불일치** — Laravel `Resource::collection()`은 `{data: [...]}`, 단일 `Resource`는 `{data: {...}}` 형식으로 응답한다. TypeScript 인터페이스 정의 시 실제 응답 형식을 curl이나 브라우저 Network 탭으로 확인하고 가정하지 말 것.
 - **Next.js HMR 에러 로그** — `embed_nextjs_error.log`의 "Connection refused"는 dev 서버 재시작 시 정상 발생. 무시.
-- **`next dev`(Turbopack)도 BUILD_ID 생성** — Dockerfile CMD가 `.next/BUILD_ID`로 모드를 감지하면 dev 서버 실행만으로도 다음 재시작 시 production 모드로 전환된다. `.next/production` 센티널 파일을 대신 사용한다 (CI/CD 배포 시 `npm run build && touch .next/production`으로 생성). **감지:** `docker exec cl_embed_nextjs ps aux | grep "next start"` — `next start`가 보이면 production 모드. **복구:** `docker compose stop cl_embed_nextjs && docker exec $(docker ps -a --filter "name=cl_embed_nextjs$" --format "{{.ID}}" | head -1) rm -f /app/.next/BUILD_ID 2>/dev/null; docker compose -f /var/app/www/cl_embed/docker/docker-compose.yml up -d cl_embed_nextjs`
+- **`next dev`(Turbopack)도 BUILD_ID 생성** — `.next/production` 센티널 파일로 모드 감지 (`npm run build && touch .next/production`). `next start` 프로세스가 보이면 production mode.
 - **`.claude/settings.json` Stop hook에 `npm run build` 금지** — production build가 BUILD_ID를 생성해 dev 모드 이탈을 유발한다. 타입 체크만 필요하면 `npx tsc --noEmit`을 대신 사용한다.
 - **JS 청크 캐싱 (Cloudflare)** — Cloudflare가 `_next/static/*` 응답을 `max-age=14400`으로 덮어써 구버전 코드가 실행될 수 있다. 개발 환경에서는 Cloudflare Cache Rule로 전체 바이패스 설정.
 - **OAuth 콜백 `?token=` 파라미터 처리 필수** — `/login` 페이지에서 `searchParams.get("token")`으로 토큰을 읽고 `setToken()`으로 localStorage에 저장해야 한다. 저장하지 않으면 OAuth 로그인이 완료되어도 토큰이 폐기된다.
@@ -117,7 +119,7 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - **`useSearchParams`는 `<Suspense>` 경계 필수** — `useSearchParams()`를 사용하는 페이지는 반드시 `<Suspense>`로 감싸야 한다. 빌드 시 "useSearchParams() should be wrapped in a suspense boundary" 오류 발생. 패턴: `export default function Page() { return <Suspense><InnerForm /></Suspense>; }` — 내부 컴포넌트에서 `useSearchParams()` 사용.
 - **인증 가드 패턴 (admin)** — `useAuth()`의 `isLoading`으로 사용자 로딩 완료까지 대기. `authorized`는 별도 state 대신 `const authorized = isAdmin(user)`로 user에서 직접 도출할 것 (`setAuthorized(true)` effect 금지). 비로그인 → `router.replace("/login?redirect=/admin")`. 로그인 + 비관리자 → `router.back()`.
 - **`isAdmin(user)` / `isSuperAdmin(user)` — `@/lib/utils`** — user 객체(`{role?: string}`)의 role로 권한 체크. `isAdmin`은 admin+superadmin, `isSuperAdmin`은 superadmin만. 시그니처 변경 시 `tsc --noEmit`으로 모든 호출자를 찾아 갱신할 것.
-- **`vitest` 바이너리 직접 실행** — `--no-bin-links`로 인해 `node_modules/.bin/vitest`가 생성되지 않음. `package.json` 스크립트는 `node node_modules/vitest/vitest.mjs run`으로 실행. `npx vitest`도 동작하지 않으니 주의.
+- **`vitest` 바이너리 직접 실행 금지** — `--no-bin-links`로 인해 `node_modules/.bin/vitest` 미생성. `npm test` 또는 `node node_modules/vitest/vitest.mjs run` 사용.
 - **훅 메서드 간 호출 시 이중 상태 업데이트** — `addCategory` 내부에서 `loadCategories()`를 호출하면 `setIsLoading(true)`가 이중 호출되어 불필요한 렌더링 발생. 대신 API 함수(`getCategories(token)`)를 직접 호출하고 `setCategories(data.data)`로 상태를 직접 설정할 것.
 - **`renderHook` + `act()` 중간 상태 테스트 불가** — pending Promise로 `isLoading`의 중간 true 상태를 검증하려는 테스트는 `act()`가 Promise 완료까지 대기하여 항상 false가 반환됨. `await act(async () => { await result.current.method(); })` 패턴으로 최종 상태만 검증할 것. 중간 상태 검증이 필요하면 deferred promise 대신 `waitFor` 사용.
 - **컨테이너 재생성 후 타입 재평가** — `docker compose stop` + `up -d`로 컨테이너 재생성 시 npm 의존성 타입이 재평가되어 이전에 통과하던 TypeScript 체크가 실패할 수 있다. 재생성 후 반드시 `npm run build`로 타입 체크를 확인할 것.
