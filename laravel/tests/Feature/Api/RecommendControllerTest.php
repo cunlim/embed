@@ -5,6 +5,10 @@ use App\Models\Category;
 use App\Models\SearchLog;
 use App\Services\EmbeddingCacheService;
 
+beforeEach(function () {
+    RecommendResource::setQueryEmbedding(null);
+});
+
 test('POST /api/recommend — text가 없으면 일반 카테고리 목록을 반환한다', function () {
     $category = Category::factory()->create([
         'category_code' => '50000000',
@@ -101,7 +105,7 @@ test('RecommendResource — toArray 응답 형식을 검증한다', function () 
     ]);
     expect($data['category_name'])->toBe('패션의류');
     expect($data['similarity_score'])->toBe(0.9532);
-    expect($data['query_embedding'])->toBe([0.1, 0.2, 0.3]);
+    expect($data['query_embedding'])->toEqual([0.1, 0.2, 0.3]);
     expect($data['category_embedding'])->toBeNull(); // raw 없음 → null
 });
 
@@ -113,5 +117,5 @@ test('RecommendResource — category_embedding_raw가 pgvector 문자열일 때 
     $resource = new RecommendResource($category);
     $data = $resource->toArray(request()->merge(['target_language' => 'ko']));
 
-    expect($data['category_embedding'])->toBe([0.1, 0.2, 0.3]);
+    expect($data['category_embedding'])->toEqual([0.1, 0.2, 0.3]);
 });
