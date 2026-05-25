@@ -90,18 +90,18 @@ describe("firstDotTerm", () => {
 });
 
 describe("pythonExpression", () => {
-  it("generates print() with dot product expansion", () => {
+  it("generates print() with dot product expansion and norms", () => {
     const result = pythonExpression([0.1, -0.2], [0.3, -0.4]);
-    expect(result).toBe("print((0.1*0.3)+(-0.2*-0.4))");
+    expect(result).toMatch(/^print\(\(\(0\.1\*0\.3\)\+\(-0\.2\*-0\.4\)\)\/\([\d.]+?\*[\d.]+?\)\)$/);
   });
 
-  it("returns print with empty parens for empty arrays", () => {
+  it("returns print with norm calculation for empty arrays", () => {
     const result = pythonExpression([], []);
-    expect(result).toBe("print()");
+    expect(result).toBe("print(()/(0*0))");
   });
 
-  it("handles single-element arrays", () => {
+  it("handles single-element arrays with norm", () => {
     const result = pythonExpression([0.5], [0.8]);
-    expect(result).toBe("print((0.5*0.8))");
+    expect(result).toMatch(/^print\(\(\(0\.5\*0\.8\)\)\/\([\d.]+?\*[\d.]+?\)\)$/);
   });
 });

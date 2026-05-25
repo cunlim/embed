@@ -45,8 +45,10 @@ export function dotProductExpression(a: number[], b: number[]): string {
 }
 
 export function pythonExpression(a: number[], b: number[]): string {
-  const expr = dotProductExpression(a, b);
-  return `print(${expr})`;
+  const dotExpr = dotProductExpression(a, b);
+  const normA = Math.sqrt(a.reduce((s, v) => s + v * v, 0));
+  const normB = Math.sqrt(b.reduce((s, v) => s + v * v, 0));
+  return `print((${dotExpr})/(${normA}*${normB}))`;
 }
 
 export function firstDotTerm(a: number[], b: number[]): string {
@@ -149,6 +151,8 @@ export default function CosineDetailDialog({
   const thetaDeg = ((Math.acos(clampedScore) * 180) / Math.PI).toFixed(1);
   const aEmb = result.query_embedding;
   const bEmb = result.category_embedding;
+  const normA = aEmb ? Math.sqrt(aEmb.reduce((s, v) => s + v * v, 0)) : 1;
+  const normB = bEmb ? Math.sqrt(bEmb.reduce((s, v) => s + v * v, 0)) : 1;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -195,7 +199,7 @@ export default function CosineDetailDialog({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 shrink-0"
+                  className="h-6 w-6 shrink-0 text-[#3b82f6] hover:text-[#3b82f6]"
                   onClick={() => copyToClipboard(JSON.stringify(aEmb))}
                   title="임베딩 벡터 복사"
                 >
@@ -218,7 +222,7 @@ export default function CosineDetailDialog({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 shrink-0"
+                  className="h-6 w-6 shrink-0 text-[#ef4444] hover:text-[#ef4444]"
                   onClick={() => copyToClipboard(JSON.stringify(bEmb))}
                   title="임베딩 벡터 복사"
                 >
@@ -235,35 +239,28 @@ export default function CosineDetailDialog({
             <span className="text-xs font-medium">계산 과정</span>
             <div className="flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
               <span className="min-w-0 flex-1 truncate font-mono text-xs">
-                {aEmb && bEmb && aEmb.length > 0 && bEmb.length > 0
-                  ? `cos(θ) = (A·B) / (|A|×|B|) = (${firstDotTerm(aEmb, bEmb)} + ...) / (1×1) = ${score.toFixed(4)}`
-                  : "—"}
+                {aEmb && bEmb && aEmb.length > 0 && bEmb.length > 0 ? (
+                  <>
+                    cos(θ) = (<span className="text-[#3b82f6]">A</span>·<span className="text-[#ef4444]">B</span>) / (|<span className="text-[#3b82f6]">A</span>|×|<span className="text-[#ef4444]">B</span>|) = ({firstDotTerm(aEmb, bEmb)} + ...) / ({normA.toFixed(4)}×{normB.toFixed(4)}) = {score.toFixed(4)}
+                  </>
+                ) : (
+                  "—"
+                )}
               </span>
               {aEmb && bEmb && aEmb.length > 0 && bEmb.length > 0 && (
-                <div className="flex shrink-0 gap-0.5">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => copyToClipboard(dotProductExpression(aEmb, bEmb))}
-                    title="dot product 식 복사 (계산기)"
-                  >
-                    <Copy className="!size-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => copyToClipboard(pythonExpression(aEmb, bEmb))}
-                    title="python 코드 복사"
-                  >
-                    <Hash className="!size-3" />
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  onClick={() => copyToClipboard(pythonExpression(aEmb, bEmb))}
+                  title="python 계산식 복사"
+                >
+                  <Copy className="!size-3" />
+                </Button>
               )}
             </div>
             <p className="text-[10px] text-muted-foreground">
-              복사: dot product 식 (계산기) / python 코드
+              복사 시 전체 1024항 dot product + norm python 계산식
             </p>
           </div>
         </div>
