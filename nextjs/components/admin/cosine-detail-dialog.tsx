@@ -174,7 +174,7 @@ export default function CosineDetailDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {/* 유사도 점수 */}
           <div className="flex items-center justify-center gap-4">
             <VectorAngleSvg similarityScore={score} />
@@ -196,10 +196,10 @@ export default function CosineDetailDialog({
           <div className="space-y-2">
           {/* A. 검색어 임베딩 */}
           <div className="space-y-1">
-            <p className="text-xs text-[#3b82f6]">
+            <p className="min-w-0 truncate text-xs text-[#3b82f6]">
               <span className="font-medium">A</span>. {searchKeyword ?? result.category_name} (검색어 임베딩)
             </p>
-            <div className="flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
+            <div className="min-w-0 flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
               <span className="min-w-0 flex-1 truncate font-mono text-xs text-[#3b82f6]">
                 {formatEmbeddingPreview(aEmb)}
               </span>
@@ -219,10 +219,10 @@ export default function CosineDetailDialog({
 
           {/* B. 카테고리 임베딩 */}
           <div className="space-y-1">
-            <p className="text-xs text-[#ef4444]">
+            <p className="min-w-0 truncate text-xs text-[#ef4444]">
               <span className="font-medium">B</span>. {result.category_name} (카테고리 임베딩)
             </p>
-            <div className="flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
+            <div className="min-w-0 flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
               <span className="min-w-0 flex-1 truncate font-mono text-xs text-[#ef4444]">
                 {formatEmbeddingPreview(bEmb)}
               </span>
@@ -246,7 +246,7 @@ export default function CosineDetailDialog({
           {/* 계산 과정 */}
           <div className="space-y-2">
             <span className="text-xs font-medium inline-block">계산 과정 <span className="text-[10px] text-muted-foreground font-normal">(전체 dot product 식으로 복사)</span></span>
-            <div className="flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
+            <div className="min-w-0 flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
               <span className="min-w-0 flex-1 truncate font-mono text-xs">
                 {aEmb && bEmb && aEmb.length > 0 && bEmb.length > 0 ? (
                   <>
@@ -310,7 +310,7 @@ export default function CosineDetailDialog({
                         </span>
                         <span
                           className={cn(
-                            "font-mono text-base font-bold tabular-nums",
+                            "shrink-0 font-mono text-base font-bold tabular-nums",
                             !isCurrent && "text-muted-foreground"
                           )}
                         >
@@ -320,7 +320,7 @@ export default function CosineDetailDialog({
                         </span>
                         <span
                           className={cn(
-                            "text-[11px] font-medium px-1.5 py-0.5 rounded",
+                            "shrink-0 text-[11px] font-medium px-1.5 py-0.5 rounded",
                             isCurrent
                               ? "bg-primary/10 text-primary"
                               : "bg-muted/50 text-muted-foreground"
