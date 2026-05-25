@@ -30,7 +30,13 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 - **`user_id = 1`이 시스템 공개 카테고리 소유자** — 비로그인 시 `WHERE user_id = 1`만, 로그인+전체 시 `WHERE user_id IN (본인, 1)` (단, admin/superadmin은 user_id 제한 없이 전체 접근), 내 카테고리 시 `WHERE user_id = 본인`
 - **모든 카테고리 조회 API는 `CategoryController::index()`와 동일한 user scope 규칙 적용** — `levels()`, RecommendController 등에서 누락 시 비로그인 사용자에게 타사용자 카테고리가 노출됨. admin/superadmin bypass도 모든 쿼리 메서드에 일관되게 적용할 것.
 
-- **embed 페이지 토글 버튼** — 필터 모드 전환과 유사도 검색 언어 선택은 `variant={active ? "secondary" : "ghost"}` + `size="sm"` + `h-7 px-2 text-xs` Button 그룹 사용. Tabs 컴포넌트 사용 금지.
+- **embed 페이지 토글 버튼** — 필터 모드/언어 선택/카테고리 필터 등 2~3개 옵션 전환은 `variant={active ? "default" : "ghost"}` + ghost에 `hover:bg-primary/50` + `size="sm"` + `h-7 px-2 text-xs`. 선택 항목과 hover 간 차이 최소화가 목적. Tabs 컴포넌트 사용 금지.
+
+## Dark 모드 컴포넌트 스타일링
+
+- **card/popover 배경 chroma 최소화** — blue 색조를 억제하고 중성적인 톤 유지 (`oklch(L 0.003 H)` 형태, chroma 0.005 이하)
+- **card-background lightness 차이** — card와 background 간 lightness 차이를 0.07 이상 확보해야 카드가 배경에서 구분됨
+- CSS 변수는 `app/globals.css`의 `.dark` 셀렉터에서 정의
 
 ## SSR (Server Components)
 
