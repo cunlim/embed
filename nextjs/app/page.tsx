@@ -120,7 +120,7 @@ export default function Home() {
             className="group h-11 rounded-full px-6 text-sm font-medium shadow-lg shadow-accent/20 transition-all duration-300 hover:shadow-xl hover:shadow-accent/30 hover:scale-105"
           >
             <Link href="/embed">
-              기술 시연 보기
+              기능시연
               <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
             </Link>
           </Button>
@@ -262,7 +262,7 @@ export default function Home() {
               href="/embed"
               className="text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
-              기술 시연
+              기능시연
             </a>
           </div>
         </div>

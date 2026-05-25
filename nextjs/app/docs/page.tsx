@@ -235,7 +235,7 @@ export default function DocsPage() {
               href="/embed"
               className="text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
-              기술 시연
+              기능시연
             </Link>
           </div>
         </div>

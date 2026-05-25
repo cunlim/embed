@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Play } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { AuthButtons } from "@/components/auth-buttons";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,12 @@ export function AppHeader() {
       badge={badge}
       leftChildren={
         <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" asChild className="rounded-full">
+            <Link href="/embed">
+              <Play className="h-4 w-4" />
+              <span className="hidden sm:inline ml-1.5">기능시연</span>
+            </Link>
+          </Button>
           <Button variant="ghost" size="sm" asChild className="rounded-full">
             <Link href="/docs">
               <BookOpen className="h-4 w-4" />

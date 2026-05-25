@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -377,13 +377,32 @@ export function EmbedPageInner({
                 <CardTitle className="text-base">카테고리 유사도 검색</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Tabs value={searchLanguage} onValueChange={setSearchLanguage}>
-                  <TabsList className="w-full">
-                    <TabsTrigger value="ko" className="flex-1">한국어</TabsTrigger>
-                    <TabsTrigger value="zh" className="flex-1">중국어</TabsTrigger>
-                    <TabsTrigger value="en" className="flex-1">영어</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant={searchLanguage === "ko" ? "secondary" : "ghost"}
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setSearchLanguage("ko")}
+                  >
+                    한국어
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={searchLanguage === "zh" ? "secondary" : "ghost"}
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setSearchLanguage("zh")}
+                  >
+                    중국어
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={searchLanguage === "en" ? "secondary" : "ghost"}
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setSearchLanguage("en")}
+                  >
+                    영어
+                  </Button>
+                </div>
                 <Input
                   placeholder="검색어 입력..."
                   value={searchText}

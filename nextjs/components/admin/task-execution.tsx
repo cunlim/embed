@@ -272,7 +272,7 @@ export default function TaskExecution({
       return;
     }
     try {
-      const res = await getCategories(token, 1, 10000, filter);
+      const res = await getCategories(token, 1, 100000, filter);
       const targetIds = res.data
         .filter((cat) => canModify(cat))
         .map((cat) => cat.id);

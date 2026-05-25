@@ -63,10 +63,11 @@ class CategoryController extends Controller
     )]
     public function index(Request $request): CategoryCollection
     {
-        $perPage = min((int) $request->input('per_page', 20), 100);
+        $user = auth('sanctum')->user();
+        $maxPerPage = $user ? PHP_INT_MAX : 100;
+        $perPage = min((int) $request->input('per_page', 20), $maxPerPage);
 
         $query = Category::query()->with('embeddings');
-        $user = auth('sanctum')->user();
 
         if ($request->input('filter') === 'my') {
             if ($user) {
