@@ -9,23 +9,9 @@ class RecommendResource extends JsonResource
 {
     private static ?array $queryEmbedding = null;
 
-    private static int $pageOffset = 0;
-
-    private static string $targetLanguage = 'ko';
-
     public static function setQueryEmbedding(?array $embedding): void
     {
         self::$queryEmbedding = $embedding;
-    }
-
-    public static function setPageOffset(int $page, int $perPage): void
-    {
-        self::$pageOffset = ($page - 1) * $perPage;
-    }
-
-    public static function setTargetLanguage(string $lang): void
-    {
-        self::$targetLanguage = $lang;
     }
 
     /**
@@ -34,14 +20,13 @@ class RecommendResource extends JsonResource
     public function toArray(Request $request): array
     {
         $lang = $request->input('target_language', 'ko');
-        $itemIndex = self::$pageOffset + $this->indexInCollection();
 
         $perLanguageScores = [];
         foreach (['ko', 'en', 'zh'] as $l) {
             $score = $this->{"similarity_score_{$l}"} ?? null;
             $perLanguageScores[$l] = [
                 'similarity_score' => $score,
-                'rank' => $score !== null ? $itemIndex + 1 : null,
+                'rank' => $this->{"rank_{$l}"} ?? null,
             ];
         }
 
@@ -59,11 +44,6 @@ class RecommendResource extends JsonResource
             'category_embedding' => $this->parseCategoryEmbedding(),
             'per_language_scores' => $perLanguageScores,
         ];
-    }
-
-    private function indexInCollection(): int
-    {
-        return $this->collection_index ?? 0;
     }
 
     private function parseCategoryEmbedding(): ?array

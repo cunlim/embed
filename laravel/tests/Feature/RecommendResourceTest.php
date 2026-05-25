@@ -30,14 +30,14 @@ test('RecommendResource includes per_language_scores', function () {
     ]);
 
     RecommendResource::setQueryEmbedding($embedding);
-    RecommendResource::setPageOffset(1, 20);
-    RecommendResource::setTargetLanguage('ko');
 
     $category->similarity_score = 0.9876;
     $category->similarity_score_ko = 0.9876;
     $category->similarity_score_en = 0.8210;
     $category->similarity_score_zh = 0.7950;
-    $category->collection_index = 0;
+    $category->rank_ko = 1;
+    $category->rank_en = 2;
+    $category->rank_zh = 3;
 
     $resource = new RecommendResource($category);
     $data = $resource->resolve(request()->merge(['target_language' => 'ko']));
@@ -50,6 +50,10 @@ test('RecommendResource includes per_language_scores', function () {
     ]);
     expect($data['per_language_scores']['en'])->toMatchArray([
         'similarity_score' => 0.8210,
-        'rank' => 1,
+        'rank' => 2,
+    ]);
+    expect($data['per_language_scores']['zh'])->toMatchArray([
+        'similarity_score' => 0.7950,
+        'rank' => 3,
     ]);
 });
