@@ -78,6 +78,17 @@ export function fetchCategoryTranslations(
 
 // --- 추천 ---
 
+export interface LanguageScore {
+  similarity_score: number | null;
+  rank: number | null;
+}
+
+export interface PerLanguageScores {
+  ko: LanguageScore;
+  en: LanguageScore;
+  zh: LanguageScore;
+}
+
 export interface Recommendation {
   id: number;
   category_code: string;
@@ -89,6 +100,7 @@ export interface Recommendation {
   similarity_score: number | null;
   query_embedding: number[] | null;
   category_embedding: number[] | null;
+  per_language_scores: PerLanguageScores | null;
 }
 
 export interface RecommendResponse {

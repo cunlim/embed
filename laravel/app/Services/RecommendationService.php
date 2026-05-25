@@ -60,11 +60,21 @@ class RecommendationService
         $vectorLiteral = '['.implode(',', $embedding).']';
 
         $query = Category::select('categories.*')
-            ->selectRaw('ce.embedding <=> ?::vector as distance', [$vectorLiteral])
-            ->selectRaw('ce.embedding::text as category_embedding_raw')
-            ->join('category_embeddings as ce', function ($join) use ($targetLanguage) {
-                $join->on('ce.category_id', '=', 'categories.id')
-                    ->where('ce.language', '=', $targetLanguage);
+            ->selectRaw('ce_ko.embedding <=> ?::vector as distance_ko', [$vectorLiteral])
+            ->selectRaw('ce_en.embedding <=> ?::vector as distance_en', [$vectorLiteral])
+            ->selectRaw('ce_zh.embedding <=> ?::vector as distance_zh', [$vectorLiteral])
+            ->selectRaw("ce_{$targetLanguage}.embedding::text as category_embedding_raw")
+            ->leftJoin('category_embeddings as ce_ko', function ($join) {
+                $join->on('ce_ko.category_id', '=', 'categories.id')
+                    ->where('ce_ko.language', '=', 'ko');
+            })
+            ->leftJoin('category_embeddings as ce_en', function ($join) {
+                $join->on('ce_en.category_id', '=', 'categories.id')
+                    ->where('ce_en.language', '=', 'en');
+            })
+            ->leftJoin('category_embeddings as ce_zh', function ($join) {
+                $join->on('ce_zh.category_id', '=', 'categories.id')
+                    ->where('ce_zh.language', '=', 'zh');
             });
 
         if ($userId !== null) {
@@ -79,11 +89,26 @@ class RecommendationService
             $query->where('categories.category_name_ko', 'like', $keyword.'%');
         }
 
-        $paginator = $query->orderByRaw('ce.embedding <=> ?::vector', [$vectorLiteral])
+        $paginator = $query->orderByRaw("ce_{$targetLanguage}.embedding <=> ?::vector", [$vectorLiteral])
             ->paginate(perPage: $perPage, page: $page);
 
-        $items = $paginator->getCollection()->map(function (Category $category) {
-            $category->similarity_score = round(1.0 - (float) $category->distance, 4);
+        $nameField = $this->nameFieldFor($targetLanguage);
+
+        $items = $paginator->getCollection()->map(function (Category $category) use ($targetLanguage, $nameField) {
+            // similarity_score는 targetLanguage 기준
+            $dist = $category->{"distance_{$targetLanguage}"} ?? null;
+            $category->similarity_score = $dist !== null
+                ? round(1.0 - (float) $dist, 4)
+                : null;
+            $category->category_name = $category->{$nameField};
+
+            // per-language scores 계산 (null이면 null)
+            foreach (['ko', 'en', 'zh'] as $lang) {
+                $dist = $category->{"distance_{$lang}"} ?? null;
+                $category->{"similarity_score_{$lang}"} = $dist !== null
+                    ? round(1.0 - (float) $dist, 4)
+                    : null;
+            }
 
             return $category;
         });

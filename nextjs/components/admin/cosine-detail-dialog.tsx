@@ -1,6 +1,7 @@
 "use client";
 
 import { Copy, Hash } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ interface CosineDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   result: Recommendation | null;
   searchKeyword?: string;
+  targetLanguage?: string;
 }
 
 // --- Helpers ---
@@ -35,24 +37,13 @@ export function formatEmbeddingPreview(embedding: number[] | null): string {
   if (!embedding || embedding.length === 0) return "—";
   const previewCount = Math.min(6, embedding.length);
   const preview = embedding.slice(0, previewCount).map((v) => v.toFixed(3)).join(", ");
-  if (embedding.length <= 6) return `[${preview}]`;
-  return `[${preview}, ...]`;
+  if (embedding.length <= 6) return `[${preview}] (${embedding.length}차원)`;
+  return `[${preview}, ... ${embedding.length}차원]`;
 }
 
 export function dotProductExpression(a: number[], b: number[]): string {
   const len = Math.min(a.length, b.length);
   return Array.from({ length: len }, (_, i) => `(${a[i]}*${b[i]})`).join("+");
-}
-
-export function normExpression(v: number[]): string {
-  return v.map((x) => `(${x})**2`).join("+");
-}
-
-export function pythonExpression(a: number[], b: number[]): string {
-  const dotExpr = dotProductExpression(a, b);
-  const normAExpr = normExpression(a);
-  const normBExpr = normExpression(b);
-  return `print((${dotExpr})/(((${normAExpr})**0.5)*((${normBExpr})**0.5)))`;
 }
 
 export function firstDotTerm(a: number[], b: number[]): string {
@@ -126,15 +117,19 @@ function VectorAngleSvg({ similarityScore }: { similarityScore: number }) {
       {/* A vector (blue) */}
       <line x1={cx} y1={cy} x2={ax} y2={ay} stroke="#3b82f6" strokeWidth={2.5} />
       <polygon points={aHeadPts} fill="#3b82f6" />
-      <text x={ax + 4} y={ay - 4} fill="#3b82f6" fontSize={10} fontWeight={700}>A</text>
 
       {/* B vector (red) */}
       <line x1={cx} y1={cy} x2={bx} y2={by} stroke="#ef4444" strokeWidth={2.5} />
       <polygon points={bHeadPts} fill="#ef4444" />
-      <text x={bx + 2} y={by - 4} fill="#ef4444" fontSize={10} fontWeight={700}>B</text>
 
       {/* Center dot */}
       <circle cx={cx} cy={cy} r={2.5} fill="currentColor" />
+
+      {/* Legend */}
+      <circle cx={20} cy={100} r={3.5} fill="#3b82f6" />
+      <text x={26} y={103} fill="currentColor" fontSize={9}>A</text>
+      <circle cx={40} cy={100} r={3.5} fill="#ef4444" />
+      <text x={46} y={103} fill="currentColor" fontSize={9}>B</text>
     </svg>
   );
 }
@@ -146,6 +141,7 @@ export default function CosineDetailDialog({
   onOpenChange,
   result,
   searchKeyword,
+  targetLanguage = "ko",
 }: CosineDetailDialogProps) {
   if (!result) return null;
 
@@ -155,8 +151,6 @@ export default function CosineDetailDialog({
   const thetaDeg = ((Math.acos(clampedScore) * 180) / Math.PI).toFixed(1);
   const aEmb = result.query_embedding;
   const bEmb = result.category_embedding;
-  const normA = aEmb ? Math.sqrt(aEmb.reduce((s, v) => s + v * v, 0)) : 1;
-  const normB = bEmb ? Math.sqrt(bEmb.reduce((s, v) => s + v * v, 0)) : 1;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -173,37 +167,41 @@ export default function CosineDetailDialog({
 
         <div className="space-y-4">
           {/* 유사도 점수 */}
-          <div className="flex items-center justify-center gap-4">
-            <VectorAngleSvg similarityScore={score} />
-            <div className="text-left">
-              <p className="font-mono text-3xl font-bold tabular-nums">
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-4">
+              <VectorAngleSvg similarityScore={score} />
+              <span className="font-mono text-3xl font-bold tabular-nums">
                 {scorePercent}%
-              </p>
-              <p className="text-xs text-muted-foreground">
-                cos θ = {score.toFixed(4)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                θ = {thetaDeg}°
-              </p>
+              </span>
             </div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-[#3b82f6] font-medium">A</span>{" "}
+              <span className="text-[#ef4444] font-medium">B</span>
+              {" "}cos θ = {score.toFixed(4)}, θ = {thetaDeg}°
+            </p>
           </div>
 
           <Separator />
 
           {/* A. 검색어 임베딩 */}
           <div className="space-y-1.5">
-            <p className="text-xs text-[#3b82f6]">
-              <span className="font-medium">A</span>. {searchKeyword ?? result.category_name} (검색어 임베딩)
-            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium">A. 검색어 임베딩</span>
+              {searchKeyword && (
+                <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                  {searchKeyword}
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
-              <span className="min-w-0 flex-1 truncate font-mono text-xs text-[#3b82f6]">
+              <span className="min-w-0 flex-1 truncate font-mono text-xs">
                 {formatEmbeddingPreview(aEmb)}
               </span>
               {aEmb && aEmb.length > 0 && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 shrink-0 text-[#3b82f6] hover:text-[#3b82f6]"
+                  className="h-6 w-6 shrink-0"
                   onClick={() => copyToClipboard(JSON.stringify(aEmb))}
                   title="임베딩 벡터 복사"
                 >
@@ -215,18 +213,21 @@ export default function CosineDetailDialog({
 
           {/* B. 카테고리 임베딩 */}
           <div className="space-y-1.5">
-            <p className="text-xs text-[#ef4444]">
-              <span className="font-medium">B</span>. {result.category_name} (카테고리 임베딩)
-            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium">B. 카테고리 임베딩</span>
+              <span className="inline-flex items-center rounded bg-pink-100 px-1.5 py-0.5 text-[10px] font-medium text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
+                {result.category_name}
+              </span>
+            </div>
             <div className="flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
-              <span className="min-w-0 flex-1 truncate font-mono text-xs text-[#ef4444]">
+              <span className="min-w-0 flex-1 truncate font-mono text-xs">
                 {formatEmbeddingPreview(bEmb)}
               </span>
               {bEmb && bEmb.length > 0 && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 shrink-0 text-[#ef4444] hover:text-[#ef4444]"
+                  className="h-6 w-6 shrink-0"
                   onClick={() => copyToClipboard(JSON.stringify(bEmb))}
                   title="임베딩 벡터 복사"
                 >
@@ -243,30 +244,81 @@ export default function CosineDetailDialog({
             <span className="text-xs font-medium">계산 과정</span>
             <div className="flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
               <span className="min-w-0 flex-1 truncate font-mono text-xs">
-                {aEmb && bEmb && aEmb.length > 0 && bEmb.length > 0 ? (
-                  <>
-                    cos(θ) = (<span className="text-[#3b82f6]">A</span>·<span className="text-[#ef4444]">B</span>) / (|<span className="text-[#3b82f6]">A</span>|×|<span className="text-[#ef4444]">B</span>|) = ((<span className="text-[#3b82f6]">{aEmb[0].toFixed(3)}</span>×<span className="text-[#ef4444]">{bEmb[0].toFixed(3)}</span>) + ...) / (<span className="text-[#3b82f6]">{normA.toFixed(4)}</span>×<span className="text-[#ef4444]">{normB.toFixed(4)}</span>) = {score.toFixed(4)}
-                  </>
-                ) : (
-                  "—"
-                )}
+                {aEmb && bEmb && aEmb.length > 0 && bEmb.length > 0
+                  ? `cos(θ) = (A·B) / (|A|×|B|) = (${firstDotTerm(aEmb, bEmb)} + ...) / (1×1) = ${score.toFixed(4)}`
+                  : "—"}
               </span>
               {aEmb && bEmb && aEmb.length > 0 && bEmb.length > 0 && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 shrink-0"
-                  onClick={() => copyToClipboard(pythonExpression(aEmb, bEmb))}
-                  title="python 계산식 복사"
+                  onClick={() => copyToClipboard(dotProductExpression(aEmb, bEmb))}
+                  title="dot product 식 복사"
                 >
                   <Copy className="!size-3" />
                 </Button>
               )}
             </div>
             <p className="text-[10px] text-muted-foreground">
-              복사 시 dot product + norm python 계산식 전체 복사
+              복사 시 전체 {aEmb?.length ?? "—"}항 dot product 식으로 복사
             </p>
           </div>
+
+          {result.per_language_scores && (
+            <>
+              <Separator />
+
+              <div className="space-y-1.5">
+                <span className="text-xs font-medium">언어별 유사도</span>
+                <div className="grid grid-cols-3 gap-3">
+                  {(
+                    [
+                      { code: "ko", label: "한국어" },
+                      { code: "en", label: "English" },
+                      { code: "zh", label: "中文" },
+                    ] as const
+                  ).map(({ code, label }) => {
+                    const scores = result.per_language_scores![code];
+                    const isCurrent = code === targetLanguage;
+                    return (
+                      <div
+                        key={code}
+                        className={cn(
+                          "flex flex-col items-center gap-1 rounded-lg border px-3 py-3",
+                          isCurrent
+                            ? "border-primary ring-2 ring-primary shadow-md"
+                            : "border-muted-foreground/15 bg-muted/30"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "text-[11px] font-medium",
+                            isCurrent ? "text-primary" : "text-muted-foreground"
+                          )}
+                        >
+                          {label}
+                        </span>
+                        <span
+                          className={cn(
+                            "font-mono text-lg font-bold tabular-nums",
+                            !isCurrent && "text-muted-foreground"
+                          )}
+                        >
+                          {scores.similarity_score != null
+                            ? `${(scores.similarity_score * 100).toFixed(1)}%`
+                            : "—"}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {scores.rank != null ? `${scores.rank}위` : "—"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>

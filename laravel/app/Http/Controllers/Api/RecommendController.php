@@ -113,10 +113,20 @@ class RecommendController extends Controller
         );
 
         RecommendResource::setQueryEmbedding($searchLog->embedding->toArray());
+        RecommendResource::setTargetLanguage($targetLanguage);
+        RecommendResource::setPageOffset($page, $perPage);
 
         $results = $this->recommendation->recommendPaginated(
             $searchLog, $targetLanguage, $perPage, $page, $scopeUserId, $keyword
         );
+
+        // collection_index 주입 (rank 계산용)
+        $collection = $results->getCollection()->map(function ($item, $index) {
+            $item->collection_index = $index;
+
+            return $item;
+        });
+        $results->setCollection($collection);
 
         return RecommendResource::collection($results)->response();
     }
