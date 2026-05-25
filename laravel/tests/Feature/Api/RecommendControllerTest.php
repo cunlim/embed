@@ -89,13 +89,29 @@ test('RecommendResource — toArray 응답 형식을 검증한다', function () 
     ]);
     $category->similarity_score = 0.9532;
 
+    RecommendResource::setQueryEmbedding([0.1, 0.2, 0.3]);
+
     $resource = new RecommendResource($category);
     $data = $resource->toArray(request()->merge(['target_language' => 'ko']));
 
     expect($data)->toHaveKeys([
         'id', 'category_code', 'category_name_ko', 'category_name_zh',
         'category_name_en', 'category_name', 'translation_status', 'similarity_score',
+        'query_embedding', 'category_embedding',
     ]);
     expect($data['category_name'])->toBe('패션의류');
     expect($data['similarity_score'])->toBe(0.9532);
+    expect($data['query_embedding'])->toBe([0.1, 0.2, 0.3]);
+    expect($data['category_embedding'])->toBeNull(); // raw 없음 → null
+});
+
+test('RecommendResource — category_embedding_raw가 pgvector 문자열일 때 배열로 파싱한다', function () {
+    $category = Category::factory()->create(['category_code' => 'CAT_test1', 'category_name_ko' => 'test']);
+    $category->similarity_score = 0.5;
+    $category->category_embedding_raw = '[0.1, 0.2, 0.3]';
+
+    $resource = new RecommendResource($category);
+    $data = $resource->toArray(request()->merge(['target_language' => 'ko']));
+
+    expect($data['category_embedding'])->toBe([0.1, 0.2, 0.3]);
 });

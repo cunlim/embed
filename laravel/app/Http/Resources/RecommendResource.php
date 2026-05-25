@@ -7,6 +7,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class RecommendResource extends JsonResource
 {
+    private static ?array $queryEmbedding = null;
+
+    public static function setQueryEmbedding(?array $embedding): void
+    {
+        self::$queryEmbedding = $embedding;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -24,6 +31,26 @@ class RecommendResource extends JsonResource
             'category_name' => $this->{"category_name_{$lang}"},
             'translation_status' => $this->translation_status,
             'similarity_score' => $this->similarity_score ?? null,
+            'query_embedding' => self::$queryEmbedding,
+            'category_embedding' => $this->parseCategoryEmbedding(),
         ];
+    }
+
+    private function parseCategoryEmbedding(): ?array
+    {
+        $raw = $this->category_embedding_raw ?? null;
+        if ($raw === null) {
+            return null;
+        }
+        if (is_array($raw)) {
+            return $raw;
+        }
+        // pgvector raw select는 "[0.1,0.2,...]" 형식 문자열로 반환됨
+        $decoded = json_decode((string) $raw, true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        return null;
     }
 }
