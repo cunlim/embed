@@ -4,6 +4,7 @@ import {
   dotProductExpression,
   firstDotTerm,
   pythonExpression,
+  normExpression,
 } from "@/components/admin/cosine-detail-dialog";
 
 describe("formatEmbeddingPreview", () => {
@@ -89,19 +90,29 @@ describe("firstDotTerm", () => {
   });
 });
 
-describe("pythonExpression", () => {
-  it("generates print() with dot product expansion and norms", () => {
-    const result = pythonExpression([0.1, -0.2], [0.3, -0.4]);
-    expect(result).toMatch(/^print\(\(\(0\.1\*0\.3\)\+\(-0\.2\*-0\.4\)\)\/\([\d.]+?\*[\d.]+?\)\)$/);
+describe("normExpression", () => {
+  it("builds sum of squares", () => {
+    expect(normExpression([0.1, -0.2, 0.3])).toBe("0.1**2+-0.2**2+0.3**2");
   });
 
-  it("returns print with norm calculation for empty arrays", () => {
+  it("returns empty string for empty array", () => {
+    expect(normExpression([])).toBe("");
+  });
+});
+
+describe("pythonExpression", () => {
+  it("generates print() with expanded dot product and norm expressions", () => {
+    const result = pythonExpression([0.1, -0.2], [0.3, -0.4]);
+    expect(result).toBe("print(((0.1*0.3)+(-0.2*-0.4))/(((0.1**2+-0.2**2)**0.5)*((0.3**2+-0.4**2)**0.5)))");
+  });
+
+  it("handles empty arrays", () => {
     const result = pythonExpression([], []);
-    expect(result).toBe("print(()/(0*0))");
+    expect(result).toBe("print(()/((()**0.5)*(()**0.5)))");
   });
 
   it("handles single-element arrays with norm", () => {
     const result = pythonExpression([0.5], [0.8]);
-    expect(result).toMatch(/^print\(\(\(0\.5\*0\.8\)\)\/\([\d.]+?\*[\d.]+?\)\)$/);
+    expect(result).toBe("print(((0.5*0.8))/(((0.5**2)**0.5)*((0.8**2)**0.5)))");
   });
 });

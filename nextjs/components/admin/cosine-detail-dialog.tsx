@@ -44,11 +44,15 @@ export function dotProductExpression(a: number[], b: number[]): string {
   return Array.from({ length: len }, (_, i) => `(${a[i]}*${b[i]})`).join("+");
 }
 
+export function normExpression(v: number[]): string {
+  return v.map((x) => `${x}**2`).join("+");
+}
+
 export function pythonExpression(a: number[], b: number[]): string {
   const dotExpr = dotProductExpression(a, b);
-  const normA = Math.sqrt(a.reduce((s, v) => s + v * v, 0));
-  const normB = Math.sqrt(b.reduce((s, v) => s + v * v, 0));
-  return `print((${dotExpr})/(${normA}*${normB}))`;
+  const normAExpr = normExpression(a);
+  const normBExpr = normExpression(b);
+  return `print((${dotExpr})/(((${normAExpr})**0.5)*((${normBExpr})**0.5)))`;
 }
 
 export function firstDotTerm(a: number[], b: number[]): string {
@@ -260,7 +264,7 @@ export default function CosineDetailDialog({
               )}
             </div>
             <p className="text-[10px] text-muted-foreground">
-              복사 시 전체 1024항 dot product + norm python 계산식
+              복사 시 dot product + norm python 계산식 전체 복사
             </p>
           </div>
         </div>
