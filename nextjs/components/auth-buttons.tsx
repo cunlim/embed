@@ -34,7 +34,7 @@ export function AuthButtons() {
         <Button variant="ghost" size="sm" asChild className="rounded-full">
           <Link href="/admin">
             <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline ml-0.5">관리자</span>
+            <span className="hidden sm:inline">관리자</span>
           </Link>
         </Button>
       )}
@@ -49,13 +49,13 @@ export function AuthButtons() {
             router.push("/");
           }}
         >
-          <LogOut className="mr-0.5 h-4 w-4" />
+          <LogOut className="h-4 w-4" />
           로그아웃
         </Button>
       ) : (
         <Button variant="ghost" size="sm" asChild className="rounded-full">
           <Link href="/login">
-            <LogIn className="mr-0.5 h-4 w-4" />
+            <LogIn className="h-4 w-4" />
             로그인
           </Link>
         </Button>

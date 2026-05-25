@@ -14,6 +14,13 @@
 * 구현 계획 수립, 코드 리뷰, TDD 등 구조적 접근이 필요한 작업은 `superpowers` plugin을 활성화하여 수행한다.
 * 버그 수정 후 동일 유형의 실수를 방지하려면 `compound-engineering` plugin으로 학습 문서를 갱신한다.
 
+## 작업 워크플로
+
+- **이슈 사전 재현** — 수정 작업 전 Playwright로 실제 이슈가 존재하는지 먼저 확인한다.
+- **Sub-agent driven** — 구현은 되도록 Agent(Sub-agent)를 활용한다.
+- **Playwright 테스트 URL** — WSL2 호스트에서 `https://embed.cunlim.dev`로 접속 (Next.js 포트 미공개).
+- **작업 완료 전 검증** — `.claude/hooks/run-all-checks.sh`를 실행하여 tsc, lint, test, pint를 모두 통과하는지 확인하고 이슈가 있으면 해결 후 마무리한다.
+
 ## Subagent-Driven Development worktree 주의사항
 
 - **worktree agent가 수정한 파일은 메인 워크트리에 "local changes"로 표시됨** — 공유 파일시스템으로 인해 worktree agent의 변경사항이 메인 워크트리에서 수정된 파일로 나타난다. `git merge <worktree-branch>` 전에 `git stash && git merge <worktree-branch> --no-edit && git stash pop`으로 머지한다.
@@ -79,12 +86,13 @@ AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](doc
 - **컨테이너 파일 변경 후 HMR 미감지** — `docker exec cl_embed_nextjs touch <container-path>`는 바인드 마운트에서 불안정하다. 코드 변경 후 **`.next/`를 삭제**하고 `docker compose stop` + `up -d`로 재시작할 것.
 - **Pint 바인드 마운트 파일 손상** — `vendor/bin/pint`가 바인드 마운트 경로의 파일을 0바이트로 만든다. `/tmp/` 경유 방식 사용: `docker exec cl_embed_laravel bash -c 'cp /var/www/html/path/file.php /tmp/ && vendor/bin/pint /tmp/file.php && cp /tmp/file.php /var/www/html/path/'` 후 base64로 호스트 동기화.
 - **테스트 DB 오염 (duplicate table/migration)** — PostgreSQL 테스트 DB에 `migration`/`users` 테이블이 이미 존재한다는 오류 발생 시 `docker exec cl_embed_laravel php artisan migrate:fresh --env=testing --force`로 초기화.
-- **Playwright 인증 페이지 테스트** — `docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::first()->createToken("debug")->plainTextToken;'`로 Sanctum 토큰을 생성한 뒤, Playwright에서 `localStorage.setItem("auth_token", token)`으로 주입하고 `/embed`로 이동한다.
+- **Playwright 인증 테스트** — `docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::first()->createToken("debug")->plainTextToken;'`로 Sanctum 토큰 생성.
 - **`deploy.yml` `migrate:rollback --step=1` 위험** — 모든 migration이 batch 1일 때 `--step=1`은 전체 rollback을 유발할 수 있다. migration 전 batch 번호를 기록하고 `--batch=N`으로 특정 batch만 롤백할 것.
 - **테스트 DB 사용자 격리** — `dbeaver_lim_test`는 `cl_embed`에 CONNECT 권한이 없다. `.env.testing`(`DB_USERNAME=dbeaver_lim_test`)이 적용된 환경에서는 실수로 `migrate:fresh`를 실행해도 PostgreSQL이 `permission denied`를 반환하여 운영DB가 보호된다. `.env.testing`은 gitignore, `.env.testing.example`만 커밋, CI에서 `$LIVE_ROOT`로부터 복사한다.
 - **`bootstrap/cache/config.php` 운영DB 오염 위험** — `php artisan config:cache` 실행 후 캐시된 설정은 `phpunit.xml`의 `<env>` 오버라이드와 `.env.testing`을 **무시**한다. 이 상태에서 `php artisan test`를 실행하면 `RefreshDatabase` trait이 운영DB에 `migrate:fresh`를 실행하여 모든 데이터가 소실된다. **반드시 `php artisan config:clear`로 캐시를 제거한 후 테스트를 실행할 것.** Stop 훅(`run-all-checks.sh`)에서 자동으로 `config:clear`를 선행 실행하도록 설정되어 있다.
 - **`react-hooks/set-state-in-effect`** — URL→props→state 동기화 시 `useEffect`+`setState` 대신 `useState(initialValue)` 초기자 사용.
 - **`filterRef` / `keywordRef` / `searchTextRef` 패턴** — `useCallback` async 함수에서 state 직접 참조는 stale closure 유발. `useRef`로 최신 상태를 추적하고 `ref.current`로 참조할 것. (`embed-page-inner.tsx` 참고)
+- **`handleSearch → updateURL → useEffect` 순환 의존성** — `handleSearch` 내 `router.replace`가 URL을 변경하면 `searchParams` → `updateURL` 참조 → `handleSearch` 참조가 연쇄 재생성되고, `useEffect`가 `handleSearch`를 의존하여 무한 재호출된다. `handleSearchRef`로 useEffect 의존성 배열에서 제거할 것. (`embed-page-inner.tsx` 참고)
 - **DB 포맷은 실제 데이터로 확인** — LIKE 쿼리 작성 시 프로덕션 DB를 `psql`로 먼저 조회할 것. 구분자(예: `>` vs ` > `) 차이로 빈 결과가 발생할 수 있다. `category_name_ko`와 `onKeywordSearch` 모두 `>` 구분자(공백 없음) 사용.
 - **유사도 검색 `isSearchMode` 게이트** — `isSearchMode = searchResults !== null && !keywordSearchActive`이므로 `handleSearch` 호출 시 반드시 `setKeywordSearchActive(false)`를 선행해야 한다. 누락 시 유사도 컬럼이 렌더링되지 않는다.
 - **`onSelectLeafPath` 등 콜백 prop은 stale closure 주의** — 비동기 API 응답 후 실행되는 콜백에서 부모의 `displayCategories` 등 상태를 직접 참조하면 최신값이 아닐 수 있다. leaf categoryId를 API에서 직접 받아 전달하거나 ref로 우회할 것.

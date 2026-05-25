@@ -7,6 +7,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { updateCategoryText } from "@/lib/api";
@@ -90,9 +91,9 @@ export default function CategoryModal({
       <div className="grid grid-cols-[80px_1fr_40px] gap-3 items-center py-1.5">
         <span className="text-sm text-muted-foreground">{label}</span>
         {langKey ? (
-          <input
+          <Input
             type="text"
-            className="text-sm truncate font-mono w-full bg-transparent border-b border-border px-1 py-0.5 focus:outline-none focus:border-accent read-only:opacity-60 read-only:cursor-default"
+            className="h-7 text-sm truncate font-mono border-0 border-b border-border rounded-none bg-transparent px-1 py-0.5 focus-visible:ring-0 focus-visible:border-accent read-only:opacity-60 read-only:cursor-default"
             value={editValues[langKey] ?? displayValue ?? ""}
             onChange={(e) => setEditValues((prev) => ({ ...prev, [langKey]: e.target.value }))}
             onBlur={() => handleBlur(langKey)}
@@ -341,15 +342,15 @@ export default function CategoryModal({
                 <div className="flex justify-end">
                   {hasPending ? (
                     <Button variant="destructive" onClick={onCancelPending}>
-                      <Square className="mr-1.5 h-4 w-4" />
+                      <Square className="h-4 w-4" />
                       실행중지
                     </Button>
                   ) : (
                     <Button onClick={onRunAll} disabled={isExecuting || allCompleted || isKoEmpty}>
                       {allCompleted ? (
-                        <Check className="mr-1.5 h-4 w-4" />
+                        <Check className="h-4 w-4" />
                       ) : (
-                        <Play className="mr-1.5 h-4 w-4" />
+                        <Play className="h-4 w-4" />
                       )}
                       전체 실행
                     </Button>

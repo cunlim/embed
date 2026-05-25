@@ -236,6 +236,16 @@ export function EmbedPageInner({
   const handleSearch = useCallback(async (page?: number, keyword?: string) => {
     const currentPage = page ?? 1;
     searchPageRef.current = currentPage;
+
+    // 빈 검색어 + 키워드 없음 → 검색 모드 해제
+    if (!searchText.trim() && !keyword) {
+      setSearchResults(null);
+      setSearchMeta(null);
+      setSearchError(null);
+      updateURL({ searchText: "", searchLanguage: "ko" });
+      return;
+    }
+
     setIsSearching(true);
     setSearchError(null);
     setKeywordSearchActive(false);
@@ -252,6 +262,9 @@ export function EmbedPageInner({
     }
   }, [searchText, searchLanguage, token, updateURL]);
 
+  const handleSearchRef = useRef(handleSearch);
+  useEffect(() => { handleSearchRef.current = handleSearch; });
+
   // URL page 동기화 (시맨틱 검색 결과가 있으면 필터 변경 시 재검색)
   useEffect(() => {
     if (!mounted) return;
@@ -265,12 +278,12 @@ export function EmbedPageInner({
       return;
     }
     if (searchResultsRef.current !== null) {
-      handleSearch(page);
+      handleSearchRef.current(page);
     } else {
       const kw = keywordRef.current || undefined;
       loadCategories(page, perPage, filter, kw);
     }
-  }, [mounted, page, perPage, filter, loadCategories, handleSearch]);
+  }, [mounted, page, perPage, filter, loadCategories]);
 
   const handleReset = useCallback(() => {
     setSearchText("");
@@ -417,7 +430,7 @@ export function EmbedPageInner({
                   <Button
                     size="sm"
                     onClick={() => handleSearch()}
-                    disabled={isSearching}
+                    disabled={isSearching || !searchText.trim()}
                     className="h-9 shrink-0"
                     aria-label="검색"
                   >
