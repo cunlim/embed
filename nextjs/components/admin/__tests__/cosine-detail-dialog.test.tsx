@@ -3,6 +3,7 @@ import {
   formatEmbeddingPreview,
   dotProductExpression,
   firstDotTerm,
+  numpyExpression,
 } from "@/components/admin/cosine-detail-dialog";
 
 describe("formatEmbeddingPreview", () => {
@@ -85,5 +86,27 @@ describe("firstDotTerm", () => {
 
   it("rounds to 3 decimal places", () => {
     expect(firstDotTerm([0.123456], [-0.987654])).toBe("(0.123×-0.988)");
+  });
+});
+
+describe("numpyExpression", () => {
+  it("generates valid numpy code with imports", () => {
+    const result = numpyExpression([0.1, -0.2], [0.3, -0.4]);
+    expect(result).toContain("import numpy as np");
+    expect(result).toContain("A = np.array([0.1,-0.2])");
+    expect(result).toContain("B = np.array([0.3,-0.4])");
+    expect(result).toContain("np.dot(A, B) / (np.linalg.norm(A) * np.linalg.norm(B))");
+  });
+
+  it("handles empty arrays", () => {
+    const result = numpyExpression([], []);
+    expect(result).toContain("A = np.array([])");
+    expect(result).toContain("B = np.array([])");
+  });
+
+  it("handles single-element arrays", () => {
+    const result = numpyExpression([0.5], [0.8]);
+    expect(result).toContain("A = np.array([0.5])");
+    expect(result).toContain("B = np.array([0.8])");
   });
 });

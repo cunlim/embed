@@ -44,6 +44,12 @@ export function dotProductExpression(a: number[], b: number[]): string {
   return Array.from({ length: len }, (_, i) => `(${a[i]}*${b[i]})`).join("+");
 }
 
+export function numpyExpression(a: number[], b: number[]): string {
+  const aStr = JSON.stringify(a);
+  const bStr = JSON.stringify(b);
+  return `import numpy as np\nA = np.array(${aStr})\nB = np.array(${bStr})\nnp.dot(A, B) / (np.linalg.norm(A) * np.linalg.norm(B))`;
+}
+
 export function firstDotTerm(a: number[], b: number[]): string {
   if (a.length === 0 || b.length === 0) return "—";
   return `(${a[0].toFixed(3)}×${b[0].toFixed(3)})`;
@@ -115,19 +121,15 @@ function VectorAngleSvg({ similarityScore }: { similarityScore: number }) {
       {/* A vector (blue) */}
       <line x1={cx} y1={cy} x2={ax} y2={ay} stroke="#3b82f6" strokeWidth={2.5} />
       <polygon points={aHeadPts} fill="#3b82f6" />
+      <text x={ax + 4} y={ay - 4} fill="#3b82f6" fontSize={10} fontWeight={700}>A</text>
 
       {/* B vector (red) */}
       <line x1={cx} y1={cy} x2={bx} y2={by} stroke="#ef4444" strokeWidth={2.5} />
       <polygon points={bHeadPts} fill="#ef4444" />
+      <text x={bx + 2} y={by - 4} fill="#ef4444" fontSize={10} fontWeight={700}>B</text>
 
       {/* Center dot */}
       <circle cx={cx} cy={cy} r={2.5} fill="currentColor" />
-
-      {/* Legend */}
-      <circle cx={20} cy={100} r={3.5} fill="#3b82f6" />
-      <text x={26} y={103} fill="currentColor" fontSize={9}>A</text>
-      <circle cx={40} cy={100} r={3.5} fill="#ef4444" />
-      <text x={46} y={103} fill="currentColor" fontSize={9}>B</text>
     </svg>
   );
 }
@@ -172,9 +174,7 @@ export default function CosineDetailDialog({
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-[#3b82f6] font-medium">A</span>{" "}
-              <span className="text-[#ef4444] font-medium">B</span>
-              {" "}cos θ = {score.toFixed(4)}, θ = {thetaDeg}°
+              cos θ = {score.toFixed(4)}, θ = {thetaDeg}°
             </p>
           </div>
 
@@ -183,7 +183,7 @@ export default function CosineDetailDialog({
           {/* A. 검색어 임베딩 */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium">A. 검색어 임베딩</span>
+              <span className="text-xs font-medium"><span className="text-[#3b82f6]">A</span>. 검색어 임베딩</span>
               {searchKeyword && (
                 <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                   {searchKeyword}
@@ -211,7 +211,7 @@ export default function CosineDetailDialog({
           {/* B. 카테고리 임베딩 */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium">B. 카테고리 임베딩</span>
+              <span className="text-xs font-medium"><span className="text-[#ef4444]">B</span>. 카테고리 임베딩</span>
               <span className="inline-flex items-center rounded bg-pink-100 px-1.5 py-0.5 text-[10px] font-medium text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
                 {result.category_name}
               </span>
@@ -246,19 +246,30 @@ export default function CosineDetailDialog({
                   : "—"}
               </span>
               {aEmb && bEmb && aEmb.length > 0 && bEmb.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 shrink-0"
-                  onClick={() => copyToClipboard(dotProductExpression(aEmb, bEmb))}
-                  title="dot product 식 복사"
-                >
-                  <Copy className="!size-3" />
-                </Button>
+                <div className="flex shrink-0 gap-0.5">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => copyToClipboard(dotProductExpression(aEmb, bEmb))}
+                    title="dot product 식 복사 (계산기)"
+                  >
+                    <Copy className="!size-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => copyToClipboard(numpyExpression(aEmb, bEmb))}
+                    title="numpy 코드 복사"
+                  >
+                    <Hash className="!size-3" />
+                  </Button>
+                </div>
               )}
             </div>
             <p className="text-[10px] text-muted-foreground">
-              복사 시 전체 {aEmb?.length ?? "—"}항 dot product 식으로 복사
+              복사: dot product 식 (계산기) / numpy 코드
             </p>
           </div>
         </div>
