@@ -47,7 +47,7 @@ export function dotProductExpression(a: number[], b: number[]): string {
 export function numpyExpression(a: number[], b: number[]): string {
   const aStr = JSON.stringify(a);
   const bStr = JSON.stringify(b);
-  return `import numpy as np\nA = np.array(${aStr})\nB = np.array(${bStr})\nnp.dot(A, B) / (np.linalg.norm(A) * np.linalg.norm(B))`;
+  return `import numpy as np\nA = np.array(${aStr})\nB = np.array(${bStr})\nprint(np.dot(A, B) / (np.linalg.norm(A) * np.linalg.norm(B)))`;
 }
 
 export function firstDotTerm(a: number[], b: number[]): string {
@@ -166,9 +166,9 @@ export default function CosineDetailDialog({
 
         <div className="space-y-4">
           {/* 유사도 점수 */}
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center justify-center gap-4">
             <VectorAngleSvg similarityScore={score} />
-            <div className="text-center">
+            <div className="text-left">
               <p className="font-mono text-3xl font-bold tabular-nums">
                 {scorePercent}%
               </p>

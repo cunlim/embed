@@ -95,7 +95,7 @@ describe("numpyExpression", () => {
     expect(result).toContain("import numpy as np");
     expect(result).toContain("A = np.array([0.1,-0.2])");
     expect(result).toContain("B = np.array([0.3,-0.4])");
-    expect(result).toContain("np.dot(A, B) / (np.linalg.norm(A) * np.linalg.norm(B))");
+    expect(result).toContain("print(np.dot(A, B) / (np.linalg.norm(A) * np.linalg.norm(B)))");
   });
 
   it("handles empty arrays", () => {
