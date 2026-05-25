@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -30,18 +31,20 @@ async function copyToClipboard(text: string) {
   }
 }
 
-function formatEmbeddingPreview(embedding: number[] | null): string {
+export function formatEmbeddingPreview(embedding: number[] | null): string {
   if (!embedding || embedding.length === 0) return "—";
-  const first6 = embedding.slice(0, 6).map((v) => v.toFixed(3)).join(", ");
-  return `[${first6}, ... ${embedding.length}차원]`;
+  const previewCount = Math.min(6, embedding.length);
+  const preview = embedding.slice(0, previewCount).map((v) => v.toFixed(3)).join(", ");
+  if (embedding.length <= 6) return `[${preview}] (${embedding.length}차원)`;
+  return `[${preview}, ... ${embedding.length}차원]`;
 }
 
-function dotProductExpression(a: number[], b: number[]): string {
+export function dotProductExpression(a: number[], b: number[]): string {
   const len = Math.min(a.length, b.length);
   return Array.from({ length: len }, (_, i) => `(${a[i]}*${b[i]})`).join("+");
 }
 
-function firstDotTerm(a: number[], b: number[]): string {
+export function firstDotTerm(a: number[], b: number[]): string {
   if (a.length === 0 || b.length === 0) return "—";
   return `(${a[0].toFixed(3)}×${b[0].toFixed(3)})`;
 }
@@ -50,7 +53,8 @@ function firstDotTerm(a: number[], b: number[]): string {
 
 function VectorAngleSvg({ similarityScore }: { similarityScore: number }) {
   const cx = 52, cy = 52, r = 40;
-  const theta = Math.acos(similarityScore);
+  const clamped = Math.min(1, Math.max(-1, similarityScore));
+  const theta = Math.acos(clamped);
   const thetaDeg = (theta * 180) / Math.PI;
 
   // A: 3 o'clock (0 rad)
@@ -139,8 +143,9 @@ export default function CosineDetailDialog({
   if (!result) return null;
 
   const score = result.similarity_score ?? 0;
+  const clampedScore = Math.min(1, Math.max(-1, score));
   const scorePercent = (score * 100).toFixed(1);
-  const thetaDeg = score > 0 ? ((Math.acos(score) * 180) / Math.PI).toFixed(1) : "90.0";
+  const thetaDeg = ((Math.acos(clampedScore) * 180) / Math.PI).toFixed(1);
   const aEmb = result.query_embedding;
   const bEmb = result.category_embedding;
 
@@ -152,13 +157,16 @@ export default function CosineDetailDialog({
             <Hash className="h-4 w-4" />
             코사인 유사도 상세
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            검색어와 카테고리 임베딩 간 코사인 유사도 상세 정보
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* 유사도 점수 */}
           <div className="flex flex-col items-center gap-2">
             <div className="flex items-center gap-4">
-              {score > 0 && <VectorAngleSvg similarityScore={score} />}
+              <VectorAngleSvg similarityScore={score} />
               <span className="font-mono text-3xl font-bold tabular-nums">
                 {scorePercent}%
               </span>
@@ -194,7 +202,7 @@ export default function CosineDetailDialog({
                   onClick={() => copyToClipboard(JSON.stringify(aEmb))}
                   title="임베딩 벡터 복사"
                 >
-                  <Copy className="size-3" />
+                  <Copy className="!size-3" />
                 </Button>
               )}
             </div>
@@ -220,7 +228,7 @@ export default function CosineDetailDialog({
                   onClick={() => copyToClipboard(JSON.stringify(bEmb))}
                   title="임베딩 벡터 복사"
                 >
-                  <Copy className="size-3" />
+                  <Copy className="!size-3" />
                 </Button>
               )}
             </div>
@@ -245,7 +253,7 @@ export default function CosineDetailDialog({
                   onClick={() => copyToClipboard(dotProductExpression(aEmb, bEmb))}
                   title="dot product 식 복사"
                 >
-                  <Copy className="size-3" />
+                  <Copy className="!size-3" />
                 </Button>
               )}
             </div>
