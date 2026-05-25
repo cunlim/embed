@@ -458,7 +458,7 @@ export default function CategoryHierarchy({
                 disabled={!hierarchyDirty}
                 className="w-full h-8 text-xs"
               >
-                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                <RotateCcw className="h-3.5 w-3.5" />
                 초기화
               </Button>
             </div>
@@ -476,7 +476,6 @@ export default function CategoryHierarchy({
                 />
                 <Button
                   size="sm"
-                  variant="secondary"
                   onClick={handleKeywordSubmit}
                   disabled={!keywordText.trim()}
                   className="h-9 shrink-0"

@@ -418,9 +418,9 @@ export function EmbedPageInner({
                     className="flex-1"
                   >
                     {isSearching ? (
-                      <RefreshCw className="mr-1.5 h-4 w-4 animate-spin" />
+                      <RefreshCw className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Search className="mr-1.5 h-4 w-4" />
+                      <Search className="h-4 w-4" />
                     )}
                     검색
                   </Button>
@@ -514,7 +514,7 @@ export function EmbedPageInner({
                   disabled={!newCategoryName.trim()}
                   className="w-full"
                 >
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="h-4 w-4" />
                   추가
                 </Button>
                 {catError && (
@@ -550,7 +550,7 @@ export function EmbedPageInner({
                 <Button
                   variant={filter === undefined ? "default" : "ghost"}
                   size="sm"
-                  className={filter !== undefined ? "hover:bg-primary/50" : ""}
+                  className={`h-7 px-2 text-xs ${filter !== undefined ? "hover:bg-primary/50" : ""}`}
                   onClick={() => { setFilter(undefined); updateURL({ filter: undefined }); }}
                 >
                   전체
@@ -558,7 +558,7 @@ export function EmbedPageInner({
                 <Button
                   variant={filter === "my" ? "default" : "ghost"}
                   size="sm"
-                  className={filter !== "my" ? "hover:bg-primary/50" : ""}
+                  className={`h-7 px-2 text-xs ${filter !== "my" ? "hover:bg-primary/50" : ""}`}
                   onClick={() => {
                     if (!user) { alert("로그인이 필요합니다"); return; }
                     setFilter("my"); updateURL({ filter: "my" });
@@ -595,7 +595,7 @@ export function EmbedPageInner({
                       className="mt-3"
                       onClick={() => loadCategories(page, perPage, filter)}
                     >
-                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                      <RefreshCw className="h-3.5 w-3.5" />
                       재시도
                     </Button>
                   </div>
@@ -689,6 +689,7 @@ export function EmbedPageInner({
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="hover:bg-foreground/10 hover:text-foreground"
                                     title="삭제"
                                     onClick={() => handleDelete(cat)}
                                     aria-label="삭제"
@@ -699,6 +700,7 @@ export function EmbedPageInner({
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="hover:bg-foreground/10 hover:text-foreground"
                                   title={canModify(cat) ? "수정" : "보기"}
                                   onClick={() => {
                                     setModalReadOnly(!canModify(cat));
@@ -763,6 +765,7 @@ export function EmbedPageInner({
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                className="hover:bg-foreground/10 hover:text-foreground"
                                 title="삭제"
                                 onClick={() => handleDelete(cat)}
                                 aria-label="삭제"
@@ -773,6 +776,7 @@ export function EmbedPageInner({
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="hover:bg-foreground/10 hover:text-foreground"
                               title={canModify(cat) ? "수정" : "보기"}
                               onClick={() => {
                                 setModalReadOnly(!canModify(cat));

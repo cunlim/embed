@@ -316,7 +316,6 @@ export default function TaskExecution({
           <Button
             onClick={handleSelectedProcess}
             disabled={running || selectedIds.size === 0}
-            variant="outline"
             className="flex-1"
           >
             선택 처리
@@ -324,7 +323,6 @@ export default function TaskExecution({
           <Button
             onClick={handleFullProcess}
             disabled={running}
-            variant="outline"
             className="flex-1"
           >
             전체 처리
@@ -381,7 +379,7 @@ export default function TaskExecution({
                 variant="destructive"
                 className="w-full"
               >
-                <Square className="mr-1.5 h-4 w-4" />
+                <Square className="h-4 w-4" />
                 {stopping ? "중지 중..." : "실행중지"}
               </Button>
             )}
