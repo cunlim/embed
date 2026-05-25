@@ -45,6 +45,12 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
 - **`space-y-*`는 자식이 inline이면 무시됨** — `<span>`은 `display: inline`이라 `space-y-*`의 `margin-bottom`이 렌더링되지 않음. `<span>`에 `inline-block` 추가해야 vertical margin 적용됨. `space-y-*`와 `mb-*` 혼합 금지.
 - **`space-y-*` 검증은 Playwright `browser_evaluate`로** — `getComputedStyle()`만 보면 inline 요소의 margin이 있는 것처럼 표시되므로, `getBoundingClientRect()`로 자식 간 실제 gap을 측정해야 함.
 
+## Modal/Dialog 반응형
+
+- **Dialog 콘텐츠 컨테이너에 `min-w-0` 필수** — Dialog의 `max-w-[calc(100%-2rem)]`이 grid item을 제약해도, 내부 `space-y-*`/`flex` 컨테이너는 `min-width: auto`(기본값)로 인해 제약을 무시하고 확장된다. 최상위 콘텐츠 div와 중간 flex 컨테이너에 `min-w-0`을 명시해야 max-width가 하위 요소까지 전파된다.
+- **flex row의 고정 요소에 `shrink-0`** — 점수·뱃지·아이콘 등 고정 너비가 의도된 flex 자식은 `flex-shrink: 1`(기본값)에 의해 공간 부족 시 축소된다. `truncate` 텍스트 영역에 최대 공간을 주려면 다른 모든 flex 자식에 `shrink-0`을 명시한다.
+- **긴 텍스트 라벨도 `truncate` 적용** — `<p>` 라벨이 카테고리명 등으로 길어질 수 있으면 `min-w-0 truncate`를 추가한다.
+
 ## Embed 페이지 UI 패턴
 
 - **토글 버튼** — `variant={active ? "default" : "ghost"}` + ghost에 `hover:bg-primary/50` + `size="sm"` + `h-7 px-2 text-xs`. Tabs 사용 금지.

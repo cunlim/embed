@@ -38,11 +38,6 @@ AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](doc
 - **Pint 바인드 마운트 파일 손상** — `/tmp/` 경유 방식 사용.
 - **shadcn 컴포넌트 설치 시 confirm** — `echo 'y' | npx shadcn@latest add <component>`.
 
-## Tailwind v4
-
-- **`space-y-*`는 자식이 inline이면 무시됨** — `<span>`은 `display: inline`이라 `space-y-*`의 `margin-bottom`이 렌더링되지 않음. `<span>`에 `inline-block` 추가해야 vertical margin 적용됨. `space-y-*`와 `mb-*` 혼합 금지.
-- **`space-y-*` 검증은 Playwright `browser_evaluate`로** — `getComputedStyle()`만 보면 inline 요소의 margin이 있는 것처럼 표시되므로, `getBoundingClientRect()`로 자식 간 실제 gap을 측정해야 함.
-
 ## 카테고리 접근 제어
 
 - **`user_id = 1`이 시스템 공개 카테고리 소유자** — 비로그인 시 `WHERE user_id = 1`만, 로그인+전체 시 `WHERE user_id IN (본인, 1)`, admin/superadmin은 제한 없음.
@@ -55,7 +50,6 @@ AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](doc
 - **커밋 메시지**: conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`)
 - **Phase step 완료 조건** — 0 failure 테스트 확인. 실패 시 step 완료 불가.
 - **완료된 phase는 수정하지 않음** — 새 기능은 신규 phase로 생성.
-- **버그 수정 패턴은 파일 내 모든 발생 지점에 적용** — `grep`으로 전체 확인.
 
 ## Feature Spec 3축
 
