@@ -40,6 +40,31 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
 - **모달 닫힘 애니메이션 중 prop 변화로 인한 깜빡임 방지** — `react-hooks/refs` + `set-state-in-effect` 제약으로 인해 모달 내부에서 ref/effect로 prop을 안정화할 수 없다. 부모 컴포넌트에서 별도 `useState`로 값을 캡처하고, 모달을 열 때만 `setState`로 갱신하며 닫을 때는 그대로 두는 패턴을 사용한다.
 - **`@typescript-eslint/no-unused-vars`** — 미사용 import는 오류. 작업 완료 후 확인할 것.
 
+## Tailwind v4
+
+- **`space-y-*`는 자식이 inline이면 무시됨** — `<span>`은 `display: inline`이라 `space-y-*`의 `margin-bottom`이 렌더링되지 않음. `<span>`에 `inline-block` 추가해야 vertical margin 적용됨. `space-y-*`와 `mb-*` 혼합 금지.
+- **`space-y-*` 검증은 Playwright `browser_evaluate`로** — `getComputedStyle()`만 보면 inline 요소의 margin이 있는 것처럼 표시되므로, `getBoundingClientRect()`로 자식 간 실제 gap을 측정해야 함.
+
+## Embed 페이지 UI 패턴
+
+- **토글 버튼** — `variant={active ? "default" : "ghost"}` + ghost에 `hover:bg-primary/50` + `size="sm"` + `h-7 px-2 text-xs`. Tabs 사용 금지.
+- **버튼 아이콘-텍스트 간격** — shadcn Button base class에 `gap-1` 이미 적용. 개별 `mr-*` 금지.
+- **액션 버튼** — 왼쪽 영역(검색 실행, 작업 실행 등)은 `variant="default"`. `variant="outline"`/`"secondary"` 금지.
+- **테이블 ghost icon hover** — `hover:bg-foreground/10 hover:text-foreground`로 오버라이드.
+- **shadcn Button `[&_svg]:size-4`** — icon에 `size-3` 대신 `!size-3` 사용해야 적용됨.
+
+## Dark 모드
+
+- **card/popover 배경 chroma 최소화** — `oklch(L 0.003 H)`, chroma 0.005 이하.
+- **card-background lightness 차이** — 0.07 이상 확보.
+- CSS 변수는 `app/globals.css`의 `.dark` 셀렉터에서 정의.
+
+## SSR (Server Components)
+
+- **SSR prefetch 시 CSR과 동일 파라미터** — `parseEmbedParams()`로 URL 파라미터 SSR/CSR 공통 추출.
+- **URL 파라미터 갱신 시 기존 파라미터 보존** — `new URLSearchParams(searchParams.toString())`로 시작.
+- **컴포넌트 props 추가 시 `npx tsc --noEmit` 확인** — `npm test`는 모킹으로 타입 체크 우회.
+
 ## 테스트
 
 **CRITICAL: 프론트엔드도 TDD를 적용한다.** 새 훅, 유틸리티 함수, API 클라이언트 추가 시 테스트를 먼저 작성할 것.
@@ -73,24 +98,8 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - **인증 가드 패턴 (admin)** — `useAuth()`의 `isLoading`으로 사용자 로딩 완료까지 대기. `authorized`는 별도 state 대신 `const authorized = isAdmin(user)`로 user에서 직접 도출할 것 (`setAuthorized(true)` effect 금지). 비로그인 → `router.replace("/login?redirect=/admin")`. 로그인 + 비관리자 → `router.back()`.
 - **`isAdmin(user)` / `isSuperAdmin(user)` — `@/lib/utils`** — user 객체(`{role?: string}`)의 role로 권한 체크. `isAdmin`은 admin+superadmin, `isSuperAdmin`은 superadmin만. 시그니처 변경 시 `tsc --noEmit`으로 모든 호출자를 찾아 갱신할 것.
 - **`vitest` 바이너리 직접 실행 금지** — `--no-bin-links`로 인해 `node_modules/.bin/vitest` 미생성. `npm test` 또는 `node node_modules/vitest/vitest.mjs run` 사용.
-- **훅 메서드 간 호출 시 이중 상태 업데이트** — `addCategory` 내부에서 `loadCategories()`를 호출하면 `setIsLoading(true)`가 이중 호출되어 불필요한 렌더링 발생. 대신 API 함수(`getCategories(token)`)를 직접 호출하고 `setCategories(data.data)`로 상태를 직접 설정할 것.
-- **`renderHook` + `act()` 중간 상태 테스트 불가** — pending Promise로 `isLoading`의 중간 true 상태를 검증하려는 테스트는 `act()`가 Promise 완료까지 대기하여 항상 false가 반환됨. `await act(async () => { await result.current.method(); })` 패턴으로 최종 상태만 검증할 것. 중간 상태 검증이 필요하면 deferred promise 대신 `waitFor` 사용.
 - **컨테이너 재생성 후 타입 재평가** — `docker compose stop` + `up -d`로 컨테이너 재생성 시 npm 의존성 타입이 재평가되어 이전에 통과하던 TypeScript 체크가 실패할 수 있다. 재생성 후 반드시 `npm run build`로 타입 체크를 확인할 것.
-- **`useAuth()` 자동 사용자 로드** — 훅이 마운트 시 쿠키의 `auth_token`을 읽어 `GET /api/auth/user`를 자동 호출 (localStorage fallback 있음). `isLoading` 초기값은 `!!getToken()`으로 결정. `setToken()` 호출 시 쿠키에도 저장되므로 SSR `page.tsx`에서 `cookies().get("auth_token")`으로 접근 가능.
-- **`getToken()`은 `mounted` 게이트 불필요** — `typeof document === "undefined"` 체크로 이미 SSR 안전. `const token = mounted ? getToken() : null` 대신 `const token = getToken()` 사용.
 - **SSR prefetch 파라미터 일치 필수** — `page.tsx`의 `getCategories()`·`recommend()` 호출 인자(token, filter, keyword, page, perPage)가 CSR과 정확히 일치해야 불일치가 발생하지 않는다.
-- **`useCategories(token)` auto-load** — token 변경 시 mount 시 자동 로드 (`loadedToken` ref로 변경 감지). 컴포넌트 effect에서 `loadCategories()` 호출 불필요. token이 null이어도 public 데이터 로드를 위해 자동 로드. `isLoaded` 플래그로 초기 로드 완료 확인 가능.
-- **`getUser()` 응답 envelope** — `/api/auth/user`는 `{data: {id, name, email, created_at}}` 형식. `lib/api.ts`의 `getUser()`에서 `res.data`로 추출 필요. 로그인/회원가입 응답과 동일한 패턴.
-- **`"use client"` 파일에 async 함수 금지** — ESLint `@next/next/no-async-client-component`. Server Component를 async로 만들려면 `"use client"` 없는 별도 파일로 분리하고 Client Component를 import할 것.
-- **Client Component export** — 테스트에서 Server Component를 우회할 수 있도록 Client Component(예: `EmbedPageInner`)는 `export function`으로 선언. 테스트는 Server Component 대신 Client Component를 직접 import.
-- **`react-hooks/set-state-in-effect`** — URL→props→state 동기화 시 `useEffect`+`setState` 대신 `useState(initialValue)` 초기자 사용.
-- **`filterRef` / `keywordRef` / `searchTextRef`** — `useCallback` async 함수에서 state 직접 참조는 stale closure 유발. `useRef`로 추적.
-- **`handleSearch → updateURL → useEffect` 순환 의존성** — `handleSearchRef`로 useEffect 의존성 배열에서 제거. (`embed-page-inner.tsx` 참고)
-- **`onSelectLeafPath` 등 콜백 prop stale closure** — 비동기 응답 후 부모 state 직접 참조 금지. ref로 우회.
-- **유사도 검색 `isSearchMode` 게이트** — `handleSearch` 호출 전 `setKeywordSearchActive(false)` 선행 필수.
-- **초기 필터 파라미터 경쟁 상태** — `skipInitialLoadRef`로 첫 로드 건너뛰고 child mount effect에 위임.
-- **TypeScript `??`/`||` 혼합 금지** — `a ?? b || c`는 TS5076. `a ?? (b || c)`처럼 괄호로 우선순위 명시.
-- **shadcn Button `[&_svg]:size-4`** — icon에 `size-3` 대신 `!size-3` 사용해야 적용됨.
 
 ## 관련 문서
 

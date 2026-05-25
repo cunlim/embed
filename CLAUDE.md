@@ -38,30 +38,17 @@ AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](doc
 - **Pint 바인드 마운트 파일 손상** — `/tmp/` 경유 방식 사용.
 - **shadcn 컴포넌트 설치 시 confirm** — `echo 'y' | npx shadcn@latest add <component>`.
 
+## Tailwind v4
+
+- **`space-y-*`는 자식이 inline이면 무시됨** — `<span>`은 `display: inline`이라 `space-y-*`의 `margin-bottom`이 렌더링되지 않음. `<span>`에 `inline-block` 추가해야 vertical margin 적용됨. `space-y-*`와 `mb-*` 혼합 금지.
+- **`space-y-*` 검증은 Playwright `browser_evaluate`로** — `getComputedStyle()`만 보면 inline 요소의 margin이 있는 것처럼 표시되므로, `getBoundingClientRect()`로 자식 간 실제 gap을 측정해야 함.
+
 ## 카테고리 접근 제어
 
 - **`user_id = 1`이 시스템 공개 카테고리 소유자** — 비로그인 시 `WHERE user_id = 1`만, 로그인+전체 시 `WHERE user_id IN (본인, 1)`, admin/superadmin은 제한 없음.
 - **모든 카테고리 조회 API는 `CategoryController::index()`와 동일한 user scope 규칙 적용** — `levels()`, RecommendController 등에서 누락 금지.
 
-## Embed 페이지 UI 패턴
-
-- **토글 버튼** — `variant={active ? "default" : "ghost"}` + ghost에 `hover:bg-primary/50` + `size="sm"` + `h-7 px-2 text-xs`. Tabs 사용 금지.
-- **버튼 아이콘-텍스트 간격** — shadcn Button base class에 `gap-1` 이미 적용. 개별 `mr-*` 금지.
-- **액션 버튼** — 왼쪽 영역(검색 실행, 작업 실행 등)은 `variant="default"`. `variant="outline"`/`"secondary"` 금지.
-- **테이블 ghost icon hover** — `hover:bg-foreground/10 hover:text-foreground`로 오버라이드.
-- **shadcn Button `[&_svg]:size-4`** — icon에 `size-3` 대신 `!size-3` 사용해야 적용됨.
-
-## Dark 모드
-
-- **card/popover 배경 chroma 최소화** — `oklch(L 0.003 H)`, chroma 0.005 이하.
-- **card-background lightness 차이** — 0.07 이상 확보.
-- CSS 변수는 `app/globals.css`의 `.dark` 셀렉터에서 정의.
-
-## SSR (Server Components)
-
-- **SSR prefetch 시 CSR과 동일 파라미터** — `parseEmbedParams()`로 URL 파라미터 SSR/CSR 공통 추출.
-- **URL 파라미터 갱신 시 기존 파라미터 보존** — `new URLSearchParams(searchParams.toString())`로 시작.
-- **컴포넌트 props 추가 시 `npx tsc --noEmit` 확인** — `npm test`는 모킹으로 타입 체크 우회.
+> Next.js 특화 UI 패턴, SSR, Dark 모드는 [`nextjs/CLAUDE.md`](nextjs/CLAUDE.md) 참조.
 
 ## 개발 프로세스
 
