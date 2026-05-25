@@ -57,32 +57,10 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **`#[OA\Info]`가 OpenAPI info 객체를 제어** — `l5-swagger.php` config의 `documentations.api.api` 섹션(description, termsOfService, contact 등)은 l5-swagger 생성기가 사용하지 않는다. 실제 `info` 객체는 `#[OA\Info]` 어노테이션(현재 `TestController.php`에 위치)이 제어하므로, description·termsOfService·contact 변경은 config가 아닌 어노테이션에 해야 한다.
 - **OA 변경 후 `l5-swagger:generate`로 검증** — 어노테이션 구문 오류는 generate 시점에 발견된다.
 
-### 모델 생성 체크리스트
+### 모델 / Factory
 
-**CRITICAL** — 아래 규칙은 **모든 모델에 예외 없이 적용**한다. API에 노출되지 않는 내부/시스템 모델(예: `Setting`)도 동일한 규칙을 따른다. "내부용이니까 괜찮겠지"라는 판단은 금지한다.
-
-새 Eloquent 모델 생성 시 다음 항목을 반드시 확인한다:
-
-- **`HasFactory` trait**: 모든 모델은 `use HasFactory`를 포함하고 대응하는 Factory를 생성한다. Seeder에서 직접 `::create()`를 호출하는 경우에도 Factory는 반드시 존재해야 한다.
-- **`#[Hidden]`**: `id`, `created_at`, `updated_at`, `embedding`(Vector) 등 API 응답에 불필요한 컬럼은 Attribute로 숨긴다. 기존 모델(`Category`, `CategoryEmbedding`)을 참고할 것.
-- **`#[Fillable]`**: mass-assignment 허용 컬럼을 정확히 지정한다. `$guarded = []`는 사용하지 않는다.
-- **`casts()`**: `embedding` → `Vector::class`, `id` → `integer` 등 모든 특수 타입 캐스팅을 정의한다.
-- **관계 메서드**: `@return BelongsTo<User, $this>` 형식의 제네릭 PHPDoc을 작성한다.
-
-### Factory 생성 체크리스트
-
-- **pgvector Vector 컬럼**: Box-Muller 변환으로 Gaussian 분포에서 샘플링 후 정규화하여 구면 위 균등 분포 벡터를 생성한다. 단순 `randomFloat()` 균등분포는 사용하지 않는다. (`CategoryEmbeddingSeeder::randomUnitVector()` 구현을 그대로 재사용할 것)
-  - 이유: 균등분포로 생성한 벡터는 구면 위에 균등하게 분포하지 않아 코사인 유사도 검색의 신뢰도가 떨어진다. 정규화된 단위 벡터가 pgvector 코사인 유사도 검색에 필요하다.
-
-### 모델 테스트 최소 요건
-
-**CRITICAL** — 모델 생성 시 다음을 검증하는 Pest 테스트를 함께 작성한다:
-
-- Factory로 모델 생성 가능 여부 (`::factory()->create()`)
-- 관계 메서드 반환 타입 (BelongsTo, HasMany 등)
-- 특수 캐스팅 동작 (Vector 등)
-
-TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한다.
+- 새 모델 생성 시 기존 모델(`Category`, `CategoryEmbedding`)의 `#[Hidden]`, `#[Fillable]`, `casts()`, 관계 PHPDoc 패턴을 따를 것.
+- **pgvector Vector 컬럼**: Box-Muller + 정규화로 구면 균등 분포 벡터 생성. `CategoryEmbeddingSeeder::randomUnitVector()` 재사용. `randomFloat()` 균등분포 금지.
 
 ### Event::fake 사용 시 주의사항
 
@@ -116,10 +94,9 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
 - **Unit 테스트에서 `$this->mock()` 필요 시 `uses(TestCase::class)` 선언**: `tests/Unit/` 디렉토리의 테스트는 기본적으로 Laravel `TestCase`를 상속하지 않으므로 `$this->mock()`이나 `$this->app`에 접근할 수 없다. 컨테이너 접근이 필요하면 파일 상단에 `use Tests\TestCase;` + `uses(TestCase::class);`를 추가할 것. (`tests/Unit/CategoryEmbeddingTest.php`의 패턴 참고)
 - 기존 Feature 테스트(`OllamaTranslatorTest`, `EmbeddingGeneratorTest`)의 mock 패턴을 참고할 것.
 
-### OllamaTranslator 세그먼트 캐싱 검증
+### OllamaTranslator 캐싱 검증
 
-- **캐시 재사용은 mock의 호출 횟수로 검증**: `OllamaClient::chat()`을 mock 하고 `->times(N)`으로 Ollama API 호출 횟수를 정량 단언한다. `"A>B>C>D1"` 번역 후 `"A>B>C>D2"` 번역 시 공통 prefix 세그먼트(A,B,C)는 캐시 히트되어 `->once()`만 호출된다.
-- **`andReturnValues([])`로 순차 응답**: 여러 세그먼트의 번역 결과를 순서대로 반환할 때 사용.
+`OllamaTranslatorTest`의 mock 호출 횟수(`->times(N)`) 검증 패턴 참고.
 
 ### 서비스 클래스 캐싱 패턴
 
@@ -149,39 +126,9 @@ TDD를 준수하여 테스트를 먼저 작성한 후 모델 코드를 구현한
 - `category_code`: optional unique 필드, `$request->filled('category_code')`로 체크 (빈 문자열 `""`와 `null` 구분 필요 — `??` 연산자는 `""`를 통과시키므로 `filled()` 사용), 미제공 시 `Category::generateCode()`로 자동 생성.
 - `recommend()`에서 text가 nullable: 빈 문자열이면 일반 카테고리 페이지네이션 반환, text 있으면 `RecommendationService::recommendPaginated()`로 pgvector JOIN 검색.
 
-### 운영 설정 패턴 (Config + Settings Table)
+### 운영 설정 (Config + Settings Table)
 
-**CRITICAL** — 운영 중 변경 가능성이 있는 설정값은 하드코딩하지 말고 아래 패턴을 따른다.
-
-설정값(API 엔드포인트, 모델명, rate limit 임계값, timeout 등)은 3계층으로 관리한다:
-
-1. **`config/services.php`** — 기본값 정의 (코드에 내장된 폴백)
-2. **`settings` DB 테이블** — 런타임 오버라이드 (`SettingsSeeder`로 초기값 시딩)
-3. **`AppServiceProvider::boot()`** — DB 값을 config에 동기화
-
-```php
-// config/services.php — 기본값
-'ollama' => [
-    'host' => 'http://host.docker.internal:11434',
-    'rate_limit_max_attempts' => 60,
-],
-
-// SettingsSeeder — DB 초기값
-Setting::firstOrCreate(
-    ['group' => 'ollama', 'key' => 'rate_limit_max_attempts'],
-    ['value' => '60', 'type' => 'integer', 'description' => '...'],
-);
-
-// AppServiceProvider::boot() — DB → config 동기화
-config([
-    'services.ollama.rate_limit_max_attempts' =>
-        $settings->get('ollama', 'rate_limit_max_attempts', config('services.ollama.rate_limit_max_attempts', 60)),
-]);
-```
-
-- **새 설정 추가 시 3곳 모두 업데이트**: `config/services.php`, `SettingsSeeder`, `AppServiceProvider::boot()`
-- **생성자에서 config로 주입**: 서비스 클래스는 config 값을 생성자 파라미터로 받고, `AppServiceProvider::register()`에서 주입한다.
-- **이유**: 설정 테이블을 통해 런타임에 값을 변경할 수 있고, DB에 값이 없어도 config 기본값으로 정상 동작한다. 기존 `ollama.host`, `ollama.translation_model`, `ollama.embedding_model`이 이 패턴을 따른다.
+운영 중 변경 가능한 설정값은 3계층 패턴 사용: `config/services.php`(기본값) → `SettingsSeeder`(DB 초기값) → `AppServiceProvider::boot()`(DB→config 동기화). 새 설정 추가 시 3곳 모두 업데이트. 기존 `ollama.host`, `ollama.translation_model` 참고.
 
 ### OAuth (Socialite) 패턴
 

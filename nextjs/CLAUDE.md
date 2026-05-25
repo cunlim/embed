@@ -10,43 +10,10 @@
 AI 기반 다국어 카테고리 추천 시스템의 프론트엔드입니다.
 Next.js 16 (App Router), React 19, TypeScript 5, Tailwind CSS v4, shadcn/ui (`base-nova` 스타일) 기반.
 
-## 디렉토리 구조
-
-`app/` (App Router), `components/` (ui/는 shadcn 자동 생성), `hooks/`, `lib/`.
-
 ## 명령어
 
-모든 명령어는 `cl_embed_nextjs` 컨테이너 대상으로 `docker exec`를 통해 실행합니다.
-컨테이너 내부에서 npm 실행 시 `--no-bin-links` 플래그가 필요할 수 있습니다.
-
-```bash
-# 개발 서버
-docker exec cl_embed_nextjs npm run dev
-
-# 프로덕션 빌드
-docker exec cl_embed_nextjs npm run build
-
-# ESLint
-docker exec cl_embed_nextjs npm run lint
-
-# 테스트 (Vitest)
-docker exec cl_embed_nextjs npm test
-docker exec cl_embed_nextjs npm run test:watch
-```
-
-### shadcn/ui 컴포넌트 추가
-
-```bash
-# 컴포넌트 추가
-docker exec cl_embed_nextjs npx shadcn@latest add <component>
-
-# shadcn MCP 서버로 사용 가능한 컴포넌트 검색
-# (search_components 도구 사용)
-```
-
-## 페이지 구성
-
-5개 페이지 구성: `/`, `/login`, `/embed`, `/admin`, `/docs`.
+`docker exec cl_embed_nextjs npm run <command>` 패턴. 자주 사용: `dev`, `build`, `lint`, `test`, `test:watch`.
+shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <component>`.
 
 ## 디자인 시스템
 
@@ -61,20 +28,6 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component>
 - **App Router**: `app/` 디렉토리 내 페이지 라우팅
 - **TypeScript strict**: 모든 props, 함수 반환값에 명시적 타입 선언
 - **`@/*` import alias**: `@/components/ui/button`, `@/lib/utils` 등
-
-### Tailwind CSS v4
-- `cn()` 헬퍼 (`clsx` + `tailwind-merge`)로 클래스 병합
-- 플러그인은 CSS `@plugin` 지시문 사용 (`tailwind.config.js` 불필요)
-
-### 상태 관리
-- **서버 상태**: RSC에서 직접 DB 쿼리 (Laravel API 호출)
-- **클라이언트 상태**: React hooks (useState, useEffect)
-- **비회원**: `LocalStorage` 기반 (검색 캐시는 모든 사용자가 공유)
-- **회원**: Laravel Sanctum API Token → `User ID` 종속
-
-## 정적 문서 서빙
-
-`docs/` 디렉토리를 `public/content/`에 bind mount하여 마크다운 문서를 서빙한다. 마크다운 렌더링은 `react-markdown` + `@tailwindcss/typography` 사용. 외부 링크 `target="_blank"` 등 필요한 부분만 `components` prop으로 오버라이드.
 
 ## ESLint 주요 규칙
 

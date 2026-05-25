@@ -18,7 +18,6 @@
 - **Sub-agent driven** — 구현은 되도록 Agent(Sub-agent)를 활용한다.
 - **Playwright 테스트 URL** — WSL2 호스트에서 `https://embed.cunlim.dev`로 접속 (Next.js 포트 미공개).
 - **작업 완료 전 검증** — `.claude/hooks/run-all-checks.sh`를 실행하여 tsc, lint, test, pint를 모두 통과하는지 확인하고 이슈가 있으면 해결 후 마무리한다.
-- **Sub-agent 작업 후 Playwright 검증** — run-all-checks 통과 후에도 Playwright로 실제 페이지 로딩·기능 동작을 확인한다. tsc/lint/test가 통과해도 dev server에서 build error(중복 코드 등)가 발생할 수 있다.
 
 ## Subagent-Driven Development worktree 주의사항
 
@@ -29,15 +28,14 @@
 
 ## 프로젝트 개요
 
-AI 기반 다국어 카테고리 추천 시스템. `nextjs/`(Next.js 16, `/app/` 경로), `laravel/`(Laravel 13, `/var/www/html/` 경로), `docker/`(5개 서비스), `docs/`(설계 문서).
+AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](docs/PRD.md) 참조. 진행 상황은 `phases/` 디렉토리와 `git log`로 확인.
 
-## 컨테이너 파일 동기화
+## Docker
 
-- **base64 방식만 사용** — `docker exec cat > host`와 `docker cp`는 WSL2 바인드 마운트에서 0바이트 파일 생성. `cat <host> | base64 | docker exec -i <container> bash -c "base64 -d > <container-path>"`.
-- **Next.js 컨테이너 경로**: `/app/`, **Laravel 컨테이너 경로**: `/var/www/html/`.
-- **컨테이너 재시작 후 HMR 불통** — `docker compose stop` + `up -d` 후 브라우저 WebSocket 502. Playwright는 `browser.newContext()`, 수동은 Ctrl+Shift+R.
+- **base64 방식만 사용** — `docker exec cat > host`와 `docker cp`는 WSL2 바인드 마운트에서 0바이트 파일 생성.
+- **컨테이너 재시작 후 HMR 불통** — WebSocket 502. `browser.newContext()` 또는 Ctrl+Shift+R.
 - **컨테이너 파일 변경 후 HMR 미감지** — `.next/` 삭제 후 `docker compose stop` + `up -d`.
-- **Pint 바인드 마운트 파일 손상** — `/tmp/` 경유: `docker exec cl_embed_laravel bash -c 'cp /var/www/html/path/file.php /tmp/ && vendor/bin/pint /tmp/file.php && cp /tmp/file.php /var/www/html/path/'` 후 base64로 호스트 동기화.
+- **Pint 바인드 마운트 파일 손상** — `/tmp/` 경유 방식 사용.
 - **shadcn 컴포넌트 설치 시 confirm** — `echo 'y' | npx shadcn@latest add <component>`.
 
 ## 카테고리 접근 제어
@@ -89,7 +87,7 @@ AI 기반 다국어 카테고리 추천 시스템. `nextjs/`(Next.js 16, `/app/`
 - **Docker 바인드 마운트 불일치** — 호스트·컨테이너 간 파일 변경 즉시 반영 안 될 수 있음. 수정 후 `wc -l`로 양쪽 라인 수 비교.
 - **신규 디렉토리** — 호스트·컨테이너 한쪽만 생성 시 자동 반영 안 됨. 양쪽 `mkdir -p`.
 - **Subagent-Driven 동일 파일 작업** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합.
-- **`execute.py` spawned Claude CLI 실패** — 컨테이너에 코드 구현 여부 먼저 확인. 있으면 호스트 동기화 후 index.json 갱신. 없으면 `kill` 후 직접 구현.
+
 - **DB 포맷은 실제 데이터로 확인** — LIKE 쿼리 전 `psql`로 프로덕션 DB 조회. `category_name_ko` 구분자는 `>` (공백 없음).
 
 ## CI/CD
