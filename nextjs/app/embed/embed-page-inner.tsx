@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -360,7 +361,7 @@ export function EmbedPageInner({
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
       <div className="noise-overlay" />
       <div className="absolute inset-0 bg-grid" />
-      <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-blue-500/15 dark:bg-blue-500/10" />
+      <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-slate-500/10 dark:bg-slate-500/8" />
       <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
 
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-12 sm:px-8">
@@ -403,33 +404,36 @@ export function EmbedPageInner({
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Input
-                  placeholder="검색어 입력..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSearch();
-                  }}
-                />
                 <div className="flex gap-2">
+                  <Input
+                    placeholder="검색어 입력..."
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSearch();
+                    }}
+                    className="h-9 text-sm"
+                  />
                   <Button
+                    size="sm"
                     onClick={() => handleSearch()}
                     disabled={isSearching}
-                    className="flex-1"
+                    className="h-9 shrink-0"
+                    aria-label="검색"
                   >
                     {isSearching ? (
                       <RefreshCw className="h-4 w-4 animate-spin" />
                     ) : (
                       <Search className="h-4 w-4" />
                     )}
-                    검색
                   </Button>
                   {searchText && (
                     <Button
+                      size="sm"
                       variant="outline"
-                      size="icon"
                       onClick={handleReset}
-                      title="초기화"
+                      className="h-9 shrink-0"
+                      aria-label="초기화"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -640,8 +644,8 @@ export function EmbedPageInner({
                                 : "영어 카테고리"}
                           </TableHead>
                           {isSearchMode && <TableHead className="w-[80px]">유사도</TableHead>}
-                          <TableHead className="w-[80px]">상태</TableHead>
-                          <TableHead className="w-[92px]">작업</TableHead>
+                          <TableHead className="w-[80px] text-center">상태</TableHead>
+                          <TableHead className="w-[92px] text-center">작업</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -680,7 +684,7 @@ export function EmbedPageInner({
                                 )}
                               </TableCell>
                             )}
-                            <TableCell>
+                            <TableCell className="text-center">
                               <StatusBadge status={cat.translation_status} />
                             </TableCell>
                             <TableCell className="text-center">
@@ -854,10 +858,10 @@ export function EmbedPageInner({
                             </PaginationLink>
                           </PaginationItem>
                           <PaginationItem className="ml-2">
-                            <select
-                              value={perPage}
-                              onChange={(e) => {
-                                const newPerPage = Number(e.target.value);
+                            <Select
+                              value={String(perPage)}
+                              onValueChange={(value) => {
+                                const newPerPage = Number(value);
                                 setPerPage(newPerPage);
                                 if (isSearchMode) {
                                   handleSearch(1);
@@ -868,12 +872,16 @@ export function EmbedPageInner({
                                   router.push(`/embed?${params.toString()}`);
                                 }
                               }}
-                              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
                             >
-                              <option value={10}>10 / page</option>
-                              <option value={20}>20 / page</option>
-                              <option value={50}>50 / page</option>
-                            </select>
+                              <SelectTrigger size="sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="10">10 / page</SelectItem>
+                                <SelectItem value="20">20 / page</SelectItem>
+                                <SelectItem value="50">50 / page</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </PaginationItem>
                         </PaginationContent>
                       </Pagination>

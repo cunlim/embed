@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchCategoryLevels } from "@/lib/api";
 import { Search, X, RotateCcw, Loader2 } from "lucide-react";
 
@@ -380,74 +381,87 @@ export default function CategoryHierarchy({
           {filterMode === "hierarchy" ? (
             <div className="space-y-2">
               {/* 대분류 */}
-              <select
-                value={selected대 ?? ""}
-                onChange={(e) => handle대Change(e.target.value)}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-              >
-                <option value="">카테고리 선택</option>
-                {대Options.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
+              <Select value={selected대 ?? ""} onValueChange={(value) => handle대Change(value ?? "")}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="카테고리 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">카테고리 선택</SelectItem>
+                  {대Options.map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               {/* 중분류 */}
               <div className="relative">
-                <select
+                <Select
                   value={selected중 ?? ""}
-                  onChange={(e) => handle중Change(e.target.value)}
+                  onValueChange={(value) => handle중Change(value ?? "")}
                   disabled={!selected대 || loading중 || (중Options.length === 0 && !!selected대 && !loading중)}
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
                 >
-                  <option value="">
-                    {!selected대 ? "대분류 선택 필요" : loading중 ? "로딩 중..." : 중Options.length === 0 ? "중분류 없음" : "카테고리 선택"}
-                  </option>
-                  {중Options.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={
+                      !selected대 ? "대분류 선택 필요" : loading중 ? "로딩 중..." : 중Options.length === 0 ? "중분류 없음" : "카테고리 선택"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">카테고리 선택</SelectItem>
+                    {중Options.map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {loading중 && (
-                  <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                 )}
               </div>
 
               {/* 소분류 */}
               <div className="relative">
-                <select
+                <Select
                   value={selected소 ?? ""}
-                  onChange={(e) => handle소Change(e.target.value)}
+                  onValueChange={(value) => handle소Change(value ?? "")}
                   disabled={!selected중 || loading소 || (소Options.length === 0 && !!selected중 && !loading소)}
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
                 >
-                  <option value="">
-                    {!selected중 ? "중분류 선택 필요" : loading소 ? "로딩 중..." : 소Options.length === 0 ? "소분류 없음" : "카테고리 선택"}
-                  </option>
-                  {소Options.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={
+                      !selected중 ? "중분류 선택 필요" : loading소 ? "로딩 중..." : 소Options.length === 0 ? "소분류 없음" : "카테고리 선택"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">카테고리 선택</SelectItem>
+                    {소Options.map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {loading소 && (
-                  <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                 )}
               </div>
 
               {/* 세분류 */}
               <div className="relative">
-                <select
+                <Select
                   value={selected세 ?? ""}
-                  onChange={(e) => handle세Change(e.target.value)}
+                  onValueChange={(value) => handle세Change(value ?? "")}
                   disabled={!selected소 || loading세 || 세Options.length === 0}
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:opacity-50"
                 >
-                  <option value="">
-                    {!selected소 ? "소분류 선택 필요" : loading세 ? "로딩 중..." : 세Options.length === 0 ? "세분류 없음" : "카테고리 선택"}
-                  </option>
-                  {세Options.map((opt) => (
-                    <option key={opt.categoryCode} value={opt.세}>{opt.세}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={
+                      !selected소 ? "소분류 선택 필요" : loading세 ? "로딩 중..." : 세Options.length === 0 ? "세분류 없음" : "카테고리 선택"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">카테고리 선택</SelectItem>
+                    {세Options.map((opt) => (
+                      <SelectItem key={opt.categoryCode} value={opt.세}>{opt.세}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {loading세 && (
-                  <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                 )}
               </div>
 
