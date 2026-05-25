@@ -198,3 +198,15 @@ config([
 - **OAuth 디버깅 — tinker로 config 확인**: `config:clear` 후 `php artisan tinker --execute 'echo config("services.google.client_id");'` 로 컨테이너가 실제 읽는 값 검증. 비어 있으면 `.env` 바인드 마운트 불일치 의심.
 - **OAuth 디버깅 — 리다이렉트 URL 검증**: `curl -sI "https://embed.cunlim.dev/api/auth/{provider}/redirect"` 로 302 Location 헤더의 `client_id`와 `redirect_uri` 파라미터 검증.
 
+### API 및 인증 주의사항
+
+- **API 라우트에는 세션 미들웨어 없음** — `routes/api.php`는 `StartSession` 미들웨어 미포함. `$request->user()`는 web guard(세션) 사용 → API 컨트롤러에서 항상 null. `$request->user('sanctum')` 또는 `auth('sanctum')->user()` 사용.
+- **RecommendResource에 user_id 필수** — `canModify` 판별용. 누락 시 유사도 검색 결과 모든 행이 보기 전용 처리됨.
+
+### 테스트 및 배포 주의사항
+
+- **Playwright 인증 테스트 토큰** — `docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::first()->createToken("debug")->plainTextToken;'`
+- **`deploy.yml` `migrate:rollback --step=1` 위험** — 모든 migration이 batch 1일 때 전체 rollback 유발. migration 전 batch 번호 기록, `--batch=N`으로 특정 batch만 롤백.
+- **`bootstrap/cache/config.php` 운영DB 오염** — `php artisan config:cache` 후 `php artisan test` 실행 시 캐시된 설정이 `.env.testing`을 무시하고 운영DB에 `migrate:fresh` 실행. **반드시 `php artisan config:clear` 선행** (Stop 훅에서 자동 실행).
+- **Swagger 문서 stale** — CI/CD 배포 후 `storage/api-docs/api-docs.json` 미갱신. `docker exec cl_embed_laravel php artisan l5-swagger:generate`로 재생성.
+

@@ -130,11 +130,14 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - **`getUser()` 응답 envelope** — `/api/auth/user`는 `{data: {id, name, email, created_at}}` 형식. `lib/api.ts`의 `getUser()`에서 `res.data`로 추출 필요. 로그인/회원가입 응답과 동일한 패턴.
 - **`"use client"` 파일에 async 함수 금지** — ESLint `@next/next/no-async-client-component`. Server Component를 async로 만들려면 `"use client"` 없는 별도 파일로 분리하고 Client Component를 import할 것.
 - **Client Component export** — 테스트에서 Server Component를 우회할 수 있도록 Client Component(예: `EmbedPageInner`)는 `export function`으로 선언. 테스트는 Server Component 대신 Client Component를 직접 import.
-
-- **RecommendResource에 user_id 필수** — `canModify`가 `"user_id" in category && category.user_id === user.id`로 소유권을 판별하므로, `RecommendResource::toArray()`에 `user_id`가 누락되면 유사도 검색 결과의 모든 행이 보기 전용(체크박스 disabled, 수정 불가)으로 처리된다.
-- **버튼 아이콘-텍스트 간격** — shadcn Button base class에 `gap-1`(4px) 적용. 개별 아이콘에 `mr-*` 추가 마진 사용 금지.
-- **embed 페이지 액션 버튼** — 왼쪽 영역(검색 실행, 작업 실행 등) 동작 버튼은 `variant="default"`(기본값) 사용. `variant="outline"`/`variant="secondary"` 사용 금지.
-- **테이블 ghost icon 버튼 hover** — 목록의 수정/삭제 등 ghost icon 버튼은 `hover:bg-foreground/10 hover:text-foreground`로 오버라이드.
+- **`react-hooks/set-state-in-effect`** — URL→props→state 동기화 시 `useEffect`+`setState` 대신 `useState(initialValue)` 초기자 사용.
+- **`filterRef` / `keywordRef` / `searchTextRef`** — `useCallback` async 함수에서 state 직접 참조는 stale closure 유발. `useRef`로 추적.
+- **`handleSearch → updateURL → useEffect` 순환 의존성** — `handleSearchRef`로 useEffect 의존성 배열에서 제거. (`embed-page-inner.tsx` 참고)
+- **`onSelectLeafPath` 등 콜백 prop stale closure** — 비동기 응답 후 부모 state 직접 참조 금지. ref로 우회.
+- **유사도 검색 `isSearchMode` 게이트** — `handleSearch` 호출 전 `setKeywordSearchActive(false)` 선행 필수.
+- **초기 필터 파라미터 경쟁 상태** — `skipInitialLoadRef`로 첫 로드 건너뛰고 child mount effect에 위임.
+- **TypeScript `??`/`||` 혼합 금지** — `a ?? b || c`는 TS5076. `a ?? (b || c)`처럼 괄호로 우선순위 명시.
+- **shadcn Button `[&_svg]:size-4`** — icon에 `size-3` 대신 `!size-3` 사용해야 적용됨.
 
 ## 관련 문서
 
