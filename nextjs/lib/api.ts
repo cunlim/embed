@@ -87,6 +87,8 @@ export interface Recommendation {
   category_name: string;
   translation_status: "completed" | "partial" | "pending";
   similarity_score: number | null;
+  query_embedding: number[] | null;
+  category_embedding: number[] | null;
 }
 
 export interface RecommendResponse {
