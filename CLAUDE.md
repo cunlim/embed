@@ -18,10 +18,11 @@
 - **Sub-agent driven** — 구현은 되도록 Agent(Sub-agent)를 활용한다.
 - **Playwright 테스트 URL** — WSL2 호스트에서 `https://embed.cunlim.dev`로 접속 (Next.js 포트 미공개).
 - **작업 완료 전 검증** — `.claude/hooks/run-all-checks.sh`를 실행하여 tsc, lint, test, pint를 모두 통과하는지 확인하고 이슈가 있으면 해결 후 마무리한다.
+- **Sub-agent 작업 후 Playwright 검증** — run-all-checks 통과 후에도 Playwright로 실제 페이지 로딩·기능 동작을 확인한다. tsc/lint/test가 통과해도 dev server에서 build error(중복 코드 등)가 발생할 수 있다.
 
 ## Subagent-Driven Development worktree 주의사항
 
-- **worktree agent 수정 파일은 메인 워크트리에 "local changes"로 표시** — 공유 파일시스템 이슈. `git stash && git merge <branch> --no-edit && git stash pop`으로 머지.
+- **worktree agent 수정 파일은 메인에 미반영** — worktree는 별도 파일 복사본. Docker exec(컨테이너는 메인 repo 마운트)로 수정한 파일만 메인에 반영되고, Edit 도구로 직접 수정한 파일은 worktree에만 존재. `cp <worktree-path> <main-path>`로 수동 동기화. 완료 후 `git -C <메인-repo> status`로 누락 확인.
 - **worktree agent의 git commit 실패** — 서브에이전트가 권한 문제로 commit 실패 시, 컨트롤러가 머지 후 직접 커밋.
 - **머지 후 worktree branch 삭제 실패** — `rm -rf .git/worktrees/<name>` 후 `git branch -D <branch>`.
 - **worktree agent 사용 전 stale worktree 정리** — `rm -rf .claude/worktrees/* && rm -rf .git/worktrees/* && git worktree prune`.
@@ -80,6 +81,8 @@ AI 기반 다국어 카테고리 추천 시스템. `nextjs/`(Next.js 16, `/app/`
 - `scripts/cosine_similarity.py` — 두 임베딩 벡터 JSON 배열로 코사인 유사도 계산. `python scripts/cosine_similarity.py '[...]' '[...]'`
 
 ## 알려진 이슈
+
+- **Sub-agent 인터페이스 수정 시 중복 코드** — api.ts 등 interface에 필드 추가 시 agent가 이전 블록을 삭제하지 않고 새 블록을 중복 생성할 수 있음. `tsc --noEmit`은 통과해도 dev server parse error 발생. 수정 후 `grep`으로 중복 키 확인.
 
 > Laravel/Next.js 특화 이슈는 각 하위 `CLAUDE.md` 참조.
 
