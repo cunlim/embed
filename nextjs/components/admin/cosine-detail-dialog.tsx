@@ -35,8 +35,8 @@ export function formatEmbeddingPreview(embedding: number[] | null): string {
   if (!embedding || embedding.length === 0) return "—";
   const previewCount = Math.min(6, embedding.length);
   const preview = embedding.slice(0, previewCount).map((v) => v.toFixed(3)).join(", ");
-  if (embedding.length <= 6) return `[${preview}] (${embedding.length}차원)`;
-  return `[${preview}, ... ${embedding.length}차원]`;
+  if (embedding.length <= 6) return `[${preview}]`;
+  return `[${preview}, ...]`;
 }
 
 export function dotProductExpression(a: number[], b: number[]): string {
@@ -44,10 +44,9 @@ export function dotProductExpression(a: number[], b: number[]): string {
   return Array.from({ length: len }, (_, i) => `(${a[i]}*${b[i]})`).join("+");
 }
 
-export function numpyExpression(a: number[], b: number[]): string {
-  const aStr = JSON.stringify(a);
-  const bStr = JSON.stringify(b);
-  return `import numpy as np\nA = np.array(${aStr})\nB = np.array(${bStr})\nprint(np.dot(A, B) / (np.linalg.norm(A) * np.linalg.norm(B)))`;
+export function pythonExpression(a: number[], b: number[]): string {
+  const expr = dotProductExpression(a, b);
+  return `print(${expr})`;
 }
 
 export function firstDotTerm(a: number[], b: number[]): string {
@@ -185,14 +184,9 @@ export default function CosineDetailDialog({
 
           {/* A. 검색어 임베딩 */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium"><span className="text-[#3b82f6]">A</span>. 검색어 임베딩</span>
-              {searchKeyword && (
-                <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                  {searchKeyword}
-                </span>
-              )}
-            </div>
+            <p className="text-xs text-[#3b82f6]">
+              <span className="font-medium">A</span>. {searchKeyword ?? result.category_name} (검색어 임베딩)
+            </p>
             <div className="flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
               <span className="min-w-0 flex-1 truncate font-mono text-xs">
                 {formatEmbeddingPreview(aEmb)}
@@ -213,12 +207,9 @@ export default function CosineDetailDialog({
 
           {/* B. 카테고리 임베딩 */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium"><span className="text-[#ef4444]">B</span>. 카테고리 임베딩</span>
-              <span className="inline-flex items-center rounded bg-pink-100 px-1.5 py-0.5 text-[10px] font-medium text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
-                {result.category_name}
-              </span>
-            </div>
+            <p className="text-xs text-[#ef4444]">
+              <span className="font-medium">B</span>. {result.category_name} (카테고리 임베딩)
+            </p>
             <div className="flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
               <span className="min-w-0 flex-1 truncate font-mono text-xs">
                 {formatEmbeddingPreview(bEmb)}
@@ -263,8 +254,8 @@ export default function CosineDetailDialog({
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6"
-                    onClick={() => copyToClipboard(numpyExpression(aEmb, bEmb))}
-                    title="numpy 코드 복사"
+                    onClick={() => copyToClipboard(pythonExpression(aEmb, bEmb))}
+                    title="python 코드 복사"
                   >
                     <Hash className="!size-3" />
                   </Button>
@@ -272,7 +263,7 @@ export default function CosineDetailDialog({
               )}
             </div>
             <p className="text-[10px] text-muted-foreground">
-              복사: dot product 식 (계산기) / numpy 코드
+              복사: dot product 식 (계산기) / python 코드
             </p>
           </div>
         </div>

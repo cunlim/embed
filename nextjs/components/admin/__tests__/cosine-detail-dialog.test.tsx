@@ -3,7 +3,7 @@ import {
   formatEmbeddingPreview,
   dotProductExpression,
   firstDotTerm,
-  numpyExpression,
+  pythonExpression,
 } from "@/components/admin/cosine-detail-dialog";
 
 describe("formatEmbeddingPreview", () => {
@@ -17,13 +17,13 @@ describe("formatEmbeddingPreview", () => {
 
   it("shows full array when length <= 6", () => {
     const result = formatEmbeddingPreview([0.1, -0.2, 0.3]);
-    expect(result).toBe("[0.100, -0.200, 0.300] (3차원)");
+    expect(result).toBe("[0.100, -0.200, 0.300]");
   });
 
-  it("shows first 6 values with dimensions when length > 6", () => {
+  it("shows first 6 values with ellipsis when length > 6", () => {
     const emb = [0.1, -0.2, 0.3, -0.4, 0.5, -0.6, 0.7, 0.8, 0.9, 1.0];
     const result = formatEmbeddingPreview(emb);
-    expect(result).toMatch(/^\[0\.100, -0\.200, 0\.300, -0\.400, 0\.500, -0\.600, \.\.\. 10차원\]$/);
+    expect(result).toMatch(/^\[0\.100, -0\.200, 0\.300, -0\.400, 0\.500, -0\.600, \.\.\.\]$/);
   });
 
   it("formats values to 3 decimal places", () => {
@@ -35,11 +35,11 @@ describe("formatEmbeddingPreview", () => {
   it("handles exactly 6 values", () => {
     const emb = [1, 2, 3, 4, 5, 6];
     const result = formatEmbeddingPreview(emb);
-    expect(result).toBe("[1.000, 2.000, 3.000, 4.000, 5.000, 6.000] (6차원)");
+    expect(result).toBe("[1.000, 2.000, 3.000, 4.000, 5.000, 6.000]");
   });
 
   it("handles single value", () => {
-    expect(formatEmbeddingPreview([0.5])).toBe("[0.500] (1차원)");
+    expect(formatEmbeddingPreview([0.5])).toBe("[0.500]");
   });
 });
 
@@ -89,24 +89,19 @@ describe("firstDotTerm", () => {
   });
 });
 
-describe("numpyExpression", () => {
-  it("generates valid numpy code with imports", () => {
-    const result = numpyExpression([0.1, -0.2], [0.3, -0.4]);
-    expect(result).toContain("import numpy as np");
-    expect(result).toContain("A = np.array([0.1,-0.2])");
-    expect(result).toContain("B = np.array([0.3,-0.4])");
-    expect(result).toContain("print(np.dot(A, B) / (np.linalg.norm(A) * np.linalg.norm(B)))");
+describe("pythonExpression", () => {
+  it("generates print() with dot product expansion", () => {
+    const result = pythonExpression([0.1, -0.2], [0.3, -0.4]);
+    expect(result).toBe("print((0.1*0.3)+(-0.2*-0.4))");
   });
 
-  it("handles empty arrays", () => {
-    const result = numpyExpression([], []);
-    expect(result).toContain("A = np.array([])");
-    expect(result).toContain("B = np.array([])");
+  it("returns print with empty parens for empty arrays", () => {
+    const result = pythonExpression([], []);
+    expect(result).toBe("print()");
   });
 
   it("handles single-element arrays", () => {
-    const result = numpyExpression([0.5], [0.8]);
-    expect(result).toContain("A = np.array([0.5])");
-    expect(result).toContain("B = np.array([0.8])");
+    const result = pythonExpression([0.5], [0.8]);
+    expect(result).toBe("print((0.5*0.8))");
   });
 });
