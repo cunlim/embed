@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, it, expect } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
 import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
 import type { Recommendation } from "@/lib/api";
 import {
@@ -110,7 +110,11 @@ const mockResult: Recommendation = {
 };
 
 describe("CosineDetailDialog rendering", () => {
-  it("renders 3 language columns", () => {
+  afterEach(() => {
+    cleanup();
+    document.body.innerHTML = "";
+  });
+  it("renders 3 language rows with category names", () => {
     render(
       <CosineDetailDialog
         open={true}
@@ -123,16 +127,21 @@ describe("CosineDetailDialog rendering", () => {
     expect(screen.getByText("한국어")).toBeTruthy();
     expect(screen.getByText("English")).toBeTruthy();
     expect(screen.getByText("中文")).toBeTruthy();
-    expect(screen.getByText("87.3%")).toBeTruthy();
+    // 87.3% appears in both main score and ko per-language score
+    expect(screen.getAllByText("87.3%").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("82.1%")).toBeTruthy();
     expect(screen.getByText("79.5%")).toBeTruthy();
     expect(screen.getByText("3위")).toBeTruthy();
     expect(screen.getByText("5위")).toBeTruthy();
     expect(screen.getByText("8위")).toBeTruthy();
+    // 테스트 appears in both category badge and ko row
+    expect(screen.getAllByText("테스트").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Test")).toBeTruthy();
+    expect(screen.getByText("测试")).toBeTruthy();
   });
 
   it("highlights current language with ring", () => {
-    const { container } = render(
+    render(
       <CosineDetailDialog
         open={true}
         onOpenChange={() => {}}
@@ -140,7 +149,8 @@ describe("CosineDetailDialog rendering", () => {
         targetLanguage="ko"
       />
     );
-    const ringElements = container.querySelectorAll(".ring-2");
+    // Dialog uses a portal, so query from document, not container
+    const ringElements = document.querySelectorAll(".ring-2");
     expect(ringElements.length).toBe(1);
   });
 

@@ -269,23 +269,23 @@ export default function CosineDetailDialog({
             <>
               <Separator />
 
-              <div className="space-y-1.5">
+              <div className="space-y-2.5">
                 <span className="text-xs font-medium">언어별 유사도</span>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-2">
                   {(
                     [
-                      { code: "ko", label: "한국어" },
-                      { code: "en", label: "English" },
-                      { code: "zh", label: "中文" },
+                      { code: "ko", label: "한국어", name: result.category_name_ko },
+                      { code: "en", label: "English", name: result.category_name_en },
+                      { code: "zh", label: "中文", name: result.category_name_zh },
                     ] as const
-                  ).map(({ code, label }) => {
+                  ).map(({ code, label, name }) => {
                     const scores = result.per_language_scores![code];
                     const isCurrent = code === targetLanguage;
                     return (
                       <div
                         key={code}
                         className={cn(
-                          "flex flex-col items-center gap-1 rounded-lg border px-3 py-3",
+                          "flex items-center gap-3 rounded-lg border px-3 py-2.5",
                           isCurrent
                             ? "border-primary ring-2 ring-primary shadow-md"
                             : "border-muted-foreground/15 bg-muted/30"
@@ -293,15 +293,18 @@ export default function CosineDetailDialog({
                       >
                         <span
                           className={cn(
-                            "text-[11px] font-medium",
+                            "text-xs font-medium min-w-[42px]",
                             isCurrent ? "text-primary" : "text-muted-foreground"
                           )}
                         >
                           {label}
                         </span>
+                        <span className="flex-1 min-w-0 truncate text-xs">
+                          {name ?? "—"}
+                        </span>
                         <span
                           className={cn(
-                            "font-mono text-lg font-bold tabular-nums",
+                            "font-mono text-base font-bold tabular-nums",
                             !isCurrent && "text-muted-foreground"
                           )}
                         >
@@ -309,7 +312,14 @@ export default function CosineDetailDialog({
                             ? `${(scores.similarity_score * 100).toFixed(1)}%`
                             : "—"}
                         </span>
-                        <span className="text-[11px] text-muted-foreground">
+                        <span
+                          className={cn(
+                            "text-[11px] font-medium px-1.5 py-0.5 rounded",
+                            isCurrent
+                              ? "bg-primary/10 text-primary"
+                              : "bg-muted/50 text-muted-foreground"
+                          )}
+                        >
                           {scores.rank != null ? `${scores.rank}위` : "—"}
                         </span>
                       </div>
