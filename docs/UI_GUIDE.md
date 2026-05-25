@@ -118,7 +118,7 @@ CTA 버튼: `size="lg"`, `rounded-full`, hover 시 `scale-105`.
 
 ### 6.4 `/admin` 관리자 페이지
 
-- `/embed`의 관리 기능 이전 완료. **로그인 필수** + `isAdmin()` 확인.
+- 관리 기능은 `/embed` 페이지에 통합되어 있으며, `/admin`은 `/embed`로의 이동 버튼만 제공하는 플레이스홀더 상태.
 
 ### 6.5 공통 패턴
 
