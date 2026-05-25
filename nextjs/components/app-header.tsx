@@ -36,13 +36,13 @@ export function AppHeader() {
           <Button variant="ghost" size="sm" asChild className="rounded-full">
             <Link href="/embed">
               <Play className="h-4 w-4" />
-              <span className="hidden sm:inline ml-1.5">기능시연</span>
+              <span className="hidden sm:inline ml-0.5">기능시연</span>
             </Link>
           </Button>
           <Button variant="ghost" size="sm" asChild className="rounded-full">
             <Link href="/docs">
               <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline ml-1.5">문서</span>
+              <span className="hidden sm:inline ml-0.5">문서</span>
             </Link>
           </Button>
 

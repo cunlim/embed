@@ -199,9 +199,9 @@ describe("EmbedPage", () => {
     expect(screen.getAllByText("작업").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("카테고리 유사도 검색 섹션 타이틀이 표시된다", () => {
+  it("유사도 검색 섹션 타이틀이 표시된다", () => {
     render(<EmbedPageInner server대Options={[]} server중Options={[]} server소Options={[]} server세Options={[]} serverCategories={[]} serverMeta={null} serverHadToken={false} serverFilter={null} serverSearchResults={null} serverSearchMeta={null} serverSearchText={null} serverSearchLang="ko" />);
-    const titles = screen.getAllByText("카테고리 유사도 검색");
+    const titles = screen.getAllByText("유사도 검색");
     expect(titles.length).toBeGreaterThanOrEqual(1);
   });
 

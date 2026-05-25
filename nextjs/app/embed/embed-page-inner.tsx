@@ -371,12 +371,10 @@ export function EmbedPageInner({
         <div className="grid gap-6 lg:grid-cols-3">
           {/* 사이드바 */}
           <div className="space-y-6">
-            {/* 카테고리 유사도 검색 */}
+            {/* 유사도 검색 */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">카테고리 유사도 검색</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-base">유사도 검색</CardTitle>
                 <div className="flex gap-1">
                   <Button
                     size="sm"
@@ -403,6 +401,8 @@ export function EmbedPageInner({
                     영어
                   </Button>
                 </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
                 <Input
                   placeholder="검색어 입력..."
                   value={searchText}
