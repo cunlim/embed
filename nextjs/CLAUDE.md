@@ -108,7 +108,7 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - **Next.js HMR 에러 로그** — `embed_nextjs_error.log`의 "Connection refused"는 dev 서버 재시작 시 정상 발생. 무시.
 - **`next dev`(Turbopack)도 BUILD_ID 생성** — Dockerfile CMD가 `.next/BUILD_ID`로 모드를 감지하면 dev 서버 실행만으로도 다음 재시작 시 production 모드로 전환된다. `.next/production` 센티널 파일을 대신 사용한다 (CI/CD 배포 시 `npm run build && touch .next/production`으로 생성). **감지:** `docker exec cl_embed_nextjs ps aux | grep "next start"` — `next start`가 보이면 production 모드. **복구:** `docker compose stop cl_embed_nextjs && docker exec $(docker ps -a --filter "name=cl_embed_nextjs$" --format "{{.ID}}" | head -1) rm -f /app/.next/BUILD_ID 2>/dev/null; docker compose -f /var/app/www/cl_embed/docker/docker-compose.yml up -d cl_embed_nextjs`
 - **`.claude/settings.json` Stop hook에 `npm run build` 금지** — production build가 BUILD_ID를 생성해 dev 모드 이탈을 유발한다. 타입 체크만 필요하면 `npx tsc --noEmit`을 대신 사용한다.
-- **JS 청크 캐싱 (Cloudflare)** — Cloudflare가 `_next/static/*` 응답을 `max-age=14400`으로 덮어써 구버전 코드가 실행될 수 있다. 루트 [`CLAUDE.md`](../CLAUDE.md)의 "Cloudflare CDN" 섹션 참조. 개발 환경에서는 Cloudflare Cache Rule로 전체 바이패스 설정.
+- **JS 청크 캐싱 (Cloudflare)** — Cloudflare가 `_next/static/*` 응답을 `max-age=14400`으로 덮어써 구버전 코드가 실행될 수 있다. 개발 환경에서는 Cloudflare Cache Rule로 전체 바이패스 설정.
 - **OAuth 콜백 `?token=` 파라미터 처리 필수** — `/login` 페이지에서 `searchParams.get("token")`으로 토큰을 읽고 `setToken()`으로 localStorage에 저장해야 한다. 저장하지 않으면 OAuth 로그인이 완료되어도 토큰이 폐기된다.
 - **`--no-bin-links`** — Docker 볼륨 마운트 환경에서 npm 패키지 설치 시 심볼릭 링크 생성 불가로 `--no-bin-links` 필요.
 - **lucide-react 브랜드 아이콘 없음** — Google, GitHub, Naver 등 OAuth 브랜드 아이콘은 lucide-react에 없다. 인라인 SVG 사용.
@@ -130,6 +130,9 @@ Vitest + React Testing Library + jsdom 구성 완료. `vitest.config.ts`에서 `
 - **Client Component export** — 테스트에서 Server Component를 우회할 수 있도록 Client Component(예: `EmbedPageInner`)는 `export function`으로 선언. 테스트는 Server Component 대신 Client Component를 직접 import.
 
 - **RecommendResource에 user_id 필수** — `canModify`가 `"user_id" in category && category.user_id === user.id`로 소유권을 판별하므로, `RecommendResource::toArray()`에 `user_id`가 누락되면 유사도 검색 결과의 모든 행이 보기 전용(체크박스 disabled, 수정 불가)으로 처리된다.
+- **버튼 아이콘-텍스트 간격** — shadcn Button base class에 `gap-1`(4px) 적용. 개별 아이콘에 `mr-*` 추가 마진 사용 금지.
+- **embed 페이지 액션 버튼** — 왼쪽 영역(검색 실행, 작업 실행 등) 동작 버튼은 `variant="default"`(기본값) 사용. `variant="outline"`/`variant="secondary"` 사용 금지.
+- **테이블 ghost icon 버튼 hover** — 목록의 수정/삭제 등 ghost icon 버튼은 `hover:bg-foreground/10 hover:text-foreground`로 오버라이드.
 
 ## 관련 문서
 

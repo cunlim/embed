@@ -23,7 +23,6 @@
 ## 프로젝트 개요
 
 AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](docs/PRD.md) 참조. 진행 상황은 `phases/` 디렉토리와 `git log`로 확인.
-Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`로 접속.
 
 ## 카테고리 접근 제어 규칙
 
@@ -31,6 +30,9 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 - **모든 카테고리 조회 API는 `CategoryController::index()`와 동일한 user scope 규칙 적용** — `levels()`, RecommendController 등에서 누락 시 비로그인 사용자에게 타사용자 카테고리가 노출됨. admin/superadmin bypass도 모든 쿼리 메서드에 일관되게 적용할 것.
 
 - **embed 페이지 토글 버튼** — 필터 모드/언어 선택/카테고리 필터 등 2~3개 옵션 전환은 `variant={active ? "default" : "ghost"}` + ghost에 `hover:bg-primary/50` + `size="sm"` + `h-7 px-2 text-xs`. 선택 항목과 hover 간 차이 최소화가 목적. Tabs 컴포넌트 사용 금지.
+- **버튼 아이콘-텍스트 간격** — 모든 버튼의 아이콘과 텍스트 사이 간격은 `gap-1`(4px, 띄어쓰기 1개 수준)을 유지한다. shadcn Button base class에 `gap-1`이 적용되어 있으므로, 개별 아이콘에 `mr-*` 추가 마진을 사용하지 않는다.
+- **embed 페이지 액션 버튼** — 왼쪽 영역(검색 실행, 작업 실행 등)의 동작 버튼은 `variant="default"`(기본값)를 사용한다. `variant="outline"`이나 `variant="secondary"`를 사용하지 않는다.
+- **테이블 ghost icon 버튼 hover** — 목록의 수정/삭제 등 ghost icon 버튼은 `hover:bg-foreground/10 hover:text-foreground`로 오버라이드하여 light/dark 모드 모두에서 중성적인 hover 효과를 적용한다.
 
 ## Dark 모드 컴포넌트 스타일링
 
@@ -52,13 +54,9 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 
 ## 개발 프로세스
 
-- **CRITICAL: TDD** — 새 기능 구현 시 반드시 테스트를 먼저 작성하고, 테스트가 통과하는 구현을 작성할 것. "나중에 테스트를 추가하겠다"는 접근은 허용되지 않는다.
-  - TDD 적용 범위와 테스트 최소 요건은 [`laravel/CLAUDE.md`](laravel/CLAUDE.md)와 [`nextjs/CLAUDE.md`](nextjs/CLAUDE.md) 참조
-  - Laravel: Pest 4 (`php artisan test --compact`)
-  - Next.js: Vitest + React Testing Library (`docker exec cl_embed_nextjs npm test`)
+- **CRITICAL: TDD** — 새 기능 구현 시 반드시 테스트를 먼저 작성하고, 테스트가 통과하는 구현을 작성할 것. TDD 적용 범위와 테스트 요건은 [`laravel/CLAUDE.md`](laravel/CLAUDE.md)와 [`nextjs/CLAUDE.md`](nextjs/CLAUDE.md) 참조.
 - **Phase step 완료 조건** — step의 모든 파일 생성 후 테스트 실행하여 **0 failure**를 확인해야 한다. 실패가 있으면 step을 완료할 수 없다.
 - 커밋 메시지는 conventional commits 형식을 따를 것 (feat:, fix:, docs:, refactor:)
-- PHP 변경 완료 전 `vendor/bin/pint --format agent` 실행 (컨테이너 내부)
 - **버그 수정 패턴은 파일 내 모든 발생 지점에 적용** — `create()`→`firstOrCreate()` 같은 패턴 변경 시 public 메서드만 수정하고 private 메서드를 누락하지 않도록 `grep`으로 파일 전체를 확인한다.
 
 ## Phase 운영 규칙
@@ -76,21 +74,15 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
   - **동기화 불일치** — 호스트↔컨테이너 파일 변경이 즉시 반영되지 않을 수 있다. 파일 수정 후 **반드시 `wc -l`로 양쪽 라인 수를 비교**할 것.
   - **동기화는 base64 방식만 사용** — `docker exec cat > host`와 `docker cp`는 WSL2 바인드 마운트에서 0바이트 파일 생성. `cat <host> \| base64 \| docker exec -i <container> bash -c "base64 -d > <container>"` (호스트→컨테이너), 반대도 동일 패턴.
   - **신규 디렉토리** — 호스트·컨테이너 한쪽에서만 생성 시 자동 반영되지 않는다. 양쪽에 각각 `mkdir -p` 필요.
-- **bind mount 디렉토리는 daemon(root)이 생성** — 새 bind mount 추가 시 CI에서 `mkdir -p`로 미리 생성할 것.
 - **API 라우트에는 세션 미들웨어 없음** — `routes/api.php`는 `StartSession` 미들웨어가 기본 포함되지 않는다. `$request->session()`뿐 아니라 `$request->user()`도 web guard(세션 기반)를 사용하므로 API 컨트롤러에서 항상 null을 반환한다. 사용자 resolve가 필요하면 `$request->user('sanctum')` 또는 `auth('sanctum')->user()`를 사용할 것.
-- **root 소유 경로에 파일 복사** — `/etc/` 등 root 소유 디렉터리에 파일을 쓸 때는 `docker cp <host-path> <container>:/path/to/file`가 가장 간결하다.
-- **pgvector `<=>` distance 컬럼 미선택** — `orderByRaw('embedding <=> ?::vector', ...)`만 사용하면 distance 값이 SELECT 절에 포함되지 않아 모델 속성으로 접근할 수 없다. `selectRaw('*, embedding <=> ?::vector as distance', [...])`를 함께 사용해야 한다.
 - **Swagger 문서 stale** — CI/CD 배포 후 `storage/api-docs/api-docs.json`이 갱신되지 않아 Swagger UI에 일부 엔드포인트만 표시될 수 있다. `docker exec cl_embed_laravel php artisan l5-swagger:generate`로 재생성. deploy.yml에 자동화되어 있으나 수동 작업 환경에서는 별도 실행 필요.
 - **컨테이너 파일 변경 후 HMR 미감지** — `docker exec cl_embed_nextjs touch <container-path>`는 바인드 마운트에서 불안정하다. 코드 변경 후 **`.next/`를 삭제**하고 `docker compose stop` + `up -d`로 재시작할 것.
 - **Pint 바인드 마운트 파일 손상** — `vendor/bin/pint`가 바인드 마운트 경로의 파일을 0바이트로 만든다. `/tmp/` 경유 방식 사용: `docker exec cl_embed_laravel bash -c 'cp /var/www/html/path/file.php /tmp/ && vendor/bin/pint /tmp/file.php && cp /tmp/file.php /var/www/html/path/'` 후 base64로 호스트 동기화.
-- **hookify 플러그인 오버헤드** — hookify가 PreToolUse/PostToolUse/Stop/UserPromptSubmit 훅을 등록하지만, `.claude/hookify.*.local.md` 규칙이 없으면 빈 동작으로 시간만 소요된다. 불필요하면 `~/.claude/settings.json`에서 `"hookify@claude-plugins-official": false`로 비활성화.
 - **테스트 DB 오염 (duplicate table/migration)** — PostgreSQL 테스트 DB에 `migration`/`users` 테이블이 이미 존재한다는 오류 발생 시 `docker exec cl_embed_laravel php artisan migrate:fresh --env=testing --force`로 초기화.
 - **Playwright 인증 페이지 테스트** — `docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::first()->createToken("debug")->plainTextToken;'`로 Sanctum 토큰을 생성한 뒤, Playwright에서 `localStorage.setItem("auth_token", token)`으로 주입하고 `/embed`로 이동한다.
 - **`deploy.yml` `migrate:rollback --step=1` 위험** — 모든 migration이 batch 1일 때 `--step=1`은 전체 rollback을 유발할 수 있다. migration 전 batch 번호를 기록하고 `--batch=N`으로 특정 batch만 롤백할 것.
 - **테스트 DB 사용자 격리** — `dbeaver_lim_test`는 `cl_embed`에 CONNECT 권한이 없다. `.env.testing`(`DB_USERNAME=dbeaver_lim_test`)이 적용된 환경에서는 실수로 `migrate:fresh`를 실행해도 PostgreSQL이 `permission denied`를 반환하여 운영DB가 보호된다. `.env.testing`은 gitignore, `.env.testing.example`만 커밋, CI에서 `$LIVE_ROOT`로부터 복사한다.
 - **`bootstrap/cache/config.php` 운영DB 오염 위험** — `php artisan config:cache` 실행 후 캐시된 설정은 `phpunit.xml`의 `<env>` 오버라이드와 `.env.testing`을 **무시**한다. 이 상태에서 `php artisan test`를 실행하면 `RefreshDatabase` trait이 운영DB에 `migrate:fresh`를 실행하여 모든 데이터가 소실된다. **반드시 `php artisan config:clear`로 캐시를 제거한 후 테스트를 실행할 것.** Stop 훅(`run-all-checks.sh`)에서 자동으로 `config:clear`를 선행 실행하도록 설정되어 있다.
-- **WSL2 `networkingMode=mirrored`**: Docker 컨테이너 내부에서 `host.docker.internal`로 Windows 호스트의 Ollama(port 11434)에 접근.
-- **Docker Compose**: WSL2에서 `restart` 불가. `stop` + `up -d` 사용.
 - **`react-hooks/set-state-in-effect`** — URL→props→state 동기화 시 `useEffect`+`setState` 대신 `useState(initialValue)` 초기자 사용.
 - **`filterRef` / `keywordRef` / `searchTextRef` 패턴** — `useCallback` async 함수에서 state 직접 참조는 stale closure 유발. `useRef`로 최신 상태를 추적하고 `ref.current`로 참조할 것. (`embed-page-inner.tsx` 참고)
 - **DB 포맷은 실제 데이터로 확인** — LIKE 쿼리 작성 시 프로덕션 DB를 `psql`로 먼저 조회할 것. 구분자(예: `>` vs ` > `) 차이로 빈 결과가 발생할 수 있다. `category_name_ko`와 `onKeywordSearch` 모두 `>` 구분자(공백 없음) 사용.
@@ -102,7 +94,6 @@ Docker 컨테이너는 port를 개방하지 않으니 `https://embed.cunlim.dev`
 ## CI/CD
 
 - **릴리스**: `scripts/git_release.sh` (develop → main 머지 후 푸시)
-- **CI 재실행**: `gh run rerun` 실패 시 빈 커밋 푸시로 트리거
 - **`.env`/`.env.local`**: gitignore, CI에서 `$LIVE_ROOT`로부터 복사
 
 ## Feature Spec 3축
