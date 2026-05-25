@@ -912,6 +912,7 @@ export function EmbedPageInner({
         open={cosineDialogOpen}
         onOpenChange={setCosineDialogOpen}
         result={activeResult}
+        searchKeyword={searchText}
       />
 
       {/* 카테고리 상세 모달 */}

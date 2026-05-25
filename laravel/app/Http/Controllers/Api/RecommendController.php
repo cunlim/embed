@@ -112,6 +112,8 @@ class RecommendController extends Controller
             $text, $modelName, $userId
         );
 
+        RecommendResource::setQueryEmbedding($searchLog->embedding->toArray());
+
         $results = $this->recommendation->recommendPaginated(
             $searchLog, $targetLanguage, $perPage, $page, $scopeUserId, $keyword
         );

@@ -61,6 +61,7 @@ class RecommendationService
 
         $query = Category::select('categories.*')
             ->selectRaw('ce.embedding <=> ?::vector as distance', [$vectorLiteral])
+            ->selectRaw('ce.embedding::text as category_embedding_raw')
             ->join('category_embeddings as ce', function ($join) use ($targetLanguage) {
                 $join->on('ce.category_id', '=', 'categories.id')
                     ->where('ce.language', '=', $targetLanguage);
