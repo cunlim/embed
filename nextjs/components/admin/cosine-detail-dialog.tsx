@@ -166,16 +166,19 @@ export default function CosineDetailDialog({
 
         <div className="space-y-4">
           {/* 유사도 점수 */}
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex items-center gap-4">
-              <VectorAngleSvg similarityScore={score} />
-              <span className="font-mono text-3xl font-bold tabular-nums">
+          <div className="flex flex-col items-center gap-3">
+            <VectorAngleSvg similarityScore={score} />
+            <div className="text-center">
+              <p className="font-mono text-3xl font-bold tabular-nums">
                 {scorePercent}%
-              </span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                cos θ = {score.toFixed(4)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                θ = {thetaDeg}°
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              cos θ = {score.toFixed(4)}, θ = {thetaDeg}°
-            </p>
           </div>
 
           <Separator />
