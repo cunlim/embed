@@ -351,16 +351,16 @@ export default function CategoryHierarchy({
           <div className="flex gap-1">
             <Button
               size="sm"
-              variant={filterMode === "hierarchy" ? "secondary" : "ghost"}
-              className="h-7 px-2 text-xs"
+              variant={filterMode === "hierarchy" ? "default" : "ghost"}
+              className={`h-7 px-2 text-xs ${filterMode !== "hierarchy" ? "hover:bg-primary/50" : ""}`}
               onClick={switchToHierarchy}
             >
               분류선택
             </Button>
             <Button
               size="sm"
-              variant={filterMode === "search" ? "secondary" : "ghost"}
-              className="h-7 px-2 text-xs"
+              variant={filterMode === "search" ? "default" : "ghost"}
+              className={`h-7 px-2 text-xs ${filterMode !== "search" ? "hover:bg-primary/50" : ""}`}
               onClick={switchToSearch}
             >
               검색

@@ -378,24 +378,24 @@ export function EmbedPageInner({
                 <div className="flex gap-1">
                   <Button
                     size="sm"
-                    variant={searchLanguage === "ko" ? "secondary" : "ghost"}
-                    className="h-7 px-2 text-xs"
+                    variant={searchLanguage === "ko" ? "default" : "ghost"}
+                    className={`h-7 px-2 text-xs ${searchLanguage !== "ko" ? "hover:bg-primary/50" : ""}`}
                     onClick={() => setSearchLanguage("ko")}
                   >
                     한국어
                   </Button>
                   <Button
                     size="sm"
-                    variant={searchLanguage === "zh" ? "secondary" : "ghost"}
-                    className="h-7 px-2 text-xs"
+                    variant={searchLanguage === "zh" ? "default" : "ghost"}
+                    className={`h-7 px-2 text-xs ${searchLanguage !== "zh" ? "hover:bg-primary/50" : ""}`}
                     onClick={() => setSearchLanguage("zh")}
                   >
                     중국어
                   </Button>
                   <Button
                     size="sm"
-                    variant={searchLanguage === "en" ? "secondary" : "ghost"}
-                    className="h-7 px-2 text-xs"
+                    variant={searchLanguage === "en" ? "default" : "ghost"}
+                    className={`h-7 px-2 text-xs ${searchLanguage !== "en" ? "hover:bg-primary/50" : ""}`}
                     onClick={() => setSearchLanguage("en")}
                   >
                     영어
@@ -548,15 +548,17 @@ export function EmbedPageInner({
               <CardTitle className="text-base">카테고리 목록</CardTitle>
               <div className="flex gap-1">
                 <Button
-                  variant={filter === undefined ? "secondary" : "ghost"}
+                  variant={filter === undefined ? "default" : "ghost"}
                   size="sm"
+                  className={filter !== undefined ? "hover:bg-primary/50" : ""}
                   onClick={() => { setFilter(undefined); updateURL({ filter: undefined }); }}
                 >
                   전체
                 </Button>
                 <Button
-                  variant={filter === "my" ? "secondary" : "ghost"}
+                  variant={filter === "my" ? "default" : "ghost"}
                   size="sm"
+                  className={filter !== "my" ? "hover:bg-primary/50" : ""}
                   onClick={() => {
                     if (!user) { alert("로그인이 필요합니다"); return; }
                     setFilter("my"); updateURL({ filter: "my" });
