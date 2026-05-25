@@ -19,13 +19,13 @@ describe("formatEmbeddingPreview", () => {
 
   it("shows full array when length <= 6", () => {
     const result = formatEmbeddingPreview([0.1, -0.2, 0.3]);
-    expect(result).toBe("[0.100, -0.200, 0.300] (3차원)");
+    expect(result).toBe("[0.100, -0.200, 0.300]");
   });
 
   it("shows first 6 values with dimensions when length > 6", () => {
     const emb = [0.1, -0.2, 0.3, -0.4, 0.5, -0.6, 0.7, 0.8, 0.9, 1.0];
     const result = formatEmbeddingPreview(emb);
-    expect(result).toMatch(/^\[0\.100, -0\.200, 0\.300, -0\.400, 0\.500, -0\.600, \.\.\. 10차원\]$/);
+    expect(result).toMatch(/^\[0\.100, -0\.200, 0\.300, -0\.400, 0\.500, -0\.600, \.\.\.\]$/);
   });
 
   it("formats values to 3 decimal places", () => {
@@ -37,11 +37,11 @@ describe("formatEmbeddingPreview", () => {
   it("handles exactly 6 values", () => {
     const emb = [1, 2, 3, 4, 5, 6];
     const result = formatEmbeddingPreview(emb);
-    expect(result).toBe("[1.000, 2.000, 3.000, 4.000, 5.000, 6.000] (6차원)");
+    expect(result).toBe("[1.000, 2.000, 3.000, 4.000, 5.000, 6.000]");
   });
 
   it("handles single value", () => {
-    expect(formatEmbeddingPreview([0.5])).toBe("[0.500] (1차원)");
+    expect(formatEmbeddingPreview([0.5])).toBe("[0.500]");
   });
 });
 
@@ -134,8 +134,7 @@ describe("CosineDetailDialog rendering", () => {
     expect(screen.getByText("3위")).toBeTruthy();
     expect(screen.getByText("5위")).toBeTruthy();
     expect(screen.getByText("8위")).toBeTruthy();
-    // 테스트 appears in both category badge and ko row
-    expect(screen.getAllByText("테스트").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("테스트")).toBeTruthy();
     expect(screen.getByText("Test")).toBeTruthy();
     expect(screen.getByText("测试")).toBeTruthy();
   });

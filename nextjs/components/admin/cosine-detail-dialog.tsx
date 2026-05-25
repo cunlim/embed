@@ -174,7 +174,7 @@ export default function CosineDetailDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* 유사도 점수 */}
           <div className="flex items-center justify-center gap-4">
             <VectorAngleSvg similarityScore={score} />
@@ -193,8 +193,9 @@ export default function CosineDetailDialog({
 
           <Separator />
 
+          <div className="space-y-2">
           {/* A. 검색어 임베딩 */}
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <p className="text-xs text-[#3b82f6]">
               <span className="font-medium">A</span>. {searchKeyword ?? result.category_name} (검색어 임베딩)
             </p>
@@ -217,7 +218,7 @@ export default function CosineDetailDialog({
           </div>
 
           {/* B. 카테고리 임베딩 */}
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <p className="text-xs text-[#ef4444]">
               <span className="font-medium">B</span>. {result.category_name} (카테고리 임베딩)
             </p>
@@ -238,12 +239,13 @@ export default function CosineDetailDialog({
               )}
             </div>
           </div>
+        </div>
 
           <Separator />
 
           {/* 계산 과정 */}
-          <div className="space-y-1.5">
-            <span className="text-xs font-medium">계산 과정</span>
+          <div className="space-y-2">
+            <span className="text-xs font-medium inline-block">계산 과정 <span className="text-[10px] text-muted-foreground font-normal">(전체 dot product 식으로 복사)</span></span>
             <div className="flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
               <span className="min-w-0 flex-1 truncate font-mono text-xs">
                 {aEmb && bEmb && aEmb.length > 0 && bEmb.length > 0 ? (
@@ -266,17 +268,15 @@ export default function CosineDetailDialog({
                 </Button>
               )}
             </div>
-            <p className="text-[10px] text-muted-foreground">
-              복사 시 dot product + norm python 계산식 전체 복사
-            </p>
+
           </div>
 
           {result.per_language_scores && (
             <>
               <Separator />
 
-              <div className="space-y-1.5">
-                <span className="text-xs font-medium">{result.category_code} 언어별 유사도</span>
+              <div className="space-y-2">
+                <span className="text-xs font-medium inline-block">언어별 유사도 ({result.category_code})</span>
                 <div className="flex flex-col gap-2">
                   {(
                     [
