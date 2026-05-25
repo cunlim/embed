@@ -196,7 +196,7 @@ export default function CosineDetailDialog({
               <span className="font-medium">A</span>. {searchKeyword ?? result.category_name} (검색어 임베딩)
             </p>
             <div className="flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
-              <span className="min-w-0 flex-1 truncate font-mono text-xs">
+              <span className="min-w-0 flex-1 truncate font-mono text-xs text-[#3b82f6]">
                 {formatEmbeddingPreview(aEmb)}
               </span>
               {aEmb && aEmb.length > 0 && (
@@ -219,7 +219,7 @@ export default function CosineDetailDialog({
               <span className="font-medium">B</span>. {result.category_name} (카테고리 임베딩)
             </p>
             <div className="flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
-              <span className="min-w-0 flex-1 truncate font-mono text-xs">
+              <span className="min-w-0 flex-1 truncate font-mono text-xs text-[#ef4444]">
                 {formatEmbeddingPreview(bEmb)}
               </span>
               {bEmb && bEmb.length > 0 && (
