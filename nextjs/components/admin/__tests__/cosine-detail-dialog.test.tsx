@@ -92,7 +92,7 @@ describe("firstDotTerm", () => {
 
 describe("normExpression", () => {
   it("builds sum of squares", () => {
-    expect(normExpression([0.1, -0.2, 0.3])).toBe("0.1**2+-0.2**2+0.3**2");
+    expect(normExpression([0.1, -0.2, 0.3])).toBe("(0.1)**2+(-0.2)**2+(0.3)**2");
   });
 
   it("returns empty string for empty array", () => {
@@ -103,7 +103,7 @@ describe("normExpression", () => {
 describe("pythonExpression", () => {
   it("generates print() with expanded dot product and norm expressions", () => {
     const result = pythonExpression([0.1, -0.2], [0.3, -0.4]);
-    expect(result).toBe("print(((0.1*0.3)+(-0.2*-0.4))/(((0.1**2+-0.2**2)**0.5)*((0.3**2+-0.4**2)**0.5)))");
+    expect(result).toBe("print(((0.1*0.3)+(-0.2*-0.4))/((((0.1)**2+(-0.2)**2)**0.5)*(((0.3)**2+(-0.4)**2)**0.5)))");
   });
 
   it("handles empty arrays", () => {
@@ -113,6 +113,6 @@ describe("pythonExpression", () => {
 
   it("handles single-element arrays with norm", () => {
     const result = pythonExpression([0.5], [0.8]);
-    expect(result).toBe("print(((0.5*0.8))/(((0.5**2)**0.5)*((0.8**2)**0.5)))");
+    expect(result).toBe("print(((0.5*0.8))/((((0.5)**2)**0.5)*(((0.8)**2)**0.5)))");
   });
 });
