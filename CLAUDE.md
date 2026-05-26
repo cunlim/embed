@@ -48,6 +48,11 @@ AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](doc
 
 > Next.js 특화 UI 패턴, SSR, Dark 모드는 [`nextjs/CLAUDE.md`](nextjs/CLAUDE.md) 참조.
 
+## 페이지 공통 배경 패턴
+
+- **5개 페이지가 동일한 배경 요소 사용** — `noise-overlay` + `bg-grid` + `glow-orb` ×2. `app/page.tsx`, `embed`, `login`, `admin`, `docs` 모두 이 패턴 공유.
+- **globals.css 클래스 삭제 전 확인** — `grep -r "클래스명" app/`으로 모든 사용처 확인 후 삭제. 이번 랜딩페이지 리뉴얼 시 `bg-grid`/`glow-orb`/`noise-overlay`를 삭제했다가 다른 4개 페이지가 깨지는 이슈 발생.
+
 ## 개발 프로세스
 
 - **커밋 메시지**: conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`)

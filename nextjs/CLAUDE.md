@@ -17,7 +17,7 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
 
 ## 디자인 시스템
 
-디자인 상세는 [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md)를 엄격히 준수한다 (색상, 아이콘, 반응형, 다크모드, 애니메이션, shadcn/ui).
+디자인 컨벤션은 [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md) 참조. 구현 변경 시 문서가 stale일 수 있으므로 실제 코드 상태를 우선한다.
 
 ## 코드 컨벤션
 
@@ -50,15 +50,6 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
 - **Dialog 콘텐츠 컨테이너에 `min-w-0` 필수** — Dialog의 `max-w-[calc(100%-2rem)]`이 grid item을 제약해도, 내부 `space-y-*`/`flex` 컨테이너는 `min-width: auto`(기본값)로 인해 제약을 무시하고 확장된다. 최상위 콘텐츠 div와 중간 flex 컨테이너에 `min-w-0`을 명시해야 max-width가 하위 요소까지 전파된다.
 - **flex row의 고정 요소에 `shrink-0`** — 점수·뱃지·아이콘 등 고정 너비가 의도된 flex 자식은 `flex-shrink: 1`(기본값)에 의해 공간 부족 시 축소된다. `truncate` 텍스트 영역에 최대 공간을 주려면 다른 모든 flex 자식에 `shrink-0`을 명시한다.
 - **긴 텍스트 라벨도 `truncate` 적용** — `<p>` 라벨이 카테고리명 등으로 길어질 수 있으면 `min-w-0 truncate`를 추가한다.
-
-## Embed 페이지 UI 패턴
-
-- **토글 버튼** — `variant={active ? "default" : "ghost"}` + ghost에 `hover:bg-primary/50` + `size="sm"` + `h-7 px-2 text-xs`. Tabs 사용 금지.
-- **버튼 아이콘-텍스트 간격** — shadcn Button base class에 `gap-1` 이미 적용. 개별 `mr-*` 금지.
-- **액션 버튼** — 왼쪽 영역(검색 실행, 작업 실행 등)은 `variant="default"`. `variant="outline"`/`"secondary"` 금지.
-- **테이블 ghost icon hover** — `hover:bg-foreground/10 hover:text-foreground`로 오버라이드.
-- **shadcn Button `[&_svg]:size-4`** — icon에 `size-3` 대신 `!size-3` 사용해야 적용됨.
-- **Card title-content 간격** — Card는 `flex-col gap-4`가 기본이므로 `<Card className="p-4">` 내 h3 등 직접 자식에 `mb-*` 추가 금지 (`gap-4`와 중복).
 
 ## Dark 모드
 

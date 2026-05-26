@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Archivo, Space_Grotesk } from "next/font/google";
+import { DM_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppHeader } from "@/components/app-header";
 import { Toaster } from "@/components/ui/sonner";
 
-const archivo = Archivo({
-  variable: "--font-archivo",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "700"],
 });
 
 const spaceGrotesk = Space_Grotesk({
@@ -46,7 +46,7 @@ export default function RootLayout({
     <html
       lang="ko"
       suppressHydrationWarning
-      className={`${archivo.variable} ${spaceGrotesk.variable} antialiased`}
+      className={`${dmSans.variable} ${spaceGrotesk.variable} antialiased`}
     >
       <body className="min-h-dvh flex flex-col">
         <ThemeProvider

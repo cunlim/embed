@@ -2,25 +2,46 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ChevronRight, Terminal, Globe, Search, Cpu } from "lucide-react";
+import { ChevronRight, Search, Layers, Languages, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 const fullText = "Multilingual Category Intelligence";
 
-const terminalLines = [
-  { prefix: "$", text: "analyze --text '새로운 기술 트렌드 분석'", delay: 0 },
-  { prefix: ">", text: "ko → en 번역 완료 (145ms)", delay: 1 },
-  { prefix: ">", text: "벡터 임베딩 생성 (1024d)", delay: 2 },
-  { prefix: ">", text: "추천: IT/과학 > 기술일반 (0.94)", delay: 3, highlight: true },
+const features = [
+  {
+    icon: Search,
+    title: "의미 기반 유사도 검색",
+    description:
+      "한국어·영어·중국어 텍스트를 pgvector 임베딩 벡터로 변환하고, 코사인 유사도로 가장 가까운 카테고리를 찾아냅니다. 검색 결과마다 유사도 점수와 임베딩 상세를 확인할 수 있습니다.",
+  },
+  {
+    icon: Layers,
+    title: "4단계 계층 필터링",
+    description:
+      "네이버 카테고리 체계를 대·중·소·세 4단계로 탐색합니다. 각 단계별 드롭다운으로 원하는 깊이까지 필터링하거나, 키워드로 카테고리명을 직접 검색할 수 있습니다.",
+  },
+  {
+    icon: Languages,
+    title: "AI 번역 및 임베딩 파이프라인",
+    description:
+      "카테고리별로 번역·임베딩·벡터 저장을 비동기 파이프라인으로 처리합니다. 완료·진행중·대기·실패 등 상태를 실시간으로 추적하고, 개별 단계별 재실행이 가능합니다.",
+  },
+  {
+    icon: Zap,
+    title: "벌크 작업 실행",
+    description:
+      "여러 카테고리를 선택해 한 번에 번역·임베딩을 실행하거나, 필터 조건에 맞는 전체 카테고리에 대해 일괄 작업을 예약할 수 있습니다. 진행 중인 작업은 즉시 취소 가능합니다.",
+  },
+];
+
+const stats = [
+  { value: "ko · en · zh", label: "지원 언어" },
+  { value: "1024차원", label: "벡터 임베딩" },
+  { value: "대·중·소·세", label: "계층 구조" },
+  { value: "코사인 유사도", label: "검색 알고리즘" },
 ];
 
 export default function Home() {
-  const mounted = React.useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
   const [typedText, setTypedText] = React.useState("");
 
   React.useEffect(() => {
@@ -33,73 +54,28 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  const features = [
-    {
-      icon: Globe,
-      title: "다국어 지원",
-      description: "한국어, 중국어, 영어 텍스트 분석 및 카테고리 매핑",
-      gradient: "from-blue-500/20 to-blue-600/10",
-    },
-    {
-      icon: Search,
-      title: "의미 기반 검색",
-      description: "pgvector 코사인 유사도로 정확한 카테고리 추천",
-      gradient: "from-purple-500/20 to-purple-600/10",
-    },
-    {
-      icon: Cpu,
-      title: "로컬 AI 추론",
-      description: "Ollama 기반 온프레미스 LLM으로 데이터 보안 유지",
-      gradient: "from-amber-500/20 to-amber-600/10",
-    },
-    {
-      icon: Terminal,
-      title: "Async Pipeline",
-      description: "Laravel Queue + Redis로 비동기 번역 및 임베딩 처리",
-      gradient: "from-emerald-500/20 to-emerald-600/10",
-    },
-  ];
-
-  const [visibleLines, setVisibleLines] = React.useState<string[]>([]);
-
-  React.useEffect(() => {
-    if (!mounted) return;
-    const timers: NodeJS.Timeout[] = [];
-    terminalLines.forEach((line, idx) => {
-      const timer = setTimeout(() => {
-        setVisibleLines((prev) => [...prev, line.text]);
-      }, (idx + 1) * 600);
-      timers.push(timer);
-    });
-    return () => timers.forEach(clearTimeout);
-  }, [mounted]);
-
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
       <div className="noise-overlay" />
-
-      {/* Animated grid background */}
       <div className="absolute inset-0 bg-grid" />
-
-      {/* Glow orbs */}
-      <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-blue-500/15 dark:bg-blue-500/10" />
-      <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
+      <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-slate-500/8 dark:bg-slate-500/5" />
+      <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-slate-500/8 dark:bg-slate-500/5" />
 
       {/* Hero */}
-      <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-12 sm:px-8">
+      <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-24 sm:px-8">
         {/* Badge */}
         <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
-          AI 카테고리 추천 시스템 v1.0
+          AI 카테고리 추천 시스템
         </div>
 
         {/* Main heading */}
         <h1 className="mb-4 text-center text-4xl font-bold leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
           <span className="block text-foreground">CL Embed</span>
-          <span className="gradient-text mt-2 block">
+          <span className="mt-2 block text-accent">
             {typedText}
             <span className="inline-block h-[1ch] w-[3px] animate-pulse bg-accent align-middle" />
           </span>
@@ -107,9 +83,9 @@ export default function Home() {
 
         {/* Description */}
         <p className="mt-4 max-w-xl text-center text-base leading-relaxed text-muted-foreground sm:text-lg">
-          텍스트 한 줄로 네이버 카테고리를 자동 추천합니다.
+          텍스트 한 줄로 가장 적합한 카테고리를 찾아주는 AI 임베딩 시스템.
           <br />
-          한국어, 중국어, 영어를 지원하는 AI 기반 임베딩 시스템.
+          다국어 검색, 계층 필터링, 번역 파이프라인까지 내장된 올인원 카테고리 관리 도구입니다.
         </p>
 
         {/* CTA buttons */}
@@ -138,12 +114,8 @@ export default function Home() {
         </div>
 
         {/* Stats strip */}
-        <div className="mt-12 flex items-center divide-x divide-border">
-          {[
-            { value: "3", label: "지원 언어" },
-            { value: "1024d", label: "벡터 차원" },
-            { value: "실시간", label: "스트리밍" },
-          ].map((stat) => (
+        <div className="mt-12 flex flex-wrap items-center justify-center divide-x divide-border">
+          {stats.map((stat) => (
             <div
               key={stat.label}
               className="flex flex-col items-center px-4 sm:px-8"
@@ -159,87 +131,28 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Features + Terminal Section */}
+      {/* Features */}
       <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-24 sm:px-8">
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Terminal window */}
-          <div className="rounded-xl border border-border bg-card/50 backdrop-blur-sm">
-            <div className="terminal-header border-b border-border">
-              <span className="terminal-dot bg-red-400" />
-              <span className="terminal-dot bg-yellow-400" />
-              <span className="terminal-dot bg-emerald-400" />
-              <span className="ml-2 font-mono text-[10px] text-muted-foreground">
-                pipeline.sh — npm run analyze
-              </span>
+        <h2 className="mb-8 text-center text-2xl font-bold tracking-tight sm:text-3xl">
+          주요 기능
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {features.map((feature) => (
+            <div
+              key={feature.title}
+              className="group rounded-xl border border-border bg-card/50 p-6 transition-all duration-300 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5"
+            >
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background">
+                <feature.icon className="h-5 w-5 text-accent" />
+              </div>
+              <h3 className="mb-2 text-base font-semibold text-foreground">
+                {feature.title}
+              </h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {feature.description}
+              </p>
             </div>
-            <div className="p-4 font-mono text-xs leading-relaxed sm:text-sm">
-              <div className="mb-1 text-muted-foreground">
-                <span className="text-emerald-500">$</span> pipeline initialize
-                — model: bge-m3
-              </div>
-              {terminalLines.map((line, idx) => (
-                <div
-                  key={idx}
-                  className={cn(
-                    "transition-all duration-500",
-                    visibleLines.includes(line.text)
-                      ? "translate-x-0 opacity-100"
-                      : "translate-x-2 opacity-0"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "mr-2",
-                      line.prefix === "$"
-                        ? "text-emerald-500"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    {line.prefix}
-                  </span>
-                  <span
-                    className={cn(
-                      line.highlight && "text-accent font-semibold"
-                    )}
-                  >
-                    {line.text}
-                  </span>
-                </div>
-              ))}
-              <div className="mt-1 flex items-center gap-1 text-muted-foreground">
-                <span className="text-emerald-500">$</span>
-                <span className="inline-block h-4 w-2 animate-pulse bg-accent" />
-              </div>
-            </div>
-          </div>
-
-          {/* Feature cards */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="group relative overflow-hidden rounded-xl border border-border bg-card/50 p-4 transition-all duration-300 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5"
-              >
-                <div
-                  className={cn(
-                    "absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-300 group-hover:opacity-100",
-                    feature.gradient
-                  )}
-                />
-                <div className="relative z-10">
-                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background">
-                    <feature.icon className="h-4 w-4 text-accent" />
-                  </div>
-                  <h3 className="mb-1 text-sm font-semibold text-foreground">
-                    {feature.title}
-                  </h3>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    {feature.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
       </section>
 
@@ -251,19 +164,19 @@ export default function Home() {
           </p>
           <div className="flex items-center gap-4">
             <a
-              href="https://github.com"
+              href="https://github.com/cunlim"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               GitHub
             </a>
-            <a
+            <Link
               href="/embed"
               className="text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               기능시연
-            </a>
+            </Link>
           </div>
         </div>
       </footer>

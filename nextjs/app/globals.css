@@ -33,53 +33,8 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: "Archivo", "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans", "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Space Grotesk", "Geist Mono", ui-monospace, monospace;
-
-  --animate-grid-fade: grid-fade 8s ease-in-out infinite alternate;
-  --animate-glow-pulse: glow-pulse 3s ease-in-out infinite alternate;
-  --animate-float: float 6s ease-in-out infinite;
-  --animate-code-blink: code-blink 1s step-end infinite;
-
-  @keyframes grid-fade {
-    0% {
-      opacity: 0.3;
-    }
-    100% {
-      opacity: 0.7;
-    }
-  }
-
-  @keyframes glow-pulse {
-    0% {
-      opacity: 0.4;
-      transform: scale(1);
-    }
-    100% {
-      opacity: 0.8;
-      transform: scale(1.05);
-    }
-  }
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-
-  @keyframes code-blink {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0;
-    }
-  }
 }
 
 :root {
@@ -181,43 +136,6 @@ body {
   border-radius: 50%;
   filter: blur(80px);
   pointer-events: none;
-}
-
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(
-    135deg,
-    oklch(0.507 0.157 265.75),
-    oklch(0.646 0.222 41.116)
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Code blink cursor */
-.code-cursor::after {
-  content: "|";
-  animation: code-blink 1s step-end infinite;
-  color: var(--accent);
-}
-
-/* Terminal window style */
-.terminal-window {
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.terminal-header {
-  display: flex;
-  gap: 6px;
-  padding: 8px 12px;
-}
-
-.terminal-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
 }
 
 /* Noise overlay */

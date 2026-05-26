@@ -11,16 +11,16 @@ interface SiteHeaderProps {
 
 export function SiteHeader({ badge, children, leftChildren }: SiteHeaderProps) {
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between px-6 py-4 sm:px-8 bg-background/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 flex items-center justify-between px-6 py-3 sm:px-8 bg-background border-b border-border">
       <div className="flex items-center gap-2">
         <Link
           href="/"
           className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-foreground text-xs font-bold font-mono">
             CL
           </div>
-          <span className="font-mono text-sm font-medium text-foreground">
+          <span className="font-bold tracking-tight text-sm text-foreground">
             CL Embed
           </span>
           {badge && (
