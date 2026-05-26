@@ -7,7 +7,7 @@ import { ArrowRight, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, getToken } from "@/hooks/useAuth";
 import { isSuperAdmin } from "@/lib/utils";
 import { SettingsPanel } from "@/components/admin/settings-panel";
 
@@ -32,7 +32,7 @@ export default function AdminPage() {
 
   if (!mounted || !user || !isSuperAdmin(user)) return null;
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token = getToken();
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
