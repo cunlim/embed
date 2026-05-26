@@ -15,10 +15,8 @@ interface DocEntry {
 }
 
 const docList: DocEntry[] = [
-  { slug: "PRD", title: "제품 요구사항 (PRD)", description: "제품 요구사항, Phase 정의, 성능 목표" },
-  { slug: "ARCHITECTURE", title: "아키텍처 (ARCHITECTURE)", description: "인프라, DB 스키마, 데이터 흐름" },
-  { slug: "ADR", title: "아키텍처 결정 기록 (ADR)", description: "pgvector, Ollama, Sanctum" },
-  { slug: "UI_GUIDE", title: "UI 디자인 가이드", description: "프론트엔드 디자인 제약 및 컴포넌트" },
+  { slug: "USER_GUIDE", title: "사용자 가이드", description: "시스템 사용 방법 및 API 연동" },
+  { slug: "SIMILARITY_SEARCH", title: "유사도 검색 원리", description: "AI 임베딩 및 코사인 유사도 검색" },
 ];
 
 export default function DocsPage() {

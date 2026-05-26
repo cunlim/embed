@@ -23,7 +23,6 @@ services:
       - "3000"
     volumes:
       - ../nextjs:/app
-      - ../docs:/app/public/content:ro
       - /app/node_modules
     working_dir: /app
     networks:
