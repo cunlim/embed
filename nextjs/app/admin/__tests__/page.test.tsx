@@ -19,7 +19,7 @@ beforeEach(() => {
   cleanup();
   vi.clearAllMocks();
   mockUseAuth.mockReturnValue({
-    user: { id: 1, name: "Admin", email: "admin@test.com", role: "admin" },
+    user: { id: 1, name: "Superadmin", email: "superadmin@test.com", role: "superadmin" },
     isLoading: false,
   });
 });
@@ -39,9 +39,14 @@ describe("AdminPage", () => {
     expect(links.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("비관리자 사용자는 admin 페이지 내용이 렌더링되지 않는다", () => {
+  it("시스템 설정 탭이 표시된다", () => {
+    render(<AdminPage />);
+    expect(screen.getByText("시스템 설정")).toBeInTheDocument();
+  });
+
+  it("비superadmin 사용자는 admin 페이지 내용이 렌더링되지 않는다", () => {
     mockUseAuth.mockReturnValue({
-      user: { id: 2, name: "User", email: "user@test.com", role: "member" },
+      user: { id: 2, name: "Admin", email: "admin@test.com", role: "admin" },
       isLoading: false,
     });
     const { container } = render(<AdminPage />);
