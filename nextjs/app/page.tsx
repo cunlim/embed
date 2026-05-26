@@ -58,8 +58,8 @@ export default function Home() {
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
       <div className="noise-overlay" />
       <div className="absolute inset-0 bg-grid" />
-      <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-slate-500/8 dark:bg-slate-500/5" />
-      <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-slate-500/8 dark:bg-slate-500/5" />
+      <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-blue-500/15 dark:bg-blue-500/10" />
+      <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
 
       {/* Hero */}
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-24 sm:px-8">
@@ -75,7 +75,7 @@ export default function Home() {
         {/* Main heading */}
         <h1 className="mb-4 text-center text-4xl font-bold leading-tight tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
           <span className="block text-foreground">CL Embed</span>
-          <span className="mt-2 block text-accent">
+          <span className="gradient-text mt-2 block">
             {typedText}
             <span className="inline-block h-[1ch] w-[3px] animate-pulse bg-accent align-middle" />
           </span>

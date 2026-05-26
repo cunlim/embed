@@ -138,6 +138,18 @@ body {
   pointer-events: none;
 }
 
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(
+    135deg,
+    oklch(0.507 0.157 265.75),
+    oklch(0.646 0.222 41.116)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* Noise overlay */
 .noise-overlay::before {
   content: "";
