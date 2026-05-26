@@ -41,6 +41,8 @@ return [
         'embedding_model' => 'bge-m3:latest',
         'rate_limit_max_attempts' => 60,
         'rate_limit_decay_seconds' => 60,
+        'timeout' => 300,
+        'translation_max_attempts' => 3,
     ],
 
     'google' => [
@@ -64,6 +66,37 @@ return [
     'frontend' => [
         'login_url' => env('FRONTEND_LOGIN_URL', '/login'),
         'app_callback_url' => env('APP_CALLBACK_URL', 'myapp://oauth'),
+        'step_delay_ms' => 2000,
+    ],
+
+    'pagination' => [
+        'default_per_page' => 20,
+        'max_per_page_guest' => 100,
+    ],
+
+    'recommend' => [
+        'default_limit' => 5,
+        'max_per_page' => 100,
+    ],
+
+    'auth' => [
+        'token_expiry_days' => 30,
+        'session_lifetime' => 120,
+    ],
+
+    'category' => [
+        'code_prefix' => 'CAT_',
+        'code_random_length' => 8,
+        'code_max_attempts' => 3,
+    ],
+
+    'validation' => [
+        'text_max_length' => 500,
+        'name_max_length' => 255,
+    ],
+
+    'cache' => [
+        'settings_ttl' => 3600,
     ],
 
 ];
