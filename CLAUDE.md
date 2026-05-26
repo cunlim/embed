@@ -7,6 +7,10 @@
 - **모든 문서와 주석은 한국어로 작성합니다.**
 - 코드 식별자(변수명, 함수명, 클래스명 등)는 영어를 유지합니다.
 
+## 언어 순서 규칙
+
+- **모든 UI·API에서 언어 순서는 `ko → en → zh`(한영중)로 통일** — 토글 버튼, 모달, API 응답, SQL foreach 등 신규 요소 추가 시 이 순서 준수.
+
 ## plugin, skills, mcp 사용
 * 모든 프론트엔드 UI 작업은 `ui-ux-pro-max:ui-ux-pro-max` plugin을 활성화하여 수행한다.
 * 구현 계획 수립, 코드 리뷰, TDD 등 구조적 접근이 필요한 작업은 `superpowers` plugin을 활성화하여 수행한다.
@@ -17,7 +21,7 @@
 - **이슈 사전 재현** — 수정 작업 전 Playwright로 실제 이슈가 존재하는지 먼저 확인한다.
 - **Sub-agent driven** — 구현은 되도록 Agent(Sub-agent)를 활용한다.
 - **Playwright 테스트 URL** — WSL2 호스트에서 `https://embed.cunlim.dev`로 접속 (Next.js 포트 미공개).
-- **작업 완료 전 검증** — `.claude/hooks/run-all-checks.sh`를 실행하여 tsc, lint, test, pint를 모두 통과하는지 확인하고 이슈가 있으면 해결 후 마무리한다.
+- **작업 완료 전 검증** — `.claude/hooks/run-all-checks.sh` 실행 후 `cat .claude/hooks/test-results/*.txt`로 결과 확인. tsc, lint, test, pint 모두 EXIT=0 확인 후 마무리.
 
 ## Subagent-Driven Development worktree 주의사항
 
@@ -69,6 +73,8 @@ AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](doc
 - **Subagent-Driven 동일 파일 작업** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합.
 
 - **DB 포맷은 실제 데이터로 확인** — LIKE 쿼리 전 `psql`로 프로덕션 DB 조회. `category_name_ko` 구분자는 `>` (공백 없음).
+
+- **PostgreSQL RANK() + LEFT JOIN 함정** — `RANK() OVER (ORDER BY ...)`는 LEFT JOIN 결과가 NULL이어도 전체 결과셋에서 순위를 반환한다. Service에서 `distance`가 null이면 `rank`도 null로 명시적 처리 필요 (`RecommendationService` 참고).
 
 ## CI/CD
 
