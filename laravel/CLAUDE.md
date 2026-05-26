@@ -45,6 +45,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
   - 복합 응답: `(new SomeResource($model))->resolve()`로 배열 추출 후 다른 키와 함께 `response()->json()`에 임베딩 (예: `'user' => (new UserResource($user))->resolve()`)
   - 컬렉션: `SomeResource::collection($items)->response()` → `{data: [...]}`
   - **Resource collection에 전달되는 각 항목은 객체여야 한다** — `JsonResource::toArray()`에서 `$this->property`로 접근하므로, Service가 반환하는 각 item은 `(object) [...]` 또는 Eloquent Model이어야 한다. 연관 배열을 전달하면 `Attempt to read property on array` 에러가 발생한다.
+  - **`RecommendResource`도 `CategoryResource`와 동일하게 `translationStatus()` 유지** — `toArray()`에서 `$this->translation_status`가 아닌 `$this->translationStatus()` 호출. CategoryResource의 private 메서드를 복사하여 일관성 유지.
 - **Pest 테스트**: `php artisan make:test --pest`로 생성, 기존 테스트 컨벤션 따름
 - **PHP 변경 완료 전** 반드시 `vendor/bin/pint --format agent` 실행 (컨테이너 내부 기준)
 
@@ -117,14 +118,10 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 
 ### 번역·임베딩 실행 패턴 (동기 HTTP)
 
-- **번역과 임베딩은 비동기 Job이 아닌 동기 HTTP 컨트롤러 메서드에서 실행**한다. `POST /api/categories/{id}/run-step`이 번역(`translation.zh`, `translation.en`)과 임베딩(`embedding.ko`, `.zh`, `.en`)을 단일 step 단위로 동기 처리한다.
-- `CategoryController::runStep()`에서 `OllamaTranslator::translate()`와 `EmbeddingGenerator::generate()`를 직접 호출하며, `CategoryEmbedding::updateOrCreate()`로 결과를 저장한다.
-- 응답에 `translations` 필드(`CategoryTranslationsResource`)를 포함해 프론트엔드가 추가 API 호출 없이 UI를 갱신할 수 있게 한다.
-- `PUT /api/categories/{id}/update-text`는 텍스트 업데이트 후 해당 언어의 `CategoryEmbedding`을 **삭제**한다. 응답에 `translations` + `listRow`(`CategoryResource`)를 포함해 목록과 상세를 동시에 갱신한다.
-- Form Request `RunStepRequest`: `step` 필수, `in:translation.zh,translation.en,embedding.ko,embedding.zh,embedding.en`
-- Form Request `CategoryUpdateTextRequest`: `field` (in: `category_name_ko,_en,_zh`) + `value` (nullable, max:255)
-- `category_code`: optional unique 필드, `$request->filled('category_code')`로 체크 (빈 문자열 `""`와 `null` 구분 필요 — `??` 연산자는 `""`를 통과시키므로 `filled()` 사용), 미제공 시 `Category::generateCode()`로 자동 생성.
-- `recommend()`에서 text가 nullable: 빈 문자열이면 일반 카테고리 페이지네이션 반환, text 있으면 `RecommendationService::recommendPaginated()`로 pgvector JOIN 검색.
+- **번역과 임베딩은 비동기 Job이 아닌 동기 HTTP 컨트롤러 메서드에서 실행**한다. step 단위(`translation.zh`, `translation.en`, `embedding.ko/.zh/.en`)로 동기 처리 후 응답에 `translations` 필드를 포함해 프론트엔드 추가 API 호출 없이 UI 갱신.
+- `PUT /api/categories/{id}/update-text`는 텍스트 업데이트 후 해당 언어의 CategoryEmbedding을 **삭제**한다.
+- `category_code`: optional unique, `$request->filled('category_code')`로 체크 (빈 문자열 `""`와 `null` 구분 필요 — `??` 연산자는 `""`를 통과시키므로 `filled()` 사용).
+- `recommend()`에서 text가 nullable: 빈 문자열이면 일반 카테고리 페이지네이션, text 있으면 pgvector JOIN 검색.
 
 ### 운영 설정 (Config + Settings Table)
 

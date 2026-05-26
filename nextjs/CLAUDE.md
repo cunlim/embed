@@ -70,6 +70,8 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
 - **SSR prefetch 시 CSR과 동일 파라미터** — `parseEmbedParams()`로 URL 파라미터 SSR/CSR 공통 추출.
 - **URL 파라미터 갱신 시 기존 파라미터 보존** — `new URLSearchParams(searchParams.toString())`로 시작.
 - **컴포넌트 props 추가 시 `npx tsc --noEmit` 확인** — `npm test`는 모킹으로 타입 체크 우회.
+- **URL을 state의 source of truth로** — `useSearchParams()` 변경 감지 → URL과 state 불일치 시 동기화. 브라우저 뒤로/앞으로 가기 대응은 useEffect로 URL→state 단방향 싱크.
+- **useCallback 내 상태 대신 ref 사용** — `handleSearch`처럼 URL 동기화 effect에서 호출되는 콜백은 closure의 stale state 문제를 피하기 위해 `searchLangRef` 등 ref로 최신값을 읽는다 (`perPageRef`, `filterRef`와 동일 패턴).
 
 ## 테스트
 

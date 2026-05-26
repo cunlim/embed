@@ -36,7 +36,6 @@ AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](doc
 - **컨테이너 재시작 후 HMR 불통** — WebSocket 502. `browser.newContext()` 또는 Ctrl+Shift+R.
 - **컨테이너 파일 변경 후 HMR 미감지** — `.next/` 삭제 후 `docker compose stop` + `up -d`.
 - **Pint 바인드 마운트 파일 손상** — `/tmp/` 경유 방식 사용.
-- **shadcn 컴포넌트 설치 시 confirm** — `echo 'y' | npx shadcn@latest add <component>`.
 
 ## 카테고리 접근 제어
 
