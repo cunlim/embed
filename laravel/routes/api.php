@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminSettingsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\RecommendController;
@@ -30,3 +31,9 @@ Route::get('categories/{category}/translations', [CategoryController::class, 'tr
 
 // 추천
 Route::post('recommend', [RecommendController::class, 'recommend']);
+
+// 관리자 설정 (superadmin only)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('admin/settings', [AdminSettingsController::class, 'index']);
+    Route::put('admin/settings', [AdminSettingsController::class, 'update']);
+});
