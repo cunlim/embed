@@ -58,6 +58,7 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
 - **액션 버튼** — 왼쪽 영역(검색 실행, 작업 실행 등)은 `variant="default"`. `variant="outline"`/`"secondary"` 금지.
 - **테이블 ghost icon hover** — `hover:bg-foreground/10 hover:text-foreground`로 오버라이드.
 - **shadcn Button `[&_svg]:size-4`** — icon에 `size-3` 대신 `!size-3` 사용해야 적용됨.
+- **Card title-content 간격** — Card는 `flex-col gap-4`가 기본이므로 `<Card className="p-4">` 내 h3 등 직접 자식에 `mb-*` 추가 금지 (`gap-4`와 중복).
 
 ## Dark 모드
 
@@ -72,6 +73,7 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
 - **컴포넌트 props 추가 시 `npx tsc --noEmit` 확인** — `npm test`는 모킹으로 타입 체크 우회.
 - **URL을 state의 source of truth로** — `useSearchParams()` 변경 감지 → URL과 state 불일치 시 동기화. 브라우저 뒤로/앞으로 가기 대응은 useEffect로 URL→state 단방향 싱크.
 - **useCallback 내 상태 대신 ref 사용** — `handleSearch`처럼 URL 동기화 effect에서 호출되는 콜백은 closure의 stale state 문제를 피하기 위해 `searchLangRef` 등 ref로 최신값을 읽는다 (`perPageRef`, `filterRef`와 동일 패턴).
+- **useCallback + `useState<Set<T>>` 의존성 누락** — `useCallback` 내부에서 Set state를 읽으면 의존성 배열에 반드시 포함할 것. `setCheckedSteps(prev => new Set(prev))`는 참조 변경으로 정상 작동하지만, 콜백이 stale Set을 캡처하면 체크박스 변경이 실행 큐에 반영되지 않는다.
 
 ## 테스트
 

@@ -79,6 +79,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **`RefreshDatabase` 사용** — 모든 Feature 테스트는 `Pest.php`에 의해 자동으로 `RefreshDatabase`가 적용된다. Unit 테스트 중 DB 접근이 필요한 경우 `uses(RefreshDatabase::class)`를 명시적으로 추가한다.
 - **PostgreSQL 트랜잭션 abort 주의** — PostgreSQL에서는 쿼리 오류(제약조건 위반 등)가 발생하면 트랜잭션이 aborted 상태가 되어 후속 쿼리가 모두 실패한다. `create()` + catch 패턴 대신 `firstOrCreate()`를 사용해야 한다.
 - **pgvector raw SQL 바인딩은 `::vector` 명시적 캐스트 필수** — `DB::select()`에서 `<=>` 연산자에 bound parameter를 사용할 때 PDO는 text로 바인딩한다. `:query_vector::vector`와 같이 명시적 타입 캐스트를 추가해야 한다.
+- **pgvector 테스트에서 `array_fill` 금지** — 모든 요소가 같은 벡터는 동일 방향(collinear)이므로 cosine distance가 전부 0이 되어 rank/similarity 검증이 무효화된다. 서로 다른 방향의 벡터를 사용할 것.
 - **pgvector 쿼리를 호출하는 컨트롤러는 Service mock으로 격리** — 컨트롤러가 직접 `CategoryEmbedding::similarTo()` 등 pgvector 스코프를 호출하면 테스트 복잡도가 증가한다. `RecommendationService`처럼 Service로 추출하고, Feature 테스트에서는 `Mockery::mock(Service::class)` + `app()->instance()`로 교체하여 HTTP 레이어(요청/응답/JSON 구조)만 검증한다.
 - **`.env.testing` 파일** — gitignore 대상, CI "Restore Environment Files" 스텝에서 `$LIVE_ROOT/laravel/.env.testing` → 워크스페이스로 복사. `DB_DATABASE=cl_embed_test`, `DB_USERNAME=dbeaver_lim_test`, `APP_KEY` 포함. `.env.testing.example`을 템플릿으로 커밋.
 - **별도 테스트 DB 사용자 + `RefreshDatabase` schema ownership** — `dbeaver_lim_test`가 기존 테이블의 소유자가 아니면 `migrate:fresh`의 DROP TABLE이 `must be owner` 오류로 실패한다. `dbeaver_lim`으로 `DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS vector;` 실행 후 테스트를 구동하면 `dbeaver_lim_test`가 모든 테이블을 소유하게 된다.
