@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\CategoryEmbedding;
 use App\Models\SearchLog;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class RecommendationService
 {
@@ -63,9 +64,6 @@ class RecommendationService
             ->selectRaw('ce_ko.embedding <=> ?::vector as distance_ko', [$vectorLiteral])
             ->selectRaw('ce_en.embedding <=> ?::vector as distance_en', [$vectorLiteral])
             ->selectRaw('ce_zh.embedding <=> ?::vector as distance_zh', [$vectorLiteral])
-            ->selectRaw('RANK() OVER (ORDER BY ce_ko.embedding <=> ?::vector) as rank_ko', [$vectorLiteral])
-            ->selectRaw('RANK() OVER (ORDER BY ce_en.embedding <=> ?::vector) as rank_en', [$vectorLiteral])
-            ->selectRaw('RANK() OVER (ORDER BY ce_zh.embedding <=> ?::vector) as rank_zh', [$vectorLiteral])
             ->selectRaw("ce_{$targetLanguage}.embedding::text as category_embedding_raw")
             ->leftJoin('category_embeddings as ce_ko', function ($join) {
                 $join->on('ce_ko.category_id', '=', 'categories.id')
@@ -79,6 +77,29 @@ class RecommendationService
                 $join->on('ce_zh.category_id', '=', 'categories.id')
                     ->where('ce_zh.language', '=', 'zh');
             });
+
+        // rank 서브쿼리: user scope만 적용, keyword 필터 미적용
+        foreach (['ko', 'en', 'zh'] as $lang) {
+            $rankSub = DB::table('category_embeddings')
+                ->select('category_embeddings.category_id')
+                ->selectRaw(
+                    'RANK() OVER (ORDER BY category_embeddings.embedding <=> ?::vector) as overall_rank',
+                    [$vectorLiteral]
+                )
+                ->join('categories as rank_c', 'rank_c.id', '=', 'category_embeddings.category_id')
+                ->where('category_embeddings.language', $lang);
+
+            if ($userId !== null) {
+                if (is_array($userId)) {
+                    $rankSub->whereIn('rank_c.user_id', $userId);
+                } else {
+                    $rankSub->where('rank_c.user_id', $userId);
+                }
+            }
+
+            $query->leftJoinSub($rankSub, "overall_ranks_{$lang}", "overall_ranks_{$lang}.category_id", '=', 'categories.id')
+                ->selectRaw("overall_ranks_{$lang}.overall_rank as rank_{$lang}");
+        }
 
         if ($userId !== null) {
             if (is_array($userId)) {
