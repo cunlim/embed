@@ -20,11 +20,10 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "CL Embed | AI 카테고리 추천 시스템",
   description:
-    "AI 기반 다국어 카테고리 추천 시스템. 한국어/중국어/영어 텍스트를 분석하여 네이버 카테고리를 자동 추천합니다.",
+    "AI 기반 다국어 카테고리 추천 시스템. 한국어/중국어/영어 텍스트를 분석하여 통합 카테고리를 자동 추천합니다.",
   keywords: [
     "AI",
     "카테고리 추천",
-    "네이버",
     "multilingual",
     "embedding",
     "portfolio",
@@ -32,7 +31,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "CL Embed | AI 카테고리 추천 시스템",
     description:
-      "AI 기반 다국어 카테고리 추천 시스템. 한국어/중국어/영어 텍스트를 분석하여 네이버 카테고리를 자동 추천합니다.",
+      "AI 기반 다국어 카테고리 추천 시스템. 한국어/중국어/영어 텍스트를 분석하여 통합 카테고리를 자동 추천합니다.",
     type: "website",
   },
 };

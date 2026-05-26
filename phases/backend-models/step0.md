@@ -51,7 +51,7 @@ composer require laravel-pgvector
 
 ### Seeder
 
-`DatabaseSeeder`에 두 모델의 시드를 추가하라. 네이버 카테고리 체계를 반영한 대표 카테고리 5개 이상을 포함할 것.
+`DatabaseSeeder`에 두 모델의 시드를 추가하라. 통합 카테고리 체계를 반영한 대표 카테고리 5개 이상을 포함할 것.
 
 ## 생성할 파일
 

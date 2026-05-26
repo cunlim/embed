@@ -38,7 +38,7 @@
    - 각 결과 카드에서 **코사인 유사도 상세** 정보 표시 (ARCHITECTURE.md: "코사인 유사도 상세" 요구사항)
    - 키워드 매칭 부분 `font-semibold text-accent` 처리
 4. **계층형 Select Box** (ARCHITECTURE.md: "계층형 Select Box"):
-   - 네이버 카테고리 "대>중>소" 계층을 순서대로 선택할 수 있는 Select Box
+   - 통합 카테고리 "대>중>소" 계층을 순서대로 선택할 수 있는 Select Box
    - 첫 번째 Select Box에서 "대" 카테고리 선택 → 두 번째 Select Box에 해당 "중" 카테고리 목록 표시 → 세 번째에 "소" 카테고리 표시
    - DB의 `category_name_ko` 컬럼값을 `>` 구분자로 분할하여 계층 구조 구성
 5. **벡터 과정 모달** (ARCHITECTURE.md, PRD §3.2):

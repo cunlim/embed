@@ -2,7 +2,7 @@
   "project": "cl_embed",
   "phase": "backend-models",
   "steps": [
-    { "step": 0, "name": "category-models", "status": "completed", "summary": "Category/CategoryEmbedding 모델, Factory, Seeder 생성 및 pgvector/pgvector 패키지 설치 완료. 네이버 카테고리 10개 시드 데이터 포함. Category::generateCode() 정적 메서드(CAT_+8자리 영숫자) 구현." },
+    { "step": 0, "name": "category-models", "status": "completed", "summary": "Category/CategoryEmbedding 모델, Factory, Seeder 생성 및 pgvector/pgvector 패키지 설치 완료. 통합 카테고리 10개 시드 데이터 포함. Category::generateCode() 정적 메서드(CAT_+8자리 영숫자) 구현." },
     { "step": 1, "name": "support-models", "status": "completed", "summary": "TranslationCache/SearchLog 모델, Factory, Seeder 생성 완료. SearchLog booted() UUID 자동 생성, TranslationCache 테이블명 명시적 지정." }
   ]
 }
