@@ -32,7 +32,7 @@
 
 ## 프로젝트 개요
 
-AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](docs/PRD.md) 참조. 진행 상황은 `phases/` 디렉토리와 `git log`로 확인.
+AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](docs/PRD.md) 참조. 진행 상황은 `git log`로 확인.
 
 ## Docker
 
@@ -51,8 +51,16 @@ AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](doc
 ## 개발 프로세스
 
 - **커밋 메시지**: conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`)
-- **Phase step 완료 조건** — 0 failure 테스트 확인. 실패 시 step 완료 불가.
-- **완료된 phase는 수정하지 않음** — 새 기능은 신규 phase로 생성.
+
+## 코드 리뷰 체크리스트
+
+1. **아키텍처 준수**: ARCHITECTURE.md에 정의된 디렉토리 구조를 따르는가?
+2. **기술 스택 준수**: ADR에 정의된 기술 선택(PostgreSQL+pgvector, Laravel Queue+Reverb, Ollama 번역)을 벗어나지 않았는가?
+3. **테스트 존재**: 새로운 기능에 대한 테스트가 작성되어 있는가? (Laravel: Pest, Next.js: Jest/Vitest)
+4. **CRITICAL 규칙**: 문서·주석은 한국어, 코드 식별자는 영어를 유지하는가?
+5. **빌드 가능**: 검증 커맨드가 정상 통과하는가?
+   - 백엔드: `docker exec cl_embed_laravel php artisan test --compact`
+   - 프론트엔드: `docker exec cl_embed_nextjs npm run build`
 
 ## Feature Spec 3축
 
