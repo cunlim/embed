@@ -346,7 +346,7 @@ export default function CategoryHierarchy({
 
   return (
     <Card className="p-4">
-      <div className="mb-3 flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2">
         <h3 className="font-medium text-sm">필터</h3>
         {initial대Options.length > 0 && (
           <div className="flex gap-1">

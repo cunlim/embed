@@ -342,7 +342,7 @@ export default function TaskExecution({
 
   return (
     <Card className="p-4">
-      <h3 className="mb-2 font-medium text-sm">작업 실행</h3>
+      <h3 className="font-medium text-sm">작업 실행</h3>
       <div className="space-y-2">
         <div className="space-y-2">
           {STEP_ORDER.map(step => (
