@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import Link from "next/link";
 import { BookOpen, Menu, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -194,6 +195,7 @@ export default function DocsPage() {
                 </div>
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
                     components={{
                       a: ({ href, children }) => (
                         <a
