@@ -1,10 +1,5 @@
 # nextjs/CLAUDE.md
 
-## AGENTS.md (필독)
-
-이 프로젝트의 [`AGENTS.md`](./AGENTS.md)는 Next.js 16의 브레이킹 체인지에 대해 설명합니다.
-코드 작성 전 반드시 `node_modules/next/dist/docs/`의 관련 가이드를 확인하세요.
-
 ## 프로젝트 개요
 
 AI 기반 다국어 카테고리 추천 시스템의 프론트엔드입니다.
@@ -21,7 +16,7 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
 
 ## 코드 컨벤션
 
-> **Next.js 16 주요 함정** — [AGENTS.md](./AGENTS.md) 필독. App Router 전용, Server Components 기본, fetch 캐싱 없음 등 브레이킹 체인지 전체 목록 참조.
+> **Next.js 16 주요 함정** — [AGENTS.md](./AGENTS.md)를 먼저 읽고 브레이킹 체인지(App Router 전용, Server Components 기본, fetch 캐싱 없음 등)를 숙지할 것.
 
 ### React / Next.js
 - **Server Components 기본**: 실시간 인터랙션(모달)이 필요한 구간만 `"use client"` 지시문 추가
@@ -56,6 +51,13 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
 - **card/popover 배경 chroma 최소화** — `oklch(L 0.003 H)`, chroma 0.005 이하.
 - **card-background lightness 차이** — 0.07 이상 확보.
 - CSS 변수는 `app/globals.css`의 `.dark` 셀렉터에서 정의.
+
+## 페이지 공통 배경 패턴
+
+- **5개 페이지가 동일한 배경 요소 사용** — `noise-overlay` + `bg-grid` + `glow-orb` ×2. `app/page.tsx`, `embed`, `login`, `admin`, `docs` 모두 이 패턴 공유.
+- **glow-orb 색상은 페이지마다 다름** — 랜딩페이지는 blue+purple, embed·login 등은 다른 색상. 색상은 각 페이지의 Tailwind 클래스로 지정.
+- **`gradient-text`는 랜딩페이지 부제목용** — blue→orange 그라데이션. 장식 제거 시에도 보존 대상.
+- **globals.css 클래스 삭제 전 확인** — `grep -r "클래스명" app/`으로 모든 사용처 확인 후 삭제.
 
 ## SSR (Server Components)
 

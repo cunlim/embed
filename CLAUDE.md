@@ -48,13 +48,6 @@ AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](doc
 
 > Next.js 특화 UI 패턴, SSR, Dark 모드는 [`nextjs/CLAUDE.md`](nextjs/CLAUDE.md) 참조.
 
-## 페이지 공통 배경 패턴
-
-- **5개 페이지가 동일한 배경 요소 사용** — `noise-overlay` + `bg-grid` + `glow-orb` ×2. `app/page.tsx`, `embed`, `login`, `admin`, `docs` 모두 이 패턴 공유.
-- **glow-orb 색상은 페이지마다 다름** — 랜딩페이지는 blue+purple, embed·login 등은 다른 색상. 색상은 각 페이지의 Tailwind 클래스로 지정.
-- **`gradient-text`는 랜딩페이지 부제목용** — blue→orange 그라데이션. 장식 제거 시에도 보존 대상.
-- **globals.css 클래스 삭제 전 확인** — `grep -r "클래스명" app/`으로 모든 사용처 확인 후 삭제.
-
 ## 개발 프로세스
 
 - **커밋 메시지**: conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`)
@@ -72,9 +65,6 @@ AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](doc
 ## 알려진 이슈
 
 - **Sub-agent 인터페이스 수정 시 중복 코드** — api.ts 등 interface에 필드 추가 시 agent가 이전 블록을 삭제하지 않고 새 블록을 중복 생성할 수 있음. `tsc --noEmit`은 통과해도 dev server parse error 발생. 수정 후 `grep`으로 중복 키 확인.
-
-> Laravel/Next.js 특화 이슈는 각 하위 `CLAUDE.md` 참조.
-
 - **Docker 바인드 마운트 불일치** — 호스트·컨테이너 간 파일 변경 즉시 반영 안 될 수 있음. 수정 후 `wc -l`로 양쪽 라인 수 비교.
 - **신규 디렉토리** — 호스트·컨테이너 한쪽만 생성 시 자동 반영 안 됨. 양쪽 `mkdir -p`.
 - **Subagent-Driven 동일 파일 작업** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합.

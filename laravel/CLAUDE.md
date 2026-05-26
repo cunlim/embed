@@ -1,6 +1,6 @@
 ## 프로젝트 관련 (cl_embed)
 
-Laravel Boost MCP 도구 사용 가능: `database-query`(읽기 전용 SQL), `database-schema`(테이블 구조), `search-docs`(버전별 문서 검색). 코드 변경 전 `search-docs`를 항상 먼저 실행합니다.
+Laravel Boost MCP 도구 사용 가능(환경에 따라 다름): `database-query`(읽기 전용 SQL), `database-schema`(테이블 구조), `search-docs`(버전별 문서 검색). 코드 변경 전 `search-docs`를 항상 먼저 실행합니다.
 
 ### 자주 사용하는 명령어
 
@@ -84,7 +84,9 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **`.env.testing` 파일** — gitignore 대상, CI "Restore Environment Files" 스텝에서 `$LIVE_ROOT/laravel/.env.testing` → 워크스페이스로 복사. `DB_DATABASE=cl_embed_test`, `DB_USERNAME=dbeaver_lim_test`, `APP_KEY` 포함. `.env.testing.example`을 템플릿으로 커밋.
 - **별도 테스트 DB 사용자 + `RefreshDatabase` schema ownership** — `dbeaver_lim_test`가 기존 테이블의 소유자가 아니면 `migrate:fresh`의 DROP TABLE이 `must be owner` 오류로 실패한다. `dbeaver_lim`으로 `DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS vector;` 실행 후 테스트를 구동하면 `dbeaver_lim_test`가 모든 테이블을 소유하게 된다.
 
-### 서비스 클래스 테스트 최소 요건
+### 서비스 클래스
+
+#### 테스트 최소 요건
 
 **CRITICAL** — 서비스 클래스 생성 시 의존성을 mock 하여 위임 동작을 검증하는 테스트를 반드시 함께 작성한다.
 
@@ -94,20 +96,16 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **실패 경로(failure path)도 필수 검증**: 행복 경로(happy path)뿐 아니라, 의존성이 실패/거부/초과 상황을 반환할 때 서비스가 적절한 예외를 발생시키는지도 테스트해야 한다. 예: rate limit 초과 시 `RuntimeException` 발생, HTTP 오류 시 예외 전파.
 - **테스트 헬퍼가 한계를 우회하면 별도 검증**: `makeClient()` 같은 테스트 헬퍼로 제한을 느슨하게 설정해 일반 테스트를 통과시키는 경우, 별도 테스트에서 실제 제한이 동작하는지 검증해야 한다. 예: `OllamaRateLimiter(1000, 1)`로 대부분 테스트를 통과시키면서, `OllamaRateLimiter(1, 60)`으로 rate limit 초과 시나리오를 별도 검증.
 - **Unit 테스트에서 `$this->mock()` 필요 시 `uses(TestCase::class)` 선언**: `tests/Unit/` 디렉토리의 테스트는 기본적으로 Laravel `TestCase`를 상속하지 않으므로 `$this->mock()`이나 `$this->app`에 접근할 수 없다. 컨테이너 접근이 필요하면 파일 상단에 `use Tests\TestCase;` + `uses(TestCase::class);`를 추가할 것. (`tests/Unit/CategoryEmbeddingTest.php`의 패턴 참고)
-- 기존 Feature 테스트(`OllamaTranslatorTest`, `EmbeddingGeneratorTest`)의 mock 패턴을 참고할 것.
+- 기존 Feature 테스트(`OllamaTranslatorTest`, `EmbeddingGeneratorTest`)의 mock 패턴 참고. `OllamaTranslatorTest`의 mock 호출 횟수(`->times(N)`) 검증 패턴도 확인.
 
-### OllamaTranslator 캐싱 검증
-
-`OllamaTranslatorTest`의 mock 호출 횟수(`->times(N)`) 검증 패턴 참고.
-
-### 서비스 클래스 캐싱 패턴
+#### 캐싱 패턴
 
 - **그룹 조회 최적화**: 여러 키를 그룹 단위로 조회하는 메서드(`all()` 등)에서는 개별 키마다 `Cache::remember()`를 호출하지 말고, 그룹 전체를 하나의 캐시 키로 묶어 저장한다. DB 쿼리 1회 + 캐시 호출 1회로 유지한다.
   - 잘못된 예: `foreach` 루프 안에서 `Cache::remember("settings:{$group}:{$key}", ...)` 개별 호출 → N+1 캐시 문제
   - 올바른 예: `Cache::remember("settings:{$group}", 3600, fn () => Setting::where('group', $group)->get()->mapWithKeys(...)->all())`
 - **캐시 키 설계**: `get()`은 개별 키 캐시, `all()`은 그룹 캐시로 분리하여 단일 조회 시 불필요한 그룹 전체 로드를 방지한다.
 
-### 서비스 클래스 의존성 주입
+#### 의존성 주입
 
 - **Eloquent 모델을 쿼리 빌더 용도로 생성자 주입하지 않는다.** `private TranslationCache $cache`처럼 모델 인스턴스를 주입받아 `$this->cache->where(...)`로 사용하는 방식은 정적 분석에서 경고를 발생시키고, 모델이 쿼리 빌더 프록시로 사용되는 의도를 불분명하게 만든다.
   - 잘못된 예: `public function __construct(private TranslationCache $cache) {}` → `$this->cache->where(...)->first()`
