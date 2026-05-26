@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import AdminPage from "../page";
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -25,23 +26,26 @@ beforeEach(() => {
 });
 
 describe("AdminPage", () => {
-  it("기능 이전 안내 메시지가 표시된다", () => {
+  it("기본으로 시스템 설정이 표시된다", () => {
     render(<AdminPage />);
+    expect(screen.getByText("시스템 설정")).toBeInTheDocument();
+    expect(screen.getByText("안내")).toBeInTheDocument();
+  });
+
+  it("안내 메뉴 클릭 시 기능 이전 안내가 표시된다", async () => {
+    render(<AdminPage />);
+    await userEvent.click(screen.getByText("안내"));
     expect(screen.getByText("기능이 이전되었습니다")).toBeInTheDocument();
     expect(
       screen.getByText("카테고리 추천 기능이 임베드 페이지로 통합되었습니다.")
     ).toBeInTheDocument();
   });
 
-  it("임베드 페이지로 이동 버튼이 표시된다", () => {
+  it("안내 메뉴 클릭 시 임베드 페이지로 이동 버튼이 표시된다", async () => {
     render(<AdminPage />);
+    await userEvent.click(screen.getByText("안내"));
     const links = screen.getAllByRole("link", { name: "임베드 페이지로 이동" });
     expect(links.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("시스템 설정 탭이 표시된다", () => {
-    render(<AdminPage />);
-    expect(screen.getByText("시스템 설정")).toBeInTheDocument();
   });
 
   it("비superadmin 사용자는 admin 페이지 내용이 렌더링되지 않는다", () => {

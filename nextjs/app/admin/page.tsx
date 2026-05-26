@@ -1,19 +1,27 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Inbox } from "lucide-react";
+import { ArrowRight, Inbox, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { isSuperAdmin } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { SettingsPanel } from "@/components/admin/settings-panel";
+
+type MenuItem = "settings" | "info";
+
+const MENU: { id: MenuItem; label: string; icon: typeof Settings }[] = [
+  { id: "settings", label: "시스템 설정", icon: Settings },
+  { id: "info", label: "안내", icon: Inbox },
+];
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const [active, setActive] = useState<MenuItem>("settings");
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -41,16 +49,36 @@ export default function AdminPage() {
       <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-blue-500/15 dark:bg-blue-500/10" />
       <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
 
-      <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-12 sm:px-8">
-        <Tabs defaultValue="info" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="info">안내</TabsTrigger>
-            <TabsTrigger value="settings">시스템 설정</TabsTrigger>
-          </TabsList>
+      <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 gap-6 px-6 py-12 sm:px-8">
+        <nav className="w-44 shrink-0">
+          <Card className="p-1.5">
+            {MENU.map((item) => {
+              const Icon = item.icon;
+              const isActive = active === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActive(item.id)}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+                  )}
+                >
+                  <Icon className="size-4 shrink-0" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </Card>
+        </nav>
 
-          <TabsContent value="info">
-            <div className="flex flex-1 items-center justify-center">
-              <Card className="flex flex-col items-center gap-4 py-16 px-8 max-w-md text-center">
+        <div className="min-w-0 flex-1">
+          {active === "settings" && <SettingsPanel token={token} />}
+          {active === "info" && (
+            <div className="flex items-center justify-center">
+              <Card className="flex w-full max-w-md flex-col items-center gap-4 px-8 py-16 text-center">
                 <Inbox className="h-12 w-12 text-muted-foreground" />
                 <div>
                   <h2 className="text-lg font-semibold">기능이 이전되었습니다</h2>
@@ -66,12 +94,8 @@ export default function AdminPage() {
                 </Button>
               </Card>
             </div>
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <SettingsPanel token={token} />
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </main>
     </div>
   );
