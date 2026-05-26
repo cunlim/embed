@@ -63,7 +63,7 @@ class RecommendController extends Controller
         $text = $request->validated('text');
         $targetLanguage = $request->validated('target_language');
         $page = (int) $request->input('page', 1);
-        $perPage = (int) $request->input('per_page', 20);
+        $perPage = (int) $request->input('per_page', config('services.pagination.default_per_page', 20));
         $filter = $request->validated('filter');
         $keyword = $request->validated('keyword');
         $user = auth('sanctum')->user();

@@ -7,8 +7,6 @@ use RuntimeException;
 
 class OllamaTranslator
 {
-    private const MAX_ATTEMPTS = 3;
-
     public function __construct(
         private OllamaClient $ollama,
     ) {}
@@ -72,6 +70,7 @@ class OllamaTranslator
         }
 
         $model = config('services.ollama.translation_model', 'translategemma:4b');
+        $maxAttempts = (int) config('services.ollama.translation_max_attempts', 3);
         $attempts = 0;
 
         do {
@@ -88,7 +87,7 @@ class OllamaTranslator
             }
 
             $attempts++;
-        } while ($attempts < self::MAX_ATTEMPTS);
+        } while ($attempts < $maxAttempts);
 
         throw new RuntimeException(
             "{$targetLang} 번역 환각 {$attempts}회 발생: 원문=\"{$text}\" 결과=\"{$result}\""

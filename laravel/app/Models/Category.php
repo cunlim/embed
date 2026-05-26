@@ -43,10 +43,12 @@ class Category extends Model
 
     public static function generateCode(): string
     {
-        $maxAttempts = 3;
+        $prefix = config('services.category.code_prefix', 'CAT_');
+        $length = (int) config('services.category.code_random_length', 8);
+        $maxAttempts = (int) config('services.category.code_max_attempts', 3);
 
         for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
-            $code = 'CAT_'.Str::lower(Str::random(8));
+            $code = $prefix.Str::lower(Str::random($length));
 
             if (! static::where('category_code', $code)->exists()) {
                 return $code;

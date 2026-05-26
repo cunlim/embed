@@ -64,8 +64,11 @@ class CategoryController extends Controller
     public function index(Request $request): CategoryCollection
     {
         $user = auth('sanctum')->user();
-        $maxPerPage = $user ? PHP_INT_MAX : 100;
-        $perPage = min((int) $request->input('per_page', 20), $maxPerPage);
+        $maxPerPage = $user ? PHP_INT_MAX : (int) config('services.pagination.max_per_page_guest', 100);
+        $perPage = min(
+            (int) $request->input('per_page', config('services.pagination.default_per_page', 20)),
+            $maxPerPage
+        );
 
         $query = Category::query()->with('embeddings');
 
