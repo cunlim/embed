@@ -348,3 +348,41 @@ export async function getUser(token?: string | null): Promise<User> {
   const res = await request<{ data: User }>("/auth/user", { token });
   return res.data;
 }
+
+// --- 관리자 설정 ---
+
+export interface SettingsByGroup {
+  [group: string]: Record<string, number | string>;
+}
+
+export interface SettingsResponse {
+  data: SettingsByGroup;
+}
+
+export function fetchSettings(token?: string | null): Promise<SettingsResponse> {
+  return request<SettingsResponse>("/admin/settings", {
+    method: "GET",
+    token,
+  });
+}
+
+export interface UpdateSettingResponse {
+  data: {
+    group: string;
+    key: string;
+    value: number | string;
+  };
+}
+
+export function updateSetting(
+  group: string,
+  key: string,
+  value: string | number,
+  token?: string | null,
+): Promise<UpdateSettingResponse> {
+  return request<UpdateSettingResponse>("/admin/settings", {
+    method: "PUT",
+    body: { group, key, value },
+    token,
+  });
+}
