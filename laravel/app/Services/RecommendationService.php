@@ -111,7 +111,9 @@ class RecommendationService
                 $category->{"similarity_score_{$lang}"} = $dist !== null
                     ? round(1.0 - (float) $dist, 4)
                     : null;
-                $category->{"rank_{$lang}"} = $category->{"rank_{$lang}"} ?? null;
+                $category->{"rank_{$lang}"} = $dist !== null
+                    ? ($category->{"rank_{$lang}"} ?? null)
+                    : null;
             }
 
             return $category;

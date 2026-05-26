@@ -442,19 +442,19 @@ export function EmbedPageInner({
                   </Button>
                   <Button
                     size="sm"
-                    variant={searchLanguage === "zh" ? "default" : "ghost"}
-                    className={`h-7 px-2 text-xs ${searchLanguage !== "zh" ? "hover:bg-primary/50" : ""}`}
-                    onClick={() => setSearchLanguage("zh")}
-                  >
-                    중국어
-                  </Button>
-                  <Button
-                    size="sm"
                     variant={searchLanguage === "en" ? "default" : "ghost"}
                     className={`h-7 px-2 text-xs ${searchLanguage !== "en" ? "hover:bg-primary/50" : ""}`}
                     onClick={() => setSearchLanguage("en")}
                   >
                     영어
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={searchLanguage === "zh" ? "default" : "ghost"}
+                    className={`h-7 px-2 text-xs ${searchLanguage !== "zh" ? "hover:bg-primary/50" : ""}`}
+                    onClick={() => setSearchLanguage("zh")}
+                  >
+                    중국어
                   </Button>
                 </div>
               </CardHeader>
