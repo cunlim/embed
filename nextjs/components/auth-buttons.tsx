@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { LogIn, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth, getToken } from "@/hooks/useAuth";
-import { isAdmin } from "@/lib/utils";
+import { isSuperAdmin } from "@/lib/utils";
 
 export function AuthButtons() {
   const { user, logout } = useAuth();
@@ -20,7 +20,7 @@ export function AuthButtons() {
   if (!mounted) return null;
 
   const hasToken = !!getToken();
-  const admin = isAdmin(user);
+  const admin = isSuperAdmin(user);
 
   return (
     <div className="flex items-center gap-1">
