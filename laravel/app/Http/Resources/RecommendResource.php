@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\CategoryEmbedding;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -38,12 +39,38 @@ class RecommendResource extends JsonResource
             'category_name_zh' => $this->category_name_zh,
             'category_name_en' => $this->category_name_en,
             'category_name' => $this->{"category_name_{$lang}"},
-            'translation_status' => $this->translation_status,
+            'translation_status' => $this->translationStatus(),
             'similarity_score' => $this->similarity_score ?? null,
             'query_embedding' => self::$queryEmbedding,
             'category_embedding' => $this->parseCategoryEmbedding(),
             'per_language_scores' => $perLanguageScores,
         ];
+    }
+
+    private function translationStatus(): string
+    {
+        $hasZh = $this->category_name_zh !== null;
+        $hasEn = $this->category_name_en !== null;
+
+        $embeddings = $this->relationLoaded('embeddings')
+            ? $this->embeddings->pluck('language')->toArray()
+            : CategoryEmbedding::query()->where('category_id', $this->id)->pluck('language')->toArray();
+
+        $hasKoEmb = in_array('ko', $embeddings);
+        $hasZhEmb = in_array('zh', $embeddings);
+        $hasEnEmb = in_array('en', $embeddings);
+
+        $allDone = $hasZh && $hasEn && $hasKoEmb && $hasZhEmb && $hasEnEmb;
+        $noneDone = ! $hasZh && ! $hasEn && ! $hasKoEmb && ! $hasZhEmb && ! $hasEnEmb;
+
+        if ($allDone) {
+            return 'completed';
+        }
+        if ($noneDone) {
+            return 'pending';
+        }
+
+        return 'partial';
     }
 
     private function parseCategoryEmbedding(): ?array

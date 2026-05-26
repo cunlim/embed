@@ -160,6 +160,11 @@ export function EmbedPageInner({
   // useRef로 searchResults 참조 — useEffect 의존성 배열에 추가하지 않고 최신값 읽기
   const searchResultsRef = useRef(searchResults);
   useEffect(() => { searchResultsRef.current = searchResults });
+  const searchTextRef = useRef(searchText);
+  useEffect(() => { searchTextRef.current = searchText });
+  const prevSearchLangRef = useRef(searchLanguage);
+  const searchLangRef = useRef(searchLanguage);
+  useEffect(() => { searchLangRef.current = searchLanguage });
   const [searchMeta, setSearchMeta] = useState<PaginationMeta | null>(serverSearchMeta ?? null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -249,9 +254,9 @@ export function EmbedPageInner({
     setIsSearching(true);
     setSearchError(null);
     setKeywordSearchActive(false);
-    updateURL({ searchText, searchLanguage });
+    updateURL({ searchText, searchLanguage: searchLangRef.current });
     try {
-      const data = await recommend(searchText, searchLanguage, token, currentPage, perPageRef.current, filterRef.current, keyword ?? (keywordRef.current || undefined));
+      const data = await recommend(searchText, searchLangRef.current, token, currentPage, perPageRef.current, filterRef.current, keyword ?? (keywordRef.current || undefined));
       setSearchResults(data.data);
       setSearchMeta(data.meta);
     } catch (err) {
@@ -260,10 +265,19 @@ export function EmbedPageInner({
     } finally {
       setIsSearching(false);
     }
-  }, [searchText, searchLanguage, token, updateURL]);
+  }, [searchText, token, updateURL]);
 
   const handleSearchRef = useRef(handleSearch);
   useEffect(() => { handleSearchRef.current = handleSearch; });
+
+  // 언어 변경 시 검색 모드면 자동 재검색
+  useEffect(() => {
+    if (!mounted) return;
+    if (prevSearchLangRef.current !== searchLanguage && searchResultsRef.current !== null) {
+      handleSearchRef.current(1);
+    }
+    prevSearchLangRef.current = searchLanguage;
+  }, [searchLanguage, mounted]);
 
   // URL page 동기화 (시맨틱 검색 결과가 있으면 필터 변경 시 재검색)
   useEffect(() => {
@@ -284,6 +298,34 @@ export function EmbedPageInner({
       loadCategories(page, perPage, filter, kw);
     }
   }, [mounted, page, perPage, filter, loadCategories]);
+
+  // URL이 비어있는데 검색/필터 상태가 남아있으면 초기화 (기능시연, 뒤로가기 등)
+  useEffect(() => {
+    if (!mounted) return;
+    if (!searchParams.toString() && (searchTextRef.current || searchResultsRef.current !== null || filterRef.current !== undefined)) {
+      setSearchText("");
+      setSearchLanguage("ko");
+      setSearchResults(null);
+      setSearchMeta(null);
+      setSearchError(null);
+      setFilter(undefined);
+      setKeywordSearchActive(false);
+      keywordRef.current = "";
+    }
+  }, [searchParams, mounted]);
+
+  // URL에 검색어가 있는데 state가 불일치하면 동기화 후 검색 실행 (앞으로가기, 뒤로가기)
+  useEffect(() => {
+    if (!mounted) return;
+    const urlSearchText = searchParams.get("stext") || "";
+    const urlSearchLang = searchParams.get("slang") || "ko";
+    if (urlSearchText && searchTextRef.current !== urlSearchText) {
+      setSearchText(urlSearchText);
+      setSearchLanguage(urlSearchLang);
+      searchLangRef.current = urlSearchLang;
+      handleSearchRef.current(1);
+    }
+  }, [searchParams, mounted]);
 
   const handleReset = useCallback(() => {
     setSearchText("");
