@@ -3,6 +3,8 @@
 import { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Square } from "lucide-react";
 import {
@@ -68,8 +70,37 @@ export default function TaskExecution({
   onComplete,
   onCategoryComplete,
 }: TaskExecutionProps) {
+  const STEP_ORDER: StepName[] = [
+    "embedding.ko",
+    "translation.en",
+    "embedding.en",
+    "translation.zh",
+    "embedding.zh",
+  ];
+
+  const STEP_LABELS: Record<StepName, string> = {
+    "embedding.ko": "한국어 임베딩",
+    "translation.en": "영어 번역",
+    "embedding.en": "영어 임베딩",
+    "translation.zh": "중국어 번역",
+    "embedding.zh": "중국어 임베딩",
+  };
+
   const [running, setRunning] = useState(false);
   const [wasStopped, setWasStopped] = useState(false);
+  const [checkedSteps, setCheckedSteps] = useState<Set<StepName>>(
+    new Set<StepName>(["embedding.ko"])
+  );
+
+  const toggleStep = (step: StepName) => {
+    setCheckedSteps(prev => {
+      const next = new Set(prev);
+      if (next.has(step)) next.delete(step);
+      else next.add(step);
+      return next;
+    });
+  };
+
   const [stopping, setStopping] = useState(false);
   const [progress, setProgress] = useState<BatchProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +137,8 @@ export default function TaskExecution({
         try {
           const res = await fetchCategoryTranslations(id, token);
           const missing = determineMissingSteps(res.data);
-          for (const step of missing) {
+          const enabled = missing.filter(step => checkedSteps.has(step));
+          for (const step of enabled) {
             queue.push({
               categoryId: id,
               categoryName: res.data.category_name_ko,
@@ -247,7 +279,7 @@ export default function TaskExecution({
       setRunning(false);
       onComplete(false);
     },
-    [token, onComplete, onCategoryComplete],
+    [token, onComplete, onCategoryComplete, checkedSteps],
   );
 
   const handleSelectedProcess = useCallback(async () => {
@@ -312,17 +344,33 @@ export default function TaskExecution({
     <Card className="p-4">
       <h3 className="mb-3 font-medium text-sm">작업 실행</h3>
       <div className="space-y-3">
+        <div className="space-y-2">
+          {STEP_ORDER.map(step => (
+            <div key={step} className="flex items-center gap-2">
+              <Checkbox
+                id={`step-${step}`}
+                checked={checkedSteps.has(step)}
+                onCheckedChange={() => toggleStep(step)}
+                disabled={running}
+              />
+              <Label htmlFor={`step-${step}`} className="text-xs cursor-pointer">
+                {STEP_LABELS[step]}
+              </Label>
+            </div>
+          ))}
+        </div>
+
         <div className="flex gap-2">
           <Button
             onClick={handleSelectedProcess}
-            disabled={running || selectedIds.size === 0}
+            disabled={running || selectedIds.size === 0 || checkedSteps.size === 0}
             className="flex-1"
           >
             선택 처리
           </Button>
           <Button
             onClick={handleFullProcess}
-            disabled={running}
+            disabled={running || checkedSteps.size === 0}
             className="flex-1"
           >
             전체 처리
