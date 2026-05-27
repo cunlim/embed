@@ -24,3 +24,5 @@ phases/**/step*-output.json
 .claude/hooks/test-results/
 
 .antigravitycli/
+
+/archive
