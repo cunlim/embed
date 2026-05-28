@@ -43,6 +43,7 @@ import StatusBadge from "@/components/admin/status-badge";
 import CategoryHierarchy, { type HierarchyFilterState } from "@/components/admin/category-hierarchy";
 import TaskExecution from "@/components/admin/task-execution";
 import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
+import BulkUpload from "@/components/bulk-upload";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import { cn, isAdmin } from "@/lib/utils";
 import { parseEmbedParams } from "@/lib/embed-params";
@@ -154,6 +155,7 @@ export function EmbedPageInner({
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryCode, setNewCategoryCode] = useState("");
+  const [addMode, setAddMode] = useState<"single" | "bulk">("single");
 
   // 검색 state (URL 및 SSR prefetch에서 초기값)
   const [searchText, setSearchText] = useState(serverSearchText ?? embedParams.searchText ?? "");
@@ -546,44 +548,78 @@ export function EmbedPageInner({
             {/* 추가 */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">추가</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">추가</CardTitle>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={getPillButtonClass(addMode === "single")}
+                      onClick={() => setAddMode("single")}
+                      aria-pressed={addMode === "single"}
+                    >
+                      단일
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={getPillButtonClass(addMode === "bulk")}
+                      onClick={() => setAddMode("bulk")}
+                      aria-pressed={addMode === "bulk"}
+                    >
+                      대량
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="category-code">카테고리 코드</Label>
-                  <Input
-                    id="category-code"
-                    placeholder="입력하지 않을 시 자동 생성"
-                    value={newCategoryCode}
-                    onChange={(e) => setNewCategoryCode(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleAddCategory();
+                {addMode === "single" ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="category-code">카테고리 코드</Label>
+                      <Input
+                        id="category-code"
+                        placeholder="입력하지 않을 시 자동 생성"
+                        value={newCategoryCode}
+                        onChange={(e) => setNewCategoryCode(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAddCategory();
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="category-name">한국어 카테고리명</Label>
+                      <Input
+                        id="category-name"
+                        placeholder="예: 의류>여성의류>원피스"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAddCategory();
+                        }}
+                      />
+                    </div>
+                    <Button
+                      onClick={() => {
+                        if (!user) { alert("로그인이 필요합니다"); return; }
+                        handleAddCategory();
+                      }}
+                      disabled={!newCategoryName.trim()}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4" />
+                      추가
+                    </Button>
+                  </>
+                ) : (
+                  <BulkUpload
+                    token={token}
+                    onSuccess={() => {
+                      loadCategories(page, perPage, effectiveFilter);
+                      setHierarchyRefreshKey((prev) => prev + 1);
                     }}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category-name">한국어 카테고리명</Label>
-                  <Input
-                    id="category-name"
-                    placeholder="예: 의류>여성의류>원피스"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleAddCategory();
-                    }}
-                  />
-                </div>
-                <Button
-                  onClick={() => {
-                    if (!user) { alert("로그인이 필요합니다"); return; }
-                    handleAddCategory();
-                  }}
-                  disabled={!newCategoryName.trim()}
-                  className="w-full"
-                >
-                  <Plus className="h-4 w-4" />
-                  추가
-                </Button>
+                )}
                 {catError && (
                   <p className="text-sm text-destructive">{catError}</p>
                 )}
