@@ -83,10 +83,8 @@ function getPillButtonClass(active: boolean): string {
 }
 
 export function EmbedPageInner({
-  server대Options,
-  server중Options,
-  server소Options,
-  server세Options,
+  serverLevelOptions,
+  serverMaxDepth,
   serverCategories,
   serverMeta,
   serverHadToken,
@@ -96,10 +94,8 @@ export function EmbedPageInner({
   serverSearchText,
   serverSearchLang,
 }: {
-  server대Options: string[];
-  server중Options: string[];
-  server소Options: string[];
-  server세Options: { 세: string; categoryId: number; categoryCode: string }[];
+  serverLevelOptions: string[][];
+  serverMaxDepth: number;
   serverCategories: Category[];
   serverMeta: PaginationMeta | null;
   serverHadToken: boolean;
@@ -145,12 +141,9 @@ export function EmbedPageInner({
   // URL에서 파라미터 파싱
   const embedParams = parseEmbedParams(searchParams);
   const initialFilterMode = embedParams.mode;
-  const initialHierarchy: HierarchyFilterState = {
-    대: searchParams.get("cat1"),
-    중: searchParams.get("cat2"),
-    소: searchParams.get("cat3"),
-    세: searchParams.get("cat4"),
-  };
+  const initialHierarchy: HierarchyFilterState = embedParams.catPath.length > 0
+    ? [...embedParams.catPath]
+    : [];
   const initialFilterKeyword = embedParams.keyword ?? "";
 
   const [perPage, setPerPage] = useState(initialPerPage);
@@ -189,7 +182,7 @@ export function EmbedPageInner({
   useEffect(() => { filterRef.current = effectiveFilter });
 
   // URL에 초기 필터 파라미터가 있으면 첫 loadCategories를 건너뛴다 (CategoryHierarchy mount effect가 대신 처리)
-  const skipInitialLoad = useRef(!!initialHierarchy.대 || !!initialFilterKeyword);
+  const skipInitialLoad = useRef(initialHierarchy.length > 0 || !!initialFilterKeyword);
   // SSR 데이터가 있고 토큰도 있었으면 CSR 재요청 건너뜀 (마이그레이션 대응)
   const hadServerCategories = useRef(serverCategories.length > 0 && serverHadToken);
 
@@ -215,7 +208,7 @@ export function EmbedPageInner({
     searchText?: string;
     searchLanguage?: string;
     mode?: string;
-    cat1?: string | null; cat2?: string | null; cat3?: string | null; cat4?: string | null;
+    catPath?: (string | null)[];
     q?: string;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -236,10 +229,16 @@ export function EmbedPageInner({
       else params.delete("slang");
     }
     if ("mode" in overrides && overrides.mode) params.set("mode", overrides.mode);
-    if ("cat1" in overrides) apply("cat1", overrides.cat1, ["cat2", "cat3", "cat4"]);
-    if ("cat2" in overrides) apply("cat2", overrides.cat2, ["cat3", "cat4"]);
-    if ("cat3" in overrides) apply("cat3", overrides.cat3, ["cat4"]);
-    if ("cat4" in overrides) apply("cat4", overrides.cat4);
+    if ("catPath" in overrides) {
+      // 기존 catN 모두 제거
+      for (let i = 1; i <= 20; i++) params.delete(`cat${i}`);
+      // 새 경로 설정
+      if (overrides.catPath) {
+        overrides.catPath.forEach((val, i) => {
+          if (val) params.set(`cat${i + 1}`, val);
+        });
+      }
+    }
     if ("q" in overrides) apply("q", overrides.q);
 
     if (page > 1) params.set("page", String(page));
@@ -374,8 +373,7 @@ export function EmbedPageInner({
     (state: { mode: "hierarchy" | "search"; hierarchy: HierarchyFilterState; keyword: string }) => {
       updateURL({
         mode: state.mode,
-        cat1: state.hierarchy.대, cat2: state.hierarchy.중,
-        cat3: state.hierarchy.소, cat4: state.hierarchy.세,
+        catPath: state.hierarchy,
         q: state.keyword || undefined,
       });
     },
@@ -521,15 +519,13 @@ export function EmbedPageInner({
                 setModalReadOnly(cat ? !canModify(cat) : false);
                 setModalCategoryId(categoryId);
               }}
-              onSelectLeafPath={(대, 중, 소, categoryId) => {
+              onSelectLeafPath={(path, categoryId) => {
                 if (categoryId) {
-                  // ID로 직접 조회 (stale closure 회피)
                   setModalReadOnly(!canModify({ id: categoryId } as Category | Recommendation));
                   setModalCategoryId(categoryId);
                 } else {
-                  // 폴백: 경로 문자열로 검색 (빈 세그먼트 제외)
-                  const path = [대, 중, 소].filter(Boolean).join(">");
-                  const cat = displayCategories.find(c => c.category_name_ko === path);
+                  const keyword = path.join(">");
+                  const cat = displayCategories.find(c => c.category_name_ko === keyword);
                   if (cat) {
                     setModalReadOnly(!canModify(cat));
                     setModalCategoryId(cat.id);
@@ -541,10 +537,8 @@ export function EmbedPageInner({
               initialHierarchy={initialHierarchy}
               initialKeyword={initialFilterKeyword}
               onFilterChange={handleFilterChange}
-              initial대Options={server대Options}
-              initial중Options={server중Options}
-              initial소Options={server소Options}
-              initial세Options={server세Options}
+              initialLevelOptions={serverLevelOptions}
+              initialMaxDepth={serverMaxDepth}
               refreshKey={hierarchyRefreshKey}
               token={token}
             />

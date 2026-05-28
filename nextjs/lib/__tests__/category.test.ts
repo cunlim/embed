@@ -29,10 +29,7 @@ describe("parseHierarchy", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual({
-      대: "패션의류",
-      중: "여성의류",
-      소: "원피스",
-      세: null,
+      path: ["패션의류", "여성의류", "원피스"],
       categoryId: 1,
       categoryCode: "50000001",
     });
@@ -51,10 +48,7 @@ describe("parseHierarchy", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual({
-      대: "화장품/미용",
-      중: "헤어스타일링",
-      소: "파마약",
-      세: "웨이브",
+      path: ["화장품/미용", "헤어스타일링", "파마약", "웨이브"],
       categoryId: 1,
       categoryCode: "50000002",
     });
@@ -71,7 +65,7 @@ describe("parseHierarchy", () => {
     expect(result).toHaveLength(2);
   });
 
-  it("2단계 이하 카테고리명은 제외한다", () => {
+  it("1단계 카테고리명도 포함한다", () => {
     const categories: Category[] = [
       makeCategory({ id: 1, category_name_ko: "A > B" }),
       makeCategory({ id: 2, category_name_ko: "A" }),
@@ -79,7 +73,7 @@ describe("parseHierarchy", () => {
 
     const result = parseHierarchy(categories);
 
-    expect(result).toHaveLength(0);
+    expect(result).toHaveLength(2);
   });
 
   it("공백이 포함된 카테고리명을 trim 처리한다", () => {
@@ -90,10 +84,7 @@ describe("parseHierarchy", () => {
     const result = parseHierarchy(categories);
 
     expect(result[0]).toEqual({
-      대: "패션의류",
-      중: "여성의류",
-      소: "원피스",
-      세: null,
+      path: ["패션의류", "여성의류", "원피스"],
       categoryId: 1,
       categoryCode: "50000001",
     });
