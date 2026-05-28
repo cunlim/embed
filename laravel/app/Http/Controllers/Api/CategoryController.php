@@ -102,136 +102,118 @@ class CategoryController extends Controller
 
     public function levels(Request $request): JsonResponse
     {
-        $대 = $request->query('대');
-        $중 = $request->query('중');
-        $소 = $request->query('소');
-
-        $query = Category::query();
         $user = $request->user('sanctum');
+        $maxDepthSetting = (int) config('services.category.max_depth', 10);
+
+        // catN 파라미터 추출 (cat1, cat2, cat3, ...)
+        $prefixParts = [];
+        for ($i = 1; $i <= 20; $i++) {
+            $key = 'cat'.$i;
+            if ($request->has($key) && $request->input($key) !== '') {
+                $prefixParts[] = $request->input($key);
+            } else {
+                break;
+            }
+        }
+
+        // 기존 대/중/소 파라미터 호환 (deprecated)
+        if (empty($prefixParts)) {
+            $legacyKeys = ['대', '중', '소'];
+            foreach ($legacyKeys as $key) {
+                $val = $request->query($key);
+                if ($val !== null && $val !== '') {
+                    $prefixParts[] = $val;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        $currentDepth = count($prefixParts); // 0 = 최상위
+
+        // 사용자 범위 쿼리 (기존 규칙과 동일)
+        $scopeQuery = Category::query();
         if ($user && $user->isAdmin()) {
-            // admin/superadmin: no user_id restriction
+            // admin/superadmin: 제한 없음
         } elseif ($user) {
-            $query->whereIn('user_id', [$user->id, 1]);
+            $scopeQuery->whereIn('user_id', [$user->id, 1]);
         } else {
-            $query->where('user_id', 1);
+            $scopeQuery->where('user_id', 1);
         }
 
-        if ($대 === null) {
-            // 대 목록 반환 (중복 제거)
-            $대List = $query
-                ->select('category_name_ko')
-                ->get()
-                ->map(fn ($c) => explode('>', $c->category_name_ko)[0] ?? '')
-                ->map(fn ($s) => trim($s))
-                ->filter(fn ($s) => $s !== '')
-                ->unique()
-                ->values()
-                ->toArray();
+        // maxDepth = min(DB 실제 최대 깊이, 설정값)
+        $dbMaxDepth = (int) $scopeQuery->selectRaw('max(array_length(string_to_array(category_name_ko, \'>\'), 1))')->value('max') ?? 1;
+        $maxDepth = min($dbMaxDepth, $maxDepthSetting);
 
-            return response()->json(['data' => ['대' => $대List]]);
+        // 접두사 필터링
+        $query = clone $scopeQuery;
+        if (! empty($prefixParts)) {
+            $prefix = implode('>', $prefixParts).'>';
+            $query->where('category_name_ko', 'like', $prefix.'%');
         }
 
-        // 대 필터링 — DB 저장 포맷은 "대>중>소" (공백 없음)
-        $query->where('category_name_ko', 'like', $대.'>%');
-
-        if ($중 === null) {
-            $중List = $query
-                ->select('category_name_ko')
-                ->get()
-                ->map(fn ($c) => explode('>', $c->category_name_ko)[1] ?? '')
-                ->map(fn ($s) => trim($s))
-                ->filter(fn ($s) => $s !== '')
-                ->unique()
-                ->values()
-                ->toArray();
-
-            // 중 목록이 비어 있으면 대분류만 있는 leaf 카테고리이므로 ID 반환
-            $leafCategoryId = null;
-            if (empty($중List)) {
-                $leafQuery = Category::query();
-                if ($user && $user->isAdmin()) {
-                    // admin/superadmin: no user_id restriction
-                } elseif ($user) {
-                    $leafQuery->whereIn('user_id', [$user->id, 1]);
-                } else {
-                    $leafQuery->where('user_id', 1);
-                }
-                $leafCategory = $leafQuery->where('category_name_ko', $대)->first();
-                $leafCategoryId = $leafCategory?->id;
-            }
-
-            return response()->json(['data' => ['중' => $중List, 'leafCategoryId' => $leafCategoryId]]);
-        }
-
-        $query->where('category_name_ko', 'like', $대.'>'.$중.'>%');
-
-        if ($소 === null) {
-            $소List = $query
-                ->select('category_name_ko')
-                ->get()
-                ->map(fn ($c) => explode('>', $c->category_name_ko)[2] ?? '')
-                ->map(fn ($s) => trim($s))
-                ->filter(fn ($s) => $s !== '')
-                ->unique()
-                ->values()
-                ->toArray();
-
-            // 소 목록이 비어 있으면 2단계 카테고리이므로 leaf ID 반환
-            $leafCategoryId = null;
-            if (empty($소List)) {
-                $leafQuery = Category::query();
-                if ($user && $user->isAdmin()) {
-                    // admin/superadmin: no user_id restriction
-                } elseif ($user) {
-                    $leafQuery->whereIn('user_id', [$user->id, 1]);
-                } else {
-                    $leafQuery->where('user_id', 1);
-                }
-                $leafCategory = $leafQuery->where('category_name_ko', $대.'>'.$중)->first();
-                $leafCategoryId = $leafCategory?->id;
-            }
-
-            return response()->json(['data' => ['소' => $소List, 'leafCategoryId' => $leafCategoryId]]);
-        }
-
-        $query->where('category_name_ko', 'like', $대.'>'.$중.'>'.$소.'%');
-
-        // 세 목록 (categoryId, categoryCode 포함)
-        $세List = $query
-            ->select('id', 'category_code', 'category_name_ko')
+        // 현재 깊이에서 고유 옵션 추출
+        $nextDepthIndex = $currentDepth; // 0-based 인덱스
+        $options = $query
+            ->select('category_name_ko')
             ->get()
-            ->map(function ($c) {
+            ->map(function ($c) use ($nextDepthIndex) {
                 $parts = explode('>', $c->category_name_ko);
-                if (count($parts) < 4) {
-                    return null;
-                }
 
-                return [
-                    '세' => trim($parts[3]),
-                    'categoryId' => $c->id,
-                    'categoryCode' => $c->category_code,
-                ];
+                return isset($parts[$nextDepthIndex]) ? trim($parts[$nextDepthIndex]) : null;
             })
-            ->filter()
+            ->filter(fn ($s) => $s !== null && $s !== '')
+            ->unique()
             ->values()
             ->toArray();
 
-        // 세 목록이 비어 있으면 3단계 카테고리 ID 반환 (leaf 노드)
+        // 리프 여부 확인
+        $isLeaf = empty($options);
         $leafCategoryId = null;
-        if (empty($세List)) {
-            $leafQuery = Category::query();
-            if ($user && $user->isAdmin()) {
-                // admin/superadmin: no user_id restriction
-            } elseif ($user) {
-                $leafQuery->whereIn('user_id', [$user->id, 1]);
-            } else {
-                $leafQuery->where('user_id', 1);
-            }
-            $leafCategory = $leafQuery->where('category_name_ko', $대.'>'.$중.'>'.$소)->first();
+
+        if ($isLeaf && ! empty($prefixParts)) {
+            $leafPath = implode('>', $prefixParts);
+            $leafCategory = $scopeQuery->where('category_name_ko', $leafPath)->first();
             $leafCategoryId = $leafCategory?->id;
+
+            // 깊이 초과 처리: 더 깊은 카테고리가 있으면 복합 옵션으로 포함
+            if ($leafCategoryId === null) {
+                $deeperQuery = clone $scopeQuery;
+                $deeperPrefix = implode('>', $prefixParts).'>';
+                $deeperCategories = $deeperQuery
+                    ->where('category_name_ko', 'like', $deeperPrefix.'%')
+                    ->select('id', 'category_code', 'category_name_ko')
+                    ->get();
+
+                if ($deeperCategories->isNotEmpty()) {
+                    $options = $deeperCategories
+                        ->map(function ($c) use ($currentDepth) {
+                            $parts = explode('>', $c->category_name_ko);
+                            $remaining = array_slice($parts, $currentDepth);
+
+                            return [
+                                'label' => implode(' > ', array_map('trim', $remaining)),
+                                'categoryId' => $c->id,
+                                'categoryCode' => $c->category_code,
+                            ];
+                        })
+                        ->unique('label')
+                        ->values()
+                        ->toArray();
+
+                    $isLeaf = false;
+                }
+            }
         }
 
-        return response()->json(['data' => ['세' => $세List, 'leafCategoryId' => $leafCategoryId]]);
+        return response()->json([
+            'data' => [
+                'options' => $options,
+                'maxDepth' => $maxDepth,
+                'isLeaf' => $isLeaf,
+                'leafCategoryId' => $leafCategoryId,
+            ],
+        ]);
     }
 
     #[OA\Post(
