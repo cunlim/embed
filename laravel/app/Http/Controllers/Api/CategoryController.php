@@ -142,7 +142,7 @@ class CategoryController extends Controller
         }
 
         // maxDepth = min(DB 실제 최대 깊이, 설정값)
-        $dbMaxDepth = (int) $scopeQuery->selectRaw('max(array_length(string_to_array(category_name_ko, \'>\'), 1))')->value('max') ?? 1;
+        $dbMaxDepth = (int) (clone $scopeQuery)->selectRaw('max(array_length(string_to_array(category_name_ko, \'>\'), 1))')->value('max') ?? 1;
         $maxDepth = min($dbMaxDepth, $maxDepthSetting);
 
         // 접두사 필터링
@@ -150,6 +150,37 @@ class CategoryController extends Controller
         if (! empty($prefixParts)) {
             $prefix = implode('>', $prefixParts).'>';
             $query->where('category_name_ko', 'like', $prefix.'%');
+        }
+
+        // max_depth 초과 시 잔여 세그먼트를 복합 옵션으로 포함
+        if ($currentDepth >= $maxDepthSetting - 1 && ! empty($prefixParts)) {
+            $categories = $query
+                ->select('id', 'category_code', 'category_name_ko')
+                ->get();
+
+            $options = $categories
+                ->map(function ($c) use ($currentDepth) {
+                    $parts = explode('>', $c->category_name_ko);
+                    $remaining = array_slice($parts, $currentDepth);
+
+                    return [
+                        'label' => implode(' > ', array_map('trim', $remaining)),
+                        'categoryId' => $c->id,
+                        'categoryCode' => $c->category_code,
+                    ];
+                })
+                ->unique('label')
+                ->values()
+                ->toArray();
+
+            return response()->json([
+                'data' => [
+                    'options' => $options,
+                    'maxDepth' => $maxDepth,
+                    'isLeaf' => false,
+                    'leafCategoryId' => null,
+                ],
+            ]);
         }
 
         // 현재 깊이에서 고유 옵션 추출
@@ -173,7 +204,7 @@ class CategoryController extends Controller
 
         if ($isLeaf && ! empty($prefixParts)) {
             $leafPath = implode('>', $prefixParts);
-            $leafCategory = $scopeQuery->where('category_name_ko', $leafPath)->first();
+            $leafCategory = (clone $scopeQuery)->where('category_name_ko', $leafPath)->first();
             $leafCategoryId = $leafCategory?->id;
 
             // 깊이 초과 처리: 더 깊은 카테고리가 있으면 복합 옵션으로 포함

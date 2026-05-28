@@ -71,6 +71,7 @@ class AppServiceProvider extends ServiceProvider
             'services.category.code_prefix' => $settings->get('category', 'code_prefix', config('services.category.code_prefix', 'CAT_')),
             'services.category.code_random_length' => $settings->get('category', 'code_random_length', config('services.category.code_random_length', 8)),
             'services.category.code_max_attempts' => $settings->get('category', 'code_max_attempts', config('services.category.code_max_attempts', 3)),
+            'services.category.max_depth' => $settings->get('category', 'max_depth', config('services.category.max_depth', 10)),
             // validation
             'services.validation.text_max_length' => $settings->get('validation', 'text_max_length', config('services.validation.text_max_length', 500)),
             'services.validation.name_max_length' => $settings->get('validation', 'name_max_length', config('services.validation.name_max_length', 255)),
