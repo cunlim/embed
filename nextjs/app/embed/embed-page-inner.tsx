@@ -355,6 +355,7 @@ export function EmbedPageInner({
       return;
     }
     keywordRef.current = keyword;
+    setHierarchyKeyword(keyword);
     if (searchResults !== null) {
       // 시맨틱 검색 활성 상태: 검색 재실행 (필터 컨텍스트는 URL/state로 이미 갱신됨)
       handleSearch(1, keyword || undefined);
