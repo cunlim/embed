@@ -74,8 +74,6 @@ export default function CategoryDelete({
         return;
       }
 
-      let completed = 0;
-      let failed = 0;
 
       for (const id of targetIds) {
         if (abortRef.current) break;
@@ -87,13 +85,11 @@ export default function CategoryDelete({
 
         try {
           await deleteCategory(id, token);
-          completed++;
           setProgress((p) =>
             p ? { ...p, completed: p.completed + 1 } : p,
           );
           onCategoryComplete?.();
         } catch {
-          failed++;
           setProgress((p) =>
             p ? { ...p, failed: p.failed + 1 } : p,
           );

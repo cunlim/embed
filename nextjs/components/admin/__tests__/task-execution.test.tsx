@@ -102,7 +102,8 @@ describe("TaskExecution", () => {
     const { getCategories } = await import("@/lib/api");
     vi.mocked(getCategories).mockResolvedValue({
       data: mockCategories,
-      meta: { current_page: 1, last_page: 1, per_page: 20, total: 1 },
+      meta: { current_page: 1, last_page: 1, per_page: 20, total: 1, from: 1, to: 1 },
+      links: { first: null, last: null, prev: null, next: null },
     });
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
     renderTaskExecution();
