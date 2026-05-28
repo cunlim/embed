@@ -44,7 +44,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   const perPage = [10, 20, 50].includes(urlPerPage) ? urlPerPage : 20;
 
   // 계층별 옵션 prefetch (동적 깊이)
-  let levelOptions: string[][] = [];
+  const levelOptions: string[][] = [];
   let maxDepth = 1;
 
   try {
