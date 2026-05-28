@@ -46,6 +46,7 @@ export default function CategoryDelete({
   const [progress, setProgress] = useState<DeleteProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef(false);
+  const targetIdsRef = useRef<number[]>([]);
 
   const executeDelete = useCallback(
     async (targetIds: number[]) => {
@@ -54,6 +55,7 @@ export default function CategoryDelete({
       setStopping(false);
       setError(null);
       abortRef.current = false;
+      targetIdsRef.current = targetIds;
 
       setProgress({
         total: targetIds.length,
@@ -102,6 +104,7 @@ export default function CategoryDelete({
         setStopping(false);
         setRunning(false);
         setWasStopped(true);
+        onComplete();
         return;
       }
 
@@ -157,9 +160,14 @@ export default function CategoryDelete({
     setWasStopped(true);
   }, []);
 
+  const handleRetry = useCallback(async () => {
+    if (targetIdsRef.current.length === 0) return;
+    await executeDelete(targetIdsRef.current);
+  }, [executeDelete]);
+
   const pct =
     progress && progress.total > 0
-      ? Math.round((progress.completed / progress.total) * 100)
+      ? Math.round(((progress.completed + progress.failed) / progress.total) * 100)
       : 0;
 
   return (
@@ -224,6 +232,15 @@ export default function CategoryDelete({
               >
                 <Square className="h-4 w-4" />
                 {stopping ? "중지 중..." : "삭제중지"}
+              </Button>
+            )}
+            {wasStopped && !running && (
+              <Button
+                onClick={handleRetry}
+                variant="outline"
+                className="w-full"
+              >
+                재실행
               </Button>
             )}
           </div>
