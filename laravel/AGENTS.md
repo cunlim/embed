@@ -50,16 +50,42 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **`.env.testing` 파일** — gitignore 대상, `DB_DATABASE=cl_embed_test`
 - **별도 테스트 DB 사용자** — `dbeaver_lim_test`가 테이블 소유자가 아니면 `migrate:fresh` 실패. `dbeaver_lim`으로 schema 재생성 후 테스트.
 
+### PostgreSQL 쿼리 주의사항
+
+- **DB 포맷은 실제 데이터로 확인** — LIKE 쿼리 전 `psql`로 프로덕션 DB 조회. `category_name_ko` 구분자는 `>` (공백 없음).
+- **RANK() + LEFT JOIN 함정** — RANK()는 LEFT JOIN 결과가 NULL이어도 전체 결과셋에서 순위 반환. Service에서 `distance`가 null이면 `rank`도 null로 명시적 처리 필요.
+
 ### 번역·임베딩 실행 패턴
 
 - 번역/임베딩은 비동기 Job이 아닌 **동기 HTTP 컨트롤러**에서 실행. step 단위 처리 후 `translations` 필드 포함 응답.
 - `PUT /api/categories/{id}/update-text`는 텍스트 업데이트 후 해당 언어의 CategoryEmbedding을 **삭제**.
 - `category_code`: optional unique, `filled()`로 체크 (`??`는 빈 문자열 통과)
 
+### 프레임워크 주의사항
+
+- **Event::fake()는 Eloquent 라이프사이클 이벤트까지 캡처** — `Event::fake()` (인자 없는 호출) 시 `eloquent.booting` 등 Model 생성 시 프레임워크 내부 이벤트까지 캡처. `Event::fake([SpecificEvent::class])`로 감시 대상 한정 필요.
+- **Cache::lock — 모든 early return에서 `$lock->release()` 확인** — lock 획득 후 `return`하는 모든 분기에서 해제 확인. TTL은 crash 복구용 안전장치.
+
+### 운영 설정 (Config + Settings Table)
+
+운영 중 변경 가능한 설정값은 3계층 패턴: `config/services.php`(기본값) → `SettingsSeeder`(DB 초기값) → `AppServiceProvider::boot()`(DB→config 동기화). 새 설정 추가 시 3곳 모두 업데이트.
+
 ### 서비스 클래스
 
 - **CRITICAL**: 의존성 mock하여 위임 동작 검증하는 테스트 필수. `$this->mock(Dependency::class)` + `shouldReceive()->with(...)`
-- **캐싱 패턴**: 그룹 조회는 개별 `Cache::remember()` 호출 금지. 그룹 전체를 하나의 캐시 키로 묶어 저장.
+- **실패 경로도 필수 검증**: 의존성 실패/거부/초과 시 적절한 예외 발생 테스트
+- **테스트 헬퍼 한계 우회 검증**: `makeClient()` 등으로 제한을 느슨하게 설정한 경우, 실제 제한 동작 별도 검증
+- **Unit 테스트에서 `$this->mock()` 필요 시** `uses(TestCase::class)` 선언 필수
+
+### 캐싱 패턴
+
+- **그룹 조회 최적화**: 개별 `Cache::remember()` 호출 금지. 그룹 전체를 하나의 캐시 키로 묶어 저장 (DB 쿼리 1회 + 캐시 호출 1회)
+- **캐시 키 설계**: `get()`은 개별 키, `all()`은 그룹 캐시로 분리
+
+### 의존성 주입 주의사항
+
+- **Eloquent 모델을 쿼리 빌더 용도로 생성자 주입 금지** — `Model::query()->where(...)` 사용
+- **Unique 제약조건 테이블에 `create()` 사용 시** — 동시 요청 고려, `firstOrCreate()` 또는 try-catch 사용
 
 ### API 인증
 
@@ -71,15 +97,21 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **라우트는 `routes/web.php`** — Socialite는 세션 기반 state 검증 필요
 - **callback은 `RedirectResponse` 반환** — Sanctum 토큰 발급 후 `redirect("/login?token={$token}")`
 - **provider_token DB 저장 금지** — 이후 인증은 Sanctum token으로 수행
+- **OAuth 디버깅**: `config:clear` 후 `php artisan tinker --execute 'echo config("services.google.client_id");'`로 컨테이너 config 확인
+- **리다이렉트 URL 검증**: `curl -sI "https://embed.cunlim.dev/api/auth/{provider}/redirect"`로 302 Location 헤더 확인
 
 ### 테스트 및 배포 주의사항
 
 - **Playwright 인증** — 쿠키 기반(`auth_token`). superadmin 사용자로 토큰 발급:
   ```bash
-  # superadmin 사용자 확인 (없으면 DB에서 직접 조회)
+  # superadmin 사용자 확인
   docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::where("role","superadmin")->first()?->id ?? "없음";'
-  # 토큰 발급 (superadmin 사용자 ID 지정)
+  # superadmin이 없으면 기존 사용자 역할 변경 (테스트 후 원복 필수, ID==1은 원래 superadmin이므로 변경 금지)
+  docker exec cl_embed_laravel php artisan tinker --execute '\App\Models\User::find(<ID>)->update(["role" => "superadmin"]); echo "done";'
+  # 토큰 발급
   docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::find(<ID>)->createToken("debug")->plainTextToken;'
+  # 테스트 완료 후 역할 원복
+  docker exec cl_embed_laravel php artisan tinker --execute '\App\Models\User::find(<ID>)->update(["role" => "member"]); echo "원복완료";'
   ```
   Playwright에서 쿠키 설정: `document.cookie = "auth_token=<TOKEN>; path=/; expires=...; SameSite=Lax"`
 - **`deploy.yml` `migrate:rollback --step=1` 위험** — batch 1에서 전체 rollback 유발
