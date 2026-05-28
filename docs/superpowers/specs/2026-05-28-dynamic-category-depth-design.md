@@ -25,7 +25,7 @@
 | `cat1&cat2&cat3` | string | depth 3 목록 |
 | ... | string | 임의 깊이 확장 가능 |
 
-깊이는 전달된 `catN` 파라미터 개수로 자동 판단. catN은 cat1부터 순차적으로 전달하며, 최대 20단계까지 지원 (실제 데이터 기반 충분한 상한).
+깊이는 전달된 `catN` 파라미터 개수로 자동 판단. catN은 cat1부터 순차적으로 전달하며, 최대 노출 깊이는 `category.max_depth` 설정값으로 제한.
 
 **응답 형식**:
 
@@ -63,9 +63,32 @@ FROM categories;
 
 **기존 하위 호환**: 기존 `대/중/소/세` 쿼리 파라미터는 deprecated 경고와 함께 `cat1/cat2/cat3/cat4`로 내부 변환. 프론트엔드는 신규 파라미터만 사용.
 
+### 설정: `category.max_depth`
+
+settings 테이블의 `category` 그룹에 `max_depth` 추가. 관리자 페이지에서 변경 가능.
+
+| group | key | 기본값 | 타입 | 설명 |
+|-------|-----|--------|------|------|
+| category | max_depth | 10 | integer | 필터로 노출할 최대 깊이 |
+
+- `maxDepth` 응답값 = `min(DB실제최대깊이, category.max_depth)`
+- 설정값이 5이면, DB에 7단계 카테고리가 있어도 5단계까지만 필터 노출
+
+### 초과 깊이 처리 규칙
+
+카테고리 깊이가 `max_depth`를 초과하는 경우:
+
+- 필터는 `max_depth`단계까지만 노출
+- 마지막 단계의 카테고리 텍스트는 `>` 이후의 나머지 전체 텍스트를 포함
+- 예시 (`max_depth=4`):
+  - DB 카테고리: `테스트4>테스트41>테스트411>테스트4111>테스트411112`
+  - 4단계 Select에서 "테스트4111" 선택 시, 키워드는 `테스트4>테스트41>테스트411>테스트4111>테스트411112`로 전달 (LIKE 검색)
+  - 또는, 마지막 단계의 옵션 목록에 `테스트4111 > 테스트411112` 형태로 표시
+
 ### 변경 파일
 
 - `laravel/app/Http/Controllers/Api/CategoryController.php` — `levels()` 메서드 전면 수정
+- `laravel/database/seeders/SettingsSeeder.php` — `category.max_depth` 추가
 - `laravel/routes/api.php` — 라우트 변경 없음 (기존 `/categories/levels` 유지)
 - `laravel/tests/Feature/CategoryApiTest.php` — 새 테스트 추가
 
