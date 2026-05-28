@@ -226,11 +226,19 @@ export function deleteCategory(
 export function createCategory(
   categoryNameKo: string,
   token?: string | null,
-  categoryCode?: string
+  categoryCode?: string,
+  categoryNameEn?: string,
+  categoryNameZh?: string,
 ): Promise<{ data: Category }> {
   const body: Record<string, string> = { category_name_ko: categoryNameKo };
   if (categoryCode) {
     body.category_code = categoryCode;
+  }
+  if (categoryNameEn) {
+    body.category_name_en = categoryNameEn;
+  }
+  if (categoryNameZh) {
+    body.category_name_zh = categoryNameZh;
   }
   return request<{ data: Category }>("/categories", {
     method: "POST",
