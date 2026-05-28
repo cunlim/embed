@@ -180,17 +180,29 @@ export function getCategories(
 }
 
 export interface CategoryLevelsParams {
-  대?: string;
-  중?: string;
-  소?: string;
+  cat1?: string;
+  cat2?: string;
+  cat3?: string;
+  cat4?: string;
+  cat5?: string;
+  cat6?: string;
+  cat7?: string;
+  cat8?: string;
+  cat9?: string;
+  cat10?: string;
+}
+
+export interface CategoryLevelOption {
+  label: string;
+  categoryId: number;
+  categoryCode: string;
 }
 
 export interface CategoryLevelsResponse {
-  대?: string[];
-  중?: string[];
-  소?: string[];
-  세?: { 세: string; categoryId: number; categoryCode: string }[];
-  leafCategoryId?: number | null;
+  options: string[] | CategoryLevelOption[];
+  maxDepth: number;
+  isLeaf: boolean;
+  leafCategoryId: number | null;
 }
 
 export function fetchCategoryLevels(
@@ -198,9 +210,16 @@ export function fetchCategoryLevels(
   token?: string | null
 ): Promise<{ data: CategoryLevelsResponse }> {
   const searchParams = new URLSearchParams();
-  if (params?.대) searchParams.set("대", params.대);
-  if (params?.중) searchParams.set("중", params.중);
-  if (params?.소) searchParams.set("소", params.소);
+  if (params?.cat1) searchParams.set("cat1", params.cat1);
+  if (params?.cat2) searchParams.set("cat2", params.cat2);
+  if (params?.cat3) searchParams.set("cat3", params.cat3);
+  if (params?.cat4) searchParams.set("cat4", params.cat4);
+  if (params?.cat5) searchParams.set("cat5", params.cat5);
+  if (params?.cat6) searchParams.set("cat6", params.cat6);
+  if (params?.cat7) searchParams.set("cat7", params.cat7);
+  if (params?.cat8) searchParams.set("cat8", params.cat8);
+  if (params?.cat9) searchParams.set("cat9", params.cat9);
+  if (params?.cat10) searchParams.set("cat10", params.cat10);
   const qs = searchParams.toString();
   return request<{ data: CategoryLevelsResponse }>(
     `/categories/levels${qs ? "?" + qs : ""}`,

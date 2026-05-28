@@ -1,29 +1,28 @@
 import type { Category } from "@/lib/api";
 
-export interface HierarchyLevel {
-  대: string;
-  중: string;
-  소: string;
-  세: string | null;
-  categoryId: number;
-  categoryCode: string;
+/**
+ * 카테고리 경로를 '>' 기준으로 분리하여 배열로 반환한다.
+ * 예: "A>B>C" → ["A", "B", "C"]
+ */
+export function parseCategoryPath(categoryNameKo: string): string[] {
+  return categoryNameKo.split(">").map((s) => s.trim()).filter((s) => s !== "");
 }
 
-export function parseHierarchy(categories: Category[]): HierarchyLevel[] {
+/**
+ * 카테고리 배열에서 각 카테고리의 깊이 경로를 파싱한다.
+ */
+export function parseHierarchy(categories: Category[]): { path: string[]; categoryId: number; categoryCode: string }[] {
   return categories
     .map((cat) => {
-      const parts = cat.category_name_ko.split(">");
-      if (parts.length >= 3) {
+      const path = parseCategoryPath(cat.category_name_ko);
+      if (path.length >= 1) {
         return {
-          대: parts[0].trim(),
-          중: parts[1].trim(),
-          소: parts[2].trim(),
-          세: parts.length >= 4 ? parts[3].trim() : null,
+          path,
           categoryId: cat.id,
           categoryCode: cat.category_code,
         };
       }
       return null;
     })
-    .filter((h): h is HierarchyLevel => h !== null);
+    .filter((h): h is { path: string[]; categoryId: number; categoryCode: string } => h !== null);
 }

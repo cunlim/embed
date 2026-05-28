@@ -10,7 +10,7 @@ export interface EmbedParamsReader {
 
 export interface EmbedParams {
   mode: "hierarchy" | "search";
-  /** hierarchy 키워드 ("대>중>소") 또는 검색 키워드 (q) */
+  /** hierarchy 키워드 ("A>B>C") 또는 검색 키워드 (q) */
   keyword: string | null;
   /** 전체/내카테고리 필터 */
   filter: string | undefined;
@@ -18,26 +18,28 @@ export interface EmbedParams {
   searchText: string | null;
   /** 유사도 검색 언어 (기본 ko) */
   searchLang: string;
+  /** URL에서 파싱된 계층 경로 배열 */
+  catPath: string[];
 }
 
-/**
- * URL 파라미터에서 모든 embed 관련 파라미터를 추출.
- */
 export function parseEmbedParams(params: EmbedParamsReader): EmbedParams {
   const modeParam = params.get("mode");
   const mode = modeParam === "hierarchy" || modeParam === "search" ? modeParam : "hierarchy";
 
-  const cat1 = params.get("cat1");
+  // catN 파라미터 동적 파싱
+  const catPath: string[] = [];
+  for (let i = 1; i <= 20; i++) {
+    const val = params.get(`cat${i}`);
+    if (val) {
+      catPath.push(val);
+    } else {
+      break;
+    }
+  }
+
   let keyword: string | null = null;
-  if (cat1) {
-    const parts = [cat1];
-    const cat2 = params.get("cat2");
-    if (cat2) parts.push(cat2);
-    const cat3 = params.get("cat3");
-    if (cat3) parts.push(cat3);
-    const cat4 = params.get("cat4");
-    if (cat4) parts.push(cat4);
-    keyword = parts.join(">");
+  if (catPath.length > 0) {
+    keyword = catPath.join(">");
   } else {
     keyword = params.get("q") || null;
   }
@@ -49,7 +51,7 @@ export function parseEmbedParams(params: EmbedParamsReader): EmbedParams {
   const slang = params.get("slang");
   const searchLang = slang === "en" || slang === "zh" ? slang : "ko";
 
-  return { mode, keyword, filter, searchText, searchLang };
+  return { mode, keyword, filter, searchText, searchLang, catPath };
 }
 
 /**
