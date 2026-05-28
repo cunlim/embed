@@ -248,8 +248,8 @@ export default function CategoryHierarchy({
   const hierarchyDirty = selectedPath.length > 0 && selectedPath.some((v) => v !== null);
   const hasOptions = levelOptions.length > 0 && levelOptions[0].length > 0;
 
-  // 현재 depth에서 표시할 Select 개수: maxDepth 또는 현재 선택된 경로 길이 + 1 중 큰 값
-  const visibleLevels = Math.min(maxDepth, Math.max(selectedPath.length + 1, levelOptions.length));
+  // maxDepth만큼 Select를 항상 노출 (상위 미선택 시 disabled 상태)
+  const visibleLevels = maxDepth;
 
   return (
     <Card className="p-4">
