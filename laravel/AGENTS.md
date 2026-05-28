@@ -84,6 +84,11 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **`.env.testing` 파일** — gitignore 대상, CI "Restore Environment Files" 스텝에서 `$LIVE_ROOT/laravel/.env.testing` → 워크스페이스로 복사. `DB_DATABASE=cl_embed_test`, `DB_USERNAME=dbeaver_lim_test`, `APP_KEY` 포함. `.env.testing.example`을 템플릿으로 커밋.
 - **별도 테스트 DB 사용자 + `RefreshDatabase` schema ownership** — `dbeaver_lim_test`가 기존 테이블의 소유자가 아니면 `migrate:fresh`의 DROP TABLE이 `must be owner` 오류로 실패한다. `dbeaver_lim`으로 `DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS vector;` 실행 후 테스트를 구동하면 `dbeaver_lim_test`가 모든 테이블을 소유하게 된다.
 
+### PostgreSQL 쿼리 주의사항
+
+- **DB 포맷은 실제 데이터로 확인** — LIKE 쿼리 전 `psql`로 프로덕션 DB 조회. `category_name_ko` 구분자는 `>` (공백 없음).
+- **RANK() + LEFT JOIN 함정** — `RANK() OVER (ORDER BY ...)`는 LEFT JOIN 결과가 NULL이어도 전체 결과셋에서 순위를 반환한다. Service에서 `distance`가 null이면 `rank`도 null로 명시적 처리 필요 (`RecommendationService` 참고).
+
 ### 서비스 클래스
 
 #### 테스트 최소 요건

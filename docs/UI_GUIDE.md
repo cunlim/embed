@@ -100,7 +100,7 @@
 - **핵심 기능**:
   - 카테고리 검색 (ko/zh/en 언어 선택 버튼 + `POST /api/recommend`)
   - 카테고리 목록 (shadcn Table, 페이지네이션 10/20/50, URL 동기화)
-  - 계층 탐색 (CategoryHierarchy — 4단계 select, `>` 구분자)
+  - 계층 탐색 (CategoryHierarchy — 동적 깊이 select, `>` 구분자)
   - 카테고리 추가·수정·삭제 (권한 기반)
   - 일괄 처리 (step 순차 실행, 중지/재실행)
 - **상태 표시**: 빈 상태(Database 아이콘), 로딩(Skeleton), 에러(AlertCircle + 재시도)
