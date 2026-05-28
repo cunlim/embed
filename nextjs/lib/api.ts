@@ -290,7 +290,7 @@ export interface UpdateTextResponse {
 
 export function updateCategoryText(
   categoryId: number,
-  field: "category_name_ko" | "category_name_en" | "category_name_zh",
+  field: "category_name_ko" | "category_name_en" | "category_name_zh" | "category_code",
   value: string | null,
   token?: string | null
 ): Promise<UpdateTextResponse> {

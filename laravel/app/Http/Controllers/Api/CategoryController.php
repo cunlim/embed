@@ -609,7 +609,7 @@ class CategoryController extends Controller
             content: new OA\JsonContent(
                 required: ['field', 'value'],
                 properties: [
-                    new OA\Property(property: 'field', type: 'string', enum: ['category_name_ko', 'category_name_en', 'category_name_zh']),
+                    new OA\Property(property: 'field', type: 'string', enum: ['category_name_ko', 'category_name_en', 'category_name_zh', 'category_code']),
                     new OA\Property(property: 'value', type: 'string', nullable: true, maxLength: 255),
                 ]
             )
@@ -650,10 +650,14 @@ class CategoryController extends Controller
             'category_name_ko' => 'ko',
             'category_name_en' => 'en',
             'category_name_zh' => 'zh',
+            'category_code' => null,
         };
-        CategoryEmbedding::where('category_id', $category->id)
-            ->where('language', $lang)
-            ->delete();
+
+        if ($lang !== null) {
+            CategoryEmbedding::where('category_id', $category->id)
+                ->where('language', $lang)
+                ->delete();
+        }
 
         $category = $category->fresh();
         $translations = (new CategoryTranslationsResource($category))->resolve();

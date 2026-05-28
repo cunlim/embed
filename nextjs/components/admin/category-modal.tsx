@@ -186,6 +186,22 @@ export default function CategoryModal({
     onOpenChange(open);
   };
 
+  const handleBlurCode = async () => {
+    if (!data || readOnly) return;
+    const newValue = editValues["code"] ?? data.category_code;
+    if (newValue === data.category_code) return;
+
+    try {
+      const res = await updateCategoryText(data.id, "category_code", newValue || null, token);
+      setEditValues({});
+      onUpdateData?.(res.data.translations);
+      onUpdateListRow?.(res.data.listRow);
+      toast("저장되었습니다");
+    } catch {
+      toast("저장에 실패했습니다");
+    }
+  };
+
   const handleBlur = async (langKey: "ko" | "en" | "zh") => {
     if (!data || readOnly) return;
     const fieldMap: Record<string, "category_name_ko" | "category_name_en" | "category_name_zh"> = {
@@ -216,7 +232,17 @@ export default function CategoryModal({
           <DialogTitle>{readOnly ? "카테고리 보기" : "카테고리 상세"}</DialogTitle>
           <DialogDescription className="font-mono text-xs">
             {data ? (
-              `코드: ${data.category_code}`
+              <span className="flex items-center gap-1">
+                <span>코드:</span>
+                <Input
+                  type="text"
+                  className="h-5 text-xs font-mono border-0 border-b border-border rounded-none bg-transparent px-1 py-0 focus-visible:ring-0 focus-visible:border-accent inline-block w-32"
+                  value={editValues["code"] ?? data.category_code}
+                  onChange={(e) => setEditValues((prev) => ({ ...prev, code: e.target.value }))}
+                  onBlur={() => handleBlurCode()}
+                  readOnly={runningSteps.size > 0 || pendingSteps.length > 0 || readOnly}
+                />
+              </span>
             ) : (
               <span className="inline-block h-4 w-24 animate-pulse rounded-md bg-muted" />
             )}

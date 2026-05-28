@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, type DragEvent } from "react";
 import { Upload, Download, FileSpreadsheet, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
@@ -25,19 +25,48 @@ export default function BulkUpload({ token, onSuccess }: BulkUploadProps) {
   const [currentRow, setCurrentRow] = useState(0);
   const [totalRows, setTotalRows] = useState(0);
   const [results, setResults] = useState<RowResult[] | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const successCount = results?.filter((r) => r.success).length ?? 0;
   const failCount = results?.filter((r) => !r.success).length ?? 0;
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0];
-    if (selected) {
-      setFile(selected);
-      setResults(null);
-      setCurrentRow(0);
-      setTotalRows(0);
-    }
+  /** 파일 상태 초기화 후 선택된 파일 설정 (xlsx/xls 검증 포함) */
+  const applyFile = useCallback((selected: File) => {
+    const ext = selected.name.split(".").pop()?.toLowerCase();
+    if (ext !== "xlsx" && ext !== "xls") return;
+    setFile(selected);
+    setResults(null);
+    setCurrentRow(0);
+    setTotalRows(0);
   }, []);
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selected = e.target.files?.[0];
+      if (selected) applyFile(selected);
+    },
+    [applyFile],
+  );
+
+  const handleDragOver = useCallback((e: DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: DragEvent<HTMLLabelElement>) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const dropped = e.dataTransfer.files[0];
+      if (dropped) applyFile(dropped);
+    },
+    [applyFile],
+  );
 
   const handleUpload = useCallback(async () => {
     if (!file) return;
@@ -53,6 +82,20 @@ export default function BulkUpload({ token, onSuccess }: BulkUploadProps) {
       header: 1,
       defval: null,
     });
+
+    // 헤더 검증 (A1: category_code, B1: category_ko)
+    const header = rows[0];
+    const h1 = header?.[0] ? String(header[0]).trim().toLowerCase() : "";
+    const h2 = header?.[1] ? String(header[1]).trim().toLowerCase() : "";
+    if (h1 !== "category_code" || h2 !== "category_ko") {
+      setResults([{
+        row: 1,
+        success: false,
+        message: "엑셀 헤더가 올바르지 않습니다. 샘플엑셀 격식에 맞게 입력해주세요",
+      }]);
+      setIsProcessing(false);
+      return;
+    }
 
     // 2행부터 데이터 (index 1부터)
     const dataRows = rows.slice(1).filter((row) => row.some((cell) => cell !== null && cell !== ""));
@@ -132,9 +175,13 @@ export default function BulkUpload({ token, onSuccess }: BulkUploadProps) {
       {!results && (
         <>
           <label
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
             className={cn(
               "flex flex-col items-center gap-2 rounded-lg border border-dashed border-border p-4 cursor-pointer transition-colors",
               "hover:border-primary/40 hover:bg-muted/30",
+              isDragging && "border-primary bg-primary/5",
             )}
           >
             <FileSpreadsheet className="h-8 w-8 text-muted-foreground" />
