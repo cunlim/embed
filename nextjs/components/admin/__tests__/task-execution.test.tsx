@@ -40,6 +40,7 @@ function renderTaskExecution(props: Partial<{
 describe("TaskExecution", () => {
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
   });
 
   beforeEach(() => {
@@ -95,7 +96,6 @@ describe("TaskExecution", () => {
     fireEvent.click(screen.getByText("선택 처리"));
 
     expect(confirmSpy).toHaveBeenCalledWith("선택한 1개 카테고리를 처리하시겠습니까?");
-    confirmSpy.mockRestore();
   });
 
   it("전체 처리 클릭 시 확인 알림이 표시된다", async () => {
@@ -114,6 +114,5 @@ describe("TaskExecution", () => {
       expect(confirmSpy).toHaveBeenCalled();
     });
     expect(confirmSpy).toHaveBeenCalledWith("현재 필터에 해당하는 1개 카테고리를 처리하시겠습니까?");
-    confirmSpy.mockRestore();
   });
 });
