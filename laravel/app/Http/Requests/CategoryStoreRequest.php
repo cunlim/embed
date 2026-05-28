@@ -19,6 +19,8 @@ class CategoryStoreRequest extends FormRequest
         return [
             'category_name_ko' => ['required', 'string', 'max:255'],
             'category_code' => ['nullable', 'string', 'max:255', 'unique:categories,category_code'],
+            'category_name_en' => ['nullable', 'string', 'max:255'],
+            'category_name_zh' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

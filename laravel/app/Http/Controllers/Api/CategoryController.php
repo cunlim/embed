@@ -295,6 +295,8 @@ class CategoryController extends Controller
                 ? $request->category_code
                 : Category::generateCode(),
             'category_name_ko' => $request->category_name_ko,
+            'category_name_en' => $request->input('category_name_en'),
+            'category_name_zh' => $request->input('category_name_zh'),
             'user_id' => $request->user('sanctum')->id,
         ]);
 

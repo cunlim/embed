@@ -10,6 +10,39 @@ beforeEach(function () {
 });
 
 describe('store', function () {
+    test('카테고리 생성 시 번역 필드를 함께 저장할 수 있다', function () {
+        $user = User::factory()->create(['role' => 'member']);
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/categories', [
+            'category_name_ko' => '테스트 카테고리',
+            'category_name_en' => 'Test Category',
+            'category_name_zh' => '测试类别',
+        ]);
+
+        $response->assertStatus(201);
+        expect($response->json('data.category_name_en'))->toBe('Test Category');
+        expect($response->json('data.category_name_zh'))->toBe('测试类别');
+        $this->assertDatabaseHas('categories', [
+            'category_name_ko' => '테스트 카테고리',
+            'category_name_en' => 'Test Category',
+            'category_name_zh' => '测试类别',
+        ]);
+    });
+
+    test('번역 필드 없이도 카테고리를 생성할 수 있다', function () {
+        $user = User::factory()->create(['role' => 'member']);
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/categories', [
+            'category_name_ko' => '한국어만 있는 카테고리',
+        ]);
+
+        $response->assertStatus(201);
+        expect($response->json('data.category_name_en'))->toBeNull();
+        expect($response->json('data.category_name_zh'))->toBeNull();
+    });
+
     test('카테고리 생성 시 로그인 사용자의 user_id가 자동 설정된다', function () {
         $user = User::factory()->create(['role' => 'member']);
 
