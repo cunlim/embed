@@ -38,36 +38,39 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
     } catch {}
   }
 
-  const cat1 = reader.get("cat1");
-  const cat2 = reader.get("cat2");
-  const cat3 = reader.get("cat3");
-
   const urlPage = parseInt(reader.get("page") ?? "1", 10);
   const page = Number.isNaN(urlPage) || urlPage < 1 ? 1 : urlPage;
   const urlPerPage = parseInt(reader.get("per_page") ?? "20", 10);
   const perPage = [10, 20, 50].includes(urlPerPage) ? urlPerPage : 20;
 
-  // 계층별 옵션 prefetch
-  let 대Options: string[] = [];
-  let 중Options: string[] = [];
-  let 소Options: string[] = [];
-  let 세Options: { 세: string; categoryId: number; categoryCode: string }[] = [];
+  // 계층별 옵션 prefetch (동적 깊이)
+  let levelOptions: string[][] = [];
+  let maxDepth = 1;
 
   try {
-    const 대Res = await fetchCategoryLevels(undefined, token);
-    대Options = 대Res.data.대 ?? [];
+    // 최상위 옵션 조회
+    const topRes = await fetchCategoryLevels(undefined, token);
+    levelOptions.push(topRes.data.options as string[]);
+    maxDepth = topRes.data.maxDepth;
 
-    if (cat1) {
-      const 중Res = await fetchCategoryLevels({ 대: cat1 }, token);
-      중Options = 중Res.data.중 ?? [];
+    // URL cat 파라미터가 있으면 각 depth에 대해 다음 옵션 조회
+    const catPath: string[] = [];
+    for (let i = 1; i <= 20; i++) {
+      const val = reader.get(`cat${i}`);
+      if (val) {
+        catPath.push(val);
+      } else {
+        break;
+      }
     }
-    if (cat1 && cat2) {
-      const 소Res = await fetchCategoryLevels({ 대: cat1, 중: cat2 }, token);
-      소Options = 소Res.data.소 ?? [];
-    }
-    if (cat1 && cat2 && cat3) {
-      const 세Res = await fetchCategoryLevels({ 대: cat1, 중: cat2, 소: cat3 }, token);
-      세Options = 세Res.data.세 ?? [];
+
+    for (let i = 0; i < catPath.length && i < maxDepth - 1; i++) {
+      const catParams: Record<string, string> = {};
+      for (let j = 0; j <= i; j++) {
+        catParams[`cat${j + 1}`] = catPath[j];
+      }
+      const res = await fetchCategoryLevels(catParams as Parameters<typeof fetchCategoryLevels>[0], token);
+      levelOptions.push(res.data.options as string[]);
     }
   } catch {}
 
@@ -94,10 +97,8 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   return (
     <Suspense>
       <EmbedPageInner
-        server대Options={대Options}
-        server중Options={중Options}
-        server소Options={소Options}
-        server세Options={세Options}
+        serverLevelOptions={levelOptions}
+        serverMaxDepth={maxDepth}
         serverCategories={serverCategories}
         serverMeta={serverMeta}
         serverHadToken={!!token}
