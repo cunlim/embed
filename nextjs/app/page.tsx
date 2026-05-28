@@ -37,7 +37,6 @@ const features = [
 const stats = [
   { value: "ko · en · zh", label: "지원 언어" },
   { value: "1024차원", label: "벡터 임베딩" },
-  { value: "대·중·소·세", label: "계층 구조" },
   { value: "코사인 유사도", label: "검색 알고리즘" },
 ];
 
@@ -89,11 +88,11 @@ export default function Home() {
         </p>
 
         {/* CTA buttons */}
-        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
+        <div className="mt-8 flex flex-row flex-wrap items-center justify-center gap-2">
           <Button
             size="lg"
             asChild
-            className="group h-11 rounded-full px-6 text-sm font-medium shadow-lg shadow-accent/20 transition-all duration-300 hover:shadow-xl hover:shadow-accent/30 hover:scale-105"
+            className="group h-11 min-w-32 rounded-full px-5 text-sm font-medium shadow-lg shadow-accent/20 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-accent/30"
           >
             <Link href="/embed">
               기능시연
@@ -104,10 +103,10 @@ export default function Home() {
             variant="outline"
             size="lg"
             asChild
-            className="group h-11 rounded-full px-6 text-sm font-medium hover:bg-muted hover:text-foreground"
+            className="group h-11 min-w-32 rounded-full px-5 text-sm font-medium hover:bg-muted hover:text-foreground"
           >
             <Link href="/docs">
-              문서 보기
+              문서보기
               <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
             </Link>
           </Button>

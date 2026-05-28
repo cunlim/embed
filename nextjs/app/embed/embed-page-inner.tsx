@@ -44,7 +44,7 @@ import CategoryHierarchy, { type HierarchyFilterState } from "@/components/admin
 import TaskExecution from "@/components/admin/task-execution";
 import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
 import { useAuth, getToken } from "@/hooks/useAuth";
-import { isAdmin } from "@/lib/utils";
+import { cn, isAdmin } from "@/lib/utils";
 import { parseEmbedParams } from "@/lib/embed-params";
 import { useCategories } from "@/hooks/useCategories";
 import { useCategoryDetail } from "@/hooks/useCategoryDetail";
@@ -71,6 +71,15 @@ function getPageRange(current: number, last: number): (number | "...")[] {
 function getEllipsisTarget(current: number, last: number, direction: "prev" | "next"): number {
   if (direction === "prev") return Math.max(1, current - 5);
   return Math.min(last, current + 5);
+}
+
+function getPillButtonClass(active: boolean): string {
+  return cn(
+    "h-7 rounded-full px-2.5 text-xs font-medium transition-colors",
+    active
+      ? "border border-primary/40 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground"
+      : "border border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground",
+  );
 }
 
 export function EmbedPageInner({
@@ -145,7 +154,7 @@ export function EmbedPageInner({
   const initialFilterKeyword = embedParams.keyword ?? "";
 
   const [perPage, setPerPage] = useState(initialPerPage);
-  const [filter, setFilter] = useState<string | undefined>(embedParams.filter);
+  const [filterSelection, setFilterSelection] = useState<"all" | "my" | null>(null);
   const [keywordSearchActive, setKeywordSearchActive] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [hierarchyRefreshKey, setHierarchyRefreshKey] = useState(0);
@@ -173,9 +182,11 @@ export function EmbedPageInner({
   const searchPageRef = useRef(1);
   const perPageRef = useRef(perPage);
   useEffect(() => { perPageRef.current = perPage });
-  const filterRef = useRef(filter);
-  useEffect(() => { filterRef.current = filter });
   const keywordRef = useRef(initialFilterKeyword);
+  const activeFilterSelection = filterSelection ?? (serverFilter === "my" ? "my" : "all");
+  const effectiveFilter = activeFilterSelection === "my" ? "my" : undefined;
+  const filterRef = useRef(effectiveFilter);
+  useEffect(() => { filterRef.current = effectiveFilter });
 
   // URL에 초기 필터 파라미터가 있으면 첫 loadCategories를 건너뛴다 (CategoryHierarchy mount effect가 대신 처리)
   const skipInitialLoad = useRef(!!initialHierarchy.대 || !!initialFilterKeyword);
@@ -295,9 +306,9 @@ export function EmbedPageInner({
       handleSearchRef.current(page);
     } else {
       const kw = keywordRef.current || undefined;
-      loadCategories(page, perPage, filter, kw);
+      loadCategories(page, perPage, effectiveFilter, kw);
     }
-  }, [mounted, page, perPage, filter, loadCategories]);
+  }, [mounted, page, perPage, effectiveFilter, loadCategories]);
 
   // URL이 비어있는데 검색/필터 상태가 남아있으면 초기화 (기능시연, 뒤로가기 등)
   useEffect(() => {
@@ -308,7 +319,7 @@ export function EmbedPageInner({
       setSearchResults(null);
       setSearchMeta(null);
       setSearchError(null);
-      setFilter(undefined);
+      setFilterSelection(null);
       setKeywordSearchActive(false);
       keywordRef.current = "";
     }
@@ -348,15 +359,15 @@ export function EmbedPageInner({
     }
     if (!keyword) {
       setKeywordSearchActive(false);
-      loadCategories(1, perPage, filter, "");
+      loadCategories(1, perPage, effectiveFilter, "");
       return;
     }
     setSearchResults(null);
     setSearchMeta(null);
     setSearchError(null);
     setKeywordSearchActive(true);
-    loadCategories(1, perPage, filter, keyword);
-  }, [perPage, filter, loadCategories, searchResults, handleSearch]);
+    loadCategories(1, perPage, effectiveFilter, keyword);
+  }, [perPage, effectiveFilter, loadCategories, searchResults, handleSearch]);
 
   // 필터 상태 변경 시 URL 업데이트
   const handleFilterChange = useCallback(
@@ -431,28 +442,31 @@ export function EmbedPageInner({
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-base">유사도 검색</CardTitle>
-                <div className="flex gap-1">
+                <div className="flex flex-wrap justify-end gap-1">
                   <Button
                     size="sm"
-                    variant={searchLanguage === "ko" ? "default" : "ghost"}
-                    className={`h-7 px-2 text-xs ${searchLanguage !== "ko" ? "hover:bg-primary/50" : ""}`}
+                    variant="outline"
+                    className={getPillButtonClass(searchLanguage === "ko")}
                     onClick={() => setSearchLanguage("ko")}
+                    aria-pressed={searchLanguage === "ko"}
                   >
                     한국어
                   </Button>
                   <Button
                     size="sm"
-                    variant={searchLanguage === "en" ? "default" : "ghost"}
-                    className={`h-7 px-2 text-xs ${searchLanguage !== "en" ? "hover:bg-primary/50" : ""}`}
+                    variant="outline"
+                    className={getPillButtonClass(searchLanguage === "en")}
                     onClick={() => setSearchLanguage("en")}
+                    aria-pressed={searchLanguage === "en"}
                   >
                     영어
                   </Button>
                   <Button
                     size="sm"
-                    variant={searchLanguage === "zh" ? "default" : "ghost"}
-                    className={`h-7 px-2 text-xs ${searchLanguage !== "zh" ? "hover:bg-primary/50" : ""}`}
+                    variant="outline"
+                    className={getPillButtonClass(searchLanguage === "zh")}
                     onClick={() => setSearchLanguage("zh")}
+                    aria-pressed={searchLanguage === "zh"}
                   >
                     중국어
                   </Button>
@@ -587,47 +601,53 @@ export function EmbedPageInner({
               token={token}
               selectedIds={selectedIds}
               categories={displayCategories}
-              filter={filter}
+              filter={effectiveFilter}
               canModify={canModify}
               onComplete={(wasStopped) => {
                 if (!wasStopped) {
                   setSelectedIds(new Set());
                 }
-                loadCategories(page, perPage, filter);
+                loadCategories(page, perPage, effectiveFilter);
               }}
               onCategoryComplete={() => {
-                loadCategories(page, perPage, filter);
+                loadCategories(page, perPage, effectiveFilter);
               }}
             />
           </div>
 
           {/* 카테고리 목록 테이블 */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between">
+          <Card className="min-w-0 lg:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between gap-3">
               <CardTitle className="text-base">카테고리 목록</CardTitle>
-              <div className="flex gap-1">
+              <div className="flex flex-wrap justify-end gap-1">
                 <Button
-                  variant={filter === undefined ? "default" : "ghost"}
+                  variant="outline"
                   size="sm"
-                  className={`h-7 px-2 text-xs ${filter !== undefined ? "hover:bg-primary/50" : ""}`}
-                  onClick={() => { setFilter(undefined); updateURL({ filter: undefined }); }}
+                  className={getPillButtonClass(activeFilterSelection === "all")}
+                  onClick={() => {
+                    setFilterSelection("all");
+                    updateURL({ filter: "all" });
+                  }}
+                  aria-pressed={activeFilterSelection === "all"}
                 >
                   전체
                 </Button>
                 <Button
-                  variant={filter === "my" ? "default" : "ghost"}
+                  variant="outline"
                   size="sm"
-                  className={`h-7 px-2 text-xs ${filter !== "my" ? "hover:bg-primary/50" : ""}`}
+                  className={getPillButtonClass(activeFilterSelection === "my")}
                   onClick={() => {
                     if (!user) { alert("로그인이 필요합니다"); return; }
-                    setFilter("my"); updateURL({ filter: "my" });
+                    setFilterSelection("my");
+                    updateURL({ filter: "my" });
                   }}
+                  aria-pressed={activeFilterSelection === "my"}
                 >
                   내 카테고리
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="min-w-0">
               {/* 로딩 */}
               {(catLoading || isSearching) && displayCategories.length === 0 && (
                 <div className="space-y-2">
@@ -652,7 +672,7 @@ export function EmbedPageInner({
                       variant="outline"
                       size="sm"
                       className="mt-3"
-                      onClick={() => loadCategories(page, perPage, filter)}
+                      onClick={() => loadCategories(page, perPage, effectiveFilter)}
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
                       재시도
@@ -676,7 +696,7 @@ export function EmbedPageInner({
                 <div>
                   {/* 데스크톱 */}
                   <div className="hidden md:block">
-                    <Table className="table-fixed">
+                      <Table className="table-fixed">
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-[40px]">
@@ -714,7 +734,7 @@ export function EmbedPageInner({
                                 aria-label={`${cat.category_name_ko ?? cat.category_name} 선택`}
                               />
                             </TableCell>
-                            <TableCell className="max-w-0 w-full truncate font-medium">
+                            <TableCell className="max-w-0 truncate font-medium">
                               {searchLanguage === "ko"
                                 ? cat.category_name_ko ?? cat.category_name
                                 : searchLanguage === "zh"
@@ -778,48 +798,48 @@ export function EmbedPageInner({
                           </TableRow>
                         ))}
                       </TableBody>
-                    </Table>
+                      </Table>
                   </div>
 
                   {/* 모바일 */}
                   <div className="space-y-2 md:hidden">
                     {displayCategories.map((cat) => (
                       <Card key={cat.id} className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 min-w-0 mr-2">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3">
+                          <div className="flex min-w-0 items-center gap-2">
                             <Checkbox
                               checked={selectedIds.has(cat.id)}
                               disabled={!canModify(cat)}
                               onCheckedChange={() => toggleSelect(cat.id)}
                               aria-label={`${cat.category_name_ko ?? cat.category_name} 선택`}
                             />
-                            <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">
-                              {searchLanguage === "ko"
-                                ? cat.category_name_ko ?? cat.category_name
-                                : searchLanguage === "zh"
-                                  ? cat.category_name_zh ?? cat.category_name
-                                  : cat.category_name_en ?? cat.category_name}
+                            <div className="min-w-0">
+                              <p className="truncate font-medium">
+                                {searchLanguage === "ko"
+                                  ? cat.category_name_ko ?? cat.category_name
+                                  : searchLanguage === "zh"
+                                    ? cat.category_name_zh ?? cat.category_name
+                                    : cat.category_name_en ?? cat.category_name}
+                              </p>
                               {isSearchMode && cat.similarity_score != null && (
                                 <button
                                   type="button"
-                                  className="ml-2 font-mono text-sm text-accent cursor-pointer hover:underline"
+                                  className="mt-1 w-fit cursor-pointer font-mono text-xs text-accent hover:underline"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setActiveResult(cat as Recommendation);
                                     setCosineDialogOpen(true);
                                   }}
                                 >
-                                  {(cat.similarity_score * 100).toFixed(1)}%
+                                  유사도 {(cat.similarity_score * 100).toFixed(1)}%
                                 </button>
                               )}
-                            </p>
-                            <div className="mt-1">
-                              <StatusBadge status={cat.translation_status} />
-                            </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-0.5 shrink-0">
+                          <div className="flex shrink-0 items-center justify-center">
+                            <StatusBadge status={cat.translation_status} />
+                          </div>
+                          <div className="flex shrink-0 items-center gap-0.5">
                             {canModify(cat) && (
                               <Button
                                 variant="ghost"
@@ -978,12 +998,12 @@ export function EmbedPageInner({
         execState={modalCategoryId ? getState(modalCategoryId) : null}
         onSingleAction={async (stepName) => {
           if (modalCategoryId !== null) {
-            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page, perPage, filter), setData);
+            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page, perPage, effectiveFilter), setData);
           }
         }}
         onRunAll={async () => {
           if (modalCategoryId !== null && detailData) {
-            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page, perPage, filter), setData);
+            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page, perPage, effectiveFilter), setData);
           }
         }}
         onCancelPending={() => {

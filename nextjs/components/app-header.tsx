@@ -33,13 +33,23 @@ export function AppHeader() {
       badge={badge}
       leftChildren={
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" asChild className="rounded-full">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
+          >
             <Link href="/embed">
               <Play className="h-4 w-4" />
               <span className="hidden sm:inline ml-0.5">기능시연</span>
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="rounded-full">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
+          >
             <Link href="/docs">
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline ml-0.5">문서</span>
@@ -49,7 +59,7 @@ export function AppHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full"
+            className="h-7 w-7 rounded-full sm:h-8 sm:w-8"
             asChild
           >
             <a

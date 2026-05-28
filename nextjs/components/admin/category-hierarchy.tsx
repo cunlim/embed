@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchCategoryLevels } from "@/lib/api";
 import { Search, X, RotateCcw, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface HierarchyFilterState {
   대: string | null;
@@ -38,6 +39,15 @@ interface CategoryHierarchyProps {
   refreshKey?: number;
   /** 인증 토큰 (refreshKey 기반 refetch에 필요) */
   token?: string | null;
+}
+
+function getPillButtonClass(active: boolean): string {
+  return cn(
+    "h-7 rounded-full px-2.5 text-xs font-medium transition-colors",
+    active
+      ? "border border-primary/40 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground"
+      : "border border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground",
+  );
 }
 
 export default function CategoryHierarchy({
@@ -349,20 +359,22 @@ export default function CategoryHierarchy({
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-medium text-sm">필터</h3>
         {initial대Options.length > 0 && (
-          <div className="flex gap-1">
+          <div className="flex flex-wrap justify-end gap-1">
             <Button
               size="sm"
-              variant={filterMode === "hierarchy" ? "default" : "ghost"}
-              className={`h-7 px-2 text-xs ${filterMode !== "hierarchy" ? "hover:bg-primary/50" : ""}`}
+              variant="outline"
+              className={getPillButtonClass(filterMode === "hierarchy")}
               onClick={switchToHierarchy}
+              aria-pressed={filterMode === "hierarchy"}
             >
               분류선택
             </Button>
             <Button
               size="sm"
-              variant={filterMode === "search" ? "default" : "ghost"}
-              className={`h-7 px-2 text-xs ${filterMode !== "search" ? "hover:bg-primary/50" : ""}`}
+              variant="outline"
+              className={getPillButtonClass(filterMode === "search")}
               onClick={switchToSearch}
+              aria-pressed={filterMode === "search"}
             >
               검색
             </Button>

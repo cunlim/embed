@@ -23,10 +23,20 @@ type EmbedPageParams = {
 export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   const sp = await searchParams;
   const reader = serverParamsReader(sp);
-  const { keyword, filter, searchText, searchLang } = parseEmbedParams(reader);
+  const { keyword, searchText, searchLang } = parseEmbedParams(reader);
 
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value ?? null;
+  let serverDefaultFilter: string | null = null;
+
+  if (token) {
+    try {
+      const ownCategoriesRes = await getCategories(token, 1, 1, "my");
+      if (ownCategoriesRes.data.length > 0) {
+        serverDefaultFilter = "my";
+      }
+    } catch {}
+  }
 
   const cat1 = reader.get("cat1");
   const cat2 = reader.get("cat2");
@@ -65,7 +75,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   let serverCategories: Category[] = [];
   let serverMeta: PaginationMeta | null = null;
   try {
-    const categoriesRes = await getCategories(token, page, perPage, filter, keyword ?? undefined);
+    const categoriesRes = await getCategories(token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined);
     serverCategories = categoriesRes.data;
     serverMeta = categoriesRes.meta;
   } catch {}
@@ -75,7 +85,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   let serverSearchMeta: PaginationMeta | null = null;
   if (searchText) {
     try {
-      const searchRes = await recommend(searchText, searchLang, token, page, perPage, filter, keyword ?? undefined);
+      const searchRes = await recommend(searchText, searchLang, token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined);
       serverSearchResults = searchRes.data;
       serverSearchMeta = searchRes.meta;
     } catch {}
@@ -91,7 +101,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
         serverCategories={serverCategories}
         serverMeta={serverMeta}
         serverHadToken={!!token}
-        serverFilter={filter ?? null}
+        serverFilter={serverDefaultFilter}
         serverSearchResults={serverSearchResults}
         serverSearchMeta={serverSearchMeta}
         serverSearchText={searchText}

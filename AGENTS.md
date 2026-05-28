@@ -23,6 +23,11 @@
 - **Playwright 테스트 URL** — WSL2 호스트에서 `https://embed.cunlim.dev`로 접속 (Next.js 포트 미공개).
 - **작업 완료 전 검증** — `.claude/hooks/run-all-checks.sh` 실행 후 `cat .claude/hooks/test-results/*.txt`로 결과 확인. tsc, lint, test, pint 모두 EXIT=0 확인 후 마무리.
 
+## 문서 우선순위
+
+- **현재 기준 문서 우선** — `docs/PRD.md`, `docs/ADR.md`, `docs/UI_GUIDE.md`를 1차 기준으로 삼고, `docs/superpowers/specs`와 `docs/superpowers/plans`는 작업 기록/기획 산출물로 본다.
+- **역할 분리** — `PRD`는 Why/What, `ADR`는 How, `UI_GUIDE`는 UI 규칙만 담는다. 구현 세부·임시 계획·일회성 작업 문서는 기준 문서와 충돌하면 기준 문서와 실제 코드를 우선한다.
+
 ## Subagent-Driven Development worktree 주의사항
 
 - **worktree agent 수정 파일은 메인에 미반영** — worktree는 별도 파일 복사본. Docker exec(컨테이너는 메인 repo 마운트)로 수정한 파일만 메인에 반영되고, Edit 도구로 직접 수정한 파일은 worktree에만 존재. `cp <worktree-path> <main-path>`로 수동 동기화. 완료 후 `git -C <메인-repo> status`로 누락 확인.

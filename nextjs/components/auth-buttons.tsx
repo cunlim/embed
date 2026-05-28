@@ -23,18 +23,23 @@ export function AuthButtons() {
   const admin = isSuperAdmin(user);
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex min-w-0 items-center gap-1">
       {user && (
-        <span className="text-sm font-medium text-foreground mr-1">
+        <span className="hidden text-sm font-medium text-foreground sm:inline">
           {user.name}
         </span>
       )}
 
       {admin && (
-        <Button variant="ghost" size="sm" asChild className="rounded-full">
-          <Link href="/admin">
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
+        >
+          <Link href="/admin" aria-label="관리자">
             <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">관리자</span>
+            <span className="hidden sm:inline ml-0.5">관리자</span>
           </Link>
         </Button>
       )}
@@ -43,20 +48,26 @@ export function AuthButtons() {
         <Button
           variant="ghost"
           size="sm"
-          className="rounded-full"
+          className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
+          aria-label="로그아웃"
           onClick={async () => {
             await logout();
             router.push("/");
           }}
         >
           <LogOut className="h-4 w-4" />
-          로그아웃
+          <span className="hidden sm:inline ml-0.5">로그아웃</span>
         </Button>
       ) : (
-        <Button variant="ghost" size="sm" asChild className="rounded-full">
-          <Link href="/login">
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
+        >
+          <Link href="/login" aria-label="로그인">
             <LogIn className="h-4 w-4" />
-            로그인
+            <span className="hidden sm:inline ml-0.5">로그인</span>
           </Link>
         </Button>
       )}

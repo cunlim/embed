@@ -12,15 +12,15 @@ interface SiteHeaderProps {
 export function SiteHeader({ badge, children, leftChildren }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between px-6 py-3 sm:px-8 bg-background border-b border-border">
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         <Link
           href="/"
-          className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-80"
+          className="flex min-w-0 items-center gap-2 whitespace-nowrap rounded-md transition-opacity hover:opacity-80"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-foreground text-xs font-bold font-mono">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-xs font-bold font-mono text-accent-foreground">
             CL
           </div>
-          <span className="font-bold tracking-tight text-sm text-foreground">
+          <span className="whitespace-nowrap font-bold tracking-tight text-sm text-foreground">
             CL Embed
           </span>
           {badge && (

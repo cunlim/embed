@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { EmbedPageInner } from "../embed-page-inner";
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -70,6 +70,7 @@ beforeEach(() => {
     error: null,
     loadCategories: vi.fn(),
     addCategory: vi.fn(),
+    updateCategoryStatus: vi.fn(),
     deleteCategory: vi.fn(),
   });
   mockUseCategoryDetail.mockReturnValue({
@@ -209,5 +210,25 @@ describe("EmbedPage", () => {
     render(<EmbedPageInner server대Options={[]} server중Options={[]} server소Options={[]} server세Options={[]} serverCategories={[]} serverMeta={null} serverHadToken={false} serverFilter={null} serverSearchResults={null} serverSearchMeta={null} serverSearchText={null} serverSearchLang="ko" />);
     const titles = screen.getAllByText("필터");
     expect(titles.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("서버 기본 필터가 my이면 초기 목록 로딩도 my로 호출된다", async () => {
+    const loadCategories = vi.fn();
+    mockUseCategories.mockReturnValue({
+      categories: [],
+      isLoading: false,
+      isLoaded: true,
+      error: null,
+      loadCategories,
+      addCategory: vi.fn(),
+      updateCategoryStatus: vi.fn(),
+      deleteCategory: vi.fn(),
+    });
+
+    render(<EmbedPageInner server대Options={[]} server중Options={[]} server소Options={[]} server세Options={[]} serverCategories={[]} serverMeta={null} serverHadToken={true} serverFilter={"my"} serverSearchResults={null} serverSearchMeta={null} serverSearchText={null} serverSearchLang="ko" />);
+
+    await waitFor(() => {
+      expect(loadCategories).toHaveBeenCalledWith(1, 20, "my", undefined);
+    });
   });
 });
