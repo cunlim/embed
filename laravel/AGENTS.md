@@ -74,7 +74,14 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 
 ### 테스트 및 배포 주의사항
 
-- **Playwright 인증 토큰** — `php artisan tinker --execute 'echo \App\Models\User::first()->createToken("debug")->plainTextToken;'`
+- **Playwright 인증** — 쿠키 기반(`auth_token`). superadmin 사용자로 토큰 발급:
+  ```bash
+  # superadmin 사용자 확인 (없으면 DB에서 직접 조회)
+  docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::where("role","superadmin")->first()?->id ?? "없음";'
+  # 토큰 발급 (superadmin 사용자 ID 지정)
+  docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::find(<ID>)->createToken("debug")->plainTextToken;'
+  ```
+  Playwright에서 쿠키 설정: `document.cookie = "auth_token=<TOKEN>; path=/; expires=...; SameSite=Lax"`
 - **`deploy.yml` `migrate:rollback --step=1` 위험** — batch 1에서 전체 rollback 유발
 - **`bootstrap/cache/config.php` 오염** — `php artisan test` 전 `php artisan config:clear` 필수
 - **Swagger 문서 stale** — 배포 후 `php artisan l5-swagger:generate`로 재생성

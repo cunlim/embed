@@ -57,6 +57,22 @@ docker compose -f docker/docker-compose.yml up -d
 # 그 다음 브라우저에서 Ctrl+Shift+R 또는 browser.newContext()
 ```
 
+## Playwright 인증
+
+```bash
+# superadmin 사용자 확인
+docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::where("role","superadmin")->first()?->id ?? "없음";'
+
+# superadmin 토큰 발급
+docker exec cl_embed_laravel php artisan tinker --execute 'echo \App\Models\User::find(<ID>)->createToken("debug")->plainTextToken;'
+
+# Playwright에서 쿠키 설정 (페이지 이동 전)
+page.evaluate(() => {
+  const expires = new Date(Date.now() + 30 * 864e5).toUTCString();
+  document.cookie = `auth_token=${encodeURIComponent('<TOKEN>')}; path=/; expires=${expires}; SameSite=Lax`;
+});
+```
+
 ## Git / 배포
 
 ```bash

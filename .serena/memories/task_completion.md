@@ -46,6 +46,8 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 
 - Playwright로 실제 동작 확인
 - `https://embed.cunlim.dev`에서 테스트 (WSL2 호스트)
+- 인증 필요 시 쿠키 기반(`auth_token`) — superadmin은 DB에 이미 존재 (`User::where('role','superadmin')->first()`)
+- 자세한 절차는 `laravel/AGENTS.md` 참조
 
 ## 5. 컨테이너 파일 동기화 확인
 
