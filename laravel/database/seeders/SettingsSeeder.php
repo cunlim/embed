@@ -158,6 +158,15 @@ class SettingsSeeder extends Seeder
             ]
         );
 
+        Setting::firstOrCreate(
+            ['group' => 'category', 'key' => 'max_depth'],
+            [
+                'value' => '10',
+                'type' => 'integer',
+                'description' => '필터로 노출할 최대 카테고리 깊이',
+            ]
+        );
+
         // validation
         Setting::firstOrCreate(
             ['group' => 'validation', 'key' => 'text_max_length'],

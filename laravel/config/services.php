@@ -88,6 +88,7 @@ return [
         'code_prefix' => 'CAT_',
         'code_random_length' => 8,
         'code_max_attempts' => 3,
+        'max_depth' => 10,
     ],
 
     'validation' => [
