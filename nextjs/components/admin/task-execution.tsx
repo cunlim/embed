@@ -19,6 +19,7 @@ interface TaskExecutionProps {
   selectedIds: Set<number>;
   categories: (Category | Recommendation)[];
   filter: string | undefined;
+  keyword?: string;
   canModify: (cat: Category | Recommendation) => boolean;
   onComplete: (wasStopped: boolean) => void;
   onCategoryComplete?: () => void;
@@ -66,6 +67,7 @@ export default function TaskExecution({
   selectedIds,
   categories,
   filter,
+  keyword,
   canModify,
   onComplete,
   onCategoryComplete,
@@ -295,6 +297,7 @@ export default function TaskExecution({
       alert("선택된 수정 가능한 카테고리가 없습니다");
       return;
     }
+    if (!window.confirm(`선택한 ${targetIds.length}개 카테고리를 처리하시겠습니까?`)) return;
     await executeQueue(targetIds);
   }, [token, selectedIds, categories, canModify, executeQueue]);
 
@@ -304,7 +307,7 @@ export default function TaskExecution({
       return;
     }
     try {
-      const res = await getCategories(token, 1, 100000, filter);
+      const res = await getCategories(token, 1, 100000, filter, keyword);
       const targetIds = res.data
         .filter((cat) => canModify(cat))
         .map((cat) => cat.id);
@@ -312,13 +315,14 @@ export default function TaskExecution({
         alert("처리 가능한 카테고리가 없습니다");
         return;
       }
+      if (!window.confirm(`현재 필터에 해당하는 ${targetIds.length}개 카테고리를 처리하시겠습니까?`)) return;
       await executeQueue(targetIds);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "카테고리 목록 조회 실패",
       );
     }
-  }, [token, filter, canModify, executeQueue]);
+  }, [token, filter, keyword, canModify, executeQueue]);
 
   const handleStop = useCallback(() => {
     abortRef.current = true;

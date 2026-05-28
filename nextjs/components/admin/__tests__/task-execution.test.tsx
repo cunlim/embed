@@ -21,6 +21,7 @@ function renderTaskExecution(props: Partial<{
   token: string | null;
   selectedIds: Set<number>;
   categories: Category[];
+  keyword?: string;
 }> = {}) {
   return render(
     <TaskExecution
@@ -28,6 +29,7 @@ function renderTaskExecution(props: Partial<{
       selectedIds={props.selectedIds ?? new Set()}
       categories={props.categories ?? mockCategories}
       filter={undefined}
+      keyword={props.keyword}
       canModify={() => true}
       onComplete={vi.fn()}
       onCategoryComplete={vi.fn()}
@@ -84,5 +86,34 @@ describe("TaskExecution", () => {
     const fullBtn = screen.getByText("전체 처리");
     expect(selectBtn).toBeEnabled();
     expect(fullBtn).toBeEnabled();
+  });
+
+  it("선택 처리 클릭 시 확인 알림이 표시된다", () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderTaskExecution({ selectedIds: new Set([1]) });
+
+    fireEvent.click(screen.getByText("선택 처리"));
+
+    expect(confirmSpy).toHaveBeenCalledWith("선택한 1개 카테고리를 처리하시겠습니까?");
+    confirmSpy.mockRestore();
+  });
+
+  it("전체 처리 클릭 시 확인 알림이 표시된다", async () => {
+    const { getCategories } = await import("@/lib/api");
+    vi.mocked(getCategories).mockResolvedValue({
+      data: mockCategories,
+      meta: { current_page: 1, last_page: 1, per_page: 20, total: 1 },
+    });
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderTaskExecution();
+
+    fireEvent.click(screen.getByText("전체 처리"));
+
+    // getCategories 호출 후 confirm 표시
+    await vi.waitFor(() => {
+      expect(confirmSpy).toHaveBeenCalled();
+    });
+    expect(confirmSpy).toHaveBeenCalledWith("현재 필터에 해당하는 1개 카테고리를 처리하시겠습니까?");
+    confirmSpy.mockRestore();
   });
 });
