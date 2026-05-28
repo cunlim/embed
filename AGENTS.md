@@ -12,6 +12,7 @@
 - **모든 UI·API에서 언어 순서는 `ko → en → zh`(한영중)로 통일** — 토글 버튼, 모달, API 응답, SQL foreach 등 신규 요소 추가 시 이 순서 준수.
 
 ## plugin, skills, mcp 사용
+
 * 모든 프론트엔드 UI 작업은 `ui-ux-pro-max:ui-ux-pro-max` plugin을 활성화하여 수행한다.
 * 구현 계획 수립, 코드 리뷰, TDD 등 구조적 접근이 필요한 작업은 `superpowers` plugin을 활성화하여 수행한다.
 * 버그 수정 후 동일 유형의 실수를 방지하려면 `compound-engineering` plugin으로 학습 문서를 갱신한다.
@@ -34,10 +35,6 @@
 - **머지 후 worktree branch 삭제 실패** — `rm -rf .git/worktrees/<name>` 후 `git branch -D <branch>`.
 - **worktree agent 사용 전 stale worktree 정리** — `rm -rf .claude/worktrees/* && rm -rf .git/worktrees/* && git worktree prune`.
 
-## 프로젝트 개요
-
-AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](docs/PRD.md) 참조.
-
 ## Docker
 
 - **base64 방식만 사용** — `docker exec cat > host`와 `docker cp`는 WSL2 바인드 마운트에서 0바이트 파일 생성.
@@ -49,26 +46,6 @@ AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](doc
 
 - **user scope 규칙** — `user_id=1`(공개), 비로그인: 본인+공개, 로그인: 본인+공개, admin: 전체. 모든 카테고리 조회 API(`levels()`, `recommend()` 등)에 동일 적용.
 
-> Next.js 특화 UI 패턴, SSR, Dark 모드는 [`nextjs/AGENTS.md`](nextjs/AGENTS.md) 참조.
-
-## 개발 프로세스
-
-- **커밋 메시지**: conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`)
-
-## 코드 리뷰 체크리스트
-
-1. **아키텍처 준수**: ADR에 정의된 아키텍처 결정을 따르는가?
-2. **기술 스택 준수**: ADR에 정의된 기술 선택(PostgreSQL+pgvector, Laravel Queue+Reverb, Ollama 번역)을 벗어나지 않았는가?
-3. **테스트 존재**: 새로운 기능에 대한 테스트가 작성되어 있는가? (Laravel: Pest, Next.js: Jest/Vitest)
-4. **CRITICAL 규칙**: 문서·주석은 한국어, 코드 식별자는 영어를 유지하는가?
-5. **빌드 가능**: 검증 커맨드가 정상 통과하는가?
-   - 백엔드: `docker exec cl_embed_laravel php artisan test --compact`
-   - 프론트엔드: `docker exec cl_embed_nextjs npm run build`
-
-## 유틸리티
-
-- `scripts/cosine_similarity.py` — 두 임베딩 벡터 JSON 배열로 코사인 유사도 계산. `python scripts/cosine_similarity.py '[...]' '[...]'`
-
 ## 알려진 이슈
 
 - **Sub-agent 인터페이스 수정 시 중복 코드** — api.ts 등 interface에 필드 추가 시 agent가 이전 블록을 삭제하지 않고 새 블록을 중복 생성할 수 있음. `tsc --noEmit`은 통과해도 dev server parse error 발생. 수정 후 `grep`으로 중복 키 확인.
@@ -76,9 +53,16 @@ AI 기반 다국어 카테고리 추천 시스템. 상세는 [`docs/PRD.md`](doc
 - **신규 디렉토리** — 호스트·컨테이너 한쪽만 생성 시 자동 반영 안 됨. 양쪽 `mkdir -p`.
 - **Subagent-Driven 동일 파일 작업** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합.
 
+## 유틸리티
+
+- `scripts/cosine_similarity.py` — 두 임베딩 벡터 JSON 배열로 코사인 유사도 계산. `python scripts/cosine_similarity.py '[...]' '[...]'`
+
 ## CI/CD
 
 - **릴리스**: `scripts/git_release.sh` (develop → main 머지 후 푸시)
 - **`.env`/`.env.local`**: gitignore, CI에서 `$LIVE_ROOT`로부터 복사
 
-하위 디렉토리: [`laravel/AGENTS.md`](laravel/AGENTS.md), [`nextjs/AGENTS.md`](nextjs/AGENTS.md)
+## 하위 디렉토리
+
+- 백엔드: [`laravel/AGENTS.md`](laravel/AGENTS.md)
+- 프론트엔드: `nextjs/AGENTS.md` (코드 트리에서 확인)
