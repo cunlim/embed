@@ -42,6 +42,7 @@ import CategoryModal from "@/components/admin/category-modal";
 import StatusBadge from "@/components/admin/status-badge";
 import CategoryHierarchy, { type HierarchyFilterState } from "@/components/admin/category-hierarchy";
 import TaskExecution from "@/components/admin/task-execution";
+import CategoryDelete from "@/components/admin/category-delete";
 import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
 import BulkUpload from "@/components/bulk-upload";
 import { useAuth, getToken } from "@/hooks/useAuth";
@@ -152,6 +153,7 @@ export function EmbedPageInner({
   const [keywordSearchActive, setKeywordSearchActive] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [hierarchyRefreshKey, setHierarchyRefreshKey] = useState(0);
+  const [hierarchyKeyword, setHierarchyKeyword] = useState(initialFilterKeyword);
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryCode, setNewCategoryCode] = useState("");
@@ -373,6 +375,7 @@ export function EmbedPageInner({
   // 필터 상태 변경 시 URL 업데이트
   const handleFilterChange = useCallback(
     (state: { mode: "hierarchy" | "search"; hierarchy: HierarchyFilterState; keyword: string }) => {
+      setHierarchyKeyword(state.keyword);
       updateURL({
         mode: state.mode,
         catPath: state.hierarchy,
@@ -632,12 +635,31 @@ export function EmbedPageInner({
               selectedIds={selectedIds}
               categories={displayCategories}
               filter={effectiveFilter}
+              keyword={hierarchyKeyword || undefined}
               canModify={canModify}
               onComplete={(wasStopped) => {
                 if (!wasStopped) {
                   setSelectedIds(new Set());
                 }
                 loadCategories(page, perPage, effectiveFilter);
+              }}
+              onCategoryComplete={() => {
+                loadCategories(page, perPage, effectiveFilter);
+              }}
+            />
+
+            {/* 삭제 */}
+            <CategoryDelete
+              token={token}
+              selectedIds={selectedIds}
+              categories={displayCategories}
+              filter={effectiveFilter}
+              keyword={hierarchyKeyword || undefined}
+              canModify={canModify}
+              onComplete={() => {
+                setSelectedIds(new Set());
+                loadCategories(page, perPage, effectiveFilter);
+                setHierarchyRefreshKey((prev) => prev + 1);
               }}
               onCategoryComplete={() => {
                 loadCategories(page, perPage, effectiveFilter);
