@@ -60,10 +60,10 @@ export default function AdminPage() {
                   key={item.id}
                   onClick={() => setActive(item.id)}
                   className={cn(
-                    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
                     isActive
-                      ? "bg-accent text-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+                      ? "bg-accent/20 text-foreground font-semibold"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/10",
                   )}
                 >
                   <Icon className="size-4 shrink-0" />

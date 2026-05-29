@@ -25,6 +25,11 @@ interface CosineDetailDialogProps {
 
 // --- Helpers ---
 
+/** 소수점 이하 불필요한 0을 제거합니다 (예: 1.0000 → 1, 0.9876 → 0.9876) */
+function trimZeros(n: number, maxDecimals = 4): string {
+  return parseFloat(n.toFixed(maxDecimals)).toString();
+}
+
 async function copyToClipboard(text: string) {
   try {
     await navigator.clipboard.writeText(text);
@@ -265,7 +270,7 @@ export default function CosineDetailDialog({
               <span className="min-w-0 flex-1 truncate font-mono text-xs">
                 {aEmb && bEmb && aEmb.length > 0 && bEmb.length > 0 ? (
                   <>
-                    cos(θ) = (<span className="text-[#3b82f6]">A</span>·<span className="text-[#ef4444]">B</span>) / (|<span className="text-[#3b82f6]">A</span>|×|<span className="text-[#ef4444]">B</span>|) = ((<span className="text-[#3b82f6]">{aEmb[0].toFixed(3)}</span>×<span className="text-[#ef4444]">{bEmb[0].toFixed(3)}</span>) + ...) / (<span className="text-[#3b82f6]">{normA.toFixed(4)}</span>×<span className="text-[#ef4444]">{normB.toFixed(4)}</span>) = {score.toFixed(4)}
+                    cos(θ) = (<span className="text-[#3b82f6]">A</span>·<span className="text-[#ef4444]">B</span>) / (|<span className="text-[#3b82f6]">A</span>|×|<span className="text-[#ef4444]">B</span>|) = ((<span className="text-[#3b82f6]">{aEmb[0].toFixed(3)}</span>×<span className="text-[#ef4444]">{bEmb[0].toFixed(3)}</span>) + ...) / (<span className="text-[#3b82f6]">{trimZeros(normA)}</span>×<span className="text-[#ef4444]">{trimZeros(normB)}</span>) = {score.toFixed(4)}
                   </>
                 ) : (
                   "—"

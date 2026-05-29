@@ -105,8 +105,8 @@ export default function DocsPage() {
                   className={cn(
                     "flex w-full flex-col items-start rounded-md px-3 py-2 text-left transition-colors",
                     activeDoc === doc.slug
-                      ? "bg-accent/10 text-accent font-medium"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-accent/20 text-foreground font-semibold"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
                   )}
                 >
                   <span className="text-sm">{doc.title}</span>
@@ -140,10 +140,10 @@ export default function DocsPage() {
                     type="button"
                     onClick={() => handleSelectDoc(doc.slug)}
                     className={cn(
-                      "flex w-full flex-col items-start rounded-md px-3 py-2 text-left",
+                      "flex w-full flex-col items-start rounded-md px-3 py-2 text-left transition-colors",
                       activeDoc === doc.slug
-                        ? "bg-accent/10 text-accent font-medium"
-                        : "text-muted-foreground"
+                        ? "bg-accent/20 text-foreground font-semibold"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
                     )}
                   >
                     <span className="text-sm">{doc.title}</span>
