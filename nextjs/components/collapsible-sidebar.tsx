@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Menu, ChevronLeft, X } from "lucide-react";
+import { useState, useCallback, useSyncExternalStore } from "react";
+import { ChevronLeft, X, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -26,6 +26,38 @@ const BREAKPOINT_MAP = {
   xl: "(min-width: 1280px)",
 } as const;
 
+// localStorage 기반 collapsed 상태 관리 (hydration-safe)
+function useCollapsedState(storageKey: string) {
+  const collapsed = useSyncExternalStore(
+    // subscribe: storage 이벤트 리스너
+    (onStoreChange) => {
+      const handler = (e: StorageEvent) => {
+        if (e.key === storageKey) onStoreChange();
+      };
+      window.addEventListener("storage", handler);
+      return () => window.removeEventListener("storage", handler);
+    },
+    // getSnapshot: localStorage에서 현재 값 읽기
+    () => localStorage.getItem(storageKey) === "collapsed",
+    // getServerSnapshot: 서버에서는 항상 false
+    () => false,
+  );
+
+  const toggle = useCallback(() => {
+    const next = !collapsed;
+    localStorage.setItem(storageKey, next ? "collapsed" : "expanded");
+    // storage 이벤트는 같은 탭에서 발생하지 않으므로 직접 dispatch
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: storageKey,
+        newValue: next ? "collapsed" : "expanded",
+      }),
+    );
+  }, [storageKey, collapsed]);
+
+  return [collapsed, toggle] as const;
+}
+
 export function CollapsibleSidebar({
   title,
   children,
@@ -33,20 +65,8 @@ export function CollapsibleSidebar({
   breakpoint = "lg",
 }: CollapsibleSidebarProps) {
   const isDesktop = useMediaQuery(BREAKPOINT_MAP[breakpoint]);
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(storageKey) === "collapsed";
-  });
+  const [collapsed, toggleCollapsed] = useCollapsedState(storageKey);
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  // 접기/펼치기 토글 (데스크톱만)
-  const toggleCollapsed = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem(storageKey, next ? "collapsed" : "expanded");
-      return next;
-    });
-  }, [storageKey]);
 
   // 모바일: 네비게이션 아이템 클릭 시 Sheet 닫기
   const handleItemClick = useCallback(() => {
@@ -60,18 +80,13 @@ export function CollapsibleSidebar({
     return (
       <aside
         className={cn(
-          "shrink-0 border-r border-border transition-all duration-300",
+          "shrink-0 border-r border-border transition-all duration-300 overflow-hidden",
           collapsed ? "w-12" : "w-56"
         )}
       >
         <div className="sticky top-16 flex h-[calc(100vh-4rem)] flex-col">
           {/* 헤더 */}
-          <div className="flex items-center justify-between border-b border-border px-3 py-3">
-            {!collapsed && (
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {title}
-              </span>
-            )}
+          <div className="flex items-center border-b border-border px-3 py-3">
             <Button
               variant="ghost"
               size="icon"
@@ -79,11 +94,16 @@ export function CollapsibleSidebar({
               onClick={toggleCollapsed}
             >
               {collapsed ? (
-                <Menu className="h-4 w-4" />
+                <PanelLeft className="h-4 w-4" />
               ) : (
                 <ChevronLeft className="h-4 w-4" />
               )}
             </Button>
+            {!collapsed && (
+              <span className="ml-2 text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                {title}
+              </span>
+            )}
           </div>
 
           {/* 네비게이션 */}
@@ -101,12 +121,12 @@ export function CollapsibleSidebar({
   return (
     <>
       <Button
-        variant="ghost"
+        variant="outline"
         size="icon"
-        className="fixed bottom-4 left-4 z-50 h-10 w-10 rounded-full shadow-md bg-background border border-border"
+        className="fixed top-16 left-3 z-50 h-9 w-9 shadow-sm"
         onClick={() => setSheetOpen(true)}
       >
-        <Menu className="h-5 w-5" />
+        <PanelLeft className="h-4 w-4" />
       </Button>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
