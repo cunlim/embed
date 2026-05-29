@@ -134,7 +134,7 @@ export default function CategoryHierarchy({
 
         const keyword = newPath.filter(Boolean).join(">");
         onKeywordSearch(keyword || "");
-        reportFilterChange(filterMode, newPath, keywordText);
+        reportFilterChange(filterMode, newPath, keyword || "");
         return;
       }
 
@@ -150,7 +150,7 @@ export default function CategoryHierarchy({
 
       const keyword = newPath.join(">");
       onKeywordSearch(keyword);
-      reportFilterChange(filterMode, newPath, keywordText);
+      reportFilterChange(filterMode, newPath, keyword);
 
       // 다음 depth 옵션 로드
       try {
@@ -197,9 +197,11 @@ export default function CategoryHierarchy({
     (option: CategoryLevelOption) => {
       onSelectCategory(option.categoryId);
       const fullPath = [...selectedPath, option.label];
-      onKeywordSearch(fullPath.join(">"));
+      const keyword = fullPath.join(">");
+      onKeywordSearch(keyword);
+      reportFilterChange("hierarchy", [...selectedPath, option.label], keyword);
     },
-    [selectedPath, onSelectCategory, onKeywordSearch]
+    [selectedPath, onSelectCategory, onKeywordSearch, reportFilterChange]
   );
 
   const handleKeywordSubmit = useCallback(() => {
