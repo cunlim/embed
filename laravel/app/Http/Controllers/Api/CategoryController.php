@@ -179,6 +179,7 @@ class CategoryController extends Controller
                     'maxDepth' => $maxDepth,
                     'isLeaf' => false,
                     'leafCategoryId' => null,
+                    'categoryCount' => null,
                 ],
             ]);
         }
@@ -201,11 +202,14 @@ class CategoryController extends Controller
         // 리프 여부 확인
         $isLeaf = empty($options);
         $leafCategoryId = null;
+        $categoryCount = null;
 
         if ($isLeaf && ! empty($prefixParts)) {
             $leafPath = implode('>', $prefixParts);
             $leafCategory = (clone $scopeQuery)->where('category_name_ko', $leafPath)->first();
             $leafCategoryId = $leafCategory?->id;
+            // 리프 경로에 등록된 카테고리 수 카운트
+            $categoryCount = (clone $scopeQuery)->where('category_name_ko', $leafPath)->count();
 
             // 깊이 초과 처리: 더 깊은 카테고리가 있으면 복합 옵션으로 포함
             if ($leafCategoryId === null) {
@@ -233,6 +237,7 @@ class CategoryController extends Controller
                         ->toArray();
 
                     $isLeaf = false;
+                    $categoryCount = $deeperCategories->count();
                 }
             }
         }
@@ -243,6 +248,7 @@ class CategoryController extends Controller
                 'maxDepth' => $maxDepth,
                 'isLeaf' => $isLeaf,
                 'leafCategoryId' => $leafCategoryId,
+                'categoryCount' => $categoryCount,
             ],
         ]);
     }

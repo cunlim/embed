@@ -29,6 +29,8 @@ interface CategoryHierarchyProps {
     keyword: string;
   }) => void;
   refreshKey?: number;
+  /** 값이 변경되면 계층 필터 상태를 완전 초기화 */
+  resetKey?: number;
   token?: string | null;
 }
 
@@ -52,6 +54,7 @@ export default function CategoryHierarchy({
   onFilterChange,
   onSelectLeafPath,
   refreshKey = 0,
+  resetKey = 0,
   token,
 }: CategoryHierarchyProps) {
   const [filterMode, setFilterMode] = useState<"hierarchy" | "search">(initialMode);
@@ -84,6 +87,26 @@ export default function CategoryHierarchy({
     }
   }, [refreshKey, token]);
 
+  // resetKey 변경 시 계층 필터 상태 완전 초기화 (기능시연 버튼 등)
+  const prevResetKeyRef = useRef(resetKey);
+  useEffect(() => {
+    if (resetKey === prevResetKeyRef.current) return;
+    prevResetKeyRef.current = resetKey;
+    setSelectedPath([]);
+    setLevelOptions([]);
+    setLoadingStates([]);
+    setKeywordText("");
+    setFilterMode(initialMode);
+    hasRestoredRef.current = true;
+    // 최상위 옵션 다시 조회
+    if (token) {
+      fetchCategoryLevels(undefined, token).then((res) => {
+        setLevelOptions([res.data.options]);
+        setMaxDepth(res.data.maxDepth);
+      }).catch(() => {});
+    }
+  }, [resetKey, initialMode, token]);
+
   // 페이지 새로고침 시 초기 hierarchy 필터 복원
   useEffect(() => {
     if (hasRestoredRef.current) return;
@@ -107,6 +130,10 @@ export default function CategoryHierarchy({
           });
           if (res.data.isLeaf) {
             onSelectLeafPath?.(path.slice(0, i + 1), res.data.leafCategoryId);
+            // 리프이고 유일한 카테고리일 때만 모달 자동 open
+            if (res.data.leafCategoryId && res.data.categoryCount === 1) {
+              onSelectCategory(res.data.leafCategoryId);
+            }
           }
           if (res.data.maxDepth) {
             setMaxDepth(res.data.maxDepth);
@@ -168,8 +195,8 @@ export default function CategoryHierarchy({
 
         if (res.data.isLeaf) {
           onSelectLeafPath?.(nonNullPath, res.data.leafCategoryId);
-          // 리프이면 categoryId로 onSelectCategory 호출
-          if (res.data.leafCategoryId) {
+          // 리프이고 유일한 카테고리일 때만 모달 자동 open
+          if (res.data.leafCategoryId && res.data.categoryCount === 1) {
             onSelectCategory(res.data.leafCategoryId);
           }
         }

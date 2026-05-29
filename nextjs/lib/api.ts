@@ -193,6 +193,7 @@ export interface CategoryLevelsResponse {
   maxDepth: number;
   isLeaf: boolean;
   leafCategoryId: number | null;
+  categoryCount: number | null;
 }
 
 export function fetchCategoryLevels(
