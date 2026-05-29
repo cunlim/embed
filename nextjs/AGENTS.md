@@ -41,6 +41,12 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
 - **`resetKey` 초기 옵션 즉시 설정** — `setLevelOptions([])`로 초기화하면 fetch 완료 전까지 "사용 가능한 카테고리가 없습니다" 플래시 발생. `initialLevelOptions`가 있으면 즉시 설정 후 fetch로 갱신.
 - **모달 자동 open 제거 시 `onSelectLeafPath` 확인** — `CategoryHierarchy`의 `onSelectCategory`만 제거하면 `EmbedPageInner`의 `onSelectLeafPath` 콜백이 `setModalCategoryId`를 호출하여 모달이 열림. 양쪽 모두 제거 필요.
 
+## URL 파라미터 상태 동기화
+
+- **파생 값을 ref로 추적하면 잔여 상태 감지 실패** — `effectiveFilter`(`"my"` | `undefined`)를 `useRef`로 추적하면, "전체" 선택 시 `effectiveFilter = undefined` → `filterRef.current = undefined` → `hasResidual` 체크에서 누락. **원본 state(`filterSelection`)를 추적**해야 함.
+- **nullable state의 잔여 체크는 `!== null`** — `"all" | "my" | null` 타입을 ref로 추적 시 `!== undefined` 체크는 `null !== undefined === true`로 항상 잔여로 감지. `!== null`로 변경.
+- **URL 파라미터에서 파생된 useState는 reset effect에서 명시적 초기화 필요** — `perPage`처럼 URL에서 파생되어 `useState`로 관리되는 값은 URL이 비워져도 state가 자동 리셋되지 않음. reset effect에 `setPerPage(20)` 등 명시적 초기화 추가.
+
 ## SSR 패턴
 
 - URL을 state의 source of truth로 — `useSearchParams()` 변경 감지 → URL→state 단방향 싱크

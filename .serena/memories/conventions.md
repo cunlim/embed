@@ -29,6 +29,8 @@
 - **ESLint**: `set-state-in-effect`(effect 내 setState 금지), `refs`(render 중 `.current` 금지), `useSearchParams`는 `<Suspense>` 경계 필수
 - **shadcn Select**: `<select>`가 아님, `role="combobox"` 기반
 - **`CardTitle`**: `<div>`임, `role="heading"` 없음
+- **URL 파라미터 파생 state의 ref 추적**: 파생 값(`effectiveFilter`) 대신 원본 state(`filterSelection`)를 ref로 추적. nullable state는 `!== null`로 잔여 체크
+- **URL 파라미터에서 파생된 useState**: reset effect에서 명시적 초기화 필요 (URL 비워도 state 자동 리셋 안 됨)
 
 ## TDD 적용 범위
 

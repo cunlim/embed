@@ -183,8 +183,9 @@ export function EmbedPageInner({
   const keywordRef = useRef(initialFilterKeyword);
   const activeFilterSelection = filterSelection ?? (serverFilter === "my" ? "my" : "all");
   const effectiveFilter = activeFilterSelection === "my" ? "my" : undefined;
-  const filterRef = useRef(effectiveFilter);
-  useEffect(() => { filterRef.current = effectiveFilter });
+  // filterSelection을 추적 (effectiveFilter 아님 — "전체" 선택 시 effectiveFilter=undefined가 되어 hasResidual에서 누락됨)
+  const filterRef = useRef(filterSelection);
+  useEffect(() => { filterRef.current = filterSelection });
 
   // URL에 초기 필터 파라미터가 있으면 첫 loadCategories를 건너뛴다 (CategoryHierarchy mount effect가 대신 처리)
   const skipInitialLoad = useRef(initialHierarchy.length > 0 || !!initialFilterKeyword);
@@ -271,7 +272,7 @@ export function EmbedPageInner({
     setKeywordSearchActive(false);
     updateURL({ searchText, searchLanguage: searchLangRef.current });
     try {
-      const data = await recommend(searchText, searchLangRef.current, token, currentPage, perPageRef.current, filterRef.current, keyword ?? (keywordRef.current || undefined));
+      const data = await recommend(searchText, searchLangRef.current, token, currentPage, perPageRef.current, filterRef.current ?? undefined, keyword ?? (keywordRef.current || undefined));
       setSearchResults(data.data);
       setSearchMeta(data.meta);
     } catch (err) {
@@ -321,7 +322,7 @@ export function EmbedPageInner({
     if (!searchParams.toString()) {
       // 이미 리셋했으면 건너뜀 (무한 루프 방지)
       if (resetDoneRef.current) return;
-      const hasResidual = searchTextRef.current || searchResultsRef.current !== null || filterRef.current !== undefined || keywordRef.current;
+      const hasResidual = searchTextRef.current || searchResultsRef.current !== null || filterRef.current !== null || keywordRef.current;
       if (hasResidual) {
         resetDoneRef.current = true;
         setSearchText("");
@@ -332,6 +333,8 @@ export function EmbedPageInner({
         setFilterSelection(null);
         setKeywordSearchActive(false);
         keywordRef.current = "";
+        // per_page 초기화 (URL에서 파생된 state이므로 수동 동기화 필요)
+        setPerPage(20);
         // 계층 필터 완전 초기화 (CategoryHierarchy의 resetKey 변경 시 selectedPath/levelOptions 리셋)
         setHierarchyResetKey((prev) => prev + 1);
         setHierarchyKeyword("");
