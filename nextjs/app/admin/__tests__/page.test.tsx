@@ -12,9 +12,15 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ replace: vi.fn(), back: vi.fn(), push: vi.fn() })),
 }));
 
+vi.mock("../layout", () => ({
+  useAdminMenu: vi.fn(),
+}));
+
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminMenu } from "../layout";
 
 const mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
+const mockUseAdminMenu = useAdminMenu as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   cleanup();
@@ -23,27 +29,37 @@ beforeEach(() => {
     user: { id: 1, name: "Superadmin", email: "superadmin@test.com", role: "superadmin" },
     isLoading: false,
   });
+  mockUseAdminMenu.mockReturnValue({
+    active: "settings",
+    setActive: vi.fn(),
+  });
 });
 
 describe("AdminPage", () => {
   it("기본으로 시스템 설정이 표시된다", () => {
     render(<AdminPage />);
-    expect(screen.getByText("시스템 설정")).toBeInTheDocument();
-    expect(screen.getByText("안내")).toBeInTheDocument();
+    // settings가 활성화되면 SettingsPanel이 렌더링됨
+    expect(screen.queryByText("기능이 이전되었습니다")).not.toBeInTheDocument();
   });
 
-  it("안내 메뉴 클릭 시 기능 이전 안내가 표시된다", async () => {
+  it("안내 메뉴 클릭 시 기능 이전 안내가 표시된다", () => {
+    mockUseAdminMenu.mockReturnValue({
+      active: "info",
+      setActive: vi.fn(),
+    });
     render(<AdminPage />);
-    await userEvent.click(screen.getByText("안내"));
     expect(screen.getByText("기능이 이전되었습니다")).toBeInTheDocument();
     expect(
       screen.getByText("카테고리 추천 기능이 임베드 페이지로 통합되었습니다.")
     ).toBeInTheDocument();
   });
 
-  it("안내 메뉴 클릭 시 임베드 페이지로 이동 버튼이 표시된다", async () => {
+  it("안내 메뉴 클릭 시 임베드 페이지로 이동 버튼이 표시된다", () => {
+    mockUseAdminMenu.mockReturnValue({
+      active: "info",
+      setActive: vi.fn(),
+    });
     render(<AdminPage />);
-    await userEvent.click(screen.getByText("안내"));
     const links = screen.getAllByRole("link", { name: "임베드 페이지로 이동" });
     expect(links.length).toBeGreaterThanOrEqual(1);
   });
