@@ -69,6 +69,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 
 ## 알려진 이슈
 
+- **`--accent`는 text 색상으로 부적합** — light/dark 모두 `oklch(0.45)` 동일 명도. 테마 자동 적응 text에는 `text-foreground` 사용. 배경색(`bg-accent/10`, `bg-accent/20`)으로만 사용할 것.
 - **Laravel API 응답 형식 불일치** — `Resource::collection()`은 `{data: [...]}`, 단일은 `{data: {...}}`. 인터페이스 정의 시 Network 탭으로 확인.
 - **`.claude/settings.json` Stop hook에 `npm run build` 금지** — BUILD_ID 생성으로 dev 모드 이탈.
 - **JS 청크 캐싱 (Cloudflare)** — `_next/static/*`이 `max-age=14400`. 개발 환경은 Cache Rule 바이패스.

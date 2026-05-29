@@ -28,6 +28,8 @@ nextjs/
 - **shadcn/ui** `base-nova` 스타일
 - 디자인 가이드: `docs/UI_GUIDE.md`
 - 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <component>`
+- **CSS 변수 text 색상**: `text-foreground`는 light(검정)/dark(white) 자동 적응. `text-accent`는 양쪽 모두 어두운 색상(0.45)이므로 text에 부적합.
+- **선택 상태 스타일 계층**: unselected(`text-muted-foreground`) → hover(`text-foreground`) → selected(`text-foreground font-semibold`). 배경은 `bg-accent/10` → `bg-accent/20`.
 
 ## 테스트
 
