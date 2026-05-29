@@ -149,10 +149,11 @@ export function EmbedPageInner({
   const initialFilterKeyword = embedParams.keyword ?? "";
 
   const [perPage, setPerPage] = useState(initialPerPage);
-  const [filterSelection, setFilterSelection] = useState<"all" | "my" | null>(null);
+  const [filterSelection, setFilterSelection] = useState<"all" | "my" | null>(serverFilter === "my" ? "my" : serverFilter === "all" ? "all" : null);
   const [keywordSearchActive, setKeywordSearchActive] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [hierarchyRefreshKey, setHierarchyRefreshKey] = useState(0);
+  const [hierarchyResetKey, setHierarchyResetKey] = useState(0);
   const [hierarchyKeyword, setHierarchyKeyword] = useState(initialFilterKeyword);
 
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -314,17 +315,29 @@ export function EmbedPageInner({
   }, [mounted, page, perPage, effectiveFilter, loadCategories]);
 
   // URL이 비어있는데 검색/필터 상태가 남아있으면 초기화 (기능시연, 뒤로가기 등)
+  const resetDoneRef = useRef(false);
   useEffect(() => {
     if (!mounted) return;
-    if (!searchParams.toString() && (searchTextRef.current || searchResultsRef.current !== null || filterRef.current !== undefined)) {
-      setSearchText("");
-      setSearchLanguage("ko");
-      setSearchResults(null);
-      setSearchMeta(null);
-      setSearchError(null);
-      setFilterSelection(null);
-      setKeywordSearchActive(false);
-      keywordRef.current = "";
+    if (!searchParams.toString()) {
+      // 이미 리셋했으면 건너뜀 (무한 루프 방지)
+      if (resetDoneRef.current) return;
+      const hasResidual = searchTextRef.current || searchResultsRef.current !== null || filterRef.current !== undefined || keywordRef.current;
+      if (hasResidual) {
+        resetDoneRef.current = true;
+        setSearchText("");
+        setSearchLanguage("ko");
+        setSearchResults(null);
+        setSearchMeta(null);
+        setSearchError(null);
+        setFilterSelection(null);
+        setKeywordSearchActive(false);
+        keywordRef.current = "";
+        // 계층 필터 완전 초기화 (CategoryHierarchy의 resetKey 변경 시 selectedPath/levelOptions 리셋)
+        setHierarchyResetKey((prev) => prev + 1);
+        setHierarchyKeyword("");
+      }
+    } else {
+      resetDoneRef.current = false;
     }
   }, [searchParams, mounted]);
 
@@ -546,6 +559,7 @@ export function EmbedPageInner({
               initialLevelOptions={serverLevelOptions}
               initialMaxDepth={serverMaxDepth}
               refreshKey={hierarchyRefreshKey}
+              resetKey={hierarchyResetKey}
               token={token}
             />
 
@@ -642,10 +656,12 @@ export function EmbedPageInner({
                 if (!wasStopped) {
                   setSelectedIds(new Set());
                 }
-                loadCategories(page, perPage, effectiveFilter);
+                const kw = keywordRef.current || undefined;
+                loadCategories(page, perPage, effectiveFilter, kw);
               }}
               onCategoryComplete={() => {
-                loadCategories(page, perPage, effectiveFilter);
+                const kw = keywordRef.current || undefined;
+                loadCategories(page, perPage, effectiveFilter, kw);
               }}
             />
 
@@ -659,11 +675,13 @@ export function EmbedPageInner({
               canModify={canModify}
               onComplete={() => {
                 setSelectedIds(new Set());
-                loadCategories(page, perPage, effectiveFilter);
+                const kw = keywordRef.current || undefined;
+                loadCategories(page, perPage, effectiveFilter, kw);
                 setHierarchyRefreshKey((prev) => prev + 1);
               }}
               onCategoryComplete={() => {
-                loadCategories(page, perPage, effectiveFilter);
+                const kw = keywordRef.current || undefined;
+                loadCategories(page, perPage, effectiveFilter, kw);
               }}
             />
           </div>
