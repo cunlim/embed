@@ -45,7 +45,7 @@ export function parseEmbedParams(params: EmbedParamsReader): EmbedParams {
   }
 
   const filterParam = params.get("filter");
-  const filter = filterParam === "my" ? "my" : undefined;
+  const filter = filterParam === "my" ? "my" : filterParam === "all" ? "all" : undefined;
 
   const searchText = params.get("stext") || null;
   const slang = params.get("slang");

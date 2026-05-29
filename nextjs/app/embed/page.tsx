@@ -23,13 +23,14 @@ type EmbedPageParams = {
 export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   const sp = await searchParams;
   const reader = serverParamsReader(sp);
-  const { keyword, searchText, searchLang } = parseEmbedParams(reader);
+  const { keyword, searchText, searchLang, filter: urlFilter } = parseEmbedParams(reader);
 
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value ?? null;
-  let serverDefaultFilter: string | null = null;
+  let serverDefaultFilter: string | null = urlFilter ?? null;
 
-  if (token) {
+  // URL에 filter 파라미터가 없으면 기본값으로 "my" 설정 (사용자 소유 카테고리가 있는 경우)
+  if (!serverDefaultFilter && token) {
     try {
       const ownCategoriesRes = await getCategories(token, 1, 1, "my");
       if (ownCategoriesRes.data.length > 0) {
