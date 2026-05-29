@@ -93,7 +93,7 @@ function DocsNavButton({ doc }: { doc: DocEntry }) {
       type="button"
       onClick={() => setActiveDoc(doc.slug)}
       className={cn(
-        "flex w-full flex-col items-start rounded-md px-3 py-2 text-left transition-colors",
+        "flex w-full flex-col items-start rounded-md px-3 py-2 text-left transition-colors whitespace-nowrap overflow-hidden",
         isActive
           ? "bg-accent/20 text-foreground font-semibold"
           : "text-muted-foreground hover:text-foreground hover:bg-accent/10"

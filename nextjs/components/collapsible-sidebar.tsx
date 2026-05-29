@@ -91,18 +91,26 @@ export function CollapsibleSidebar({
                 <ChevronLeft className="h-4 w-4" />
               )}
             </Button>
-            {!collapsed && (
-              <span className="ml-2 text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                {title}
-              </span>
-            )}
+            <span
+              className={cn(
+                "ml-2 text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap transition-all duration-300",
+                collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
+              )}
+            >
+              {title}
+            </span>
           </div>
 
-          {!collapsed && (
-            <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-              {children}
-            </nav>
-          )}
+          <nav
+            className={cn(
+              "overflow-y-auto p-3 space-y-1 transition-all duration-300",
+              collapsed
+                ? "h-0 overflow-hidden opacity-0 pointer-events-none p-0"
+                : "flex-1 opacity-100"
+            )}
+          >
+            {children}
+          </nav>
         </div>
       </aside>
 
@@ -118,7 +126,7 @@ export function CollapsibleSidebar({
 
       {/* 모바일 Sheet 드로어 */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="left" className="w-64 p-0">
+        <SheetContent side="left" className="w-64 p-0" showCloseButton={false}>
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <SheetTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               {title}

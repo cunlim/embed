@@ -40,4 +40,7 @@ nextjs/
 
 ## 알려진 이슈
 
+- CSS 트랜지션 사이드바: `h-0 overflow-hidden` + `whitespace-nowrap overflow-hidden` 패턴 사용
+- shadcn Sheet: `showCloseButton={false}` 커스텀 닫기 버튼 사용 시 필수
+
 자세한 내용은 `nextjs/AGENTS.md`의 "알려진 이슈" 섹션 참조.
