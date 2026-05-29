@@ -538,18 +538,8 @@ export function EmbedPageInner({
                 setModalReadOnly(cat ? !canModify(cat) : false);
                 setModalCategoryId(categoryId);
               }}
-              onSelectLeafPath={(path, categoryId) => {
-                if (categoryId) {
-                  setModalReadOnly(!canModify({ id: categoryId } as Category | Recommendation));
-                  setModalCategoryId(categoryId);
-                } else {
-                  const keyword = path.join(">");
-                  const cat = displayCategories.find(c => c.category_name_ko === keyword);
-                  if (cat) {
-                    setModalReadOnly(!canModify(cat));
-                    setModalCategoryId(cat.id);
-                  }
-                }
+              onSelectLeafPath={() => {
+                // 리프 선택 시 모달 자동 open 제거 — 사용자가 직접 클릭으로만 모달 열기
               }}
               onKeywordSearch={handleKeywordSearch}
               initialMode={initialFilterMode}

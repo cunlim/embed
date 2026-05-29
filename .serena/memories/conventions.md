@@ -24,13 +24,9 @@
 
 ## Next.js 컨벤션
 
-- **App Router만 사용** — `pages/` 디렉토리 사용 안 함
-- **기본값: Server Components** — 실시간 인터랙션 필요 시만 `"use client"`
-- **ESLint 규칙**:
-  - `react-hooks/set-state-in-effect` — useEffect 내 동기적 setState 금지
-  - `react-hooks/refs` — `useRef`의 `.current` render 중 사용 금지
-  - `useSearchParams`는 `<Suspense>` 경계 필수
-- **SSR 패턴**: URL을 state의 source of truth로, `useCallback` 내 stale state 방지 위해 ref로 최신값 읽기
+자세한 내용은 `nextjs/AGENTS.md` 참조. 핵심 요약:
+- **App Router만 사용**, **기본값: Server Components**
+- **ESLint**: `set-state-in-effect`(effect 내 setState 금지), `refs`(render 중 `.current` 금지), `useSearchParams`는 `<Suspense>` 경계 필수
 - **shadcn Select**: `<select>`가 아님, `role="combobox"` 기반
 - **`CardTitle`**: `<div>`임, `role="heading"` 없음
 

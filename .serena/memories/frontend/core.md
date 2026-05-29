@@ -38,7 +38,4 @@ nextjs/
 
 ## 알려진 이슈
 
-- **Laravel API 응답 형식**: `Resource::collection()` → `{data: [...]}`, 단일 → `{data: {...}}`
-- **`.claude/settings.json` Stop hook에 `npm run build` 금지**: BUILD_ID 생성으로 dev 모드 이탈
-- **OAuth 콜백 `?token=` 파라미터**: `/login`에서 `searchParams.get("token")`으로 localStorage 저장
-- **`--no-bin-links`**: Docker 볼륨 마운트 환경에서 npm 심볼릭 링크 생성 불가
+자세한 내용은 `nextjs/AGENTS.md`의 "알려진 이슈" 섹션 참조.

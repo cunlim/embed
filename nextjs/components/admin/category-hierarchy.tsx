@@ -81,7 +81,7 @@ export default function CategoryHierarchy({
     if (token && (refreshKey > 0 || (tokenChanged && !skipInitial))) {
       fetchCategoryLevels(undefined, token).then((res) => {
         const opts = res.data.options;
-        setLevelOptions([opts]);
+        setLevelOptions((prev) => prev.length > 1 ? [opts, ...prev.slice(1)] : [opts]);
         setMaxDepth(res.data.maxDepth);
       }).catch(() => {});
     }
@@ -93,7 +93,7 @@ export default function CategoryHierarchy({
     if (resetKey === prevResetKeyRef.current) return;
     prevResetKeyRef.current = resetKey;
     setSelectedPath([]);
-    setLevelOptions([]);
+    setLevelOptions(initialLevelOptions.length > 0 ? initialLevelOptions : []);
     setLoadingStates([]);
     setKeywordText("");
     setFilterMode(initialMode);
@@ -101,7 +101,7 @@ export default function CategoryHierarchy({
     // 최상위 옵션 다시 조회
     if (token) {
       fetchCategoryLevels(undefined, token).then((res) => {
-        setLevelOptions([res.data.options]);
+        setLevelOptions((prev) => prev.length > 0 ? [res.data.options, ...prev.slice(1)] : [res.data.options]);
         setMaxDepth(res.data.maxDepth);
       }).catch(() => {});
     }
@@ -130,10 +130,6 @@ export default function CategoryHierarchy({
           });
           if (res.data.isLeaf) {
             onSelectLeafPath?.(path.slice(0, i + 1), res.data.leafCategoryId);
-            // 리프이고 유일한 카테고리일 때만 모달 자동 open
-            if (res.data.leafCategoryId && res.data.categoryCount === 1) {
-              onSelectCategory(res.data.leafCategoryId);
-            }
           }
           if (res.data.maxDepth) {
             setMaxDepth(res.data.maxDepth);
@@ -195,10 +191,6 @@ export default function CategoryHierarchy({
 
         if (res.data.isLeaf) {
           onSelectLeafPath?.(nonNullPath, res.data.leafCategoryId);
-          // 리프이고 유일한 카테고리일 때만 모달 자동 open
-          if (res.data.leafCategoryId && res.data.categoryCount === 1) {
-            onSelectCategory(res.data.leafCategoryId);
-          }
         }
 
         setLevelOptions((prev) => {
@@ -216,7 +208,7 @@ export default function CategoryHierarchy({
         });
       }
     },
-    [selectedPath, onKeywordSearch, filterMode, keywordText, reportFilterChange, token, onSelectLeafPath, onSelectCategory]
+    [selectedPath, onKeywordSearch, filterMode, keywordText, reportFilterChange, token, onSelectLeafPath]
   );
 
   // 초과 깊이 옵션 처리: CategoryLevelOption[]에서 categoryId 추출

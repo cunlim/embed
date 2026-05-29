@@ -37,6 +37,9 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
 - **`useSearchParams()`가 새 객체 반환 시** (테스트 mock 등) effect 내 `setState`가 무한 루프 유발. `resetDoneRef` 패턴으로 1회만 실행하도록 guard 필요.
 - **effect에서 부모 콜백 호출 금지** — `onKeywordSearch()`, `onFilterChange()` 등 부모 state를 변경하는 콜백을 effect에서 호출하면 `react-hooks/preserve-manual-memoization` 에러 발생. 로컬 상태만 리셋하고, 부모 콜백은 `EmbedPageInner`에서 직접 호출.
 - **`resetKey` prop 패턴** — `refreshKey`(옵션 재조회)와 별도로 `resetKey`(상태 완전 초기화)를 분리. `resetKey` effect에서는 부모 콜백 없이 로컬 상태만 리셋 + 옵션 재조회.
+- **`setLevelOptions` 자식 depth 보존** — `refreshKey`/`resetKey` effect에서 `setLevelOptions([opts])` 호출 시 자식 depth 옵션이 삭제됨. `setLevelOptions((prev) => prev.length > 1 ? [opts, ...prev.slice(1)] : [opts])`로 함수형 업데이트하여 보존.
+- **`resetKey` 초기 옵션 즉시 설정** — `setLevelOptions([])`로 초기화하면 fetch 완료 전까지 "사용 가능한 카테고리가 없습니다" 플래시 발생. `initialLevelOptions`가 있으면 즉시 설정 후 fetch로 갱신.
+- **모달 자동 open 제거 시 `onSelectLeafPath` 확인** — `CategoryHierarchy`의 `onSelectCategory`만 제거하면 `EmbedPageInner`의 `onSelectLeafPath` 콜백이 `setModalCategoryId`를 호출하여 모달이 열림. 양쪽 모두 제거 필요.
 
 ## SSR 패턴
 
