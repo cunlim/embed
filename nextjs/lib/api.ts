@@ -81,6 +81,7 @@ export function fetchCategoryTranslations(
 export interface LanguageScore {
   similarity_score: number | null;
   rank: number | null;
+  category_embedding: number[] | null;
 }
 
 export interface PerLanguageScores {

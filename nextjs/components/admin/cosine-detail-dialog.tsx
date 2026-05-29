@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef } from "react";
 import { Copy, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -150,14 +151,28 @@ export default function CosineDetailDialog({
   searchKeyword,
   targetLanguage = "ko",
 }: CosineDetailDialogProps) {
+  const [selectedLanguage, setSelectedLanguage] = useState<"ko" | "en" | "zh">(targetLanguage as "ko" | "en" | "zh");
+  const prevOpenRef = useRef(open);
+
+  // 모달이 열릴 때 targetLanguage로 초기화
+  // eslint-disable-next-line react-hooks/refs -- 모달 open 시점에만 상태 초기화 필요
+  if (open && !prevOpenRef.current) {
+    setSelectedLanguage(targetLanguage as "ko" | "en" | "zh");
+  }
+  // eslint-disable-next-line react-hooks/refs
+  prevOpenRef.current = open;
+
   if (!result) return null;
 
-  const score = result.similarity_score ?? 0;
+  // 선택된 언어의 데이터 추출
+  const selectedScores = result.per_language_scores?.[selectedLanguage];
+  const score = selectedScores?.similarity_score ?? result.similarity_score ?? 0;
   const clampedScore = Math.min(1, Math.max(-1, score));
   const scorePercent = (score * 100).toFixed(1);
   const thetaDeg = ((Math.acos(clampedScore) * 180) / Math.PI).toFixed(1);
   const aEmb = result.query_embedding;
-  const bEmb = result.category_embedding;
+  // 선택된 언어의 카테고리 임베딩 사용, 없으면 기본값
+  const bEmb = selectedScores?.category_embedding ?? result.category_embedding;
   const normA = aEmb ? Math.sqrt(aEmb.reduce((s, v) => s + v * v, 0)) : 1;
   const normB = bEmb ? Math.sqrt(bEmb.reduce((s, v) => s + v * v, 0)) : 1;
 
@@ -286,21 +301,41 @@ export default function CosineDetailDialog({
                     ] as const
                   ).map(({ code, label, name }) => {
                     const scores = result.per_language_scores![code];
-                    const isCurrent = code === targetLanguage;
+                    const isSelected = code === selectedLanguage;
                     return (
-                      <div
+                      <label
                         key={code}
                         className={cn(
-                          "flex items-center gap-3 rounded-lg border px-3 py-2.5",
-                          isCurrent
-                            ? "border-primary ring-2 ring-primary shadow-md"
-                            : "border-muted-foreground/15 bg-muted/30"
+                          "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors",
+                          isSelected
+                            ? "border-primary ring-2 ring-primary shadow-md bg-primary/5"
+                            : "border-muted-foreground/15 bg-muted/30 hover:bg-muted/50"
                         )}
                       >
+                        <input
+                          type="radio"
+                          name="modal-language"
+                          value={code}
+                          checked={isSelected}
+                          onChange={() => setSelectedLanguage(code)}
+                          className="sr-only"
+                        />
+                        <span
+                          className={cn(
+                            "flex items-center justify-center w-4 h-4 rounded-full border-2 shrink-0",
+                            isSelected
+                              ? "border-primary bg-primary"
+                              : "border-muted-foreground/30"
+                          )}
+                        >
+                          {isSelected && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                          )}
+                        </span>
                         <span
                           className={cn(
                             "text-xs font-medium min-w-[42px]",
-                            isCurrent ? "text-primary" : "text-muted-foreground"
+                            isSelected ? "text-primary" : "text-muted-foreground"
                           )}
                         >
                           {label}
@@ -311,7 +346,7 @@ export default function CosineDetailDialog({
                         <span
                           className={cn(
                             "shrink-0 font-mono text-base font-bold tabular-nums",
-                            !isCurrent && "text-muted-foreground"
+                            !isSelected && "text-muted-foreground"
                           )}
                         >
                           {scores.similarity_score != null
@@ -321,14 +356,14 @@ export default function CosineDetailDialog({
                         <span
                           className={cn(
                             "shrink-0 text-[11px] font-medium px-1.5 py-0.5 rounded",
-                            isCurrent
+                            isSelected
                               ? "bg-primary/10 text-primary"
                               : "bg-muted/50 text-muted-foreground"
                           )}
                         >
                           {scores.rank != null ? `${scores.rank}위` : "—"}
                         </span>
-                      </div>
+                      </label>
                     );
                   })}
                 </div>

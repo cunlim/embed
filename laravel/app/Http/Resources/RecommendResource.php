@@ -28,6 +28,7 @@ class RecommendResource extends JsonResource
             $perLanguageScores[$l] = [
                 'similarity_score' => $score,
                 'rank' => $this->{"rank_{$l}"} ?? null,
+                'category_embedding' => $this->parseLanguageEmbedding($l),
             ];
         }
 
@@ -83,6 +84,26 @@ class RecommendResource extends JsonResource
             return $raw;
         }
         // pgvector raw select는 "[0.1,0.2,...]" 형식 문자열로 반환됨
+        $decoded = json_decode((string) $raw, true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        return null;
+    }
+
+    /**
+     * 언어별 임베딩 파싱 (ce_ko, ce_en, ce_zh의 selectRaw 결과)
+     */
+    private function parseLanguageEmbedding(string $lang): ?array
+    {
+        $raw = $this->{"category_embedding_raw_{$lang}"} ?? null;
+        if ($raw === null) {
+            return null;
+        }
+        if (is_array($raw)) {
+            return $raw;
+        }
         $decoded = json_decode((string) $raw, true);
         if (is_array($decoded)) {
             return $decoded;

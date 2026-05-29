@@ -103,9 +103,9 @@ const mockResult: Recommendation = {
   query_embedding: [0.1, -0.2, 0.3],
   category_embedding: [0.15, -0.18, 0.28],
   per_language_scores: {
-    ko: { similarity_score: 0.873, rank: 3 },
-    en: { similarity_score: 0.821, rank: 5 },
-    zh: { similarity_score: 0.795, rank: 8 },
+    ko: { similarity_score: 0.873, rank: 3, category_embedding: [0.15, -0.18, 0.28] },
+    en: { similarity_score: 0.821, rank: 5, category_embedding: [0.12, -0.15, 0.25] },
+    zh: { similarity_score: 0.795, rank: 8, category_embedding: [0.1, -0.12, 0.22] },
   },
 };
 
