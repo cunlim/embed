@@ -22,7 +22,7 @@
 - **이슈 사전 재현** — 수정 작업 전 Playwright로 실제 이슈가 존재하는지 먼저 확인한다.
 - **Sub-agent driven** — 구현은 되도록 Agent(Sub-agent)를 활용한다.
 - **Playwright 테스트 URL** — WSL2 호스트에서 `https://embed.cunlim.dev`로 접속 (Next.js 포트 미공개).
-- **Playwright 인증** — 쿠키 기반(`auth_token`). superadmin 필요 시 `User::where('role','superadmin')->first()`로 조회 (자세한 절차는 `laravel/AGENTS.md` 참조).
+- **Playwright 인증** — 쿠키 기반(`auth_token`). superadmin 필요 시 `User::where('role','superadmin')->first()`로 조회 (자세한 절차는 `laravel/AGENTS.md` 참조). 쿠키 설정은 `context.clearCookies()` + `context.addCookies()` 사용 (중복 쿠키 방지).
 - **작업 완료 전 검증** — `.claude/hooks/run-all-checks.sh` 실행 후 `cat .claude/hooks/test-results/*.txt`로 결과 확인. tsc, lint, test, pint 모두 EXIT=0 확인 후 마무리.
 
 ## 문서 우선순위

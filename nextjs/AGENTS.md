@@ -32,6 +32,12 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
 - **`react-hooks/refs`** — `useRef`의 `.current` render 중 사용 금지. 콜백 ref는 `useEffect(() => { ref.current = callback })` 사용.
 - **`useSearchParams`는 `<Suspense>` 경계 필수** — 빌드 시 오류 발생
 
+## useEffect 무한 루프 방지
+
+- **`useSearchParams()`가 새 객체 반환 시** (테스트 mock 등) effect 내 `setState`가 무한 루프 유발. `resetDoneRef` 패턴으로 1회만 실행하도록 guard 필요.
+- **effect에서 부모 콜백 호출 금지** — `onKeywordSearch()`, `onFilterChange()` 등 부모 state를 변경하는 콜백을 effect에서 호출하면 `react-hooks/preserve-manual-memoization` 에러 발생. 로컬 상태만 리셋하고, 부모 콜백은 `EmbedPageInner`에서 직접 호출.
+- **`resetKey` prop 패턴** — `refreshKey`(옵션 재조회)와 별도로 `resetKey`(상태 완전 초기화)를 분리. `resetKey` effect에서는 부모 콜백 없이 로컬 상태만 리셋 + 옵션 재조회.
+
 ## SSR 패턴
 
 - URL을 state의 source of truth로 — `useSearchParams()` 변경 감지 → URL→state 단방향 싱크
@@ -49,6 +55,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **shadcn Select는 `<select>`가 아님** — `role="combobox"` 기반. Playwright에서 옵션 클릭 사용.
 - **`CardTitle`은 `<div>`** — `role="heading"` 없음. `getByText()` 사용.
 - **`vitest` 바이너리 직접 실행 금지** — `--no-bin-links`로 `node_modules/.bin/vitest` 미생성. `npm test` 사용.
+- **`vitest run` 전체 실행 타임아웃** — Docker 내에서 `npx vitest run` 전체 실행 시 hang 발생 가능. 개별 파일 실행은 정상 동작. 검증 시 개별 파일별로 실행하거나 `timeout` 사용.
 
 ## 알려진 이슈
 
