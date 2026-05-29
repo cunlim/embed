@@ -172,10 +172,10 @@ export default function CategoryDelete({
       <div className="space-y-4">
         <div className="flex gap-2">
           <Button
-            variant="outline"
+            variant="destructive"
             onClick={handleSelectedDelete}
             disabled={running || selectedIds.size === 0}
-            className="flex-1"
+            className="flex-1 hover:bg-destructive/90 hover:text-destructive-foreground"
           >
             선택삭제
           </Button>
@@ -183,7 +183,7 @@ export default function CategoryDelete({
             variant="destructive"
             onClick={handleFullDelete}
             disabled={running}
-            className="flex-1"
+            className="flex-1 hover:bg-destructive/90 hover:text-destructive-foreground"
           >
             전체삭제
           </Button>
