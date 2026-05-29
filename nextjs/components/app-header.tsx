@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { BookOpen, Play } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { AuthButtons } from "@/components/auth-buttons";
@@ -25,8 +24,7 @@ function GitHubIcon({ className }: { className?: string }) {
 }
 
 export function AppHeader() {
-  const pathname = usePathname();
-  const badge = pathname === "/admin" ? "admin" : undefined;
+  const badge = undefined;
 
   return (
     <SiteHeader
