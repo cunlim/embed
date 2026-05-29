@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useSyncExternalStore } from "react";
+import { useState, useCallback } from "react";
 import { ChevronLeft, X, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,83 +9,50 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
 interface CollapsibleSidebarProps {
   title: string;
   children: React.ReactNode;
   storageKey: string;
-  breakpoint?: "sm" | "md" | "lg" | "xl";
-}
-
-const BREAKPOINT_MAP = {
-  sm: "(min-width: 640px)",
-  md: "(min-width: 768px)",
-  lg: "(min-width: 1024px)",
-  xl: "(min-width: 1280px)",
-} as const;
-
-// localStorage 기반 collapsed 상태 관리 (hydration-safe)
-function useCollapsedState(storageKey: string) {
-  const collapsed = useSyncExternalStore(
-    // subscribe: storage 이벤트 리스너
-    (onStoreChange) => {
-      const handler = (e: StorageEvent) => {
-        if (e.key === storageKey) onStoreChange();
-      };
-      window.addEventListener("storage", handler);
-      return () => window.removeEventListener("storage", handler);
-    },
-    // getSnapshot: localStorage에서 현재 값 읽기
-    () => localStorage.getItem(storageKey) === "collapsed",
-    // getServerSnapshot: 서버에서는 항상 false
-    () => false,
-  );
-
-  const toggle = useCallback(() => {
-    const next = !collapsed;
-    localStorage.setItem(storageKey, next ? "collapsed" : "expanded");
-    // storage 이벤트는 같은 탭에서 발생하지 않으므로 직접 dispatch
-    window.dispatchEvent(
-      new StorageEvent("storage", {
-        key: storageKey,
-        newValue: next ? "collapsed" : "expanded",
-      }),
-    );
-  }, [storageKey, collapsed]);
-
-  return [collapsed, toggle] as const;
 }
 
 export function CollapsibleSidebar({
   title,
   children,
   storageKey,
-  breakpoint = "lg",
 }: CollapsibleSidebarProps) {
-  const isDesktop = useMediaQuery(BREAKPOINT_MAP[breakpoint]);
-  const [collapsed, toggleCollapsed] = useCollapsedState(storageKey);
+  const [collapsed, setCollapsed] = useState(() => {
+    // 서버에서는 false 반환, 클라이언트에서는 localStorage 값 사용
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(storageKey) === "collapsed";
+  });
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // 접기/펼치기 토글 (데스크톱만)
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(storageKey, next ? "collapsed" : "expanded");
+      return next;
+    });
+  }, [storageKey]);
 
   // 모바일: 네비게이션 아이템 클릭 시 Sheet 닫기
   const handleItemClick = useCallback(() => {
-    if (!isDesktop) {
-      setSheetOpen(false);
-    }
-  }, [isDesktop]);
+    setSheetOpen(false);
+  }, []);
 
-  // 데스크톱 렌더링
-  if (isDesktop) {
-    return (
+  return (
+    <>
+      {/* 데스크톱 사이드바 — lg 이상에서만 표시 */}
       <aside
         className={cn(
-          "shrink-0 border-r border-border transition-all duration-300 overflow-hidden",
+          "hidden lg:block shrink-0 border-r border-border transition-all duration-300 overflow-hidden",
           collapsed ? "w-12" : "w-56"
         )}
       >
         <div className="sticky top-16 flex h-[calc(100vh-4rem)] flex-col">
-          {/* 헤더 */}
           <div className="flex items-center border-b border-border px-3 py-3">
             <Button
               variant="ghost"
@@ -106,7 +73,6 @@ export function CollapsibleSidebar({
             )}
           </div>
 
-          {/* 네비게이션 */}
           {!collapsed && (
             <nav className="flex-1 overflow-y-auto p-3 space-y-1">
               {children}
@@ -114,21 +80,18 @@ export function CollapsibleSidebar({
           )}
         </div>
       </aside>
-    );
-  }
 
-  // 모바일 렌더링
-  return (
-    <>
+      {/* 모바일 토글 버튼 — lg 미만에서만 표시 */}
       <Button
         variant="outline"
         size="icon"
-        className="fixed top-16 left-3 z-50 h-9 w-9 shadow-sm"
+        className="fixed top-16 left-3 z-50 h-9 w-9 shadow-sm lg:hidden"
         onClick={() => setSheetOpen(true)}
       >
         <PanelLeft className="h-4 w-4" />
       </Button>
 
+      {/* 모바일 Sheet 드로어 */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="left" className="w-64 p-0">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">

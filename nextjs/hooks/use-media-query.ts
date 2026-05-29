@@ -1,20 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 
+/**
+ * 클라이언트에서만 미디어 쿼리 결과를 반환하는 훅.
+ * 서버에서는 항상 false를 반환합니다.
+ */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia(query).matches;
-  });
-
-  useEffect(() => {
-    const media = window.matchMedia(query);
-
-    const listener = (e: MediaQueryListEvent) => setMatches(e.matches);
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
-  }, [query]);
-
-  return matches;
+  return useSyncExternalStore(
+    (callback) => {
+      const media = window.matchMedia(query);
+      media.addEventListener("change", callback);
+      return () => media.removeEventListener("change", callback);
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
 }
