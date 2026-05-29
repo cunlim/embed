@@ -7,8 +7,17 @@ Next.js 16 (App Router), React 19, TypeScript 5, Tailwind CSS v4, shadcn/ui (`ba
 
 ## 명령어
 
-`docker exec cl_embed_nextjs npm run <command>` 패턴. 자주 사용: `dev`, `build`, `lint`, `test`, `test:watch`.
-shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <component>`.
+**모든 명령어는 Docker 컨테이너에서 실행** — host에는 TypeScript 등 의존성이 설치되어 있지 않음.
+
+```bash
+# 자주 사용
+docker exec cl_embed_nextjs npm run <dev|build|lint|test|test:watch>
+docker exec cl_embed_nextjs npx tsc --noEmit
+docker exec cl_embed_nextjs npx eslint <files> --max-warnings=0
+
+# shadcn 컴포넌트 추가 (--overwrite 사용 시 기존 컴포넌트 덮어쓰기 주의)
+docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
+```
 
 ## 디자인 시스템
 
@@ -69,6 +78,8 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 
 ## 알려진 이슈
 
+- **반응형 레이아웃 hydration mismatch** — JS 조건부 렌더링(`if (isDesktop)`)은 서버/클라이언트 값 불일치로 hydration 에러 발생. CSS 기반(`hidden lg:block`)으로 전환하거나 `useSyncExternalStore`의 `getServerSnapshot` 사용.
+- **shadcn `--overwrite` 플래그** — 기존 컴포넌트를 새 버전으로 덮어씀. button.tsx의 `asChild` prop 등 호환성 깨질 수 있음. 사용 후 `git diff` 확인 필수.
 - **`--accent`는 text 색상으로 부적합** — light/dark 모두 `oklch(0.45)` 동일 명도. 테마 자동 적응 text에는 `text-foreground` 사용. 배경색(`bg-accent/10`, `bg-accent/20`)으로만 사용할 것.
 - **Laravel API 응답 형식 불일치** — `Resource::collection()`은 `{data: [...]}`, 단일은 `{data: {...}}`. 인터페이스 정의 시 Network 탭으로 확인.
 - **`.claude/settings.json` Stop hook에 `npm run build` 금지** — BUILD_ID 생성으로 dev 모드 이탈.
