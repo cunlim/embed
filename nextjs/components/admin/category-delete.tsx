@@ -175,7 +175,7 @@ export default function CategoryDelete({
             variant="destructive"
             onClick={handleSelectedDelete}
             disabled={running || selectedIds.size === 0}
-            className="flex-1 hover:bg-destructive/90 hover:text-destructive-foreground"
+            className="flex-1 hover:brightness-80"
           >
             선택삭제
           </Button>
@@ -183,7 +183,7 @@ export default function CategoryDelete({
             variant="destructive"
             onClick={handleFullDelete}
             disabled={running}
-            className="flex-1 hover:bg-destructive/90 hover:text-destructive-foreground"
+            className="flex-1 hover:brightness-80"
           >
             전체삭제
           </Button>
