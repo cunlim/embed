@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Menu, ChevronLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,16 +33,11 @@ export function CollapsibleSidebar({
   breakpoint = "lg",
 }: CollapsibleSidebarProps) {
   const isDesktop = useMediaQuery(BREAKPOINT_MAP[breakpoint]);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(storageKey) === "collapsed";
+  });
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  // localStorage에서 상태 복원
-  useEffect(() => {
-    const stored = localStorage.getItem(storageKey);
-    if (stored !== null) {
-      setCollapsed(stored === "collapsed");
-    }
-  }, [storageKey]);
 
   // 접기/펼치기 토글 (데스크톱만)
   const toggleCollapsed = useCallback(() => {
