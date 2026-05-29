@@ -30,6 +30,7 @@ shadcn 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <
   - Mount 감지: `useSyncExternalStore(() => () => {}, () => true, () => false)` 사용
   - Data fetch: 훅이 mount 시 자동 로드 — effect에서 수동 호출 금지
 - **`react-hooks/refs`** — `useRef`의 `.current` render 중 사용 금지. 콜백 ref는 `useEffect(() => { ref.current = callback })` 사용.
+  - **모달 open 초기화 패턴**: `useRef`로 이전 `open` 상태 추적 → render 중 조건부 `setState`는 `eslint-disable-next-line react-hooks/refs` 필요
 - **`useSearchParams`는 `<Suspense>` 경계 필수** — 빌드 시 오류 발생
 
 ## useEffect 무한 루프 방지
