@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useSyncExternalStore } from "react";
 import { ChevronLeft, X, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,26 +17,51 @@ interface CollapsibleSidebarProps {
   storageKey: string;
 }
 
+/**
+ * localStorage 기반 collapsed 상태 관리 (hydration-safe)
+ * - 서버: 항상 false 반환 (ChevronLeft 아이콘, 펼쳐진 상태)
+ * - 클라이언트 첫 렌더: false 반환 (서버와 일치 → hydration mismatch 없음)
+ * - 클라이언트 동기화 후: localStorage 값으로 업데이트
+ */
+function useCollapsedState(storageKey: string) {
+  const collapsed = useSyncExternalStore(
+    // subscribe: storage 이벤트 + 커스텀 이벤트 리스너
+    (onStoreChange) => {
+      const handler = (e: StorageEvent) => {
+        if (e.key === storageKey) onStoreChange();
+      };
+      // 같은 탭의 toggle에서도 반영하기 위한 커스텀 이벤트
+      const customHandler = () => onStoreChange();
+      window.addEventListener("storage", handler);
+      window.addEventListener(`sidebar-${storageKey}`, customHandler);
+      return () => {
+        window.removeEventListener("storage", handler);
+        window.removeEventListener(`sidebar-${storageKey}`, customHandler);
+      };
+    },
+    // getSnapshot: 클라이언트에서 localStorage 값 읽기
+    () => localStorage.getItem(storageKey) === "collapsed",
+    // getServerSnapshot: 서버에서는 항상 false (hydration-safe)
+    () => false,
+  );
+
+  const toggle = useCallback(() => {
+    const next = !collapsed;
+    localStorage.setItem(storageKey, next ? "collapsed" : "expanded");
+    // 같은 탭에서 반영하기 위해 커스텀 이벤트 dispatch
+    window.dispatchEvent(new Event(`sidebar-${storageKey}`));
+  }, [storageKey, collapsed]);
+
+  return [collapsed, toggle] as const;
+}
+
 export function CollapsibleSidebar({
   title,
   children,
   storageKey,
 }: CollapsibleSidebarProps) {
-  const [collapsed, setCollapsed] = useState(() => {
-    // 서버에서는 false 반환, 클라이언트에서는 localStorage 값 사용
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(storageKey) === "collapsed";
-  });
+  const [collapsed, toggleCollapsed] = useCollapsedState(storageKey);
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  // 접기/펼치기 토글 (데스크톱만)
-  const toggleCollapsed = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem(storageKey, next ? "collapsed" : "expanded");
-      return next;
-    });
-  }, [storageKey]);
 
   // 모바일: 네비게이션 아이템 클릭 시 Sheet 닫기
   const handleItemClick = useCallback(() => {
