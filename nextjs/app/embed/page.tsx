@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import { fetchCategoryLevels, getCategories, recommend } from "@/lib/api";
+import { fetchCategoryLevels, getCategories, recommend, getUser } from "@/lib/api";
 import { parseEmbedParams, type EmbedParamsReader } from "@/lib/embed-params";
 import { EmbedPageInner } from "./embed-page-inner";
-import type { Category, PaginationMeta, Recommendation } from "@/lib/api";
+import type { Category, PaginationMeta, Recommendation, User } from "@/lib/api";
 
 function serverParamsReader(
   sp: Awaited<EmbedPageParams["searchParams"]>
@@ -27,6 +27,15 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
 
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value ?? null;
+
+  // CSR hydration 전 깜빡임 방지: SSR에서 사용자 정보 prefetch
+  let serverUser: User | null = null;
+  if (token) {
+    try {
+      serverUser = await getUser(token);
+    } catch {}
+  }
+
   let serverDefaultFilter: string | null = urlFilter ?? null;
 
   // URL에 filter 파라미터가 없으면 기본값으로 "my" 설정 (사용자 소유 카테고리가 있는 경우)
@@ -104,6 +113,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
         serverMeta={serverMeta}
         serverHadToken={!!token}
         serverFilter={serverDefaultFilter}
+        serverUser={serverUser}
         serverSearchResults={serverSearchResults}
         serverSearchMeta={serverSearchMeta}
         serverSearchText={searchText}

@@ -228,7 +228,7 @@ describe("EmbedPage", () => {
     render(<EmbedPageInner serverLevelOptions={[]} serverMaxDepth={1} serverCategories={[]} serverMeta={null} serverHadToken={true} serverFilter={"my"} serverSearchResults={null} serverSearchMeta={null} serverSearchText={null} serverSearchLang="ko" />);
 
     await waitFor(() => {
-      expect(loadCategories).toHaveBeenCalledWith(1, 20, "my", undefined);
+      expect(loadCategories).toHaveBeenCalledWith(1, 20, "my", "");
     });
   });
 });

@@ -91,6 +91,7 @@ export function EmbedPageInner({
   serverMeta,
   serverHadToken,
   serverFilter,
+  serverUser,
   serverSearchResults,
   serverSearchMeta,
   serverSearchText,
@@ -102,12 +103,13 @@ export function EmbedPageInner({
   serverMeta: PaginationMeta | null;
   serverHadToken: boolean;
   serverFilter: string | null;
+  serverUser?: import("@/lib/api").User | null;
   serverSearchResults: Recommendation[] | null;
   serverSearchMeta: PaginationMeta | null;
   serverSearchText: string | null;
   serverSearchLang: string;
 }) {
-  const { user } = useAuth();
+  const { user } = useAuth(serverUser);
   const router = useRouter();
   const searchParams = useSearchParams();
   const mounted = useSyncExternalStore(
@@ -193,6 +195,10 @@ export function EmbedPageInner({
   const skipInitialLoad = useRef(initialHierarchy.length > 0 || !!initialFilterKeyword);
   // SSR 데이터가 있고 토큰도 있었으면 CSR 재요청 건너뜀 (마이그레이션 대응)
   const hadServerCategories = useRef(serverCategories.length > 0 && serverHadToken);
+  // resetToDefault() 직후 data-loading effect가 중복 호출되지 않도록 건너뜀
+  const skipLoadEffectRef = useRef(false);
+  // SSR에서 결정된 기본 필터 (내 카테고리 보유 시 "my", 미보유 시 null)
+  const defaultFilterRef = useRef<"all" | "my" | null>(serverFilter === "my" ? "my" : serverFilter === "all" ? "all" : null);
 
   const isSearchMode = searchResults !== null && !keywordSearchActive;
   const displayCategories = isSearchMode ? searchResults : categories;
@@ -300,6 +306,10 @@ export function EmbedPageInner({
   // URL page 동기화 (시맨틱 검색 결과가 있으면 필터 변경 시 재검색)
   useEffect(() => {
     if (!mounted) return;
+    if (skipLoadEffectRef.current) {
+      skipLoadEffectRef.current = false;
+      return;
+    }
     if (skipInitialLoad.current) {
       skipInitialLoad.current = false;
       return;
@@ -312,7 +322,7 @@ export function EmbedPageInner({
     if (searchResultsRef.current !== null) {
       handleSearchRef.current(page);
     } else {
-      const kw = keywordRef.current || undefined;
+      const kw = keywordRef.current;
       loadCategories(page, perPage, effectiveFilter, kw);
     }
   }, [mounted, page, perPage, effectiveFilter, loadCategories]);
@@ -330,7 +340,7 @@ export function EmbedPageInner({
     if (!searchParams.toString()) {
       // 이미 리셋했으면 건너뜀 (무한 루프 방지)
       if (resetDoneRef.current) return;
-      const hasResidual = searchTextRef.current || searchResultsRef.current !== null || filterRef.current !== null || keywordRef.current;
+      const hasResidual = searchTextRef.current || searchResultsRef.current !== null || filterRef.current !== defaultFilterRef.current || keywordRef.current;
       if (hasResidual) {
         resetDoneRef.current = true;
         setSearchText("");
@@ -338,7 +348,8 @@ export function EmbedPageInner({
         setSearchResults(null);
         setSearchMeta(null);
         setSearchError(null);
-        setFilterSelection(null);
+        const defaultFilter = defaultFilterRef.current;
+        setFilterSelection(defaultFilter);
         setKeywordSearchActive(false);
         keywordRef.current = "";
         // per_page 초기화 (URL에서 파생된 state이므로 수동 동기화 필요)
@@ -346,10 +357,10 @@ export function EmbedPageInner({
         // 계층 필터 완전 초기화 (CategoryHierarchy의 resetKey 변경 시 selectedPath/levelOptions 리셋)
         setHierarchyResetKey((prev) => prev + 1);
         setHierarchyKeyword("");
-        // 필터 ref 초기화 (effectiveFilter fallback 방지)
-        filterRef.current = null;
-        // 디폴트 카테고리 목록 리로드 (빈 검색어 명시 전달로 이전 검색 조건 차단)
-        loadCategories(1, 20, undefined, "");
+        // 필터 ref 초기화 (SSR 기본값으로 복원)
+        filterRef.current = defaultFilter;
+        // 디폴트 카테고리 목록 리로드 (SSR 기본 필터 적용)
+        loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "");
       }
     } else {
       resetDoneRef.current = false;
@@ -383,6 +394,11 @@ export function EmbedPageInner({
     // router.replace는 React 상태 배치로 인해 지연됨. <Link>와 충돌도 방지.
     window.history.replaceState(null, "", "/embed");
 
+    // data-loading effect가 중복 호출되지 않도록 건너뜀
+    skipLoadEffectRef.current = true;
+    // URL reset effect가 기본 필터를 잔여 상태로 오판하지 않도록 방지
+    resetDoneRef.current = true;
+
     // 검색 상태 초기화
     setSearchText("");
     setSearchLanguage("ko");
@@ -391,11 +407,12 @@ export function EmbedPageInner({
     setSearchError(null);
     setIsSearching(false);
 
-    // 필터 상태 초기화
-    setFilterSelection(null);
+    // 필터 상태 초기화 (SSR 기본값으로 복원)
+    const defaultFilter = defaultFilterRef.current;
+    setFilterSelection(defaultFilter);
     setKeywordSearchActive(false);
     keywordRef.current = "";
-    filterRef.current = null;
+    filterRef.current = defaultFilter;
 
     // 페이지네이션 초기화
     setPerPage(20);
@@ -404,8 +421,8 @@ export function EmbedPageInner({
     setHierarchyResetKey((prev) => prev + 1);
     setHierarchyKeyword("");
 
-    // 카테고리 목록 리로드 (필터 없이 기본 목록)
-    loadCategories(1, 20, undefined, "");
+    // 카테고리 목록 리로드 (SSR 기본 필터 적용)
+    loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "");
   }, [loadCategories]);
 
   // "기능시연" 클릭 시 커스텀 이벤트로 즉시 리셋
@@ -426,7 +443,7 @@ export function EmbedPageInner({
     setHierarchyKeyword(keyword);
     if (searchResults !== null) {
       // 시맨틱 검색 활성 상태: 검색 재실행 (필터 컨텍스트는 URL/state로 이미 갱신됨)
-      handleSearch(1, keyword || undefined);
+      handleSearch(1, keyword);
       return;
     }
     if (!keyword) {
@@ -454,10 +471,12 @@ export function EmbedPageInner({
     [updateURL]
   );
 
+  // SSR에서 prefetch된 사용자 정보를 CSR user가 로드되기 전까지 fallback으로 사용
+  const effectiveUser = user ?? serverUser;
   const canModify = useCallback((category: Category | Recommendation) => {
-    if (!user) return false;
-    return isAdmin(user) || ("user_id" in category && category.user_id === user.id);
-  }, [user]);
+    if (!effectiveUser) return false;
+    return isAdmin(effectiveUser) || ("user_id" in category && category.user_id === effectiveUser.id);
+  }, [effectiveUser]);
 
   const toggleSelectAll = useCallback(() => {
     const modifiableIds = displayCategories
@@ -701,11 +720,11 @@ export function EmbedPageInner({
                 if (!wasStopped) {
                   setSelectedIds(new Set());
                 }
-                const kw = keywordRef.current || undefined;
+                const kw = keywordRef.current;
                 loadCategories(page, perPage, effectiveFilter, kw);
               }}
               onCategoryComplete={() => {
-                const kw = keywordRef.current || undefined;
+                const kw = keywordRef.current;
                 loadCategories(page, perPage, effectiveFilter, kw);
               }}
             />
@@ -729,12 +748,12 @@ export function EmbedPageInner({
               canModify={canModify}
               onComplete={() => {
                 setSelectedIds(new Set());
-                const kw = keywordRef.current || undefined;
+                const kw = keywordRef.current;
                 loadCategories(page, perPage, effectiveFilter, kw);
                 setHierarchyRefreshKey((prev) => prev + 1);
               }}
               onCategoryComplete={() => {
-                const kw = keywordRef.current || undefined;
+                const kw = keywordRef.current;
                 loadCategories(page, perPage, effectiveFilter, kw);
               }}
             />
