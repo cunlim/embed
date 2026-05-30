@@ -1,25 +1,17 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LogIn, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth, getToken } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { isSuperAdmin } from "@/lib/utils";
+import type { User } from "@/lib/api";
 
-export function AuthButtons() {
-  const { user, logout } = useAuth();
+export function AuthButtons({ serverUser }: { serverUser?: User | null }) {
+  const { user, logout } = useAuth(serverUser);
   const router = useRouter();
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
 
-  if (!mounted) return null;
-
-  const hasToken = !!getToken();
   const admin = isSuperAdmin(user);
 
   return (
@@ -44,7 +36,7 @@ export function AuthButtons() {
         </Button>
       )}
 
-      {hasToken ? (
+      {user ? (
         <Button
           variant="ghost"
           size="sm"

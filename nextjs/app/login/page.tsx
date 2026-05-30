@@ -22,7 +22,9 @@ function LoginForm() {
 
     if (token) {
       setToken(token);
-      router.replace(redirectTo);
+      // router.replace는 client-side navigation → layout SSR 재실행 안 됨
+      // window.location.href로 전체 페이지 로드 → SSR이 쿠키로 사용자 정보 prefetch
+      window.location.href = redirectTo;
       return;
     }
 

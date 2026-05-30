@@ -5,6 +5,7 @@ import { BookOpen, Play } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { AuthButtons } from "@/components/auth-buttons";
 import { Button } from "@/components/ui/button";
+import type { User } from "@/lib/api";
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -23,7 +24,7 @@ function GitHubIcon({ className }: { className?: string }) {
   );
 }
 
-export function AppHeader() {
+export function AppHeader({ serverUser }: { serverUser?: User | null }) {
   const badge = undefined;
 
   return (
@@ -78,7 +79,7 @@ export function AppHeader() {
         </div>
       }
     >
-      <AuthButtons />
+      <AuthButtons serverUser={serverUser} />
     </SiteHeader>
   );
 }

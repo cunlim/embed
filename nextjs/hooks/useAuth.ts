@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { logout as apiLogout, getUser, type User } from "@/lib/api";
 
 interface UseAuthReturn {
@@ -36,13 +36,20 @@ function removeToken() {
   try { localStorage.removeItem("auth_token"); } catch {}
 }
 
-export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState<User | null>(null);
+export function useAuth(initialUser?: User | null): UseAuthReturn {
+  const [user, setUser] = useState<User | null>(initialUser ?? null);
   const token = getToken();
-  const [isLoading, setIsLoading] = useState(!!token);
+  const [isLoading, setIsLoading] = useState(!initialUser && !!token);
+  // SSR에서 이미 사용자 정보를 가져온 경우 최초 getUser 호출 건너뜀
+  const skipInitialFetch = useRef(!!initialUser);
 
   useEffect(() => {
     if (!token) return;
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false;
+      setIsLoading(false);
+      return;
+    }
     getUser(token)
       .then(setUser)
       .catch(() => {

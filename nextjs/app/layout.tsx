@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { DM_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppHeader } from "@/components/app-header";
 import { Toaster } from "@/components/ui/sonner";
+import { getUser } from "@/lib/api";
+import type { User } from "@/lib/api";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -36,11 +39,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value ?? null;
+  let serverUser: User | null = null;
+  if (token) {
+    try { serverUser = await getUser(token); } catch {}
+  }
+
   return (
     <html
       lang="ko"
@@ -54,7 +64,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AppHeader />
+          <AppHeader serverUser={serverUser} />
           {children}
           <Toaster />
         </ThemeProvider>
