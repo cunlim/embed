@@ -52,7 +52,6 @@ export default function FolderSection({
   const [newFolderName, setNewFolderName] = useState("");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [moveTargetFolder, setMoveTargetFolder] = useState<string>("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<UserData[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -70,18 +69,16 @@ export default function FolderSection({
   // 폴더 목록 로드
   const loadFolders = useCallback(async () => {
     if (!token) return;
-    setLoading(true);
     try {
       const res = await fetchFolders(token, selectedUserId);
       setFolders(res.data);
     } catch {
       // 무시
-    } finally {
-      setLoading(false);
     }
   }, [token, selectedUserId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 비동기 폴더 로딩은 표준 패턴
     loadFolders();
   }, [loadFolders]);
 
