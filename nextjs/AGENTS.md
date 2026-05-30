@@ -76,6 +76,13 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 - `useCallback` 내 stale state 방지를 위해 ref로 최신값 읽기 (`searchLangRef`, `perPageRef` 등)
 - 컴포넌트 props 추가 시 `npx tsc --noEmit` 확인 (npm test는 모킹으로 타입 체크 우회)
 
+## Docs·콘텐츠 페이지 SSR 패턴
+
+- **URL을 state의 source of truth로** — `useSearchParams()` + `<Link>`로 Context/useState 대체. 사이드바 selected와 문서 콘텐츠 모두 URL에서 파생.
+- **페이지 서버 컴포넌트 전환** — `"use client"` 제거, async 서버 컴포넌트 + `searchParams`(Promise)로 파라미터 수신. `fs.readFile`로 서버에서 콘텐츠 직접 로드.
+- **클라이언트/서버 공유 데이터** — `lib/` 모듈에 공통 타입·상수 추출. layout(클라이언트)과 page(서버) 양쪽에서 import.
+- **`generateMetadata` + `searchParams`** — 문서별 `<title>`·OG 태그 SSR 제공.
+
 ## 테스트
 
 **CRITICAL: 프론트엔드도 TDD를 적용한다.** 새 훅, 유틸리티 함수, API 클라이언트 추가 시 테스트를 먼저 작성.
