@@ -221,12 +221,19 @@ use Illuminate\Http\Request;
 class FolderController extends Controller
 {
     /**
-     * 폴더 목록 조회
+     * 폴더 목록 조회 (인증 필요)
      * GET /api/folders?user_id={userId}
      */
     public function index(Request $request): JsonResponse
     {
-        $user = auth('sanctum')->user();
+        /** @var User|null $user */
+        $user = $request->user('sanctum');
+
+        // 비로그인: 조회 불가
+        if (!$user) {
+            return response()->json(['message' => '인증이 필요합니다.'], 401);
+        }
+
         $userId = $request->input('user_id');
 
         $query = Category::query()
@@ -234,18 +241,15 @@ class FolderController extends Controller
             ->distinct()
             ->select('folder');
 
-        // user_id가 지정되면 해당 사용자 폴더만
-        if ($userId) {
-            $query->where('user_id', (int) $userId);
-        } else {
-            // 기존 범위 규칙 적용
-            if ($user && $user->isAdmin()) {
-                // admin: 제한 없음
-            } elseif ($user) {
-                $query->whereIn('user_id', [$user->id, 1]);
-            } else {
-                $query->where('user_id', 1);
+        if ($user->isAdmin()) {
+            // 관리자: user_id 지정 시 해당 회원, 미지정 시 전체
+            if ($userId) {
+                $query->where('user_id', (int) $userId);
             }
+            // user_id 미지정 → 전체 (필터 없음)
+        } else {
+            // 일반 회원: 본인 폴더만
+            $query->where('user_id', $user->id);
         }
 
         $folders = $query->orderBy('folder')->pluck('folder');
@@ -393,13 +397,21 @@ class MoveFolderRequest extends FormRequest
 
 - [ ] **Step 4: api.php에 라우트 추가**
 
-`laravel/routes/api.php` — 기존 카테고리 라우트 근처에 추가:
+`laravel/routes/api.php` — 상단 import 추가:
 
 ```php
-// 폴더
-Route::get('/folders', [FolderController::class, 'index']);
-Route::delete('/folders/{folderName}', [FolderController::class, 'destroy']);
-Route::post('/categories/move-folder', [FolderController::class, 'moveFolder']);
+use App\Http\Controllers\Api\FolderController;
+```
+
+기존 카테고리 라우트 근처에 추가:
+
+```php
+// 폴더 (인증 필요)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('folders', [FolderController::class, 'index']);
+    Route::delete('folders/{folderName}', [FolderController::class, 'destroy']);
+    Route::post('categories/move-folder', [FolderController::class, 'moveFolder']);
+});
 ```
 
 - [ ] **Step 5: PHP 문법 확인**

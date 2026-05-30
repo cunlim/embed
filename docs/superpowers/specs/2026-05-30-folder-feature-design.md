@@ -32,9 +32,11 @@ ORDER BY folder
 GET /api/folders?user_id={userId}
 ```
 
-- 인증 불필요 (범위 제어는 기존 규칙과 동일)
+- **인증 필요** (Sanctum)
+- 비로그인: 조회 불가 (401)
+- 일반 회원: 본인 폴더만 조회 가능
+- 관리자/최고관리자: user_id 지정 시 해당 회원 폴더, 미지정 시 모든 회원 폴더 (optgroup용)
 - 응답: `{ data: ["폴더A", "폴더B", ...] }`
-- 관리자가 user_id 미지정 시 모든 사용자 폴더 반환 (optgroup용)
 
 ### 폴더 삭제
 
