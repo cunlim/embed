@@ -308,6 +308,7 @@ class CategoryController extends Controller
             'category_name_en' => $request->input('category_name_en'),
             'category_name_zh' => $request->input('category_name_zh'),
             'user_id' => $request->user('sanctum')->id,
+            'folder' => $request->input('folder'),
         ]);
 
         return new CategoryResource($category);

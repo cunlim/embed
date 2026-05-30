@@ -27,6 +27,7 @@ class CategoryStoreRequest extends FormRequest
             ],
             'category_name_en' => ['nullable', 'string', 'max:255'],
             'category_name_zh' => ['nullable', 'string', 'max:255'],
+            'folder' => ['nullable', 'string', 'max:100'],
         ];
     }
 }

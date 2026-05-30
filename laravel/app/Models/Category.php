@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-#[Fillable(['category_code', 'category_name_ko', 'category_name_zh', 'category_name_en', 'user_id'])]
+#[Fillable(['category_code', 'category_name_ko', 'category_name_zh', 'category_name_en', 'user_id', 'folder'])]
 #[Hidden(['id', 'created_at', 'updated_at'])]
 class Category extends Model
 {
