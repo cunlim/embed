@@ -15,6 +15,12 @@
 - `vitest` 바이너리 직접 실행 금지 — `--no-bin-links`로 `node_modules/.bin/vitest` 미생성. `npm test` 사용.
 - `vitest run` 전체 실행 타임아웃 — Docker 내 hang 가능. 개별 파일별 실행.
 
+## 인증·리다이렉트 패턴
+
+- **서버 컴포넌트 인증 게이트**: `cookies()` → `getUser(token)` → `redirect()` — SSR 단계에서 인증 실패 시 HTTP 307만 반환, HTML 전송 안 함.
+- **`cookies().set()` 서버 컴포넌트 불가**: 쿠키 설정은 Server Action, Route Handler, Middleware에서만 가능.
+- **Middleware 쿠키+리다이렉트**: OAuth 콜백 `?token=` → `middleware.ts` → `response.cookies.set()` + `NextResponse.redirect()`.
+
 ## 알려진 이슈
 
 - CSS 트랜지션 사이드바: `h-0 overflow-hidden` + `whitespace-nowrap overflow-hidden` 패턴 사용

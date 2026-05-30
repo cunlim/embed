@@ -70,11 +70,17 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 - **SSR 사용자 prefetch** — `layout.tsx`에서 `cookies()` → `getUser(token)` → client component에 `serverUser` prop 전달. `useAuth(initialUser)`로 hydration 시 `null`→`user` 전환 깜빡임 방지.
 - **`skipInitialFetch` ref** — SSR prefetch 완료 시 `useAuth`의 `useEffect`가 `getUser(token)`을 중복 호출하지 않도록 `useRef(!!initialUser)`로 첫 effect skip.
 - **`canModify` SSR/CSR 일관성** — `user ?? serverUser`로 양쪽에서 동일한 소유권 판단. SSR 시 `serverUser`, CSR hydration 후 `useAuth().user` 사용.
-- **로그인 후 리디렉션은 `window.location.href`** — 전체 페이지 로드로 layout SSR 재실행 → `serverUser` 갱신. `router.replace`는 layout이 SSR 재실행되지 않아 `serverUser`가 stale.
-- **`useSyncExternalStore` mount 감지 금지** — SSR에서 `return null`로 깜빡임 유발. `initialUser` + `skipInitialFetch`로 대체.
+- **클라이언트 측 강제 리디렉션은 `window.location.href`** — 전체 페이지 로드로 layout SSR 재실행 → `serverUser` 갱신. OAuth 콜백은 middleware가 먼저 처리하므로 로그아웃·토큰 만료 등 제한적 상황에만 해당.
+- **`useSyncExternalStore` mount 감지 금지** — SSR에서 `return null`로 깜빡임 유발. 서버 컴포넌트 인증 게이트 또는 `initialUser` + `skipInitialFetch`로 대체.
 - URL을 state의 source of truth로 — `useSearchParams()` 변경 감지 → URL→state 단방향 싱크
 - `useCallback` 내 stale state 방지를 위해 ref로 최신값 읽기 (`searchLangRef`, `perPageRef` 등)
 - 컴포넌트 props 추가 시 `npx tsc --noEmit` 확인 (npm test는 모킹으로 타입 체크 우회)
+
+## 인증 페이지 SSR 깜빡임 방지
+
+- **서버 컴포넌트 인증 게이트** — 인증이 필요한 페이지는 async 서버 컴포넌트 + `cookies()` → `getUser(token)` → `redirect()`. SSR 단계에서 인증 실패 시 HTTP 307만 반환하고 어떤 HTML도 클라이언트에 전송하지 않음. 클라이언트 컴포넌트는 `serverUser` prop을 `useAuth(initialUser)`로 받아 별도 인증 체크 불필요.
+- **`cookies().set()`은 서버 컴포넌트에서 불가** — "Cookies can only be modified in a Server Action or Route Handler" 에러. 쿠키 설정이 필요한 redirect는 **middleware** 사용.
+- **Middleware 쿠키+리다이렉트** — OAuth 콜백 등 URL 파라미터 토큰을 쿠키로 설정 후 리다이렉트: `middleware.ts`에서 `searchParams.get("token")` → `response.cookies.set("auth_token", token)` → `NextResponse.redirect(...)`. 페이지 렌더링 전 처리로 깜빡임 제로.
 
 ## Docs·콘텐츠 페이지 SSR 패턴
 
@@ -104,7 +110,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **Laravel API 응답 형식 불일치** — `Resource::collection()`은 `{data: [...]}`, 단일은 `{data: {...}}`. 인터페이스 정의 시 Network 탭으로 확인.
 - **`.claude/settings.json` Stop hook에 `npm run build` 금지** — BUILD_ID 생성으로 dev 모드 이탈.
 - **JS 청크 캐싱 (Cloudflare)** — `_next/static/*`이 `max-age=14400`. 개발 환경은 Cache Rule 바이패스.
-- **OAuth 콜백 `?token=`** — `/login`에서 `searchParams.get("token")` → `setToken()` → `window.location.href`로 리디렉션. `router.replace` 금지 (layout SSR 갱신 안 됨).
+- **OAuth 콜백 `?token=`** — middleware에서 `response.cookies.set("auth_token", token)` + `NextResponse.redirect`로 서버사이드 처리. 페이지 렌더링 전 완료되어 깜빡임 없음.
 - **`--no-bin-links`** — Docker 볼륨 마운트 환경에서 npm 심볼릭 링크 생성 불가.
 - **outline 버튼 light 모드 hover** — `hover:bg-muted hover:text-foreground`로 덮어쓸 것.
 - **ThemeToggle SSR 깜빡임** — `useSyncExternalStore` + `opacity-0` invisible 버튼 패턴 사용 금지. SSR에서도 실제 버튼 렌더링.

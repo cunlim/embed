@@ -107,7 +107,7 @@
 
 ### 6.4 `/admin` 관리자 페이지
 
-- 관리 기능은 `/embed` 페이지에 통합되어 있으며, `/admin`은 `/embed`로의 이동 버튼만 제공하는 플레이스홀더 상태.
+- **superadmin 전용**. 사이드바 메뉴(시스템 설정 / 안내). SettingsPanel에서 Ollama·pagination·cache 설정 조회/수정. 인증 실패 시 서버사이드 redirect로 어떤 UI도 노출되지 않음.
 
 ### 6.5 공통 패턴
 
