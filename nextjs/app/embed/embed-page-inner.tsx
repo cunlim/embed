@@ -43,6 +43,7 @@ import CategoryHierarchy, { type HierarchyFilterState } from "@/components/admin
 import TaskExecution from "@/components/admin/task-execution";
 import CategoryDelete from "@/components/admin/category-delete";
 import CategoryDownload from "@/components/admin/category-download";
+import FolderSection from "@/components/admin/folder-section";
 import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
 import BulkUpload from "@/components/bulk-upload";
 import { useAuth, getToken } from "@/hooks/useAuth";
@@ -96,6 +97,7 @@ export function EmbedPageInner({
   serverSearchMeta,
   serverSearchText,
   serverSearchLang,
+  serverFolder,
 }: {
   serverLevelOptions: string[][];
   serverMaxDepth: number;
@@ -108,6 +110,7 @@ export function EmbedPageInner({
   serverSearchMeta: PaginationMeta | null;
   serverSearchText: string | null;
   serverSearchLang: string;
+  serverFolder?: string | null;
 }) {
   const { user } = useAuth(serverUser);
   const router = useRouter();
@@ -157,6 +160,7 @@ export function EmbedPageInner({
   const [hierarchyRefreshKey, setHierarchyRefreshKey] = useState(0);
   const [hierarchyResetKey, setHierarchyResetKey] = useState(0);
   const [hierarchyKeyword, setHierarchyKeyword] = useState(initialFilterKeyword);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(serverFolder ?? null);
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryCode, setNewCategoryCode] = useState("");
@@ -224,6 +228,7 @@ export function EmbedPageInner({
     mode?: string;
     catPath?: (string | null)[];
     q?: string;
+    folder?: string | null;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -254,6 +259,10 @@ export function EmbedPageInner({
       }
     }
     if ("q" in overrides) apply("q", overrides.q);
+    if ("folder" in overrides) {
+      if (overrides.folder) params.set("folder", overrides.folder);
+      else params.delete("folder");
+    }
 
     if (page > 1) params.set("page", String(page));
     if (perPage !== 20) params.set("per_page", String(perPage));
@@ -280,7 +289,7 @@ export function EmbedPageInner({
     setKeywordSearchActive(false);
     updateURL({ searchText, searchLanguage: searchLangRef.current });
     try {
-      const data = await recommend(searchText, searchLangRef.current, token, currentPage, perPageRef.current, filterRef.current ?? undefined, keyword ?? (keywordRef.current || undefined));
+      const data = await recommend(searchText, searchLangRef.current, token, currentPage, perPageRef.current, filterRef.current ?? undefined, keyword ?? (keywordRef.current || undefined), selectedFolder ?? undefined);
       setSearchResults(data.data);
       setSearchMeta(data.meta);
     } catch (err) {
@@ -323,7 +332,7 @@ export function EmbedPageInner({
       handleSearchRef.current(page);
     } else {
       const kw = keywordRef.current;
-      loadCategories(page, perPage, effectiveFilter, kw);
+      loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined);
     }
   }, [mounted, page, perPage, effectiveFilter, loadCategories]);
 
@@ -360,7 +369,7 @@ export function EmbedPageInner({
         // 필터 ref 초기화 (SSR 기본값으로 복원)
         filterRef.current = defaultFilter;
         // 디폴트 카테고리 목록 리로드 (SSR 기본 필터 적용)
-        loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "");
+        loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "", selectedFolder ?? undefined);
       }
     } else {
       resetDoneRef.current = false;
@@ -422,7 +431,7 @@ export function EmbedPageInner({
     setHierarchyKeyword("");
 
     // 카테고리 목록 리로드 (SSR 기본 필터 적용)
-    loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "");
+    loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "", selectedFolder ?? undefined);
   }, [loadCategories]);
 
   // "기능시연" 클릭 시 커스텀 이벤트로 즉시 리셋
@@ -448,14 +457,14 @@ export function EmbedPageInner({
     }
     if (!keyword) {
       setKeywordSearchActive(false);
-      loadCategories(1, perPage, effectiveFilter, "");
+      loadCategories(1, perPage, effectiveFilter, "", selectedFolder ?? undefined);
       return;
     }
     setSearchResults(null);
     setSearchMeta(null);
     setSearchError(null);
     setKeywordSearchActive(true);
-    loadCategories(1, perPage, effectiveFilter, keyword);
+    loadCategories(1, perPage, effectiveFilter, keyword, selectedFolder ?? undefined);
   }, [perPage, effectiveFilter, loadCategories, searchResults, handleSearch]);
 
   // 필터 상태 변경 시 URL 업데이트
@@ -529,6 +538,30 @@ export function EmbedPageInner({
         <div className="grid gap-6 lg:grid-cols-3">
           {/* 사이드바 */}
           <div className="space-y-6">
+            {/* 폴더 */}
+            {token && (
+              <FolderSection
+                token={token}
+                user={effectiveUser ?? null}
+                selectedFolder={selectedFolder}
+                selectedIds={selectedIds}
+                onFolderChange={(folder) => {
+                  setSelectedFolder(folder);
+                  // page=1, 필터 초기화, per_page/전체·내카테고리 유지
+                  const params = new URLSearchParams();
+                  if (folder) params.set("folder", folder);
+                  if (perPage !== 20) params.set("per_page", String(perPage));
+                  if (activeFilterSelection) params.set("filter", activeFilterSelection);
+                  router.replace(`/embed${params.toString() ? "?" + params.toString() : ""}`, { scroll: false });
+                  // 카테고리 목록 리로드
+                  loadCategories(1, perPage, effectiveFilter, undefined, folder ?? undefined);
+                }}
+                onFolderActionComplete={() => {
+                  loadCategories(page, perPage, effectiveFilter, keywordRef.current, selectedFolder ?? undefined);
+                }}
+              />
+            )}
+
             {/* 유사도 검색 */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -697,7 +730,7 @@ export function EmbedPageInner({
                   <BulkUpload
                     token={token}
                     onSuccess={() => {
-                      loadCategories(page, perPage, effectiveFilter);
+                      loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined);
                       setHierarchyRefreshKey((prev) => prev + 1);
                     }}
                   />
@@ -721,11 +754,11 @@ export function EmbedPageInner({
                   setSelectedIds(new Set());
                 }
                 const kw = keywordRef.current;
-                loadCategories(page, perPage, effectiveFilter, kw);
+                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined);
               }}
               onCategoryComplete={() => {
                 const kw = keywordRef.current;
-                loadCategories(page, perPage, effectiveFilter, kw);
+                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined);
               }}
             />
 
@@ -749,12 +782,12 @@ export function EmbedPageInner({
               onComplete={() => {
                 setSelectedIds(new Set());
                 const kw = keywordRef.current;
-                loadCategories(page, perPage, effectiveFilter, kw);
+                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined);
                 setHierarchyRefreshKey((prev) => prev + 1);
               }}
               onCategoryComplete={() => {
                 const kw = keywordRef.current;
-                loadCategories(page, perPage, effectiveFilter, kw);
+                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined);
               }}
             />
           </div>
@@ -1118,12 +1151,12 @@ export function EmbedPageInner({
         execState={modalCategoryId ? getState(modalCategoryId) : null}
         onSingleAction={async (stepName) => {
           if (modalCategoryId !== null) {
-            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page, perPage, effectiveFilter), setData);
+            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined), setData);
           }
         }}
         onRunAll={async () => {
           if (modalCategoryId !== null && detailData) {
-            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page, perPage, effectiveFilter), setData);
+            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined), setData);
           }
         }}
         onCancelPending={() => {

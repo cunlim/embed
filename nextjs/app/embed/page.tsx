@@ -23,7 +23,7 @@ type EmbedPageParams = {
 export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   const sp = await searchParams;
   const reader = serverParamsReader(sp);
-  const { keyword, searchText, searchLang, filter: urlFilter } = parseEmbedParams(reader);
+  const { keyword, searchText, searchLang, filter: urlFilter, folder: urlFolder } = parseEmbedParams(reader);
 
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value ?? null;
@@ -88,7 +88,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   let serverCategories: Category[] = [];
   let serverMeta: PaginationMeta | null = null;
   try {
-    const categoriesRes = await getCategories(token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined);
+    const categoriesRes = await getCategories(token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined);
     serverCategories = categoriesRes.data;
     serverMeta = categoriesRes.meta;
   } catch {}
@@ -98,7 +98,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   let serverSearchMeta: PaginationMeta | null = null;
   if (searchText) {
     try {
-      const searchRes = await recommend(searchText, searchLang, token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined);
+      const searchRes = await recommend(searchText, searchLang, token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined);
       serverSearchResults = searchRes.data;
       serverSearchMeta = searchRes.meta;
     } catch {}
@@ -118,6 +118,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
         serverSearchMeta={serverSearchMeta}
         serverSearchText={searchText}
         serverSearchLang={searchLang}
+        serverFolder={urlFolder}
       />
     </Suspense>
   );
