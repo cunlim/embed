@@ -59,7 +59,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 
 - 번역/임베딩은 비동기 Job이 아닌 **동기 HTTP 컨트롤러**에서 실행. step 단위 처리 후 `translations` 필드 포함 응답.
 - `PUT /api/categories/{id}/update-text`는 텍스트 업데이트 후 해당 언어의 CategoryEmbedding을 **삭제**.
-- `category_code`: optional unique, `filled()`로 체크 (`??`는 빈 문자열 통과)
+- `category_code`: `(category_code, user_id)` 복합 unique. 같은 코드를 다른 사용자가各自 사용 가능. `filled()`로 체크 (`??`는 빈 문자열 통과)
 
 ### 프레임워크 주의사항
 
@@ -86,6 +86,15 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 
 - **Eloquent 모델을 쿼리 빌더 용도로 생성자 주입 금지** — `Model::query()->where(...)` 사용
 - **Unique 제약조건 테이블에 `create()` 사용 시** — 동시 요청 고려, `firstOrCreate()` 또는 try-catch 사용
+
+### 마이그레이션 수정 패턴
+
+- **이미 실행된 마이그레이션 수정 시** — 원본 마이그레이션과 새 마이그레이션 모두 실행 환경을 고려해야 함. 새 마이그레이션에서 제약조건 존재 여부 확인:
+  ```php
+  $exists = DB::selectOne("SELECT 1 FROM pg_indexes WHERE indexname = '...'");
+  if ($exists) { /* drop/modify */ }
+  ```
+- **`RefreshDatabase` 사용 테스트 환경** — 원본 마이그레이션 변경 시 새 마이그레이션에서 중복 실행 방지 필요
 
 ### API 인증
 

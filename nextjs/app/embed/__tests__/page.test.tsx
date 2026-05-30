@@ -150,7 +150,7 @@ describe("EmbedPage", () => {
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
-  it("에러 발생 시 재시도 버튼을 표시한다", () => {
+  it("에러 발생 시 사이드바에 에러 메시지를 표시한다", () => {
     mockUseCategories.mockReturnValue({
       categories: [],
       isLoading: false,
@@ -162,8 +162,8 @@ describe("EmbedPage", () => {
 
     render(<EmbedPageInner serverLevelOptions={[]} serverMaxDepth={1} serverCategories={[]} serverMeta={null} serverHadToken={false} serverFilter={null} serverSearchResults={null} serverSearchMeta={null} serverSearchText={null} serverSearchLang="ko" />);
     const errorMessages = screen.getAllByText("서버 오류");
-    expect(errorMessages.length).toBe(2);
-    expect(screen.getByText("재시도")).toBeInTheDocument();
+    expect(errorMessages.length).toBe(1);
+    expect(screen.queryByText("재시도")).not.toBeInTheDocument();
   });
 
   it("관리자가 아닌 일반 사용자도 접근 가능하다", () => {

@@ -37,9 +37,9 @@ test('POST /api/categories — 인증된 사용자는 201을 반환한다', func
         ]);
 });
 
-test('POST /api/categories — 중복된 category_code는 422를 반환한다', function () {
+test('POST /api/categories — 같은 사용자의 중복 category_code는 422를 반환한다', function () {
     $user = User::factory()->create();
-    $existing = Category::factory()->create();
+    $existing = Category::factory()->create(['user_id' => $user->id]);
 
     $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories', [
         'category_name_ko' => '새카테고리',
@@ -48,6 +48,20 @@ test('POST /api/categories — 중복된 category_code는 422를 반환한다', 
 
     $response->assertStatus(422)
         ->assertJsonValidationErrors(['category_code']);
+});
+
+test('POST /api/categories — 다른 사용자의 category_code는 허용된다', function () {
+    $user1 = User::factory()->create();
+    $user2 = User::factory()->create();
+    $existing = Category::factory()->create(['user_id' => $user1->id]);
+
+    $response = $this->actingAs($user2, 'sanctum')->postJson('/api/categories', [
+        'category_name_ko' => '새카테고리',
+        'category_code' => $existing->category_code,
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.category_code', $existing->category_code);
 });
 
 test('POST /api/categories — category_code를 명시하면 해당 코드로 생성된다', function () {

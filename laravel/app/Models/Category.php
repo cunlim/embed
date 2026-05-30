@@ -41,7 +41,7 @@ class Category extends Model
         ];
     }
 
-    public static function generateCode(): string
+    public static function generateCode(int $userId): string
     {
         $prefix = config('services.category.code_prefix', 'CAT_');
         $length = (int) config('services.category.code_random_length', 8);
@@ -50,7 +50,7 @@ class Category extends Model
         for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
             $code = $prefix.Str::lower(Str::random($length));
 
-            if (! static::where('category_code', $code)->exists()) {
+            if (! static::where('category_code', $code)->where('user_id', $userId)->exists()) {
                 return $code;
             }
         }

@@ -10,13 +10,13 @@ uses(TestCase::class);
 uses(RefreshDatabase::class);
 
 test('generateCode는 CAT_ 접두사와 12자리 문자열을 반환한다', function () {
-    $code = Category::generateCode();
+    $code = Category::generateCode(1);
 
     expect($code)->toStartWith('CAT_')->toHaveLength(12);
 });
 
 test('generateCode는 고유한 코드를 생성한다', function () {
-    $codes = array_map(fn () => Category::generateCode(), range(1, 50));
+    $codes = array_map(fn () => Category::generateCode(1), range(1, 50));
 
     expect($codes)->toHaveCount(count(array_unique($codes)));
 });

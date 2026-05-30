@@ -14,10 +14,12 @@ class CategoryFactory extends Factory
 
     public function definition(): array
     {
+        $userId = 1;
+
         return [
-            'category_code' => Category::generateCode(),
+            'category_code' => Category::generateCode($userId),
             'category_name_ko' => fake()->unique()->word(),
-            'user_id' => 1,
+            'user_id' => $userId,
         ];
     }
 

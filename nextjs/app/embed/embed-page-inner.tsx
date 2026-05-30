@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
   RefreshCw,
-  AlertCircle,
   Database,
   Eye,
   Pencil,
@@ -718,30 +717,6 @@ export function EmbedPageInner({
                   {[1, 2, 3, 4, 5].map((i) => (
                     <Skeleton key={i} className="h-10 w-full" />
                   ))}
-                </div>
-              )}
-
-              {/* 에러 */}
-              {!catLoading && !isSearching && catError && (
-                <div className="flex items-start gap-3 rounded-md border border-destructive/50 p-4">
-                  <AlertCircle className="mt-0.5 h-5 w-5 text-destructive" />
-                  <div>
-                    <p className="font-medium text-destructive">
-                      오류가 발생했습니다
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {catError}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-3"
-                      onClick={() => loadCategories(page, perPage, effectiveFilter)}
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      재시도
-                    </Button>
-                  </div>
                 </div>
               )}
 

@@ -299,7 +299,7 @@ class CategoryController extends Controller
         $category = Category::create([
             'category_code' => $request->filled('category_code')
                 ? $request->category_code
-                : Category::generateCode(),
+                : Category::generateCode($request->user('sanctum')->id),
             'category_name_ko' => $request->category_name_ko,
             'category_name_en' => $request->input('category_name_en'),
             'category_name_zh' => $request->input('category_name_zh'),
