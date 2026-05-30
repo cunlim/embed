@@ -42,5 +42,7 @@ nextjs/
 
 - CSS 트랜지션 사이드바: `h-0 overflow-hidden` + `whitespace-nowrap overflow-hidden` 패턴 사용
 - shadcn Sheet: `showCloseButton={false}` 커스텀 닫기 버튼 사용 시 필수
+- embed 초기 마운트 필터 덮어쓰기: `resetDoneRef` 효과가 `filterRef` 초기값을 잔여로 감지 → `initialMountDoneRef` 패턴 필요
+- 폼 버튼 순서: Input → 초기화(X) → 검색(Search)
 
 자세한 내용은 `nextjs/AGENTS.md`의 "알려진 이슈" 섹션 참조.

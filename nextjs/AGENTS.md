@@ -57,6 +57,11 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 - **nullable state의 잔여 체크는 `!== null`** — `"all" | "my" | null` 타입을 ref로 추적 시 `!== undefined` 체크는 `null !== undefined === true`로 항상 잔여로 감지. `!== null`로 변경.
 - **URL 파라미터에서 파생된 useState는 reset effect에서 명시적 초기화 필요** — `perPage`처럼 URL에서 파생되어 `useState`로 관리되는 값은 URL이 비워져도 state가 자동 리셋되지 않음. reset effect에 `setPerPage(20)` 등 명시적 초기화 추가.
 
+## 초기 마운트 시 reset effect 함정
+
+- **`resetDoneRef` 효과의 잔여 상태 오판 판정** — `filterRef`는 `filterSelection`에서 초기화되므로, SSR에서 `filterSelection="my"`이면 `filterRef.current="my"`. URL이 비어있는 초기 마운트에서 `hasResidual = filterRef.current !== null`이 `true`가 되어 불필요한 리셋 트리거 → `loadCategories(1, 20, undefined, "")` 호출로 필터 없는 전체 목록이 "내 카테고리"를 덮어씀. **해결**: `initialMountDoneRef`로 첫 마운트 시 reset effect를 건너뜀.
+- **`hadServerCategories` 소비 타이밍** — `effectiveFilter`가 `undefined`인 첫 렌더에서 `hadServerCategories.current=false`가 되면, 이후 `effectiveFilter="my"`로 변경되어도 SSR 데이터 보호가 불가. reset effect 수정 시 `hadServerCategories` 소비 조건에 `effectiveFilter` 확정 여부를 함께 체크할 것.
+
 ## SSR 패턴
 
 - URL을 state의 source of truth로 — `useSearchParams()` 변경 감지 → URL→state 단방향 싱크
@@ -90,6 +95,8 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **인증 가드 패턴** — `const authorized = isAdmin(user)`로 직접 도출 (effect 금지)
 - **컨테이너 재생성 후** — `docker compose stop` + `up -d` 후 `npm run build`로 타입 체크 확인.
 - **CSS 트랜지션 사이드바 패턴** — 접기/펼치기 시 `{!collapsed && <nav>}` 조건부 렌더링은 width 트랜지션 중 텍스트 래핑으로 높이 깨짐 발생. 해결: nav에 `h-0 overflow-hidden` 적용, 자식 버튼에 `whitespace-nowrap overflow-hidden` 추가. shadcn Sheet의 `showCloseButton` 기본값이 `true` — 커스텀 닫기 버튼 사용 시 `showCloseButton={false}` 필수.
+- **embed 페이지 초기 마운트 필터 덮어쓰기** — `resetDoneRef` 효과가 `filterRef.current="my"`를 잔여로 판정하여 `loadCategories(1, 20, undefined, "")` 호출 → 필터 없는 전체 목록이 "내 카테고리"를 덮어씀. `initialMountDoneRef` 패턴으로 해결. URL→state 동기화 효과 수정 시 항상 초기 마운트 동작을 테스트할 것.
+- **폼 버튼 순서 컨벤션** — 입력 폼에서 초기화 버튼은 검색 버튼 앞에 배치: `Input → 초기화(X) → 검색(Search)`. 검색 버튼이 disabled일 때도 초기화 버튼이 보이도록 조건부 렌더링 순서 준수.
 
 ## 관련 문서
 
