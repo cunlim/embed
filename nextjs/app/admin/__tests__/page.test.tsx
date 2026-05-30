@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import AdminPage from "../page";
+import { AdminPageContent } from "../page-content";
 
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: vi.fn(),
@@ -22,11 +21,18 @@ import { useAdminMenu } from "../layout";
 const mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
 const mockUseAdminMenu = useAdminMenu as ReturnType<typeof vi.fn>;
 
+const serverUser = {
+  id: 1,
+  name: "Superadmin",
+  email: "superadmin@test.com",
+  role: "superadmin",
+};
+
 beforeEach(() => {
   cleanup();
   vi.clearAllMocks();
   mockUseAuth.mockReturnValue({
-    user: { id: 1, name: "Superadmin", email: "superadmin@test.com", role: "superadmin" },
+    user: serverUser,
     isLoading: false,
   });
   mockUseAdminMenu.mockReturnValue({
@@ -35,9 +41,9 @@ beforeEach(() => {
   });
 });
 
-describe("AdminPage", () => {
+describe("AdminPageContent", () => {
   it("기본으로 시스템 설정이 표시된다", () => {
-    render(<AdminPage />);
+    render(<AdminPageContent serverUser={serverUser} />);
     // settings가 활성화되면 SettingsPanel이 렌더링됨
     expect(screen.queryByText("기능이 이전되었습니다")).not.toBeInTheDocument();
   });
@@ -47,7 +53,7 @@ describe("AdminPage", () => {
       active: "info",
       setActive: vi.fn(),
     });
-    render(<AdminPage />);
+    render(<AdminPageContent serverUser={serverUser} />);
     expect(screen.getByText("기능이 이전되었습니다")).toBeInTheDocument();
     expect(
       screen.getByText("카테고리 추천 기능이 임베드 페이지로 통합되었습니다.")
@@ -59,28 +65,26 @@ describe("AdminPage", () => {
       active: "info",
       setActive: vi.fn(),
     });
-    render(<AdminPage />);
+    render(<AdminPageContent serverUser={serverUser} />);
     const links = screen.getAllByRole("link", { name: "임베드 페이지로 이동" });
     expect(links.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("비superadmin 사용자는 admin 페이지 내용이 렌더링되지 않는다", () => {
+  it("authLoading 중에는 아무것도 렌더링되지 않는다", () => {
     mockUseAuth.mockReturnValue({
-      user: { id: 2, name: "Admin", email: "admin@test.com", role: "admin" },
-      isLoading: false,
+      user: null,
+      isLoading: true,
     });
-    const { container } = render(<AdminPage />);
-    expect(screen.queryByText("기능이 이전되었습니다")).not.toBeInTheDocument();
+    const { container } = render(<AdminPageContent serverUser={serverUser} />);
     expect(container.innerHTML).toBe("");
   });
 
-  it("비로그인 사용자는 admin 페이지 내용이 렌더링되지 않는다", () => {
+  it("user가 null이면 아무것도 렌더링되지 않는다", () => {
     mockUseAuth.mockReturnValue({
       user: null,
       isLoading: false,
     });
-    const { container } = render(<AdminPage />);
-    expect(screen.queryByText("기능이 이전되었습니다")).not.toBeInTheDocument();
+    const { container } = render(<AdminPageContent serverUser={serverUser} />);
     expect(container.innerHTML).toBe("");
   });
 });

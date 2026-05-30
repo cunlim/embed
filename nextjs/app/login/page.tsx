@@ -1,74 +1,26 @@
-"use client";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { getUser } from "@/lib/api";
+import { LoginFormClient } from "./login-form";
 
-import { Suspense, useEffect, useSyncExternalStore } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { SocialLogin } from "@/components/social-login";
-import { useSearchParams, useRouter } from "next/navigation";
-import { getToken, setToken } from "@/hooks/useAuth";
+type LoginPageProps = {
+  searchParams: Promise<{ redirect?: string }>;
+};
 
-function LoginForm() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
-  const redirectTo = searchParams.get("redirect") || "/embed";
-  const token = searchParams.get("token");
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const { redirect: redirectTo } = await searchParams;
+  const cookieStore = await cookies();
 
-  useEffect(() => {
-    if (!mounted) return;
-
-    if (token) {
-      setToken(token);
-      // router.replace는 client-side navigation → layout SSR 재실행 안 됨
-      // window.location.href로 전체 페이지 로드 → SSR이 쿠키로 사용자 정보 prefetch
-      window.location.href = redirectTo;
-      return;
+  // 이미 로그인된 사용자는 로그인 페이지에 접근할 필요 없음
+  const existingToken = cookieStore.get("auth_token")?.value;
+  if (existingToken) {
+    try {
+      await getUser(existingToken);
+      redirect(redirectTo || "/embed");
+    } catch {
+      // 토큰이 만료되었으면 로그인 폼 표시
     }
-
-    if (getToken()) {
-      if (window.history.length > 1) {
-        router.back();
-      } else {
-        router.replace("/");
-      }
-    }
-  }, [mounted, token, redirectTo, router]);
-
-  if (!mounted || token || getToken()) {
-    return null;
   }
 
-  return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden">
-      <div className="noise-overlay" />
-      <div className="absolute inset-0 bg-grid" />
-      <div className="glow-orb -top-40 -right-40 h-96 w-96 bg-blue-500/15 dark:bg-blue-500/10" />
-      <div className="glow-orb -bottom-40 -left-40 h-96 w-96 bg-purple-500/15 dark:bg-purple-500/10" />
-
-      <main className="relative z-10 flex flex-1 items-center justify-center px-6 py-12">
-        <Card className="w-full max-w-sm">
-          <CardContent className="pt-8 pb-8">
-            <div className="mb-8 text-center">
-              <h1 className="text-xl font-bold tracking-tight">
-                CL Embed
-              </h1>
-            </div>
-
-            <SocialLogin />
-          </CardContent>
-        </Card>
-      </main>
-    </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
-  );
+  return <LoginFormClient />;
 }
