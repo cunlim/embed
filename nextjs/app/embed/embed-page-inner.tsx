@@ -42,6 +42,7 @@ import StatusBadge from "@/components/admin/status-badge";
 import CategoryHierarchy, { type HierarchyFilterState } from "@/components/admin/category-hierarchy";
 import TaskExecution from "@/components/admin/task-execution";
 import CategoryDelete from "@/components/admin/category-delete";
+import CategoryDownload from "@/components/admin/category-download";
 import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
 import BulkUpload from "@/components/bulk-upload";
 import { useAuth, getToken } from "@/hooks/useAuth";
@@ -655,6 +656,15 @@ export function EmbedPageInner({
                 const kw = keywordRef.current || undefined;
                 loadCategories(page, perPage, effectiveFilter, kw);
               }}
+            />
+
+            {/* 다운로드 */}
+            <CategoryDownload
+              token={token}
+              selectedIds={selectedIds}
+              categories={displayCategories}
+              filter={effectiveFilter}
+              keyword={hierarchyKeyword || undefined}
             />
 
             {/* 삭제 */}
