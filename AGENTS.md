@@ -66,4 +66,4 @@
 ## 하위 디렉토리
 
 - 백엔드: [`laravel/AGENTS.md`](laravel/AGENTS.md)
-- 프론트엔드: `nextjs/AGENTS.md` (코드 트리에서 확인)
+- 프론트엔드: [`nextjs/AGENTS.md`](nextjs/AGENTS.md)

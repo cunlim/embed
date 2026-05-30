@@ -61,6 +61,11 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - `PUT /api/categories/{id}/update-text`는 텍스트 업데이트 후 해당 언어의 CategoryEmbedding을 **삭제**.
 - `category_code`: `(category_code, user_id)` 복합 unique. 같은 코드를 다른 사용자가各自 사용 가능. `filled()`로 체크 (`??`는 빈 문자열 통과)
 
+### 카테고리 검색 API
+
+- `GET /api/categories?search=...` 파라미터는 `category_name_ko` OR `category_code` 두 필드를 LIKE 검색
+- 엑셀 다운로드 포맷: `category_code | category_ko | category_en | category_zh` (업로드 양식과 일치)
+
 ### 프레임워크 주의사항
 
 - **Event::fake()는 Eloquent 라이프사이클 이벤트까지 캡처** — `Event::fake()` (인자 없는 호출) 시 `eloquent.booting` 등 Model 생성 시 프레임워크 내부 이벤트까지 캡처. `Event::fake([SpecificEvent::class])`로 감시 대상 한정 필요.

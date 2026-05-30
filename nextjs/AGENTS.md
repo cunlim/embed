@@ -94,5 +94,5 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 ## 관련 문서
 
 - 디자인 가이드: [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md)
-- 전체 아키텍처: [`docs/ADR.md`](../docs/ADR.md)
+- 아키텍처 결정 기록: [`docs/ADR.md`](../docs/ADR.md)
 - 제품 요구사항: [`docs/PRD.md`](../docs/PRD.md)
