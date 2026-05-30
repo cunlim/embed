@@ -37,11 +37,11 @@ if ($request->filled('search')) {
 
 ## 2. 엑셀 다운로드
 
-### 새 컴포넌트
+### 구현 위치
 
-**파일**: `nextjs/components/admin/category-download.tsx`
+**파일**: `nextjs/components/admin/category-delete.tsx` (기존 컴포넌트에 통합)
 
-기존 `CategoryDelete` 컴포넌트와 같은 위치에 배치하거나, `CategoryDelete` 내부에 통합한다.
+별도 컴포넌트를 만들지 않고, 기존 `CategoryDelete` 컴포넌트 내부에 다운로드 버튼을 추가한다. 다운로드와 삭제가 같은 섹션에 배치되므로 통합이 자연스럽다.
 
 ### 기능
 
@@ -100,6 +100,8 @@ if ($request->filled('search')) {
 | `nextjs/components/admin/category-hierarchy.tsx` | 검색 입력란 플레이스홀더 변경 |
 | `nextjs/components/admin/category-delete.tsx` | 제목 제거 + 다운로드 버튼 추가 |
 | `nextjs/lib/api.ts` | 다운로드용 API 함수 추가 (필요 시) |
+
+> 참고: 별도 `CategoryDownload` 컴포넌트는 생성하지 않고 `CategoryDelete`에 통합한다.
 
 ## 5. 테스트
 
