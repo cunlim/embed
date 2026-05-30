@@ -13,6 +13,7 @@ interface CategoryDownloadProps {
   categories: (Category | Recommendation)[];
   filter: string | undefined;
   keyword?: string;
+  folder?: string;
 }
 
 export default function CategoryDownload({
@@ -21,6 +22,7 @@ export default function CategoryDownload({
   categories,
   filter,
   keyword,
+  folder,
 }: CategoryDownloadProps) {
   const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +63,7 @@ export default function CategoryDownload({
       return;
     }
     try {
-      const res = await getCategories(token, 1, 100000, filter, keyword);
+      const res = await getCategories(token, 1, 100000, filter, keyword, folder);
       if (res.data.length === 0) {
         alert("다운로드할 카테고리가 없습니다");
         return;
@@ -72,7 +74,7 @@ export default function CategoryDownload({
         err instanceof Error ? err.message : "카테고리 목록 조회 실패",
       );
     }
-  }, [token, filter, keyword, downloadExcel]);
+  }, [token, filter, keyword, folder, downloadExcel]);
 
   return (
     <Card className="p-4">

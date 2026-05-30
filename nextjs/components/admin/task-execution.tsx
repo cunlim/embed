@@ -23,6 +23,7 @@ interface TaskExecutionProps {
   canModify: (cat: Category | Recommendation) => boolean;
   onComplete: (wasStopped: boolean) => void;
   onCategoryComplete?: () => void;
+  folder?: string;
 }
 
 interface BatchProgress {
@@ -71,6 +72,7 @@ export default function TaskExecution({
   canModify,
   onComplete,
   onCategoryComplete,
+  folder,
 }: TaskExecutionProps) {
   const STEP_ORDER: StepName[] = [
     "embedding.ko",
@@ -307,7 +309,7 @@ export default function TaskExecution({
       return;
     }
     try {
-      const res = await getCategories(token, 1, 100000, filter, keyword);
+      const res = await getCategories(token, 1, 100000, filter, keyword, folder);
       const targetIds = res.data
         .filter((cat) => canModify(cat))
         .map((cat) => cat.id);
@@ -322,7 +324,7 @@ export default function TaskExecution({
         err instanceof Error ? err.message : "카테고리 목록 조회 실패",
       );
     }
-  }, [token, filter, keyword, canModify, executeQueue]);
+  }, [token, filter, keyword, folder, canModify, executeQueue]);
 
   const handleStop = useCallback(() => {
     abortRef.current = true;

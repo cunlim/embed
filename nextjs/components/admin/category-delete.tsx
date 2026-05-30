@@ -20,6 +20,7 @@ interface CategoryDeleteProps {
   canModify: (cat: Category | Recommendation) => boolean;
   onComplete: () => void;
   onCategoryComplete?: () => void;
+  folder?: string;
 }
 
 interface DeleteProgress {
@@ -39,6 +40,7 @@ export default function CategoryDelete({
   canModify,
   onComplete,
   onCategoryComplete,
+  folder,
 }: CategoryDeleteProps) {
   const [running, setRunning] = useState(false);
   const [stopping, setStopping] = useState(false);
@@ -133,7 +135,7 @@ export default function CategoryDelete({
       return;
     }
     try {
-      const res = await getCategories(token, 1, 100000, filter, keyword);
+      const res = await getCategories(token, 1, 100000, filter, keyword, folder);
       const targetIds = res.data
         .filter((cat) => canModify(cat))
         .map((cat) => cat.id);
@@ -148,7 +150,7 @@ export default function CategoryDelete({
         err instanceof Error ? err.message : "카테고리 목록 조회 실패",
       );
     }
-  }, [token, filter, keyword, canModify, executeDelete]);
+  }, [token, filter, keyword, folder, canModify, executeDelete]);
 
   const handleStop = useCallback(() => {
     abortRef.current = true;

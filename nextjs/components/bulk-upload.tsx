@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 interface BulkUploadProps {
   token?: string | null;
   onSuccess: () => void;
+  folder?: string;
 }
 
 interface RowResult {
@@ -19,7 +20,7 @@ interface RowResult {
   categoryNameKo?: string;
 }
 
-export default function BulkUpload({ token, onSuccess }: BulkUploadProps) {
+export default function BulkUpload({ token, onSuccess, folder }: BulkUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentRow, setCurrentRow] = useState(0);
@@ -126,7 +127,7 @@ export default function BulkUpload({ token, onSuccess }: BulkUploadProps) {
       }
 
       try {
-        await createCategory(nameKo, token, code, nameEn, nameZh);
+        await createCategory(nameKo, token, code, nameEn, nameZh, folder);
         rowResults.push({
           row: rowNum,
           success: true,
@@ -150,7 +151,7 @@ export default function BulkUpload({ token, onSuccess }: BulkUploadProps) {
     if (rowResults.some((r) => r.success)) {
       onSuccess();
     }
-  }, [file, token, onSuccess]);
+  }, [file, token, folder, onSuccess]);
 
   const handleReset = useCallback(() => {
     setFile(null);

@@ -729,6 +729,7 @@ export function EmbedPageInner({
                 ) : (
                   <BulkUpload
                     token={token}
+                    folder={selectedFolder ?? undefined}
                     onSuccess={() => {
                       loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined);
                       setHierarchyRefreshKey((prev) => prev + 1);
@@ -749,6 +750,7 @@ export function EmbedPageInner({
               filter={effectiveFilter}
               keyword={hierarchyKeyword || undefined}
               canModify={canModify}
+              folder={selectedFolder ?? undefined}
               onComplete={(wasStopped) => {
                 if (!wasStopped) {
                   setSelectedIds(new Set());
@@ -769,6 +771,7 @@ export function EmbedPageInner({
               categories={displayCategories}
               filter={effectiveFilter}
               keyword={hierarchyKeyword || undefined}
+              folder={selectedFolder ?? undefined}
             />
 
             {/* 삭제 */}
@@ -779,6 +782,7 @@ export function EmbedPageInner({
               filter={effectiveFilter}
               keyword={hierarchyKeyword || undefined}
               canModify={canModify}
+              folder={selectedFolder ?? undefined}
               onComplete={() => {
                 setSelectedIds(new Set());
                 const kw = keywordRef.current;
