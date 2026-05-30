@@ -49,6 +49,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 - **`resetKey` prop 패턴** — `refreshKey`(옵션 재조회)와 별도로 `resetKey`(상태 완전 초기화)를 분리. `resetKey` effect에서는 부모 콜백 없이 로컬 상태만 리셋 + 옵션 재조회.
 - **`setLevelOptions` 자식 depth 보존** — `refreshKey`/`resetKey` effect에서 `setLevelOptions([opts])` 호출 시 자식 depth 옵션이 삭제됨. `setLevelOptions((prev) => prev.length > 1 ? [opts, ...prev.slice(1)] : [opts])`로 함수형 업데이트하여 보존.
 - **`resetKey` 초기 옵션 즉시 설정** — `setLevelOptions([])`로 초기화하면 fetch 완료 전까지 "사용 가능한 카테고리가 없습니다" 플래시 발생. `initialLevelOptions`가 있으면 즉시 설정 후 fetch로 갱신.
+- **커스텀 이벤트로 즉시 리셋 패턴** — `<Link>` 네비게이션 지연 시 `window.dispatchEvent(new CustomEvent("resetEmbedPage"))`로 즉시 상태 초기화 가능. `embed-page-inner.tsx`에서 `window.addEventListener`로 수신. URL 동기화는 `window.history.replaceState()`로 처리 (React 상태 배치 지연 없이 즉시 반영).
 - **모달 자동 open 제거 시 `onSelectLeafPath` 확인** — `CategoryHierarchy`의 `onSelectCategory`만 제거하면 `EmbedPageInner`의 `onSelectLeafPath` 콜백이 `setModalCategoryId`를 호출하여 모달이 열림. 양쪽 모두 제거 필요.
 
 ## URL 파라미터 상태 동기화
@@ -56,6 +57,8 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 - **파생 값을 ref로 추적하면 잔여 상태 감지 실패** — `effectiveFilter`(`"my"` | `undefined`)를 `useRef`로 추적하면, "전체" 선택 시 `effectiveFilter = undefined` → `filterRef.current = undefined` → `hasResidual` 체크에서 누락. **원본 state(`filterSelection`)를 추적**해야 함.
 - **nullable state의 잔여 체크는 `!== null`** — `"all" | "my" | null` 타입을 ref로 추적 시 `!== undefined` 체크는 `null !== undefined === true`로 항상 잔여로 감지. `!== null`로 변경.
 - **URL 파라미터에서 파생된 useState는 reset effect에서 명시적 초기화 필요** — `perPage`처럼 URL에서 파생되어 `useState`로 관리되는 값은 URL이 비워져도 state가 자동 리셋되지 않음. reset effect에 `setPerPage(20)` 등 명시적 초기화 추가.
+- **`activeFilterSelection`의 `serverFilter` 폴백 함정** — `filterSelection ?? (serverFilter === "my" ? "my" : "all")`에서 `serverFilter`는 SSR 시점 스냅샷. `setFilterSelection(null)` 후에도 서버 초기값으로 되돌아감. **해결**: `useState`에서 이미 초기 반영되므로 폴백에서 `serverFilter` 제거 → `activeFilterSelection = filterSelection`.
+- **`router.replace()`와 `<Link>` 네비게이션 동시 실행 충돌** — 같은 URL로 `router.replace()`와 `<Link>`가 동시에 실행되면 서로 취소되어 URL 변경 안 됨. 즉시 URL 동기화가 필요하면 `window.history.replaceState()` 사용.
 
 ## 초기 마운트 시 reset effect 함정
 
@@ -95,8 +98,8 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **인증 가드 패턴** — `const authorized = isAdmin(user)`로 직접 도출 (effect 금지)
 - **컨테이너 재생성 후** — `docker compose stop` + `up -d` 후 `npm run build`로 타입 체크 확인.
 - **CSS 트랜지션 사이드바 패턴** — 접기/펼치기 시 `{!collapsed && <nav>}` 조건부 렌더링은 width 트랜지션 중 텍스트 래핑으로 높이 깨짐 발생. 해결: nav에 `h-0 overflow-hidden` 적용, 자식 버튼에 `whitespace-nowrap overflow-hidden` 추가. shadcn Sheet의 `showCloseButton` 기본값이 `true` — 커스텀 닫기 버튼 사용 시 `showCloseButton={false}` 필수.
-- **embed 페이지 초기 마운트 필터 덮어쓰기** — `resetDoneRef` 효과가 `filterRef.current="my"`를 잔여로 판정하여 `loadCategories(1, 20, undefined, "")` 호출 → 필터 없는 전체 목록이 "내 카테고리"를 덮어씀. `initialMountDoneRef` 패턴으로 해결. URL→state 동기화 효과 수정 시 항상 초기 마운트 동작을 테스트할 것.
 - **폼 버튼 순서 컨벤션** — 입력 폼에서 초기화 버튼은 검색 버튼 앞에 배치: `Input → 초기화(X) → 검색(Search)`. 검색 버튼이 disabled일 때도 초기화 버튼이 보이도록 조건부 렌더링 순서 준수.
+- **`router.replace` + `<Link>` 동일 URL 충돌** — `router.replace("/embed")`와 `<Link href="/embed">`가 동시에 실행되면 URL이 변경되지 않음. 즉시 URL 변경이 필요하면 `router.replace` 대신 `window.history.replaceState()` 사용.
 
 ## 관련 문서
 
