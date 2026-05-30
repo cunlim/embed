@@ -77,7 +77,7 @@ export function CollapsibleSidebar({
           collapsed ? "w-12" : "w-56"
         )}
       >
-        <div className="sticky top-16 flex h-[calc(100vh-4rem)] flex-col">
+        <div className="flex h-full flex-col">
           <div className="flex items-center border-b border-border px-3 py-3">
             <Button
               variant="ghost"
