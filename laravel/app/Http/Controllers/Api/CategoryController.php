@@ -92,7 +92,11 @@ class CategoryController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('category_name_ko', 'LIKE', '%'.$request->input('search').'%');
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('category_name_ko', 'LIKE', '%'.$search.'%')
+                    ->orWhere('category_code', 'LIKE', '%'.$search.'%');
+            });
         }
 
         return new CategoryCollection(
