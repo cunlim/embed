@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\SettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -77,9 +78,9 @@ class AdminSettingsController extends Controller
      * 회원 목록 조회 (관리자용)
      * GET /api/admin/users
      */
-    public function users(): \Illuminate\Http\JsonResponse
+    public function users(): JsonResponse
     {
-        $users = \App\Models\User::select('id', 'name', 'email')->orderBy('name')->get();
+        $users = User::select('id', 'name', 'email')->orderBy('name')->get();
 
         return response()->json(['data' => $users]);
     }

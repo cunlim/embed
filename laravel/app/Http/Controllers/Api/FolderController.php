@@ -122,7 +122,7 @@ class FolderController extends Controller
         Category::whereIn('id', $allowedIds)->update(['folder' => $targetFolder]);
 
         return response()->json([
-            'message' => count($allowedIds) . '개 카테고리를 이동했습니다.',
+            'message' => count($allowedIds).'개 카테고리를 이동했습니다.',
             'moved' => count($allowedIds),
         ]);
     }
