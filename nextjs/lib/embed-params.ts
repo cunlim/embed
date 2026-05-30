@@ -20,6 +20,8 @@ export interface EmbedParams {
   searchLang: string;
   /** URL에서 파싱된 계층 경로 배열 */
   catPath: string[];
+  /** 폴더 필터 */
+  folder: string | null;
 }
 
 export function parseEmbedParams(params: EmbedParamsReader): EmbedParams {
@@ -51,7 +53,9 @@ export function parseEmbedParams(params: EmbedParamsReader): EmbedParams {
   const slang = params.get("slang");
   const searchLang = slang === "en" || slang === "zh" ? slang : "ko";
 
-  return { mode, keyword, filter, searchText, searchLang, catPath };
+  const folder = params.get("folder") || null;
+
+  return { mode, keyword, filter, searchText, searchLang, catPath, folder };
 }
 
 /**

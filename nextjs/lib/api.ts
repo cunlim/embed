@@ -117,12 +117,14 @@ export function recommend(
   perPage?: number,
   filter?: string,
   keyword?: string,
+  folder?: string,
 ): Promise<RecommendResponse> {
   const body: Record<string, string | number> = { text, target_language: targetLanguage };
   if (page) body.page = page;
   if (perPage) body.per_page = perPage;
   if (filter) body.filter = filter;
   if (keyword) body.keyword = keyword;
+  if (folder) body.folder = folder;
   return request<RecommendResponse>("/recommend", {
     method: "POST",
     body,
@@ -170,12 +172,14 @@ export function getCategories(
   perPage?: number,
   filter?: string,
   search?: string,
+  folder?: string,
 ): Promise<CategoryListResponse> {
   const params = new URLSearchParams();
   if (page && page > 1) params.set("page", String(page));
   params.set("per_page", String(perPage ?? 20));
   if (filter) params.set("filter", filter);
   if (search) params.set("search", search);
+  if (folder) params.set("folder", folder);
   const qs = params.toString();
   return request<CategoryListResponse>(`/categories?${qs}`, { token });
 }
@@ -231,6 +235,7 @@ export function createCategory(
   categoryCode?: string,
   categoryNameEn?: string,
   categoryNameZh?: string,
+  folder?: string,
 ): Promise<{ data: Category }> {
   const body: Record<string, string> = { category_name_ko: categoryNameKo };
   if (categoryCode) {
@@ -242,6 +247,7 @@ export function createCategory(
   if (categoryNameZh) {
     body.category_name_zh = categoryNameZh;
   }
+  if (folder) body.folder = folder;
   return request<{ data: Category }>("/categories", {
     method: "POST",
     body,
@@ -399,4 +405,48 @@ export function updateSetting(
     body: { group, key, value },
     token,
   });
+}
+
+// --- 폴더 ---
+
+export function fetchFolders(
+  token?: string | null,
+  userId?: number | null,
+): Promise<{ data: string[] }> {
+  const params = new URLSearchParams();
+  if (userId) params.set("user_id", String(userId));
+  const qs = params.toString();
+  return request<{ data: string[] }>(`/folders${qs ? "?" + qs : ""}`, { token });
+}
+
+export function deleteFolder(
+  folderName: string,
+  token?: string | null,
+  userId?: number | null,
+  moveToDefault: boolean = true,
+): Promise<{ message: string }> {
+  const params = new URLSearchParams();
+  if (userId) params.set("user_id", String(userId));
+  params.set("move_to_default", String(moveToDefault));
+  const qs = params.toString();
+  return request<{ message: string }>(`/folders/${encodeURIComponent(folderName)}?${qs}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
+export function moveCategoriesToFolder(
+  categoryIds: number[],
+  targetFolder: string | null,
+  token?: string | null,
+): Promise<{ message: string; moved: number }> {
+  return request<{ message: string; moved: number }>("/categories/move-folder", {
+    method: "POST",
+    body: { category_ids: categoryIds, target_folder: targetFolder },
+    token,
+  });
+}
+
+export function fetchUsers(token?: string | null): Promise<{ data: { id: number; name: string; email: string }[] }> {
+  return request<{ data: { id: number; name: string; email: string }[] }>("/admin/users", { token });
 }
