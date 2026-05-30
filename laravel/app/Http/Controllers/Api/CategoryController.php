@@ -99,6 +99,16 @@ class CategoryController extends Controller
             });
         }
 
+        // folder 필터
+        if ($request->filled('folder')) {
+            $folder = $request->input('folder');
+            if ($folder === '기본폴더') {
+                $query->whereNull('folder');
+            } else {
+                $query->where('folder', $folder);
+            }
+        }
+
         return new CategoryCollection(
             $query->orderBy('id', 'desc')->paginate($perPage)
         );
@@ -143,6 +153,16 @@ class CategoryController extends Controller
             $scopeQuery->whereIn('user_id', [$user->id, 1]);
         } else {
             $scopeQuery->where('user_id', 1);
+        }
+
+        // folder 필터
+        if ($request->filled('folder')) {
+            $folder = $request->input('folder');
+            if ($folder === '기본폴더') {
+                $scopeQuery->whereNull('folder');
+            } else {
+                $scopeQuery->where('folder', $folder);
+            }
         }
 
         // maxDepth = min(DB 실제 최대 깊이, 설정값)

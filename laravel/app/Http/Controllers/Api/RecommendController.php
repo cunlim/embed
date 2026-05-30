@@ -66,6 +66,7 @@ class RecommendController extends Controller
         $perPage = (int) $request->input('per_page', config('services.pagination.default_per_page', 20));
         $filter = $request->validated('filter');
         $keyword = $request->validated('keyword');
+        $folder = $request->validated('folder');
         $user = auth('sanctum')->user();
 
         // CategoryController::index()와 동일한 접근 제어 규칙 적용
@@ -102,6 +103,14 @@ class RecommendController extends Controller
                 $query->where('categories.category_name_ko', 'like', $keyword.'%');
             }
 
+            if ($folder) {
+                if ($folder === '기본폴더') {
+                    $query->whereNull('categories.folder');
+                } else {
+                    $query->where('categories.folder', $folder);
+                }
+            }
+
             return RecommendResource::collection($query->paginate(perPage: $perPage, page: $page))->response();
         }
 
@@ -115,7 +124,7 @@ class RecommendController extends Controller
         RecommendResource::setQueryEmbedding($searchLog->embedding->toArray());
 
         $results = $this->recommendation->recommendPaginated(
-            $searchLog, $targetLanguage, $perPage, $page, $scopeUserId, $keyword
+            $searchLog, $targetLanguage, $perPage, $page, $scopeUserId, $keyword, $folder
         );
 
         return RecommendResource::collection($results)->response();
