@@ -317,8 +317,14 @@ export function EmbedPageInner({
 
   // URL이 비어있는데 검색/필터 상태가 남아있으면 초기화 (기능시연, 뒤로가기 등)
   const resetDoneRef = useRef(false);
+  const initialMountDoneRef = useRef(false);
   useEffect(() => {
     if (!mounted) return;
+    // 첫 마운트 시에는 SSR 데이터가 있으므로 초기화 건너뜀
+    if (!initialMountDoneRef.current) {
+      initialMountDoneRef.current = true;
+      return;
+    }
     if (!searchParams.toString()) {
       // 이미 리셋했으면 건너뜀 (무한 루프 방지)
       if (resetDoneRef.current) return;
@@ -338,11 +344,15 @@ export function EmbedPageInner({
         // 계층 필터 완전 초기화 (CategoryHierarchy의 resetKey 변경 시 selectedPath/levelOptions 리셋)
         setHierarchyResetKey((prev) => prev + 1);
         setHierarchyKeyword("");
+        // 필터 ref 초기화 (effectiveFilter fallback 방지)
+        filterRef.current = null;
+        // 디폴트 카테고리 목록 리로드 (빈 검색어 명시 전달로 이전 검색 조건 차단)
+        loadCategories(1, 20, undefined, "");
       }
     } else {
       resetDoneRef.current = false;
     }
-  }, [searchParams, mounted]);
+  }, [searchParams, mounted, loadCategories]);
 
   // URL에 검색어가 있는데 state가 불일치하면 동기화 후 검색 실행 (앞으로가기, 뒤로가기)
   useEffect(() => {
@@ -503,6 +513,17 @@ export function EmbedPageInner({
                     }}
                     className="h-9 text-sm"
                   />
+                  {searchText && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleReset}
+                      className="h-9 shrink-0"
+                      aria-label="초기화"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     onClick={() => handleSearch()}
@@ -516,17 +537,6 @@ export function EmbedPageInner({
                       <Search className="h-4 w-4" />
                     )}
                   </Button>
-                  {searchText && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleReset}
-                      className="h-9 shrink-0"
-                      aria-label="초기화"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
                 </div>
                 {searchError && (
                   <p className="text-sm text-destructive">{searchError}</p>

@@ -388,15 +388,6 @@ export default function CategoryHierarchy({
                   }}
                   className="h-9 text-sm"
                 />
-                <Button
-                  size="sm"
-                  onClick={handleKeywordSubmit}
-                  disabled={!keywordText.trim()}
-                  className="h-9 shrink-0"
-                  aria-label="검색"
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
                 {keywordText && (
                   <Button
                     size="sm"
@@ -408,6 +399,15 @@ export default function CategoryHierarchy({
                     <X className="h-4 w-4" />
                   </Button>
                 )}
+                <Button
+                  size="sm"
+                  onClick={handleKeywordSubmit}
+                  disabled={!keywordText.trim()}
+                  className="h-9 shrink-0"
+                  aria-label="검색"
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           )}
