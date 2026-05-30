@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdminSettingsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\FolderController;
 use App\Http\Controllers\Api\RecommendController;
 use App\Http\Controllers\Api\TestController;
 use Illuminate\Support\Facades\Route;
@@ -32,8 +33,16 @@ Route::get('categories/{category}/translations', [CategoryController::class, 'tr
 // 추천
 Route::post('recommend', [RecommendController::class, 'recommend']);
 
+// 폴더 (인증 필요)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('folders', [FolderController::class, 'index']);
+    Route::delete('folders/{folderName}', [FolderController::class, 'destroy']);
+    Route::post('categories/move-folder', [FolderController::class, 'moveFolder']);
+});
+
 // 관리자 설정 (superadmin only)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('admin/settings', [AdminSettingsController::class, 'index']);
     Route::put('admin/settings', [AdminSettingsController::class, 'update']);
+    Route::get('admin/users', [AdminSettingsController::class, 'users']);
 });

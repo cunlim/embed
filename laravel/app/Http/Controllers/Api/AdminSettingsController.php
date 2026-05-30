@@ -72,4 +72,15 @@ class AdminSettingsController extends Controller
             ],
         ]);
     }
+
+    /**
+     * 회원 목록 조회 (관리자용)
+     * GET /api/admin/users
+     */
+    public function users(): \Illuminate\Http\JsonResponse
+    {
+        $users = \App\Models\User::select('id', 'name', 'email')->orderBy('name')->get();
+
+        return response()->json(['data' => $users]);
+    }
 }
