@@ -23,6 +23,8 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 
 디자인 컨벤션은 [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md) 참조. 구현 변경 시 문서가 stale일 수 있으므로 실제 코드 상태를 우선한다.
 
+- **RadioGroup 미사용** — shadcn/ui에 RadioGroup 컴포넌트가 설치되어 있지 않음. 라디오 버튼이 필요하면 커스텀 스타일 버튼으로 구현.
+
 ## Next.js 16 주요 함정
 
 > `node_modules/next/dist/docs/`의 공식 문서를 먼저 읽고 브레이킹 체인지를 숙지할 것.
@@ -37,6 +39,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 
 - **`react-hooks/set-state-in-effect`** — useEffect 내 동기적 setState 금지 (0-tolerance)
   - 데이터 fetch는 훅이 mount 시 자동 로드 — effect에서 수동 호출 금지
+  - eslint-disable 주석: `// eslint-disable-next-line react-hooks/set-state-in-effect`
 - **`react-hooks/refs`** — `useRef`의 `.current` render 중 사용 금지. 콜백 ref는 `useEffect(() => { ref.current = callback })` 사용.
   - **모달 open 초기화 패턴**: `useRef`로 이전 `open` 상태 추적 → render 중 조건부 `setState`는 `eslint-disable-next-line react-hooks/refs` 필요
 - **`useSearchParams`는 `<Suspense>` 경계 필수** — 빌드 시 오류 발생

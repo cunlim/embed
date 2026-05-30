@@ -100,11 +100,16 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
   if ($exists) { /* drop/modify */ }
   ```
 - **`RefreshDatabase` 사용 테스트 환경** — 원본 마이그레이션 변경 시 새 마이그레이션에서 중복 실행 방지 필요
+- **NULL 포함 복합 unique 인덱스** — PostgreSQL에서 NULL은 unique 제약에서 서로 다르게 취급됨. `COALESCE(column, '')` 기반 partial unique index 사용:
+  ```php
+  DB::statement('CREATE UNIQUE INDEX idx_name ON table (col1, col2, COALESCE(nullable_col, \'\'))');
+  ```
 
 ### API 인증
 
 - API 라우트에는 세션 미들웨어 없음. `$request->user('sanctum')` 또는 `auth('sanctum')->user()` 사용.
 - `RecommendResource`에 `user_id` 필수 — `canModify` 판별용.
+- **관리자 전용 엔드포인트** — `routes/api.php`의 `auth:sanctum` 미들웨어 그룹에 추가. 컨트롤러에서 `$user->isAdmin()`으로 추가 권한 검증.
 
 ### OAuth (Socialite)
 
