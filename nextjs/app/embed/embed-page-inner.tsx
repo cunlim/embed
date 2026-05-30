@@ -181,7 +181,9 @@ export function EmbedPageInner({
   const perPageRef = useRef(perPage);
   useEffect(() => { perPageRef.current = perPage });
   const keywordRef = useRef(initialFilterKeyword);
-  const activeFilterSelection = filterSelection ?? (serverFilter === "my" ? "my" : "all");
+  // NOTE: serverFilter 폴백 제거 — 초기 상태에서 이미 반영됨 (useState).
+  // 폴백이 있으면 setFilterSelection(null) 후에도 서버 초기값으로 되돌아가는 버그 발생.
+  const activeFilterSelection = filterSelection;
   const effectiveFilter = activeFilterSelection === "my" ? "my" : undefined;
   // filterSelection을 추적 (effectiveFilter 아님 — "전체" 선택 시 effectiveFilter=undefined가 되어 hasResidual에서 누락됨)
   const filterRef = useRef(filterSelection);
@@ -374,6 +376,46 @@ export function EmbedPageInner({
     setSearchError(null);
     updateURL({ searchText: "", searchLanguage: "ko" });
   }, [updateURL]);
+
+  // 전체 상태 초기화 (기능시연, 브라우저 뒤로가기 등에서 사용)
+  const resetToDefault = useCallback(() => {
+    // URL을 즉시 동기화 (window.history.replaceState로 렌더링 지연 없이 즉시 반영)
+    // router.replace는 React 상태 배치로 인해 지연됨. <Link>와 충돌도 방지.
+    window.history.replaceState(null, "", "/embed");
+
+    // 검색 상태 초기화
+    setSearchText("");
+    setSearchLanguage("ko");
+    setSearchResults(null);
+    setSearchMeta(null);
+    setSearchError(null);
+    setIsSearching(false);
+
+    // 필터 상태 초기화
+    setFilterSelection(null);
+    setKeywordSearchActive(false);
+    keywordRef.current = "";
+    filterRef.current = null;
+
+    // 페이지네이션 초기화
+    setPerPage(20);
+
+    // 계층 필터 완전 초기화
+    setHierarchyResetKey((prev) => prev + 1);
+    setHierarchyKeyword("");
+
+    // 카테고리 목록 리로드 (필터 없이 기본 목록)
+    loadCategories(1, 20, undefined, "");
+  }, [loadCategories]);
+
+  // "기능시연" 클릭 시 커스텀 이벤트로 즉시 리셋
+  useEffect(() => {
+    const handleResetEmbed = () => {
+      resetToDefault();
+    };
+    window.addEventListener("resetEmbedPage", handleResetEmbed);
+    return () => window.removeEventListener("resetEmbedPage", handleResetEmbed);
+  }, [resetToDefault]);
 
   const handleKeywordSearch = useCallback((keyword: string) => {
     // SSR 데이터가 이미 있고 같은 키워드면 재요청 건너뜀

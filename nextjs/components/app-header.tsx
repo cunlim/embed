@@ -37,7 +37,13 @@ export function AppHeader() {
             asChild
             className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
           >
-            <Link href="/embed">
+            <Link
+              href="/embed"
+              onClick={() => {
+                // 임베드 페이지에 즉시 리셋 이벤트 전달 (URL 변경 전 상태 초기화)
+                window.dispatchEvent(new CustomEvent("resetEmbedPage"));
+              }}
+            >
               <Play className="h-4 w-4" />
               <span className="hidden sm:inline ml-0.5">기능시연</span>
             </Link>
