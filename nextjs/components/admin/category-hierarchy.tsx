@@ -380,7 +380,7 @@ export default function CategoryHierarchy({
             <div className="space-y-2">
               <div className="flex gap-2">
                 <Input
-                  placeholder="카테고리명 검색..."
+                  placeholder="카테고리명 또는 코드 검색..."
                   value={keywordText}
                   onChange={(e) => setKeywordText(e.target.value)}
                   onKeyDown={(e) => {
