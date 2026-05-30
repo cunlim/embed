@@ -11,7 +11,7 @@ Next.js 16 (App Router), React 19, TypeScript 5, Tailwind CSS v4, shadcn/ui (`ba
 
 ```bash
 # 자주 사용
-docker exec cl_embed_nextjs npm run <dev|build|lint|test|test:watch>
+docker exec cl_embed_nextjs npm run <dev|build|lint|test>
 docker exec cl_embed_nextjs npx tsc --noEmit
 docker exec cl_embed_nextjs npx eslint <files> --max-warnings=0
 
@@ -36,8 +36,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 ## ESLint 주요 규칙
 
 - **`react-hooks/set-state-in-effect`** — useEffect 내 동기적 setState 금지 (0-tolerance)
-  - Mount 감지: `useSyncExternalStore(() => () => {}, () => true, () => false)` 사용
-  - Data fetch: 훅이 mount 시 자동 로드 — effect에서 수동 호출 금지
+  - 데이터 fetch는 훅이 mount 시 자동 로드 — effect에서 수동 호출 금지
 - **`react-hooks/refs`** — `useRef`의 `.current` render 중 사용 금지. 콜백 ref는 `useEffect(() => { ref.current = callback })` 사용.
   - **모달 open 초기화 패턴**: `useRef`로 이전 `open` 상태 추적 → render 중 조건부 `setState`는 `eslint-disable-next-line react-hooks/refs` 필요
 - **`useSearchParams`는 `<Suspense>` 경계 필수** — 빌드 시 오류 발생
@@ -54,6 +53,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 
 ## URL 파라미터 상태 동기화
 
+- **`"" || undefined` 함정** — 빈 문자열(`""`)이 falsy이므로 `keyword || undefined`가 `undefined`로 변환됨. `useCategories.loadCategories`의 `search ?? currentSearch.current`가 stale fallback을 반환. **해결**: `|| undefined` 대신 ref 원시값 직접 전달.
 - **파생 값을 ref로 추적하면 잔여 상태 감지 실패** — `effectiveFilter`(`"my"` | `undefined`)를 `useRef`로 추적하면, "전체" 선택 시 `effectiveFilter = undefined` → `filterRef.current = undefined` → `hasResidual` 체크에서 누락. **원본 state(`filterSelection`)를 추적**해야 함.
 - **nullable state의 잔여 체크는 `!== null`** — `"all" | "my" | null` 타입을 ref로 추적 시 `!== undefined` 체크는 `null !== undefined === true`로 항상 잔여로 감지. `!== null`로 변경.
 - **URL 파라미터에서 파생된 useState는 reset effect에서 명시적 초기화 필요** — `perPage`처럼 URL에서 파생되어 `useState`로 관리되는 값은 URL이 비워져도 state가 자동 리셋되지 않음. reset effect에 `setPerPage(20)` 등 명시적 초기화 추가.
@@ -65,8 +65,13 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 - **`resetDoneRef` 효과의 잔여 상태 오판 판정** — `filterRef`는 `filterSelection`에서 초기화되므로, SSR에서 `filterSelection="my"`이면 `filterRef.current="my"`. URL이 비어있는 초기 마운트에서 `hasResidual = filterRef.current !== null`이 `true`가 되어 불필요한 리셋 트리거 → `loadCategories(1, 20, undefined, "")` 호출로 필터 없는 전체 목록이 "내 카테고리"를 덮어씀. **해결**: `initialMountDoneRef`로 첫 마운트 시 reset effect를 건너뜀.
 - **`hadServerCategories` 소비 타이밍** — `effectiveFilter`가 `undefined`인 첫 렌더에서 `hadServerCategories.current=false`가 되면, 이후 `effectiveFilter="my"`로 변경되어도 SSR 데이터 보호가 불가. reset effect 수정 시 `hadServerCategories` 소비 조건에 `effectiveFilter` 확정 여부를 함께 체크할 것.
 
-## SSR 패턴
+## SSR/CSR 일관성
 
+- **SSR 사용자 prefetch** — `layout.tsx`에서 `cookies()` → `getUser(token)` → client component에 `serverUser` prop 전달. `useAuth(initialUser)`로 hydration 시 `null`→`user` 전환 깜빡임 방지.
+- **`skipInitialFetch` ref** — SSR prefetch 완료 시 `useAuth`의 `useEffect`가 `getUser(token)`을 중복 호출하지 않도록 `useRef(!!initialUser)`로 첫 effect skip.
+- **`canModify` SSR/CSR 일관성** — `user ?? serverUser`로 양쪽에서 동일한 소유권 판단. SSR 시 `serverUser`, CSR hydration 후 `useAuth().user` 사용.
+- **로그인 후 리디렉션은 `window.location.href`** — 전체 페이지 로드로 layout SSR 재실행 → `serverUser` 갱신. `router.replace`는 layout이 SSR 재실행되지 않아 `serverUser`가 stale.
+- **`useSyncExternalStore` mount 감지 금지** — SSR에서 `return null`로 깜빡임 유발. `initialUser` + `skipInitialFetch`로 대체.
 - URL을 state의 source of truth로 — `useSearchParams()` 변경 감지 → URL→state 단방향 싱크
 - `useCallback` 내 stale state 방지를 위해 ref로 최신값 읽기 (`searchLangRef`, `perPageRef` 등)
 - 컴포넌트 props 추가 시 `npx tsc --noEmit` 확인 (npm test는 모킹으로 타입 체크 우회)
@@ -92,10 +97,10 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **Laravel API 응답 형식 불일치** — `Resource::collection()`은 `{data: [...]}`, 단일은 `{data: {...}}`. 인터페이스 정의 시 Network 탭으로 확인.
 - **`.claude/settings.json` Stop hook에 `npm run build` 금지** — BUILD_ID 생성으로 dev 모드 이탈.
 - **JS 청크 캐싱 (Cloudflare)** — `_next/static/*`이 `max-age=14400`. 개발 환경은 Cache Rule 바이패스.
-- **OAuth 콜백 `?token=` 파라미터** — `/login`에서 `searchParams.get("token")`으로 localStorage 저장 필수.
+- **OAuth 콜백 `?token=`** — `/login`에서 `searchParams.get("token")` → `setToken()` → `window.location.href`로 리디렉션. `router.replace` 금지 (layout SSR 갱신 안 됨).
 - **`--no-bin-links`** — Docker 볼륨 마운트 환경에서 npm 심볼릭 링크 생성 불가.
 - **outline 버튼 light 모드 hover** — `hover:bg-muted hover:text-foreground`로 덮어쓸 것.
-- **인증 가드 패턴** — `const authorized = isAdmin(user)`로 직접 도출 (effect 금지)
+- **ThemeToggle SSR 깜빡임** — `useSyncExternalStore` + `opacity-0` invisible 버튼 패턴 사용 금지. SSR에서도 실제 버튼 렌더링.
 - **컨테이너 재생성 후** — `docker compose stop` + `up -d` 후 `npm run build`로 타입 체크 확인.
 - **CSS 트랜지션 사이드바 패턴** — 접기/펼치기 시 `{!collapsed && <nav>}` 조건부 렌더링은 width 트랜지션 중 텍스트 래핑으로 높이 깨짐 발생. 해결: nav에 `h-0 overflow-hidden` 적용, 자식 버튼에 `whitespace-nowrap overflow-hidden` 추가. shadcn Sheet의 `showCloseButton` 기본값이 `true` — 커스텀 닫기 버튼 사용 시 `showCloseButton={false}` 필수.
 - **폼 버튼 순서 컨벤션** — 입력 폼에서 초기화 버튼은 검색 버튼 앞에 배치: `Input → 초기화(X) → 검색(Search)`. 검색 버튼이 disabled일 때도 초기화 버튼이 보이도록 조건부 렌더링 순서 준수.
