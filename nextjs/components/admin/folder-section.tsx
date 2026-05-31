@@ -20,6 +20,7 @@ import {
   renameFolder,
   deleteFolder,
   moveCategoriesToFolder,
+  getCategories,
   type FolderGroup,
 } from "@/lib/api";
 import { isAdmin } from "@/lib/utils";
@@ -36,6 +37,10 @@ interface FolderSectionProps {
   serverUsers?: { id: number; name: string; email: string }[];
   onFolderChange: (folder: string | null, userId?: number | null) => void;
   onFolderActionComplete: () => void;
+  filter?: string;
+  keyword?: string;
+  currentFolder?: string | null;
+  currentUserId?: number | null;
 }
 
 const DEFAULT_FOLDER_LABEL = "기본폴더";
@@ -53,6 +58,10 @@ export default function FolderSection({
   serverUsers = [],
   onFolderChange,
   onFolderActionComplete,
+  filter,
+  keyword,
+  currentFolder,
+  currentUserId,
 }: FolderSectionProps) {
   const [folders, setFolders] = useState<string[]>(serverFolders);
   const [folderGroups, setFolderGroups] = useState<FolderGroup[]>(serverFolderGroups);
@@ -201,7 +210,23 @@ export default function FolderSection({
   // 전체 폴더 이동
   const handleMoveAll = useCallback(async () => {
     if (!token) return;
-    if (!window.confirm("현재 범위의 모든 카테고리를 이동하시겠습니까?")) return;
+    // 현재 필터에 해당하는 카테고리 개수 조회
+    let count = 0;
+    let allIds: number[] = [];
+    try {
+      const countRes = await getCategories(token, 1, 1, filter, keyword, currentFolder ?? undefined, currentUserId ?? undefined);
+      count = countRes.meta?.total ?? 0;
+      if (count === 0) {
+        alert("이동할 카테고리가 없습니다.");
+        return;
+      }
+      // 전체 ID 목록 조회 (최대 100,000개)
+      const allRes = await getCategories(token, 1, 100000, filter, keyword, currentFolder ?? undefined, currentUserId ?? undefined);
+      allIds = allRes.data.map((cat) => cat.id);
+    } catch {
+      // 조회 실패 시 기존 방식으로 진행
+    }
+    if (!window.confirm(`현재 필터에 해당하는 ${count}개 카테고리를 이동하시겠습니까?`)) return;
     let resolvedFolder = moveTargetFolder;
     if (resolvedFolder && resolvedFolder.includes(":")) {
       const [name] = resolvedFolder.split(":");
@@ -210,14 +235,14 @@ export default function FolderSection({
     const target =
       resolvedFolder === DEFAULT_FOLDER_LABEL ? null : resolvedFolder || null;
     try {
-      await moveCategoriesToFolder([], target, token);
+      await moveCategoriesToFolder(allIds, target, token);
       setMoveTargetFolder("");
       await loadFolders();
       onFolderActionComplete();
     } catch (err) {
       setError(err instanceof Error ? err.message : "폴더 이동 실패");
     }
-  }, [token, moveTargetFolder, loadFolders, onFolderActionComplete]);
+  }, [token, moveTargetFolder, loadFolders, onFolderActionComplete, filter, keyword, currentFolder, currentUserId]);
 
   // 현재 선택된 폴더는 이동 대상에서 제외
   const disabledMoveTarget =
@@ -243,6 +268,10 @@ export default function FolderSection({
                   : (selectedFolder ?? ALL_FOLDERS_VALUE)
               }
               onValueChange={(value) => {
+                // 현재 선택된 폴더가 이동할 폴더와 일치하면 이동할 폴더 초기화
+                if (value && value !== ALL_FOLDERS_VALUE && value === moveTargetFolder) {
+                  setMoveTargetFolder("");
+                }
                 if (value && value.includes(":")) {
                   const [prefix, userIdStr] = value.split(":");
                   const uid = Number(userIdStr);

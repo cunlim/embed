@@ -84,6 +84,7 @@ export function useCategories(
         setError(
           err instanceof Error ? err.message : "카테고리 추가에 실패했습니다"
         );
+        throw err;
       } finally {
         setIsLoading(false);
       }

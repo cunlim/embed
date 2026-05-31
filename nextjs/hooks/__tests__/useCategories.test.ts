@@ -148,7 +148,7 @@ describe("useCategories", () => {
       expect(mockGetCategories).not.toHaveBeenCalled();
 
       await act(async () => {
-        await result.current.addCategory("중복");
+        await expect(result.current.addCategory("중복")).rejects.toThrow("중복된 카테고리");
       });
 
       expect(result.current.error).toBe("중복된 카테고리");
@@ -164,7 +164,7 @@ describe("useCategories", () => {
       const { result } = renderHook(() => useCategories("token"));
 
       await act(async () => {
-        await result.current.addCategory("의류>여성의류>원피스");
+        await expect(result.current.addCategory("의류>여성의류>원피스")).rejects.toThrow("목록 로드 실패");
       });
 
       expect(result.current.error).toBe("목록 로드 실패");

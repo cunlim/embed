@@ -232,10 +232,14 @@ export function EmbedPageInner({
 
   const handleAddCategory = useCallback(async () => {
     if (!newCategoryName.trim()) return;
-    await addCategory(newCategoryName.trim(), newCategoryCode.trim() || undefined, undefined, undefined, selectedFolder ?? undefined);
-    setNewCategoryName("");
-    setNewCategoryCode("");
-    setHierarchyRefreshKey(prev => prev + 1);
+    try {
+      await addCategory(newCategoryName.trim(), newCategoryCode.trim() || undefined, undefined, undefined, selectedFolder ?? undefined);
+      setNewCategoryName("");
+      setNewCategoryCode("");
+      setHierarchyRefreshKey(prev => prev + 1);
+    } catch {
+      // 에러는 useCategories에서 이미 처리됨 (catError state)
+    }
   }, [newCategoryName, newCategoryCode, selectedFolder, addCategory]);
 
   // URL 업데이트 (현재 URL 보존 + 오버라이드만 적용)
@@ -449,6 +453,9 @@ export function EmbedPageInner({
     // 페이지네이션 초기화
     setPerPage(20);
 
+    // 선택 상태 초기화
+    setSelectedIds(new Set());
+
     // 계층 필터 완전 초기화
     setHierarchyResetKey((prev) => prev + 1);
     setHierarchyKeyword("");
@@ -648,6 +655,10 @@ export function EmbedPageInner({
                 serverUsers={serverUsers}
                 serverFolderGroups={serverFolderGroups}
                 initialUserId={selectedUserId}
+                filter={effectiveFilter}
+                keyword={hierarchyKeyword || undefined}
+                currentFolder={selectedFolder}
+                currentUserId={selectedUserId}
                 onFolderChange={(folder, userId) => {
                   setSelectedFolder(folder);
                   if (userId !== undefined) {
