@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -89,6 +91,11 @@ export default function FolderSection({
       // 무시
     }
   }, [token]);
+
+  // 초기 마운트 시 폴더 그룹 로드 (optgroup 표시용)
+  useEffect(() => {
+    loadFolders();
+  }, [loadFolders]);
 
   // 폴더 추가
   const handleAddFolder = useCallback(async () => {
@@ -270,15 +277,16 @@ export default function FolderSection({
                 <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</SelectItem>
                 {isViewerAdmin && !selectedUserId && folderGroups.length > 0
                   ? folderGroups.map((group) => (
-                      <optgroup key={group.user_id} label={group.user_name}>
-                        <SelectItem value="all">전체</SelectItem>
-                        <SelectItem value={DEFAULT_FOLDER_LABEL}>{DEFAULT_FOLDER_LABEL}</SelectItem>
+                      <SelectGroup key={group.user_id}>
+                        <SelectLabel>{group.user_name}</SelectLabel>
+                        <SelectItem value="all" className="italic text-muted-foreground">전체</SelectItem>
+                        <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</SelectItem>
                         {group.folders.map((f) => (
                           <SelectItem key={f} value={f}>
                             {f}
                           </SelectItem>
                         ))}
-                      </optgroup>
+                      </SelectGroup>
                     ))
                   : folders.map((f) => (
                       <SelectItem key={f} value={f}>
@@ -348,7 +356,8 @@ export default function FolderSection({
                       {DEFAULT_FOLDER_LABEL}
                     </SelectItem>
                     {folderGroups.map((group) => (
-                      <optgroup key={group.user_id} label={group.user_name}>
+                      <SelectGroup key={group.user_id}>
+                        <SelectLabel>{group.user_name}</SelectLabel>
                         <SelectItem value={DEFAULT_FOLDER_LABEL}>
                           {DEFAULT_FOLDER_LABEL}
                         </SelectItem>
@@ -357,7 +366,7 @@ export default function FolderSection({
                             {f}
                           </SelectItem>
                         ))}
-                      </optgroup>
+                      </SelectGroup>
                     ))}
                   </>
                 ) : (

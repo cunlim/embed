@@ -57,7 +57,8 @@
 - **SSR 조건부 렌더링** — client component 내 `getToken()`은 SSR 시 `null` 반환 (`typeof document === "undefined"`). 인증 기반 렌더링 분기는 `serverHadToken` prop 사용. `token && <Component>` 대신 `serverHadToken && <Component>`.
 - **Laravel `boolean` 유효성 검증** — `"true"`/`"false"` 문자열은 통과하지 않음 (`"1"`/`"0"`만 허용). 쿼리 파라미터로 boolean 전달 시 `params.set(key, bool ? "1" : "0")` 사용.
 - **폴더는 `folders` 테이블로 독립 관리** — `user_id` + `name` unique. `categories.folder` 컬럼은 문자열 참조로 유지. 더미 카테고리 방식 폐기.
-- **@base-ui/react SelectValue render** — `SelectPrimitive.Value.Props`의 `render`는 `ComponentRenderFn<HTMLProps, SelectValueState>` 시그니처로 `ReactElement` 반환 필수. 커스텀 render prop 추가 시 `Omit<SelectPrimitive.Value.Props, "render">` 후 어댑터 `(_props, state) => render(state?.value)`로 전달.
+- **@base-ui/react SelectValue render** — `ReactElement` 반환 필수. 커스텀 render는 `Omit<..., "render">` + 어댑터 패턴 사용.
+- **Base UI Select 내 `<optgroup>` 사용 금지** — 네이티브 `<optgroup>`은 `<div>` 자식 불허로 hydration error. `SelectGroup` + `SelectLabel` 사용.
 - **Playwright snapshot Select 확인** — Base UI Select는 combobox 내 `generic` 요소로 표시 텍스트를 렌더링. `textbox` 요소는 내부 value 저장용 (사용자 비노출).
 
 ## 유틸리티
