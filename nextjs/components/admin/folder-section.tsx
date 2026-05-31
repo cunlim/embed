@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -30,10 +29,12 @@ interface FolderSectionProps {
   token: string | null;
   user: import("@/lib/api").User | null;
   selectedFolder: string | null;
+  initialUserId?: number | null;
   selectedIds: Set<number>;
   serverFolders?: string[];
+  serverFolderGroups?: import("@/lib/api").FolderGroup[];
   serverUsers?: { id: number; name: string; email: string }[];
-  onFolderChange: (folder: string | null) => void;
+  onFolderChange: (folder: string | null, userId?: number | null) => void;
   onFolderActionComplete: () => void;
 }
 
@@ -45,20 +46,21 @@ export default function FolderSection({
   token,
   user,
   selectedFolder,
+  initialUserId,
   selectedIds,
   serverFolders = [],
+  serverFolderGroups = [],
   serverUsers = [],
   onFolderChange,
   onFolderActionComplete,
 }: FolderSectionProps) {
   const [folders, setFolders] = useState<string[]>(serverFolders);
-  const [folderGroups, setFolderGroups] = useState<FolderGroup[]>([]);
+  const [folderGroups, setFolderGroups] = useState<FolderGroup[]>(serverFolderGroups);
   const [newFolderName, setNewFolderName] = useState("");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [moveTargetFolder, setMoveTargetFolder] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const [users] = useState<{ id: number; name: string; email: string }[]>(serverUsers);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(initialUserId ?? null);
   const selectedUserIdRef = useRef(selectedUserId);
   // eslint-disable-next-line react-hooks/refs
   selectedUserIdRef.current = selectedUserId;
@@ -68,7 +70,7 @@ export default function FolderSection({
   useEffect(() => {
     const handleReset = () => {
       setSelectedUserId(null);
-      onFolderChange(null);
+      onFolderChange(null, null);
       setNewFolderName("");
       setRenameTarget("");
       setMoveTargetFolder("");
@@ -174,8 +176,13 @@ export default function FolderSection({
   // 선택 폴더 이동
   const handleMoveSelected = useCallback(async () => {
     if (!token || selectedIds.size === 0) return;
+    let resolvedFolder = moveTargetFolder;
+    if (resolvedFolder && resolvedFolder.includes(":")) {
+      const [name] = resolvedFolder.split(":");
+      resolvedFolder = name;
+    }
     const target =
-      moveTargetFolder === DEFAULT_FOLDER_LABEL ? null : moveTargetFolder || null;
+      resolvedFolder === DEFAULT_FOLDER_LABEL ? null : resolvedFolder || null;
     try {
       await moveCategoriesToFolder(Array.from(selectedIds), target, token);
       setMoveTargetFolder("");
@@ -189,8 +196,13 @@ export default function FolderSection({
   // 전체 폴더 이동
   const handleMoveAll = useCallback(async () => {
     if (!token) return;
+    let resolvedFolder = moveTargetFolder;
+    if (resolvedFolder && resolvedFolder.includes(":")) {
+      const [name] = resolvedFolder.split(":");
+      resolvedFolder = name;
+    }
     const target =
-      moveTargetFolder === DEFAULT_FOLDER_LABEL ? null : moveTargetFolder || null;
+      resolvedFolder === DEFAULT_FOLDER_LABEL ? null : resolvedFolder || null;
     try {
       await moveCategoriesToFolder([], target, token);
       setMoveTargetFolder("");
@@ -201,24 +213,6 @@ export default function FolderSection({
     }
   }, [token, moveTargetFolder, loadFolders, onFolderActionComplete]);
 
-  // 회원 변경
-  const handleUserChange = useCallback(
-    (value: string | null) => {
-      const newUserId = !value || value === "all" ? null : Number(value);
-      selectedUserIdRef.current = newUserId;
-      setSelectedUserId(newUserId);
-      onFolderChange(null);
-      // 이전 사용자의 folders로 인한 중복 체크 오탐 방지
-      setFolders([]);
-      // 폴더 목록 재로드 (ref로 최신 userId 사용)
-      loadFolders();
-    },
-    [onFolderChange, loadFolders],
-  );
-
-  // 일반 회원일 때는 label 없이 select만 표시
-  const showLabels = isViewerAdmin;
-
   return (
     <>
       <Card>
@@ -226,56 +220,38 @@ export default function FolderSection({
           <CardTitle className="text-base">폴더</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* 관리자: 회원 select */}
-          {isViewerAdmin && (
-            <div className="space-y-1">
-              {showLabels && <Label className="text-xs">회원</Label>}
-              <Select
-                value={selectedUserId ? String(selectedUserId) : "all"}
-                onValueChange={handleUserChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue
-                    render={(value) => {
-                      if (!value || value === "all") return <span className="italic text-muted-foreground truncate">전체</span>;
-                      const u = users.find(u => String(u.id) === value);
-                      if (u) return <span className="truncate">{u.name} ({u.email})</span>;
-                      return <span className="truncate">{String(value)}</span>;
-                    }}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all" className="italic text-muted-foreground truncate">전체</SelectItem>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={String(u.id)} className="truncate">
-                      {u.name} ({u.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
           {/* 폴더 select */}
           <div className="space-y-1">
-            {showLabels && <Label className="text-xs">폴더</Label>}
             <Select
-              value={selectedFolder ?? ALL_FOLDERS_VALUE}
+              value={
+                selectedUserId !== null
+                  ? (selectedFolder ?? "all") + ":" + selectedUserId
+                  : (selectedFolder ?? ALL_FOLDERS_VALUE)
+              }
               onValueChange={(value) => {
-                // composite value 파싱: "all:user_id" 또는 "기본폴더:user_id"
                 if (value && value.includes(":")) {
                   const [prefix, userIdStr] = value.split(":");
                   const uid = Number(userIdStr);
                   selectedUserIdRef.current = uid;
                   setSelectedUserId(uid);
                   if (prefix === "all") {
-                    onFolderChange(null);
+                    onFolderChange(null, uid);
                   } else {
-                    onFolderChange("기본폴더");
+                    onFolderChange(DEFAULT_FOLDER_LABEL, uid);
                   }
                   return;
                 }
-                onFolderChange(value === ALL_FOLDERS_VALUE ? null : value);
+                if (value === ALL_FOLDERS_VALUE) {
+                  selectedUserIdRef.current = null;
+                  setSelectedUserId(null);
+                  onFolderChange(null, null);
+                  return;
+                }
+                if (value === DEFAULT_FOLDER_LABEL) {
+                  onFolderChange(DEFAULT_FOLDER_LABEL, null);
+                  return;
+                }
+                onFolderChange(value, selectedUserId);
               }}
             >
               <SelectTrigger className="w-full">
@@ -284,37 +260,66 @@ export default function FolderSection({
                     const v = String(value ?? "");
                     if (!v || v === ALL_FOLDERS_VALUE) return <span className="italic text-muted-foreground truncate">전체</span>;
                     if (v === DEFAULT_FOLDER_LABEL) return <span className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</span>;
-                    // composite value: 접두사 제거 후 표시
                     if (v.includes(":")) {
-                      const [prefix] = v.split(":");
+                      const [prefix, uidStr] = v.split(":");
+                      const uid = Number(uidStr);
+                      const group = folderGroups.find(g => g.user_id === uid);
+                      const userName = group?.user_name ?? serverUsers?.find(u => u.id === uid)?.name ?? `#${uid}`;
+                      const folderDisplay = prefix === "all" ? "전체" : prefix;
+                      if (isViewerAdmin) {
+                        return <span className="truncate">{userName} / {folderDisplay}</span>;
+                      }
                       if (prefix === "all") return <span className="italic text-muted-foreground truncate">전체</span>;
-                      return <span className="truncate">{DEFAULT_FOLDER_LABEL}</span>;
+                      return <span className="truncate">{folderDisplay}</span>;
+                    }
+                    if (isViewerAdmin && selectedUserId) {
+                      const group = folderGroups.find(g => g.user_id === selectedUserId);
+                      const userName = group?.user_name ?? "";
+                      return <span className="truncate">{userName} / {v}</span>;
                     }
                     return <span className="truncate">{v}</span>;
                   }}
                 />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_FOLDERS_VALUE} className="italic text-muted-foreground truncate">전체</SelectItem>
-                <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
-                {isViewerAdmin && !selectedUserId && folderGroups.length > 0
-                  ? folderGroups.map((group, idx) => (
+                {isViewerAdmin ? (
+                  folderGroups.length > 0 ? (
+                    folderGroups.map((group, idx) => (
                       <SelectGroup key={group.user_id} className={idx > 0 ? "mt-1 pt-1 border-t border-border" : ""}>
-                        <SelectLabel>{group.user_name}</SelectLabel>
+                        <SelectLabel>{group.user_name} ({group.user_email})</SelectLabel>
                         <SelectItem value={`all:${group.user_id}`} className="italic text-muted-foreground truncate">전체</SelectItem>
                         <SelectItem value={`${DEFAULT_FOLDER_LABEL}:${group.user_id}`} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
-                        {group.folders.map((f) => (
-                          <SelectItem key={f} value={f} className="truncate">
+                        {group.folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
+                          <SelectItem key={f} value={`${f}:${group.user_id}`} className="truncate">
                             {f}
                           </SelectItem>
                         ))}
                       </SelectGroup>
                     ))
-                  : folders.map((f) => (
+                  ) : (
+                    // Fallback: folderGroups not loaded yet
+                    <>
+                      <SelectItem value={ALL_FOLDERS_VALUE} className="italic text-muted-foreground truncate">전체</SelectItem>
+                      <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                      {folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
+                        <SelectItem key={f} value={f} className="truncate">
+                          {f}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )
+                ) : (
+                  // 일반 회원: flat list
+                  <>
+                    <SelectItem value={ALL_FOLDERS_VALUE} className="italic text-muted-foreground truncate">전체</SelectItem>
+                    <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                    {folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
                       <SelectItem key={f} value={f} className="truncate">
                         {f}
                       </SelectItem>
                     ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -398,36 +403,34 @@ export default function FolderSection({
                 <SelectValue placeholder="이동할 폴더 선택" />
               </SelectTrigger>
               <SelectContent>
-                {isViewerAdmin && !selectedUserId ? (
-                  // 관리자 + 회원 "전체" → optgroup 표시
-                  <>
-                    <SelectItem value={DEFAULT_FOLDER_LABEL}>
-                      {DEFAULT_FOLDER_LABEL}
-                    </SelectItem>
-                    {folderGroups.map((group) => (
-                      <SelectGroup key={group.user_id}>
-                        <SelectLabel>{group.user_name}</SelectLabel>
-                        <SelectItem value={DEFAULT_FOLDER_LABEL}>
+                {isViewerAdmin ? (
+                  folderGroups.length > 0 ? (
+                    folderGroups.map((group, idx) => (
+                      <SelectGroup key={group.user_id} className={idx > 0 ? "mt-1 pt-1 border-t border-border" : ""}>
+                        <SelectLabel>{group.user_name} ({group.user_email})</SelectLabel>
+                        <SelectItem value={`${DEFAULT_FOLDER_LABEL}:${group.user_id}`} className="italic text-muted-foreground">
                           {DEFAULT_FOLDER_LABEL}
                         </SelectItem>
-                        {group.folders.map((f) => (
-                          <SelectItem key={f} value={f}>
+                        {group.folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
+                          <SelectItem key={f} value={`${f}:${group.user_id}`}>
                             {f}
                           </SelectItem>
                         ))}
                       </SelectGroup>
-                    ))}
-                  </>
+                    ))
+                  ) : (
+                    <>
+                      <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                      {folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
+                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                      ))}
+                    </>
+                  )
                 ) : (
-                  // 특정 회원 or 일반 회원 → flat list
                   <>
-                    <SelectItem value={DEFAULT_FOLDER_LABEL}>
-                      {DEFAULT_FOLDER_LABEL}
-                    </SelectItem>
-                    {folders.map((f) => (
-                      <SelectItem key={f} value={f}>
-                        {f}
-                      </SelectItem>
+                    <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                    {folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
+                      <SelectItem key={f} value={f}>{f}</SelectItem>
                     ))}
                   </>
                 )}
