@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\FolderDeleteRequest;
 use App\Http\Requests\MoveFolderRequest;
 use App\Models\Category;
+use App\Models\Folder;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,47 +24,41 @@ class FolderController extends Controller
         /** @var User|null $user */
         $user = $request->user('sanctum');
 
-        // 비로그인: 조회 불가
         if (! $user) {
             return response()->json(['message' => '인증이 필요합니다.'], 401);
         }
 
         $userId = $request->input('user_id');
 
-        $query = Category::query()
-            ->whereNotNull('folder')
-            ->distinct()
-            ->select('folder');
+        $query = Folder::query()->select('name')->orderBy('name');
 
         $grouped = null;
 
         if ($user->isAdmin()) {
-            // 관리자: user_id 지정 시 해당 회원, 미지정 시 전체
             if ($userId) {
                 $query->where('user_id', (int) $userId);
             } else {
-                // user_id 없이 전체 조회 → 회원별 그룹 정보 함께 반환
-                $grouped = Category::query()
-                    ->whereNotNull('folder')
-                    ->select('folder', 'user_id')
-                    ->distinct()
-                    ->orderBy('folder')
+                // 전체 회원: grouped 데이터 함께 반환 (optgroup 용)
+                $grouped = Folder::query()
+                    ->join('users', 'folders.user_id', '=', 'users.id')
+                    ->select('folders.name', 'folders.user_id', 'users.name as user_name')
+                    ->orderBy('folders.user_id')
+                    ->orderBy('folders.name')
                     ->get()
                     ->groupBy('user_id')
                     ->map(fn ($items, $uid) => [
                         'user_id' => (int) $uid,
-                        'user_name' => User::find((int) $uid)?->name ?? '알 수 없음',
-                        'folders' => $items->pluck('folder')->toArray(),
+                        'user_name' => $items->first()->user_name ?? '알 수 없음',
+                        'folders' => $items->pluck('name')->toArray(),
                     ])
                     ->values()
                     ->toArray();
             }
         } else {
-            // 일반 회원: 본인 폴더만
             $query->where('user_id', $user->id);
         }
 
-        $folders = $query->orderBy('folder')->pluck('folder');
+        $folders = $query->pluck('name');
 
         $result = ['data' => $folders];
         if ($grouped !== null) {
@@ -71,49 +66,6 @@ class FolderController extends Controller
         }
 
         return response()->json($result);
-    }
-
-    /**
-     * 폴더 삭제
-     * DELETE /api/folders/{folderName}
-     */
-    public function destroy(FolderDeleteRequest $request, string $folderName): JsonResponse
-    {
-        /** @var User $user */
-        $user = $request->user('sanctum');
-        $userId = (int) $request->input('user_id', $user->id);
-        $moveToDefault = $request->boolean('move_to_default', true);
-
-        // 권한 확인
-        if (! $user->isAdmin() && $userId !== $user->id) {
-            return response()->json(['message' => '이 회원의 폴더를 삭제할 권한이 없습니다.'], 403);
-        }
-
-        $query = Category::where('folder', $folderName)->where('user_id', $userId);
-        $count = $query->count();
-
-        if ($count === 0) {
-            return response()->json(['message' => '해당 폴더에 카테고리가 없습니다.'], 404);
-        }
-
-        if ($moveToDefault) {
-            // 기본폴더로 이동
-            $query->update(['folder' => null]);
-
-            return response()->json([
-                'message' => "폴더 '{$folderName}'의 카테고리 {$count}개를 기본폴더로 이동했습니다.",
-                'moved' => $count,
-            ]);
-        } else {
-            // 카테고리도 함께 삭제
-            $categoryIds = $query->pluck('id');
-            Category::whereIn('id', $categoryIds)->delete();
-
-            return response()->json([
-                'message' => "폴더 '{$folderName}'의 카테고리 {$count}개를 삭제했습니다.",
-                'deleted' => $count,
-            ]);
-        }
     }
 
     /**
@@ -134,28 +86,21 @@ class FolderController extends Controller
             return response()->json(['message' => '폴더명을 입력해주세요.'], 422);
         }
 
-        // 예약된 폴더명 금지
         $reserved = ['기본폴더', '전체'];
         if (in_array($folderName, $reserved, true)) {
             return response()->json(['message' => "'{$folderName}'은(는) 사용할 수 없는 폴더명입니다."], 422);
         }
 
-        // 이미 존재하는지 확인
-        $exists = Category::where('folder', $folderName)
-            ->when(! $user->isAdmin(), fn ($q) => $q->where('user_id', $user->id))
-            ->exists();
+        $userId = $user->isAdmin() ? (int) $request->input('user_id', $user->id) : $user->id;
 
+        $exists = Folder::where('user_id', $userId)->where('name', $folderName)->exists();
         if ($exists) {
             return response()->json(['message' => '이미 존재하는 폴더명입니다.'], 422);
         }
 
-        // 폴더는 더미 카테고리를 생성하여 존재를 표시
-        // (folder 필드만 설정된 빈 카테고리)
-        $userId = $user->isAdmin() ? (int) $request->input('user_id', $user->id) : $user->id;
-        Category::create([
+        Folder::create([
             'user_id' => $userId,
-            'category_name_ko' => '__folder_placeholder__',
-            'folder' => $folderName,
+            'name' => $folderName,
         ]);
 
         return response()->json(['message' => "폴더 '{$folderName}'이(가) 생성되었습니다."], 201);
@@ -175,7 +120,6 @@ class FolderController extends Controller
             return response()->json(['message' => '새 폴더명을 입력해주세요.'], 422);
         }
 
-        // 예약된 폴더명 금지
         $reserved = ['기본폴더', '전체'];
         if (in_array($newName, $reserved, true)) {
             return response()->json(['message' => "'{$newName}'은(는) 사용할 수 없는 폴더명입니다."], 422);
@@ -183,19 +127,69 @@ class FolderController extends Controller
 
         $userId = (int) $request->input('user_id', $user->id);
 
-        $query = Category::where('folder', $folderName)->where('user_id', $userId);
-        $count = $query->count();
-
-        if ($count === 0) {
+        $folder = Folder::where('user_id', $userId)->where('name', $folderName)->first();
+        if (! $folder) {
             return response()->json(['message' => '해당 폴더를 찾을 수 없습니다.'], 404);
         }
 
-        $query->update(['folder' => $newName]);
+        // 중복명 확인
+        $dupExists = Folder::where('user_id', $userId)->where('name', $newName)
+            ->where('id', '!=', $folder->id)->exists();
+        if ($dupExists) {
+            return response()->json(['message' => '이미 존재하는 폴더명입니다.'], 422);
+        }
+
+        $folder->update(['name' => $newName]);
+
+        // categories.folder도 함께 업데이트
+        Category::where('folder', $folderName)->where('user_id', $userId)
+            ->update(['folder' => $newName]);
 
         return response()->json([
             'message' => "폴더명이 '{$folderName}'에서 '{$newName}'(으)로 변경되었습니다.",
-            'count' => $count,
         ]);
+    }
+
+    /**
+     * 폴더 삭제
+     * DELETE /api/folders/{folderName}
+     */
+    public function destroy(FolderDeleteRequest $request, string $folderName): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user('sanctum');
+        $userId = (int) $request->input('user_id', $user->id);
+        $moveToDefault = $request->boolean('move_to_default', true);
+
+        if (! $user->isAdmin() && $userId !== $user->id) {
+            return response()->json(['message' => '이 회원의 폴더를 삭제할 권한이 없습니다.'], 403);
+        }
+
+        // Folder 존재 확인
+        $folder = Folder::where('user_id', $userId)->where('name', $folderName)->first();
+        if (! $folder) {
+            return response()->json(['message' => '해당 폴더를 찾을 수 없습니다.'], 404);
+        }
+
+        $catQuery = Category::where('folder', $folderName)->where('user_id', $userId);
+        $count = $catQuery->count();
+
+        if ($moveToDefault && $count > 0) {
+            $catQuery->update(['folder' => null]);
+        } elseif (! $moveToDefault && $count > 0) {
+            $catIds = $catQuery->pluck('id');
+            Category::whereIn('id', $catIds)->delete();
+        }
+
+        // Folder 레코드 삭제
+        $folder->delete();
+
+        $msg = "폴더 '{$folderName}'이(가) 삭제되었습니다.";
+        if ($count > 0) {
+            $msg .= " {$count}개 카테고리 ".($moveToDefault ? '기본폴더로 이동' : '삭제');
+        }
+
+        return response()->json(['message' => $msg]);
     }
 
     /**
@@ -204,9 +198,7 @@ class FolderController extends Controller
      */
     public function hasCategories(Request $request, string $folderName): JsonResponse
     {
-        /** @var User|null $user */
         $user = $request->user('sanctum');
-
         if (! $user) {
             return response()->json(['message' => '인증이 필요합니다.'], 401);
         }
@@ -215,7 +207,6 @@ class FolderController extends Controller
 
         $count = Category::where('folder', $folderName)
             ->where('user_id', $userId)
-            ->where('category_name_ko', '!=', '__folder_placeholder__')
             ->count();
 
         return response()->json([
