@@ -22,6 +22,8 @@ export interface EmbedParams {
   catPath: string[];
   /** 폴더 필터 */
   folder: string | null;
+  /** URL에서 전달된 사용자 ID (폴더 소유자 지정) */
+  userId: string | null;
 }
 
 export function parseEmbedParams(params: EmbedParamsReader): EmbedParams {
@@ -54,8 +56,9 @@ export function parseEmbedParams(params: EmbedParamsReader): EmbedParams {
   const searchLang = slang === "en" || slang === "zh" ? slang : "ko";
 
   const folder = params.get("folder") || null;
+  const userId = params.get("user_id") || null;
 
-  return { mode, keyword, filter, searchText, searchLang, catPath, folder };
+  return { mode, keyword, filter, searchText, searchLang, catPath, folder, userId };
 }
 
 /**
