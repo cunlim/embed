@@ -23,7 +23,7 @@ type EmbedPageParams = {
 export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   const sp = await searchParams;
   const reader = serverParamsReader(sp);
-  const { keyword, searchText, searchLang, filter: urlFilter, folder: urlFolder } = parseEmbedParams(reader);
+  const { keyword, searchText, searchLang, filter: urlFilter, folder: urlFolder, userId: urlUserId } = parseEmbedParams(reader);
 
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value ?? null;
@@ -106,16 +106,18 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
 
   // 폴더 목록 prefetch (SSR)
   let serverFolders: string[] = [];
+  let serverFolderGroups: import("@/lib/api").FolderGroup[] = [];
   if (token) {
     try {
       const foldersRes = await fetchFolders(token);
       serverFolders = foldersRes.data;
+      serverFolderGroups = foldersRes.grouped ?? [];
     } catch {}
   }
 
   // 회원 목록 prefetch (관리자)
   let serverUsers: { id: number; name: string; email: string }[] = [];
-  if (token && serverUser?.role === "superadmin") {
+  if (token && serverUser && (serverUser.role === "superadmin" || serverUser.role === "admin")) {
     try {
       const usersRes = await fetchUsers(token);
       serverUsers = usersRes.data;
@@ -138,7 +140,9 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
         serverSearchLang={searchLang}
         serverFolder={urlFolder}
         serverFolders={serverFolders}
+        serverFolderGroups={serverFolderGroups}
         serverUsers={serverUsers}
+        serverUserId={urlUserId}
       />
     </Suspense>
   );
