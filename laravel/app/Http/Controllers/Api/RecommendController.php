@@ -89,6 +89,11 @@ class RecommendController extends Controller
             }
         }
 
+        // user_id 필터 (관리자가 특정 회원의 폴더 선택 시)
+        if ($request->filled('user_id') && $user && $user->isAdmin()) {
+            $scopeUserId = (int) $request->input('user_id');
+        }
+
         // text가 없거나 빈 문자열이면 일반 카테고리 목록 반환
         if (empty(trim((string) $text))) {
             $query = Category::where('category_name_ko', '!=', '__folder_placeholder__')

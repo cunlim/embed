@@ -99,6 +99,11 @@ class CategoryController extends Controller
             });
         }
 
+        // user_id 필터 (관리자가 특정 회원의 폴더 선택 시)
+        if ($request->filled('user_id') && $user && $user->isAdmin()) {
+            $query->where('user_id', (int) $request->input('user_id'));
+        }
+
         // folder 필터
         if ($request->filled('folder')) {
             $folder = $request->input('folder');
@@ -153,6 +158,11 @@ class CategoryController extends Controller
             $scopeQuery->whereIn('user_id', [$user->id, 1]);
         } else {
             $scopeQuery->where('user_id', 1);
+        }
+
+        // user_id 필터 (관리자가 특정 회원의 폴더 선택 시)
+        if ($request->filled('user_id') && $user && $user->isAdmin()) {
+            $scopeQuery->where('user_id', (int) $request->input('user_id'));
         }
 
         // folder 필터

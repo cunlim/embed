@@ -56,10 +56,13 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   // 계층별 옵션 prefetch (동적 깊이)
   const levelOptions: string[][] = [];
   let maxDepth = 1;
+  const urlUserIdNum = urlUserId ? parseInt(urlUserId, 10) : undefined;
 
   try {
     // 최상위 옵션 조회
-    const topRes = await fetchCategoryLevels(undefined, token);
+    const topParams: Record<string, string> = {};
+    if (urlFolder) topParams["folder"] = urlFolder;
+    const topRes = await fetchCategoryLevels(Object.keys(topParams).length > 0 ? topParams : undefined, token, urlUserIdNum);
     levelOptions.push(topRes.data.options as string[]);
     maxDepth = topRes.data.maxDepth;
 
@@ -79,7 +82,8 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
       for (let j = 0; j <= i; j++) {
         catParams[`cat${j + 1}`] = catPath[j];
       }
-      const res = await fetchCategoryLevels(catParams as Parameters<typeof fetchCategoryLevels>[0], token);
+      if (urlFolder) catParams["folder"] = urlFolder;
+      const res = await fetchCategoryLevels(catParams as Parameters<typeof fetchCategoryLevels>[0], token, urlUserIdNum);
       levelOptions.push(res.data.options as string[]);
     }
   } catch {}
@@ -88,7 +92,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   let serverCategories: Category[] = [];
   let serverMeta: PaginationMeta | null = null;
   try {
-    const categoriesRes = await getCategories(token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined);
+    const categoriesRes = await getCategories(token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined, urlUserIdNum);
     serverCategories = categoriesRes.data;
     serverMeta = categoriesRes.meta;
   } catch {}
@@ -98,7 +102,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   let serverSearchMeta: PaginationMeta | null = null;
   if (searchText) {
     try {
-      const searchRes = await recommend(searchText, searchLang, token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined);
+      const searchRes = await recommend(searchText, searchLang, token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined, urlUserIdNum);
       serverSearchResults = searchRes.data;
       serverSearchMeta = searchRes.meta;
     } catch {}

@@ -110,7 +110,7 @@ export default function FolderSection({
     }
     const currentUserFolders = selectedUserId
       ? (folderGroups.find(g => g.user_id === selectedUserId)?.folders ?? [])
-      : folders;
+      : (user ? (folderGroups.find(g => g.user_id === user.id)?.folders ?? []) : folders);
     if (currentUserFolders.includes(name)) {
       setError("이미 존재하는 폴더명입니다.");
       return;
@@ -294,10 +294,11 @@ export default function FolderSection({
               <SelectContent>
                 {isViewerAdmin ? (
                   <>
-                    {/* top-level "전체" (모든 회원, 모든 폴더) */}
-                    <SelectItem value={ALL_FOLDERS_VALUE} className="italic truncate">전체</SelectItem>
-                    {/* top-level "기본폴더" (모든 회원, 폴더 미지정 카테고리) */}
-                    <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                    <SelectGroup>
+                      <SelectLabel>전체회원</SelectLabel>
+                      <SelectItem value={ALL_FOLDERS_VALUE} className="italic truncate">전체</SelectItem>
+                      <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                    </SelectGroup>
                     {folderGroups.length > 0 ? (
                       folderGroups.map((group, idx) => (
                         <SelectGroup key={group.user_id} className={idx > 0 ? "mt-1 pt-1 border-t border-border" : ""}>
@@ -424,7 +425,8 @@ export default function FolderSection({
                       const group = folderGroups.find(g => g.user_id === uid);
                       const userName = group?.user_name ?? serverUsers?.find(u => u.id === uid)?.name ?? `#${uid}`;
                       if (isViewerAdmin) {
-                        return <span className="truncate">{userName} / {prefix}</span>;
+                        const isSpecial = prefix === DEFAULT_FOLDER_LABEL;
+                        return <span className={`truncate${isSpecial ? " italic" : ""}`}>{userName} / {prefix}</span>;
                       }
                       return <span className="truncate">{prefix}</span>;
                     }

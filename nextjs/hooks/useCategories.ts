@@ -15,7 +15,7 @@ interface UseCategoriesReturn {
   isLoading: boolean;
   isLoaded: boolean;
   error: string | null;
-  loadCategories: (page?: number, perPage?: number, filter?: string, search?: string, folder?: string) => Promise<void>;
+  loadCategories: (page?: number, perPage?: number, filter?: string, search?: string, folder?: string, userId?: number | null) => Promise<void>;
   addCategory: (categoryNameKo: string, categoryCode?: string, categoryNameEn?: string, categoryNameZh?: string) => Promise<void>;
   updateCategoryStatus: (id: number, updates: Partial<Category>) => void;
   deleteCategory: (id: number) => Promise<void>;
@@ -38,11 +38,11 @@ export function useCategories(
   const currentFilter = useRef<string | undefined>(undefined);
   const currentSearch = useRef<string | undefined>(undefined);
 
-  const loadCategories = useCallback(async (page?: number, perPage?: number, filter?: string, search?: string, folder?: string) => {
+  const loadCategories = useCallback(async (page?: number, perPage?: number, filter?: string, search?: string, folder?: string, userId?: number | null) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getCategories(token, page ?? currentPage.current, perPage ?? currentPerPage.current, filter, search ?? currentSearch.current, folder);
+      const data = await getCategories(token, page ?? currentPage.current, perPage ?? currentPerPage.current, filter, search ?? currentSearch.current, folder, userId);
       setCategories(data.data);
       setMeta(data.meta);
       currentPage.current = data.meta.current_page;

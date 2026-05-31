@@ -32,6 +32,8 @@ interface CategoryHierarchyProps {
   /** 값이 변경되면 계층 필터 상태를 완전 초기화 */
   resetKey?: number;
   token?: string | null;
+  folder?: string | null;
+  userId?: number | null;
 }
 
 function getPillButtonClass(active: boolean): string {
@@ -56,6 +58,8 @@ export default function CategoryHierarchy({
   refreshKey = 0,
   resetKey = 0,
   token,
+  folder,
+  userId,
 }: CategoryHierarchyProps) {
   const [filterMode, setFilterMode] = useState<"hierarchy" | "search">(initialMode);
   const [selectedPath, setSelectedPath] = useState<HierarchyFilterState>(initialHierarchy);
@@ -79,7 +83,10 @@ export default function CategoryHierarchy({
     const skipInitial = hadInitialOptions.current;
     hadInitialOptions.current = false;
     if (token && (refreshKey > 0 || (tokenChanged && !skipInitial))) {
-      fetchCategoryLevels(undefined, token).then((res) => {
+      const params: Record<string, string> = {};
+      if (folder) params["folder"] = folder;
+      if (userId) params["user_id"] = String(userId);
+      fetchCategoryLevels(Object.keys(params).length > 0 ? params : undefined, token, userId ?? undefined).then((res) => {
         const opts = res.data.options;
         setLevelOptions((prev) => prev.length > 1 ? [opts, ...prev.slice(1)] : [opts]);
         setMaxDepth(res.data.maxDepth);
@@ -100,7 +107,10 @@ export default function CategoryHierarchy({
     hasRestoredRef.current = true;
     // 최상위 옵션 다시 조회
     if (token) {
-      fetchCategoryLevels(undefined, token).then((res) => {
+      const params: Record<string, string> = {};
+      if (folder) params["folder"] = folder;
+      if (userId) params["user_id"] = String(userId);
+      fetchCategoryLevels(Object.keys(params).length > 0 ? params : undefined, token, userId ?? undefined).then((res) => {
         setLevelOptions((prev) => prev.length > 0 ? [res.data.options, ...prev.slice(1)] : [res.data.options]);
         setMaxDepth(res.data.maxDepth);
       }).catch(() => {});
@@ -121,7 +131,7 @@ export default function CategoryHierarchy({
         for (let j = 0; j <= i; j++) {
           catParams[`cat${j + 1}`] = path[j];
         }
-        fetchCategoryLevels(catParams as Parameters<typeof fetchCategoryLevels>[0], token ?? undefined).then((res) => {
+        fetchCategoryLevels(catParams as Parameters<typeof fetchCategoryLevels>[0], token ?? undefined, userId ?? undefined).then((res) => {
           const nextOpts = res.data.options;
           setLevelOptions((prev) => {
             const next = [...prev];
@@ -182,7 +192,9 @@ export default function CategoryHierarchy({
         for (let i = 0; i < nonNullPath.length; i++) {
           catParams[`cat${i + 1}`] = nonNullPath[i];
         }
-        const res = await fetchCategoryLevels(catParams as Parameters<typeof fetchCategoryLevels>[0], token);
+        if (folder) catParams["folder"] = folder;
+        if (userId) catParams["user_id"] = String(userId);
+        const res = await fetchCategoryLevels(catParams as Parameters<typeof fetchCategoryLevels>[0], token, userId ?? undefined);
         const nextOpts = res.data.options;
 
         if (res.data.maxDepth) {

@@ -118,6 +118,7 @@ export function recommend(
   filter?: string,
   keyword?: string,
   folder?: string,
+  userId?: number | null,
 ): Promise<RecommendResponse> {
   const body: Record<string, string | number> = { text, target_language: targetLanguage };
   if (page) body.page = page;
@@ -125,6 +126,7 @@ export function recommend(
   if (filter) body.filter = filter;
   if (keyword) body.keyword = keyword;
   if (folder) body.folder = folder;
+  if (userId) body.user_id = userId;
   return request<RecommendResponse>("/recommend", {
     method: "POST",
     body,
@@ -173,6 +175,7 @@ export function getCategories(
   filter?: string,
   search?: string,
   folder?: string,
+  userId?: number | null,
 ): Promise<CategoryListResponse> {
   const params = new URLSearchParams();
   if (page && page > 1) params.set("page", String(page));
@@ -180,6 +183,7 @@ export function getCategories(
   if (filter) params.set("filter", filter);
   if (search) params.set("search", search);
   if (folder) params.set("folder", folder);
+  if (userId) params.set("user_id", String(userId));
   const qs = params.toString();
   return request<CategoryListResponse>(`/categories?${qs}`, { token });
 }
@@ -203,7 +207,8 @@ export interface CategoryLevelsResponse {
 
 export function fetchCategoryLevels(
   params?: CategoryLevelsParams,
-  token?: string | null
+  token?: string | null,
+  userId?: number | null,
 ): Promise<{ data: CategoryLevelsResponse }> {
   const searchParams = new URLSearchParams();
   if (params) {
@@ -211,6 +216,7 @@ export function fetchCategoryLevels(
       if (value) searchParams.set(key, value);
     }
   }
+  if (userId) searchParams.set("user_id", String(userId));
   const qs = searchParams.toString();
   return request<{ data: CategoryLevelsResponse }>(
     `/categories/levels${qs ? "?" + qs : ""}`,

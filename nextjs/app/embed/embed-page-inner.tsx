@@ -312,7 +312,7 @@ export function EmbedPageInner({
     setKeywordSearchActive(false);
     updateURL({ searchText, searchLanguage: searchLangRef.current });
     try {
-      const data = await recommend(searchText, searchLangRef.current, token, currentPage, perPageRef.current, filterRef.current ?? undefined, keyword ?? (keywordRef.current || undefined), selectedFolder ?? undefined);
+      const data = await recommend(searchText, searchLangRef.current, token, currentPage, perPageRef.current, filterRef.current ?? undefined, keyword ?? (keywordRef.current || undefined), selectedFolderRef.current ?? undefined, selectedUserIdRef.current);
       setSearchResults(data.data);
       setSearchMeta(data.meta);
     } catch (err) {
@@ -355,7 +355,7 @@ export function EmbedPageInner({
       handleSearchRef.current(page);
     } else {
       const kw = keywordRef.current;
-      loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined);
+      loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
     }
   }, [mounted, page, perPage, effectiveFilter, loadCategories]);
 
@@ -392,7 +392,7 @@ export function EmbedPageInner({
         // 필터 ref 초기화 (SSR 기본값으로 복원)
         filterRef.current = defaultFilter;
         // 디폴트 카테고리 목록 리로드 (SSR 기본 필터 적용)
-        loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "", selectedFolder ?? undefined);
+        loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "", selectedFolder ?? undefined, selectedUserId ?? undefined);
       }
     } else {
       resetDoneRef.current = false;
@@ -454,7 +454,7 @@ export function EmbedPageInner({
     setHierarchyKeyword("");
 
     // 카테고리 목록 리로드 (SSR 기본 필터 적용)
-    loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "", selectedFolder ?? undefined);
+    loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "", selectedFolder ?? undefined, selectedUserId ?? undefined);
   }, [loadCategories]);
 
   // "기능시연" 클릭 시 커스텀 이벤트로 즉시 리셋
@@ -480,14 +480,14 @@ export function EmbedPageInner({
     }
     if (!keyword) {
       setKeywordSearchActive(false);
-      loadCategories(1, perPage, effectiveFilter, "", selectedFolder ?? undefined);
+      loadCategories(1, perPage, effectiveFilter, "", selectedFolder ?? undefined, selectedUserId ?? undefined);
       return;
     }
     setSearchResults(null);
     setSearchMeta(null);
     setSearchError(null);
     setKeywordSearchActive(true);
-    loadCategories(1, perPage, effectiveFilter, keyword, selectedFolder ?? undefined);
+    loadCategories(1, perPage, effectiveFilter, keyword, selectedFolder ?? undefined, selectedUserId ?? undefined);
   }, [perPage, effectiveFilter, loadCategories, searchResults, handleSearch]);
 
   // 필터 상태 변경 시 URL 업데이트
@@ -665,12 +665,12 @@ export function EmbedPageInner({
                   if (perPage !== 20) params.set("per_page", String(perPage));
                   router.replace(`/embed${params.toString() ? "?" + params.toString() : ""}`, { scroll: false });
                   // 폴더 범위로 카테고리 재로드 (기존 필터 유지)
-                  loadCategories(1, perPage, effectiveFilter, keywordRef.current, folder ?? undefined);
+                  loadCategories(1, perPage, effectiveFilter, keywordRef.current, folder ?? undefined, userId ?? undefined);
                 }}
                 onFolderActionComplete={() => {
                   // 폴더 이동 후 선택 해제
                   setSelectedIds(new Set());
-                  loadCategories(page, perPage, effectiveFilter, keywordRef.current, selectedFolderRef.current ?? undefined);
+                  loadCategories(page, perPage, effectiveFilter, keywordRef.current, selectedFolderRef.current ?? undefined, selectedUserId ?? undefined);
                 }}
               />
             )}
@@ -695,6 +695,8 @@ export function EmbedPageInner({
               refreshKey={hierarchyRefreshKey}
               resetKey={hierarchyResetKey}
               token={token}
+              folder={selectedFolder}
+              userId={selectedUserId}
             />
 
             {/* 추가 */}
@@ -768,7 +770,7 @@ export function EmbedPageInner({
                     token={token}
                     folder={selectedFolder ?? undefined}
                     onSuccess={() => {
-                      loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined);
+                      loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined, selectedUserId ?? undefined);
                       setHierarchyRefreshKey((prev) => prev + 1);
                     }}
                   />
@@ -793,11 +795,11 @@ export function EmbedPageInner({
                   setSelectedIds(new Set());
                 }
                 const kw = keywordRef.current;
-                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined);
+                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
               }}
               onCategoryComplete={() => {
                 const kw = keywordRef.current;
-                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined);
+                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
               }}
             />
 
@@ -823,12 +825,12 @@ export function EmbedPageInner({
               onComplete={() => {
                 setSelectedIds(new Set());
                 const kw = keywordRef.current;
-                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined);
+                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
                 setHierarchyRefreshKey((prev) => prev + 1);
               }}
               onCategoryComplete={() => {
                 const kw = keywordRef.current;
-                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined);
+                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
               }}
             />
           </div>
