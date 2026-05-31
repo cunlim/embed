@@ -98,6 +98,8 @@ export function EmbedPageInner({
   serverSearchText,
   serverSearchLang,
   serverFolder,
+  serverFolders,
+  serverUsers,
 }: {
   serverLevelOptions: string[][];
   serverMaxDepth: number;
@@ -111,6 +113,8 @@ export function EmbedPageInner({
   serverSearchText: string | null;
   serverSearchLang: string;
   serverFolder?: string | null;
+  serverFolders?: string[];
+  serverUsers?: { id: number; name: string; email: string }[];
 }) {
   const { user } = useAuth(serverUser);
   const router = useRouter();
@@ -539,24 +543,36 @@ export function EmbedPageInner({
           {/* 사이드바 */}
           <div className="space-y-6">
             {/* 폴더 */}
-            {token && (
+            {serverHadToken && (
               <FolderSection
                 token={token}
                 user={effectiveUser ?? null}
                 selectedFolder={selectedFolder}
                 selectedIds={selectedIds}
+                serverFolders={serverFolders}
+                serverUsers={serverUsers}
                 onFolderChange={(folder) => {
                   setSelectedFolder(folder);
-                  // page=1, 필터 초기화, per_page/전체·내카테고리 유지
+                  // 필터/계층 초기화
+                  setFilterSelection(null);
+                  setKeywordSearchActive(false);
+                  setHierarchyKeyword("");
+                  setHierarchyResetKey(prev => prev + 1);
+                  setSearchResults(null);
+                  setSearchMeta(null);
+                  setSearchError(null);
+                  setSearchText("");
+                  // page=1, per_page 유지
                   const params = new URLSearchParams();
                   if (folder) params.set("folder", folder);
                   if (perPage !== 20) params.set("per_page", String(perPage));
-                  if (activeFilterSelection) params.set("filter", activeFilterSelection);
                   router.replace(`/embed${params.toString() ? "?" + params.toString() : ""}`, { scroll: false });
                   // 카테고리 목록 리로드
-                  loadCategories(1, perPage, effectiveFilter, undefined, folder ?? undefined);
+                  loadCategories(1, perPage, undefined, undefined, folder ?? undefined);
                 }}
                 onFolderActionComplete={() => {
+                  // 폴더 이동 후 선택 해제
+                  setSelectedIds(new Set());
                   loadCategories(page, perPage, effectiveFilter, keywordRef.current, selectedFolder ?? undefined);
                 }}
               />

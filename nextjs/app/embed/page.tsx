@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import { fetchCategoryLevels, getCategories, recommend, getUser } from "@/lib/api";
+import { fetchCategoryLevels, getCategories, recommend, getUser, fetchFolders, fetchUsers } from "@/lib/api";
 import { parseEmbedParams, type EmbedParamsReader } from "@/lib/embed-params";
 import { EmbedPageInner } from "./embed-page-inner";
 import type { Category, PaginationMeta, Recommendation, User } from "@/lib/api";
@@ -104,6 +104,24 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
     } catch {}
   }
 
+  // 폴더 목록 prefetch (SSR)
+  let serverFolders: string[] = [];
+  if (token) {
+    try {
+      const foldersRes = await fetchFolders(token);
+      serverFolders = foldersRes.data;
+    } catch {}
+  }
+
+  // 회원 목록 prefetch (관리자)
+  let serverUsers: { id: number; name: string; email: string }[] = [];
+  if (token && serverUser?.role === "superadmin") {
+    try {
+      const usersRes = await fetchUsers(token);
+      serverUsers = usersRes.data;
+    } catch {}
+  }
+
   return (
     <Suspense>
       <EmbedPageInner
@@ -119,6 +137,8 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
         serverSearchText={searchText}
         serverSearchLang={searchLang}
         serverFolder={urlFolder}
+        serverFolders={serverFolders}
+        serverUsers={serverUsers}
       />
     </Suspense>
   );

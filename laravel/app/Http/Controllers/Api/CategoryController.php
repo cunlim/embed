@@ -70,7 +70,7 @@ class CategoryController extends Controller
             $maxPerPage
         );
 
-        $query = Category::query()->with('embeddings');
+        $query = Category::query()->with('embeddings')->where('category_name_ko', '!=', '__folder_placeholder__');
 
         if ($request->input('filter') === 'my') {
             if ($user) {
@@ -146,7 +146,7 @@ class CategoryController extends Controller
         $currentDepth = count($prefixParts); // 0 = 최상위
 
         // 사용자 범위 쿼리 (기존 규칙과 동일)
-        $scopeQuery = Category::query();
+        $scopeQuery = Category::query()->where('category_name_ko', '!=', '__folder_placeholder__');
         if ($user && $user->isAdmin()) {
             // admin/superadmin: 제한 없음
         } elseif ($user) {

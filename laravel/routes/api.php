@@ -36,7 +36,10 @@ Route::post('recommend', [RecommendController::class, 'recommend']);
 // 폴더 (인증 필요)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('folders', [FolderController::class, 'index']);
+    Route::post('folders', [FolderController::class, 'store']);
+    Route::put('folders/{folderName}', [FolderController::class, 'update']);
     Route::delete('folders/{folderName}', [FolderController::class, 'destroy']);
+    Route::get('folders/{folderName}/has-categories', [FolderController::class, 'hasCategories']);
     Route::post('categories/move-folder', [FolderController::class, 'moveFolder']);
 });
 

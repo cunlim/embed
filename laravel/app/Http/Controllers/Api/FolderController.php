@@ -15,6 +15,8 @@ class FolderController extends Controller
     /**
      * 폴더 목록 조회 (인증 필요)
      * GET /api/folders?user_id={userId}
+     *
+     * 관리자가 user_id 없이 조회 시 grouped 데이터도 함께 반환 (optgroup 용).
      */
     public function index(Request $request): JsonResponse
     {
@@ -33,12 +35,29 @@ class FolderController extends Controller
             ->distinct()
             ->select('folder');
 
+        $grouped = null;
+
         if ($user->isAdmin()) {
             // 관리자: user_id 지정 시 해당 회원, 미지정 시 전체
             if ($userId) {
                 $query->where('user_id', (int) $userId);
+            } else {
+                // user_id 없이 전체 조회 → 회원별 그룹 정보 함께 반환
+                $grouped = Category::query()
+                    ->whereNotNull('folder')
+                    ->select('folder', 'user_id')
+                    ->distinct()
+                    ->orderBy('folder')
+                    ->get()
+                    ->groupBy('user_id')
+                    ->map(fn ($items, $uid) => [
+                        'user_id' => (int) $uid,
+                        'user_name' => User::find((int) $uid)?->name ?? '알 수 없음',
+                        'folders' => $items->pluck('folder')->toArray(),
+                    ])
+                    ->values()
+                    ->toArray();
             }
-            // user_id 미지정 → 전체 (필터 없음)
         } else {
             // 일반 회원: 본인 폴더만
             $query->where('user_id', $user->id);
@@ -46,7 +65,12 @@ class FolderController extends Controller
 
         $folders = $query->orderBy('folder')->pluck('folder');
 
-        return response()->json(['data' => $folders]);
+        $result = ['data' => $folders];
+        if ($grouped !== null) {
+            $result['grouped'] = $grouped;
+        }
+
+        return response()->json($result);
     }
 
     /**
@@ -90,6 +114,116 @@ class FolderController extends Controller
                 'deleted' => $count,
             ]);
         }
+    }
+
+    /**
+     * 폴더 생성
+     * POST /api/folders
+     */
+    public function store(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user('sanctum');
+
+        if (! $user) {
+            return response()->json(['message' => '인증이 필요합니다.'], 401);
+        }
+
+        $folderName = trim($request->input('folder_name', ''));
+        if ($folderName === '') {
+            return response()->json(['message' => '폴더명을 입력해주세요.'], 422);
+        }
+
+        // 예약된 폴더명 금지
+        $reserved = ['기본폴더', '전체'];
+        if (in_array($folderName, $reserved, true)) {
+            return response()->json(['message' => "'{$folderName}'은(는) 사용할 수 없는 폴더명입니다."], 422);
+        }
+
+        // 이미 존재하는지 확인
+        $exists = Category::where('folder', $folderName)
+            ->when(! $user->isAdmin(), fn ($q) => $q->where('user_id', $user->id))
+            ->exists();
+
+        if ($exists) {
+            return response()->json(['message' => '이미 존재하는 폴더명입니다.'], 422);
+        }
+
+        // 폴더는 더미 카테고리를 생성하여 존재를 표시
+        // (folder 필드만 설정된 빈 카테고리)
+        $userId = $user->isAdmin() ? (int) $request->input('user_id', $user->id) : $user->id;
+        Category::create([
+            'user_id' => $userId,
+            'category_name_ko' => '__folder_placeholder__',
+            'folder' => $folderName,
+        ]);
+
+        return response()->json(['message' => "폴더 '{$folderName}'이(가) 생성되었습니다."], 201);
+    }
+
+    /**
+     * 폴더명 수정
+     * PUT /api/folders/{folderName}
+     */
+    public function update(Request $request, string $folderName): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user('sanctum');
+
+        $newName = trim($request->input('new_name', ''));
+        if ($newName === '') {
+            return response()->json(['message' => '새 폴더명을 입력해주세요.'], 422);
+        }
+
+        // 예약된 폴더명 금지
+        $reserved = ['기본폴더', '전체'];
+        if (in_array($newName, $reserved, true)) {
+            return response()->json(['message' => "'{$newName}'은(는) 사용할 수 없는 폴더명입니다."], 422);
+        }
+
+        $userId = (int) $request->input('user_id', $user->id);
+
+        $query = Category::where('folder', $folderName)->where('user_id', $userId);
+        $count = $query->count();
+
+        if ($count === 0) {
+            return response()->json(['message' => '해당 폴더를 찾을 수 없습니다.'], 404);
+        }
+
+        $query->update(['folder' => $newName]);
+
+        return response()->json([
+            'message' => "폴더명이 '{$folderName}'에서 '{$newName}'(으)로 변경되었습니다.",
+            'count' => $count,
+        ]);
+    }
+
+    /**
+     * 폴더 내 카테고리 존재 여부 확인
+     * GET /api/folders/{folderName}/has-categories
+     */
+    public function hasCategories(Request $request, string $folderName): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user('sanctum');
+
+        if (! $user) {
+            return response()->json(['message' => '인증이 필요합니다.'], 401);
+        }
+
+        $userId = (int) $request->input('user_id', $user->id);
+
+        $count = Category::where('folder', $folderName)
+            ->where('user_id', $userId)
+            ->where('category_name_ko', '!=', '__folder_placeholder__')
+            ->count();
+
+        return response()->json([
+            'data' => [
+                'has_categories' => $count > 0,
+                'count' => $count,
+            ],
+        ]);
     }
 
     /**

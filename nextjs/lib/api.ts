@@ -409,14 +409,20 @@ export function updateSetting(
 
 // --- 폴더 ---
 
+export interface FolderGroup {
+  user_id: number;
+  user_name: string;
+  folders: string[];
+}
+
 export function fetchFolders(
   token?: string | null,
   userId?: number | null,
-): Promise<{ data: string[] }> {
+): Promise<{ data: string[]; grouped?: FolderGroup[] }> {
   const params = new URLSearchParams();
   if (userId) params.set("user_id", String(userId));
   const qs = params.toString();
-  return request<{ data: string[] }>(`/folders${qs ? "?" + qs : ""}`, { token });
+  return request<{ data: string[]; grouped?: FolderGroup[] }>(`/folders${qs ? "?" + qs : ""}`, { token });
 }
 
 export function deleteFolder(
@@ -427,7 +433,7 @@ export function deleteFolder(
 ): Promise<{ message: string }> {
   const params = new URLSearchParams();
   if (userId) params.set("user_id", String(userId));
-  params.set("move_to_default", String(moveToDefault));
+  params.set("move_to_default", moveToDefault ? "1" : "0");
   const qs = params.toString();
   return request<{ message: string }>(`/folders/${encodeURIComponent(folderName)}?${qs}`, {
     method: "DELETE",
@@ -445,6 +451,49 @@ export function moveCategoriesToFolder(
     body: { category_ids: categoryIds, target_folder: targetFolder },
     token,
   });
+}
+
+export function createFolder(
+  folderName: string,
+  token?: string | null,
+  userId?: number | null,
+): Promise<{ message: string }> {
+  const body: Record<string, unknown> = { folder_name: folderName };
+  if (userId) body.user_id = userId;
+  return request<{ message: string }>("/folders", {
+    method: "POST",
+    body,
+    token,
+  });
+}
+
+export function renameFolder(
+  oldName: string,
+  newName: string,
+  token?: string | null,
+  userId?: number | null,
+): Promise<{ message: string }> {
+  const body: Record<string, unknown> = { new_name: newName };
+  if (userId) body.user_id = userId;
+  return request<{ message: string }>(`/folders/${encodeURIComponent(oldName)}`, {
+    method: "PUT",
+    body,
+    token,
+  });
+}
+
+export function checkFolderHasCategories(
+  folderName: string,
+  token?: string | null,
+  userId?: number | null,
+): Promise<{ data: { has_categories: boolean; count: number } }> {
+  const params = new URLSearchParams();
+  if (userId) params.set("user_id", String(userId));
+  const qs = params.toString();
+  return request<{ data: { has_categories: boolean; count: number } }>(
+    `/folders/${encodeURIComponent(folderName)}/has-categories${qs ? "?" + qs : ""}`,
+    { token },
+  );
 }
 
 export function fetchUsers(token?: string | null): Promise<{ data: { id: number; name: string; email: string }[] }> {
