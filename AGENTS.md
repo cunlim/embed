@@ -61,8 +61,11 @@
 - **Base UI Select 내 `<optgroup>` 사용 금지** — 네이티브 `<optgroup>`은 `<div>` 자식 불허로 hydration error. `SelectGroup` + `SelectLabel` 사용.
 - **Base UI Select `SelectGroup` 내 동일 value 충돌** — 여러 그룹이 같은 `value`(예: `"all"`)를 공유하면 모든 그룹의 해당 아이템이 동시 선택됨. **모든 폴더 항목**에 `value={`폴더명:${group.user_id}`}` composite value 사용. `onValueChange`에서 `":"` 파싱 시 prefix=`"all"` → `folder=null`, prefix=`"기본폴더"` → `folder="기본폴더"`, 그 외 → `folder=prefix`로 분기.
 - **폴더 Select top-level 항목** — 관리자 폴더 Select에는 optgroup 위에 top-level "전체"(모든 회원, 모든 폴더)와 "기본폴더"(모든 회원, 폴더 미지정) 항목이 존재해야 함. optgroup 내 "전체"/"기본폴더"는 해당 회원만 범위로 함. **top-level 항목 선택 시 `setSelectedUserId(null)` + `selectedUserIdRef.current = null` 필수** — 누락 시 `selectedUserId`가 이전 값으로 남아 `value={selectedFolder + ":" + selectedUserId}`가 변경되지 않아 Select가 무반응.
-- **폴더명 중복 체크는 현재 회원 범위로** — admin이 전체 회원 폴더를 조회한 상태에서 `folders.includes(name)`으로 중복 체크 시 타 회원 폴더명까지 차단됨. `selectedUserId`가 설정된 경우 `folderGroups.find(g => g.user_id === selectedUserId)?.folders`로 현재 회원 범위만 체크.
+- **폴더명 중복 체크는 현재 회원 범위로** — `selectedUserId` 설정 시 `folderGroups.find(g => g.user_id === selectedUserId)?.folders`로 범위 제한.
 - **Playwright snapshot Select 확인** — Base UI Select는 combobox 내 `generic` 요소로 표시 텍스트를 렌더링. `textbox` 요소는 내부 value 저장용 (사용자 비노출).
+- **italic + text-muted-foreground = disabled처럼 보임** — "전체", "기본폴더" 등 특수 표시에는 italic만 사용. `text-muted-foreground` 병용 시 회색으로 비활성화된 것처럼 인지됨.
+- **폴더 Select 스타일 동기화** — `folder-section.tsx` 내 메인 폴더 Select와 "이동할 폴더" Select는 동일한 optgroup 구조·스타일 공유. 한쪽의 italic, 색상, truncation 등 스타일 수정 시 다른 쪽도 동일하게 수정.
+- **`loadFolders()` userId 필터 시 optgroup 소실** — 백엔드 `FolderController::index()`는 `user_id` 전달 시 `grouped` 미반환. admin optgroup 유지하려면 `fetchFolders(token)`으로 userId 없이 전체 조회.
 
 ## 유틸리티
 

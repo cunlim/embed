@@ -86,7 +86,7 @@ export default function FolderSection({
   const loadFolders = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetchFolders(token, selectedUserIdRef.current);
+      const res = await fetchFolders(token);
       setFolders(res.data);
       setFolderGroups(res.grouped ?? []);
     } catch {
@@ -96,6 +96,7 @@ export default function FolderSection({
 
   // 초기 마운트 시 폴더 그룹 로드 (optgroup 표시용)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadFolders();
   }, [loadFolders]);
 
@@ -265,8 +266,8 @@ export default function FolderSection({
               <SelectValue
                   render={(value) => {
                     const v = String(value ?? "");
-                    if (!v || v === ALL_FOLDERS_VALUE) return <span className="italic text-muted-foreground truncate">전체</span>;
-                    if (v === DEFAULT_FOLDER_LABEL) return <span className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</span>;
+                    if (!v || v === ALL_FOLDERS_VALUE) return <span className="italic truncate">전체</span>;
+                    if (v === DEFAULT_FOLDER_LABEL) return <span className="italic truncate">{DEFAULT_FOLDER_LABEL}</span>;
                     if (v.includes(":")) {
                       const [prefix, uidStr] = v.split(":");
                       const uid = Number(uidStr);
@@ -274,9 +275,11 @@ export default function FolderSection({
                       const userName = group?.user_name ?? serverUsers?.find(u => u.id === uid)?.name ?? `#${uid}`;
                       const folderDisplay = prefix === "all" ? "전체" : prefix;
                       if (isViewerAdmin) {
-                        return <span className="truncate">{userName} / {folderDisplay}</span>;
+                        const isSpecial = prefix === "all" || prefix === DEFAULT_FOLDER_LABEL;
+                        return <span className={`truncate${isSpecial ? " italic" : ""}`}>{userName} / {folderDisplay}</span>;
                       }
-                      if (prefix === "all") return <span className="italic text-muted-foreground truncate">전체</span>;
+                      if (prefix === "all") return <span className="italic truncate">전체</span>;
+                      if (prefix === DEFAULT_FOLDER_LABEL) return <span className="italic truncate">{DEFAULT_FOLDER_LABEL}</span>;
                       return <span className="truncate">{folderDisplay}</span>;
                     }
                     if (isViewerAdmin && selectedUserId) {
@@ -292,15 +295,15 @@ export default function FolderSection({
                 {isViewerAdmin ? (
                   <>
                     {/* top-level "전체" (모든 회원, 모든 폴더) */}
-                    <SelectItem value={ALL_FOLDERS_VALUE} className="italic text-muted-foreground truncate">전체</SelectItem>
+                    <SelectItem value={ALL_FOLDERS_VALUE} className="italic truncate">전체</SelectItem>
                     {/* top-level "기본폴더" (모든 회원, 폴더 미지정 카테고리) */}
-                    <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                    <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
                     {folderGroups.length > 0 ? (
                       folderGroups.map((group, idx) => (
                         <SelectGroup key={group.user_id} className={idx > 0 ? "mt-1 pt-1 border-t border-border" : ""}>
                           <SelectLabel>{group.user_name} ({group.user_email})</SelectLabel>
-                          <SelectItem value={`all:${group.user_id}`} className="italic text-muted-foreground truncate">전체</SelectItem>
-                          <SelectItem value={`${DEFAULT_FOLDER_LABEL}:${group.user_id}`} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                          <SelectItem value={`all:${group.user_id}`} className="italic truncate">전체</SelectItem>
+                          <SelectItem value={`${DEFAULT_FOLDER_LABEL}:${group.user_id}`} className="italic truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
                           {group.folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
                             <SelectItem key={f} value={`${f}:${group.user_id}`} className="truncate">
                               {f}
@@ -320,8 +323,8 @@ export default function FolderSection({
                 ) : (
                   // 일반 회원: flat list
                   <>
-                    <SelectItem value={ALL_FOLDERS_VALUE} className="italic text-muted-foreground truncate">전체</SelectItem>
-                    <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                    <SelectItem value={ALL_FOLDERS_VALUE} className="italic truncate">전체</SelectItem>
+                    <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
                     {folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
                       <SelectItem key={f} value={f} className="truncate">
                         {f}
@@ -413,8 +416,8 @@ export default function FolderSection({
                 <SelectValue
                   render={(value) => {
                     const v = String(value ?? "");
-                    if (!v) return <span className="italic text-muted-foreground truncate">이동할 폴더 선택</span>;
-                    if (v === DEFAULT_FOLDER_LABEL) return <span className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</span>;
+                    if (!v) return <span className="italic truncate">이동할 폴더 선택</span>;
+                    if (v === DEFAULT_FOLDER_LABEL) return <span className="italic truncate">{DEFAULT_FOLDER_LABEL}</span>;
                     if (v.includes(":")) {
                       const [prefix, uidStr] = v.split(":");
                       const uid = Number(uidStr);
@@ -440,7 +443,7 @@ export default function FolderSection({
                     folderGroups.map((group, idx) => (
                       <SelectGroup key={group.user_id} className={idx > 0 ? "mt-1 pt-1 border-t border-border" : ""}>
                         <SelectLabel>{group.user_name} ({group.user_email})</SelectLabel>
-                        <SelectItem value={`${DEFAULT_FOLDER_LABEL}:${group.user_id}`} className="italic text-muted-foreground">
+                        <SelectItem value={`${DEFAULT_FOLDER_LABEL}:${group.user_id}`} className="italic">
                           {DEFAULT_FOLDER_LABEL}
                         </SelectItem>
                         {group.folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
@@ -452,7 +455,7 @@ export default function FolderSection({
                     ))
                   ) : (
                     <>
-                      <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                      <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic">{DEFAULT_FOLDER_LABEL}</SelectItem>
                       {folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
                         <SelectItem key={f} value={f}>{f}</SelectItem>
                       ))}
@@ -460,7 +463,7 @@ export default function FolderSection({
                   )
                 ) : (
                   <>
-                    <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                    <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic">{DEFAULT_FOLDER_LABEL}</SelectItem>
                     {folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
                       <SelectItem key={f} value={f}>{f}</SelectItem>
                     ))}
@@ -512,7 +515,7 @@ export default function FolderSection({
               className="w-full h-8 text-xs"
             >
               <FolderMinus className="h-3.5 w-3.5 mr-1 shrink-0" />
-              <span className="truncate">&ldquo;{selectedFolder}&rdquo; 삭제</span>
+              <span className="truncate">&ldquo;{selectedFolder.length > 10 ? selectedFolder.slice(0, 10) + "..." : selectedFolder}&rdquo; 삭제</span>
             </Button>
           )}
 
