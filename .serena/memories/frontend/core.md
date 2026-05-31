@@ -24,5 +24,5 @@
 - CSS 트랜지션 사이드바: `h-0 overflow-hidden` + `whitespace-nowrap overflow-hidden` 패턴 사용
 - shadcn Sheet: `showCloseButton={false}` 커스텀 닫기 버튼 사용 시 필수
 - `router.replace` + `<Link>` 동일 URL 충돌 — `window.history.replaceState()` 사용
-- **Base UI Select composite value**: 모든 폴더 SelectItem은 `"폴더명:user_id"` composite value 사용. `onValueChange`에서 `split(":")` → prefix 분기(all/기본폴더/일반명). 관리자는 top-level "전체"/"기본폴더" + optgroup 구조.
+- **Base UI Select composite value**: 모든 폴더 SelectItem은 `"폴더명:user_id"` composite value 사용. `onValueChange`에서 `split(":")` → prefix 분기(all/기본폴더/일반명). 관리자는 top-level "전체"/"기본폴더" + optgroup 구조. top-level 항목 선택 시 `setSelectedUserId(null)` + ref 초기화 필수 (누락 시 composite value 불변). 폴더명 중복 체크는 `selectedUserId` 범위로 제한할 것.
 - useCallback 내 state는 setState 직후에도 이전 값 — ref로 최신값 추적, 의존성에서 state 제거

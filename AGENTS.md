@@ -60,7 +60,8 @@
 - **@base-ui/react SelectValue render** — `ReactElement` 반환 필수. 커스텀 render는 `Omit<..., "render">` + 어댑터 패턴 사용.
 - **Base UI Select 내 `<optgroup>` 사용 금지** — 네이티브 `<optgroup>`은 `<div>` 자식 불허로 hydration error. `SelectGroup` + `SelectLabel` 사용.
 - **Base UI Select `SelectGroup` 내 동일 value 충돌** — 여러 그룹이 같은 `value`(예: `"all"`)를 공유하면 모든 그룹의 해당 아이템이 동시 선택됨. **모든 폴더 항목**에 `value={`폴더명:${group.user_id}`}` composite value 사용. `onValueChange`에서 `":"` 파싱 시 prefix=`"all"` → `folder=null`, prefix=`"기본폴더"` → `folder="기본폴더"`, 그 외 → `folder=prefix`로 분기.
-- **폴더 Select top-level 항목** — 관리자 폴더 Select에는 optgroup 위에 top-level "전체"(모든 회원, 모든 폴더)와 "기본폴더"(모든 회원, 폴더 미지정) 항목이 존재해야 함. optgroup 내 "전체"/"기본폴더"는 해당 회원만 범위로 함.
+- **폴더 Select top-level 항목** — 관리자 폴더 Select에는 optgroup 위에 top-level "전체"(모든 회원, 모든 폴더)와 "기본폴더"(모든 회원, 폴더 미지정) 항목이 존재해야 함. optgroup 내 "전체"/"기본폴더"는 해당 회원만 범위로 함. **top-level 항목 선택 시 `setSelectedUserId(null)` + `selectedUserIdRef.current = null` 필수** — 누락 시 `selectedUserId`가 이전 값으로 남아 `value={selectedFolder + ":" + selectedUserId}`가 변경되지 않아 Select가 무반응.
+- **폴더명 중복 체크는 현재 회원 범위로** — admin이 전체 회원 폴더를 조회한 상태에서 `folders.includes(name)`으로 중복 체크 시 타 회원 폴더명까지 차단됨. `selectedUserId`가 설정된 경우 `folderGroups.find(g => g.user_id === selectedUserId)?.folders`로 현재 회원 범위만 체크.
 - **Playwright snapshot Select 확인** — Base UI Select는 combobox 내 `generic` 요소로 표시 텍스트를 렌더링. `textbox` 요소는 내부 value 저장용 (사용자 비노출).
 
 ## 유틸리티
