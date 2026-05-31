@@ -20,14 +20,22 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
 
 function SelectValue({
   className,
+  render,
   children,
   ...props
-}: SelectPrimitive.Value.Props) {
+}: Omit<SelectPrimitive.Value.Props, "render"> & {
+  render?: (value: unknown) => React.ReactElement;
+}) {
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
       className={cn("flex flex-1 text-left", className)}
       {...props}
+      render={
+        render
+          ? ((_props, state: { value?: unknown }) => render(state?.value))
+          : undefined
+      }
     >
       {children}
     </SelectPrimitive.Value>

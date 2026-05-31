@@ -225,7 +225,14 @@ export default function FolderSection({
                 onValueChange={handleUserChange}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue
+                    render={(value) => {
+                      if (!value || value === "all") return <span>전체</span>;
+                      const u = users.find(u => String(u.id) === value);
+                      if (u) return <span>{u.name} ({u.email})</span>;
+                      return <span>{String(value)}</span>;
+                    }}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">전체</SelectItem>
@@ -249,7 +256,13 @@ export default function FolderSection({
               }
             >
               <SelectTrigger className="w-full">
-              <SelectValue />
+              <SelectValue
+                  render={(value) => {
+                    if (!value || value === ALL_FOLDERS_VALUE) return <span className="italic text-muted-foreground">전체</span>;
+                    if (value === DEFAULT_FOLDER_LABEL) return <span className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</span>;
+                    return <span>{String(value)}</span>;
+                  }}
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_FOLDERS_VALUE}>전체</SelectItem>
