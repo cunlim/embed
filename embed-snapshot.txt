@@ -1,0 +1,507 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CL CL Embed" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e5]: CL
+        - generic [ref=e6]: CL Embed
+      - generic [ref=e8]:
+        - link "기능시연" [ref=e9] [cursor=pointer]:
+          - /url: /embed
+          - img
+          - generic [ref=e10]: 기능시연
+        - link "문서" [ref=e11] [cursor=pointer]:
+          - /url: /docs
+          - img
+          - generic [ref=e12]: 문서
+        - link "GitHub 저장소" [ref=e13] [cursor=pointer]:
+          - /url: https://github.com/cunlim
+          - img
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - generic [ref=e16]: cunlim
+        - link "관리자" [ref=e17] [cursor=pointer]:
+          - /url: /admin
+          - img
+          - generic [ref=e18]: 관리자
+        - button "로그아웃" [ref=e19] [cursor=pointer]:
+          - img
+          - generic [ref=e20]: 로그아웃
+      - button "테마 전환" [ref=e21] [cursor=pointer]:
+        - img
+  - main [ref=e24]:
+    - heading "카테고리 추천" [level=1] [ref=e25]
+    - generic [ref=e26]:
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e30]: 폴더
+          - generic [ref=e31]:
+            - generic [ref=e32]:
+              - generic [ref=e33]: 회원
+              - combobox [ref=e34]:
+                - generic [ref=e35]: 전체
+                - img: ▼
+              - textbox [ref=e36]: all
+            - generic [ref=e37]:
+              - generic [ref=e38]: 폴더
+              - combobox [ref=e39]:
+                - generic [ref=e40]: 전체
+                - img: ▼
+              - textbox [ref=e41]: all
+            - generic [ref=e42]:
+              - textbox "새 폴더명" [ref=e43]
+              - button [disabled]:
+                - img
+            - generic [ref=e44]:
+              - combobox [ref=e45]:
+                - generic [ref=e46]: 이동할 폴더 선택
+                - img: ▼
+              - textbox [ref=e47]
+              - generic [ref=e48]:
+                - button "선택이동" [disabled]:
+                  - img
+                  - text: 선택이동
+                - button "전체이동" [disabled]:
+                  - img
+                  - text: 전체이동
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - generic [ref=e51]: 유사도 검색
+            - generic [ref=e52]:
+              - button "한국어" [pressed] [ref=e53] [cursor=pointer]
+              - button "영어" [ref=e54] [cursor=pointer]
+              - button "중국어" [ref=e55] [cursor=pointer]
+          - generic [ref=e57]:
+            - textbox "검색어 입력..." [ref=e58]
+            - button "검색" [disabled]:
+              - img
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - heading "필터" [level=3] [ref=e61]
+            - generic [ref=e62]:
+              - button "분류선택" [pressed] [ref=e63] [cursor=pointer]
+              - button "검색" [ref=e64] [cursor=pointer]
+          - generic [ref=e65]:
+            - generic [ref=e66]:
+              - combobox [ref=e67]:
+                - generic [ref=e68]: 카테고리 선택
+                - img: ▼
+              - textbox [ref=e69]
+            - generic [ref=e70]:
+              - combobox [disabled] [ref=e71]:
+                - generic [ref=e72]: 상위 분류 선택 필요
+                - img: ▼
+              - textbox [disabled] [ref=e73]
+            - generic [ref=e74]:
+              - combobox [disabled] [ref=e75]:
+                - generic [ref=e76]: 상위 분류 선택 필요
+                - img: ▼
+              - textbox [disabled] [ref=e77]
+            - generic [ref=e78]:
+              - combobox [disabled] [ref=e79]:
+                - generic [ref=e80]: 상위 분류 선택 필요
+                - img: ▼
+              - textbox [disabled] [ref=e81]
+            - generic [ref=e82]:
+              - combobox [disabled] [ref=e83]:
+                - generic [ref=e84]: 상위 분류 선택 필요
+                - img: ▼
+              - textbox [disabled] [ref=e85]
+            - generic [ref=e86]:
+              - combobox [disabled] [ref=e87]:
+                - generic [ref=e88]: 상위 분류 선택 필요
+                - img: ▼
+              - textbox [disabled] [ref=e89]
+            - button "초기화" [disabled]:
+              - img
+              - text: 초기화
+        - generic [ref=e90]:
+          - generic [ref=e92]:
+            - generic [ref=e93]: 추가
+            - generic [ref=e94]:
+              - button "단일" [pressed] [ref=e95] [cursor=pointer]
+              - button "대량" [ref=e96] [cursor=pointer]
+          - generic [ref=e97]:
+            - generic [ref=e98]:
+              - generic [ref=e99]: 카테고리 코드
+              - textbox "카테고리 코드" [ref=e100]:
+                - /placeholder: 입력하지 않을 시 자동 생성
+            - generic [ref=e101]:
+              - generic [ref=e102]: 한국어 카테고리명
+              - textbox "한국어 카테고리명" [ref=e103]:
+                - /placeholder: "예: 의류>여성의류>원피스"
+            - button "추가" [disabled]:
+              - img
+              - text: 추가
+        - generic [ref=e104]:
+          - heading "작업 실행" [level=3] [ref=e105]
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - generic [ref=e108]:
+                - checkbox "한국어 임베딩" [checked] [ref=e460] [cursor=pointer]:
+                  - img [ref=e111]
+                - checkbox [checked] [ref=e113]
+                - generic [ref=e114] [cursor=pointer]: 한국어 임베딩
+              - generic [ref=e115]:
+                - checkbox "영어 번역" [ref=e461] [cursor=pointer]
+                - checkbox [ref=e117]
+                - generic [ref=e118] [cursor=pointer]: 영어 번역
+              - generic [ref=e119]:
+                - checkbox "영어 임베딩" [ref=e462] [cursor=pointer]
+                - checkbox [ref=e121]
+                - generic [ref=e122] [cursor=pointer]: 영어 임베딩
+              - generic [ref=e123]:
+                - checkbox "중국어 번역" [ref=e463] [cursor=pointer]
+                - checkbox [ref=e125]
+                - generic [ref=e126] [cursor=pointer]: 중국어 번역
+              - generic [ref=e127]:
+                - checkbox "중국어 임베딩" [ref=e464] [cursor=pointer]
+                - checkbox [ref=e129]
+                - generic [ref=e130] [cursor=pointer]: 중국어 임베딩
+            - generic [ref=e131]:
+              - button "선택 처리" [disabled]
+              - button "전체 처리" [ref=e132] [cursor=pointer]
+        - generic [ref=e133]:
+          - heading "다운로드" [level=3] [ref=e134]
+          - generic [ref=e136]:
+            - button "선택다운로드" [disabled]:
+              - img
+              - text: 선택다운로드
+            - button "전체다운로드" [ref=e137] [cursor=pointer]:
+              - img
+              - text: 전체다운로드
+        - generic [ref=e138]:
+          - heading "삭제" [level=3] [ref=e139]
+          - generic [ref=e141]:
+            - button "선택삭제" [disabled]:
+              - img
+              - text: 선택삭제
+            - button "전체삭제" [ref=e142] [cursor=pointer]:
+              - img
+              - text: 전체삭제
+      - generic [ref=e143]:
+        - generic [ref=e144]:
+          - generic [ref=e145]: 카테고리 목록
+          - generic [ref=e146]:
+            - button "전체" [ref=e147] [cursor=pointer]
+            - button "내 카테고리" [pressed] [ref=e148] [cursor=pointer]
+        - generic [ref=e150]:
+          - table [ref=e153]:
+            - rowgroup [ref=e154]:
+              - row "전체 선택 한국어 카테고리 상태 작업" [ref=e155]:
+                - columnheader "전체 선택" [ref=e156]:
+                  - checkbox "전체 선택" [ref=e157] [cursor=pointer]
+                  - checkbox [ref=e158]
+                - columnheader "한국어 카테고리" [ref=e159]
+                - columnheader "상태" [ref=e160]
+                - columnheader "작업" [ref=e161]
+            - rowgroup [ref=e162]:
+              - row "테스트5>테스트51>테스트512 선택 테스트5>테스트51>테스트512 부분완료 삭제 수정" [ref=e163]:
+                - cell "테스트5>테스트51>테스트512 선택" [ref=e164]:
+                  - checkbox "테스트5>테스트51>테스트512 선택" [ref=e165] [cursor=pointer]
+                  - checkbox [ref=e166]
+                - cell "테스트5>테스트51>테스트512" [ref=e167]
+                - cell "부분완료" [ref=e168]:
+                  - generic "부분완료" [ref=e169]:
+                    - img [ref=e170]
+                - cell "삭제 수정" [ref=e173]:
+                  - generic [ref=e174]:
+                    - button "삭제" [ref=e175] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e176] [cursor=pointer]:
+                      - img
+              - row "테스트5>테스트51>테스트512 선택 테스트5>테스트51>테스트512 부분완료 삭제 수정" [ref=e177]:
+                - cell "테스트5>테스트51>테스트512 선택" [ref=e178]:
+                  - checkbox "테스트5>테스트51>테스트512 선택" [ref=e179] [cursor=pointer]
+                  - checkbox [ref=e180]
+                - cell "테스트5>테스트51>테스트512" [ref=e181]
+                - cell "부분완료" [ref=e182]:
+                  - generic "부분완료" [ref=e183]:
+                    - img [ref=e184]
+                - cell "삭제 수정" [ref=e187]:
+                  - generic [ref=e188]:
+                    - button "삭제" [ref=e189] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e190] [cursor=pointer]:
+                      - img
+              - row "테스트5>테스트51>테스트511 선택 테스트5>테스트51>테스트511 부분완료 삭제 수정" [ref=e191]:
+                - cell "테스트5>테스트51>테스트511 선택" [ref=e192]:
+                  - checkbox "테스트5>테스트51>테스트511 선택" [ref=e193] [cursor=pointer]
+                  - checkbox [ref=e194]
+                - cell "테스트5>테스트51>테스트511" [ref=e195]
+                - cell "부분완료" [ref=e196]:
+                  - generic "부분완료" [ref=e197]:
+                    - img [ref=e198]
+                - cell "삭제 수정" [ref=e201]:
+                  - generic [ref=e202]:
+                    - button "삭제" [ref=e203] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e204] [cursor=pointer]:
+                      - img
+              - row "테스트5>테스트51>테스트511>테스트5111>테스트511112 선택 테스트5>테스트51>테스트511>테스트5111>테스트511112 처리안됨 삭제 수정" [ref=e205]:
+                - cell "테스트5>테스트51>테스트511>테스트5111>테스트511112 선택" [ref=e206]:
+                  - checkbox "테스트5>테스트51>테스트511>테스트5111>테스트511112 선택" [ref=e207] [cursor=pointer]
+                  - checkbox [ref=e208]
+                - cell "테스트5>테스트51>테스트511>테스트5111>테스트511112" [ref=e209]
+                - cell "처리안됨" [ref=e210]:
+                  - generic "처리안됨" [ref=e211]:
+                    - img [ref=e212]
+                - cell "삭제 수정" [ref=e213]:
+                  - generic [ref=e214]:
+                    - button "삭제" [ref=e215] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e216] [cursor=pointer]:
+                      - img
+              - row "테스트5>테스트51>테스트512 선택 테스트5>테스트51>테스트512 부분완료 삭제 수정" [ref=e217]:
+                - cell "테스트5>테스트51>테스트512 선택" [ref=e218]:
+                  - checkbox "테스트5>테스트51>테스트512 선택" [ref=e219] [cursor=pointer]
+                  - checkbox [ref=e220]
+                - cell "테스트5>테스트51>테스트512" [ref=e221]
+                - cell "부분완료" [ref=e222]:
+                  - generic "부분완료" [ref=e223]:
+                    - img [ref=e224]
+                - cell "삭제 수정" [ref=e227]:
+                  - generic [ref=e228]:
+                    - button "삭제" [ref=e229] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e230] [cursor=pointer]:
+                      - img
+              - row "테스트5>테스트51>테스트512 선택 테스트5>테스트51>테스트512 부분완료 삭제 수정" [ref=e231]:
+                - cell "테스트5>테스트51>테스트512 선택" [ref=e232]:
+                  - checkbox "테스트5>테스트51>테스트512 선택" [ref=e233] [cursor=pointer]
+                  - checkbox [ref=e234]
+                - cell "테스트5>테스트51>테스트512" [ref=e235]
+                - cell "부분완료" [ref=e236]:
+                  - generic "부분완료" [ref=e237]:
+                    - img [ref=e238]
+                - cell "삭제 수정" [ref=e241]:
+                  - generic [ref=e242]:
+                    - button "삭제" [ref=e243] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e244] [cursor=pointer]:
+                      - img
+              - row "전자기기>스마트폰 선택 전자기기>스마트폰 처리안됨 삭제 수정" [ref=e245]:
+                - cell "전자기기>스마트폰 선택" [ref=e246]:
+                  - checkbox "전자기기>스마트폰 선택" [ref=e247] [cursor=pointer]
+                  - checkbox [ref=e248]
+                - cell "전자기기>스마트폰" [ref=e249]
+                - cell "처리안됨" [ref=e250]:
+                  - generic "처리안됨" [ref=e251]:
+                    - img [ref=e252]
+                - cell "삭제 수정" [ref=e253]:
+                  - generic [ref=e254]:
+                    - button "삭제" [ref=e255] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e256] [cursor=pointer]:
+                      - img
+              - row "패션의류>여성의류>원피스 선택 패션의류>여성의류>원피스 처리안됨 삭제 수정" [ref=e257]:
+                - cell "패션의류>여성의류>원피스 선택" [ref=e258]:
+                  - checkbox "패션의류>여성의류>원피스 선택" [ref=e259] [cursor=pointer]
+                  - checkbox [ref=e260]
+                - cell "패션의류>여성의류>원피스" [ref=e261]
+                - cell "처리안됨" [ref=e262]:
+                  - generic "처리안됨" [ref=e263]:
+                    - img [ref=e264]
+                - cell "삭제 수정" [ref=e265]:
+                  - generic [ref=e266]:
+                    - button "삭제" [ref=e267] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e268] [cursor=pointer]:
+                      - img
+              - row "전자기기>스마트폰 선택 전자기기>스마트폰 처리안됨 삭제 수정" [ref=e269]:
+                - cell "전자기기>스마트폰 선택" [ref=e270]:
+                  - checkbox "전자기기>스마트폰 선택" [ref=e271] [cursor=pointer]
+                  - checkbox [ref=e272]
+                - cell "전자기기>스마트폰" [ref=e273]
+                - cell "처리안됨" [ref=e274]:
+                  - generic "처리안됨" [ref=e275]:
+                    - img [ref=e276]
+                - cell "삭제 수정" [ref=e277]:
+                  - generic [ref=e278]:
+                    - button "삭제" [ref=e279] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e280] [cursor=pointer]:
+                      - img
+              - row "패션의류>여성의류>원피스 선택 패션의류>여성의류>원피스 처리안됨 삭제 수정" [ref=e281]:
+                - cell "패션의류>여성의류>원피스 선택" [ref=e282]:
+                  - checkbox "패션의류>여성의류>원피스 선택" [ref=e283] [cursor=pointer]
+                  - checkbox [ref=e284]
+                - cell "패션의류>여성의류>원피스" [ref=e285]
+                - cell "처리안됨" [ref=e286]:
+                  - generic "처리안됨" [ref=e287]:
+                    - img [ref=e288]
+                - cell "삭제 수정" [ref=e289]:
+                  - generic [ref=e290]:
+                    - button "삭제" [ref=e291] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e292] [cursor=pointer]:
+                      - img
+              - row "테스트4>테스트41>테스트411>테스트4111>테스트411111>테스트4111112 선택 테스트4>테스트41>테스트411>테스트4111>테스트411111>테스트4111112 처리안됨 삭제 수정" [ref=e293]:
+                - cell "테스트4>테스트41>테스트411>테스트4111>테스트411111>테스트4111112 선택" [ref=e294]:
+                  - checkbox "테스트4>테스트41>테스트411>테스트4111>테스트411111>테스트4111112 선택" [ref=e295] [cursor=pointer]
+                  - checkbox [ref=e296]
+                - cell "테스트4>테스트41>테스트411>테스트4111>테스트411111>테스트4111112" [ref=e297]
+                - cell "처리안됨" [ref=e298]:
+                  - generic "처리안됨" [ref=e299]:
+                    - img [ref=e300]
+                - cell "삭제 수정" [ref=e301]:
+                  - generic [ref=e302]:
+                    - button "삭제" [ref=e303] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e304] [cursor=pointer]:
+                      - img
+              - row "테스트4>테스트41>테스트411>테스트4111>테스트411111>테스트4111111 선택 테스트4>테스트41>테스트411>테스트4111>테스트411111>테스트4111111 처리안됨 삭제 수정" [ref=e305]:
+                - cell "테스트4>테스트41>테스트411>테스트4111>테스트411111>테스트4111111 선택" [ref=e306]:
+                  - checkbox "테스트4>테스트41>테스트411>테스트4111>테스트411111>테스트4111111 선택" [ref=e307] [cursor=pointer]
+                  - checkbox [ref=e308]
+                - cell "테스트4>테스트41>테스트411>테스트4111>테스트411111>테스트4111111" [ref=e309]
+                - cell "처리안됨" [ref=e310]:
+                  - generic "처리안됨" [ref=e311]:
+                    - img [ref=e312]
+                - cell "삭제 수정" [ref=e313]:
+                  - generic [ref=e314]:
+                    - button "삭제" [ref=e315] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e316] [cursor=pointer]:
+                      - img
+              - row "화장품/미용>헤어케어>헤어팩 선택 화장품/미용>헤어케어>헤어팩 처리완료 삭제 수정" [ref=e317]:
+                - cell "화장품/미용>헤어케어>헤어팩 선택" [ref=e318]:
+                  - checkbox "화장품/미용>헤어케어>헤어팩 선택" [ref=e319] [cursor=pointer]
+                  - checkbox [ref=e320]
+                - cell "화장품/미용>헤어케어>헤어팩" [ref=e321]
+                - cell "처리완료" [ref=e322]:
+                  - generic "처리완료" [ref=e323]:
+                    - img [ref=e324]
+                - cell "삭제 수정" [ref=e327]:
+                  - generic [ref=e328]:
+                    - button "삭제" [ref=e329] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e330] [cursor=pointer]:
+                      - img
+              - row "화장품/미용>헤어케어>헤어케어세트 선택 화장품/미용>헤어케어>헤어케어세트 처리완료 삭제 수정" [ref=e331]:
+                - cell "화장품/미용>헤어케어>헤어케어세트 선택" [ref=e332]:
+                  - checkbox "화장품/미용>헤어케어>헤어케어세트 선택" [ref=e333] [cursor=pointer]
+                  - checkbox [ref=e334]
+                - cell "화장품/미용>헤어케어>헤어케어세트" [ref=e335]
+                - cell "처리완료" [ref=e336]:
+                  - generic "처리완료" [ref=e337]:
+                    - img [ref=e338]
+                - cell "삭제 수정" [ref=e341]:
+                  - generic [ref=e342]:
+                    - button "삭제" [ref=e343] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e344] [cursor=pointer]:
+                      - img
+              - row "화장품/미용>헤어케어>헤어에센스 선택 화장품/미용>헤어케어>헤어에센스 처리완료 삭제 수정" [ref=e345]:
+                - cell "화장품/미용>헤어케어>헤어에센스 선택" [ref=e346]:
+                  - checkbox "화장품/미용>헤어케어>헤어에센스 선택" [ref=e347] [cursor=pointer]
+                  - checkbox [ref=e348]
+                - cell "화장품/미용>헤어케어>헤어에센스" [ref=e349]
+                - cell "처리완료" [ref=e350]:
+                  - generic "처리완료" [ref=e351]:
+                    - img [ref=e352]
+                - cell "삭제 수정" [ref=e355]:
+                  - generic [ref=e356]:
+                    - button "삭제" [ref=e357] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e358] [cursor=pointer]:
+                      - img
+              - row "화장품/미용>헤어케어>헤어미스트 선택 화장품/미용>헤어케어>헤어미스트 처리완료 삭제 수정" [ref=e359]:
+                - cell "화장품/미용>헤어케어>헤어미스트 선택" [ref=e360]:
+                  - checkbox "화장품/미용>헤어케어>헤어미스트 선택" [ref=e361] [cursor=pointer]
+                  - checkbox [ref=e362]
+                - cell "화장품/미용>헤어케어>헤어미스트" [ref=e363]
+                - cell "처리완료" [ref=e364]:
+                  - generic "처리완료" [ref=e365]:
+                    - img [ref=e366]
+                - cell "삭제 수정" [ref=e369]:
+                  - generic [ref=e370]:
+                    - button "삭제" [ref=e371] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e372] [cursor=pointer]:
+                      - img
+              - row "화장품/미용>헤어케어>트리트먼트 선택 화장품/미용>헤어케어>트리트먼트 처리완료 삭제 수정" [ref=e373]:
+                - cell "화장품/미용>헤어케어>트리트먼트 선택" [ref=e374]:
+                  - checkbox "화장품/미용>헤어케어>트리트먼트 선택" [ref=e375] [cursor=pointer]
+                  - checkbox [ref=e376]
+                - cell "화장품/미용>헤어케어>트리트먼트" [ref=e377]
+                - cell "처리완료" [ref=e378]:
+                  - generic "처리완료" [ref=e379]:
+                    - img [ref=e380]
+                - cell "삭제 수정" [ref=e383]:
+                  - generic [ref=e384]:
+                    - button "삭제" [ref=e385] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e386] [cursor=pointer]:
+                      - img
+              - row "화장품/미용>헤어케어>탈모케어 선택 화장품/미용>헤어케어>탈모케어 처리완료 삭제 수정" [ref=e387]:
+                - cell "화장품/미용>헤어케어>탈모케어 선택" [ref=e388]:
+                  - checkbox "화장품/미용>헤어케어>탈모케어 선택" [ref=e389] [cursor=pointer]
+                  - checkbox [ref=e390]
+                - cell "화장품/미용>헤어케어>탈모케어" [ref=e391]
+                - cell "처리완료" [ref=e392]:
+                  - generic "처리완료" [ref=e393]:
+                    - img [ref=e394]
+                - cell "삭제 수정" [ref=e397]:
+                  - generic [ref=e398]:
+                    - button "삭제" [ref=e399] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e400] [cursor=pointer]:
+                      - img
+              - row "화장품/미용>헤어케어>샴푸 선택 화장품/미용>헤어케어>샴푸 처리완료 삭제 수정" [ref=e401]:
+                - cell "화장품/미용>헤어케어>샴푸 선택" [ref=e402]:
+                  - checkbox "화장품/미용>헤어케어>샴푸 선택" [ref=e403] [cursor=pointer]
+                  - checkbox [ref=e404]
+                - cell "화장품/미용>헤어케어>샴푸" [ref=e405]
+                - cell "처리완료" [ref=e406]:
+                  - generic "처리완료" [ref=e407]:
+                    - img [ref=e408]
+                - cell "삭제 수정" [ref=e411]:
+                  - generic [ref=e412]:
+                    - button "삭제" [ref=e413] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e414] [cursor=pointer]:
+                      - img
+              - row "화장품/미용>헤어케어>린스 선택 화장품/미용>헤어케어>린스 처리완료 삭제 수정" [ref=e415]:
+                - cell "화장품/미용>헤어케어>린스 선택" [ref=e416]:
+                  - checkbox "화장품/미용>헤어케어>린스 선택" [ref=e417] [cursor=pointer]
+                  - checkbox [ref=e418]
+                - cell "화장품/미용>헤어케어>린스" [ref=e419]
+                - cell "처리완료" [ref=e420]:
+                  - generic "처리완료" [ref=e421]:
+                    - img [ref=e422]
+                - cell "삭제 수정" [ref=e425]:
+                  - generic [ref=e426]:
+                    - button "삭제" [ref=e427] [cursor=pointer]:
+                      - img
+                    - button "수정" [ref=e428] [cursor=pointer]:
+                      - img
+          - navigation "pagination" [ref=e430]:
+            - list [ref=e431]:
+              - listitem [ref=e432]:
+                - generic:
+                  - img
+              - listitem [ref=e433]:
+                - generic [ref=e434] [cursor=pointer]: "1"
+              - listitem [ref=e435]:
+                - generic [ref=e436] [cursor=pointer]: "2"
+              - listitem [ref=e437]:
+                - generic [ref=e438] [cursor=pointer]: "3"
+              - listitem [ref=e439]:
+                - generic [ref=e441] [cursor=pointer]:
+                  - img
+                  - generic [ref=e442]: More pages
+              - listitem [ref=e443]:
+                - generic [ref=e444] [cursor=pointer]: "242"
+              - listitem [ref=e445]:
+                - generic [ref=e446] [cursor=pointer]:
+                  - img
+              - listitem [ref=e447]:
+                - combobox [ref=e448]:
+                  - generic [ref=e449]: "20"
+                  - img: ▼
+                - textbox [ref=e450]: "20"
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e456] [cursor=pointer]:
+    - img [ref=e457]
+  - alert [ref=e465]

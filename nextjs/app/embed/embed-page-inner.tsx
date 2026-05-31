@@ -100,6 +100,8 @@ export function EmbedPageInner({
   serverFolder,
   serverFolders,
   serverUsers,
+  serverUserId,
+  serverFolderGroups,
 }: {
   serverLevelOptions: string[][];
   serverMaxDepth: number;
@@ -115,6 +117,8 @@ export function EmbedPageInner({
   serverFolder?: string | null;
   serverFolders?: string[];
   serverUsers?: { id: number; name: string; email: string }[];
+  serverUserId?: string | null;
+  serverFolderGroups?: import("@/lib/api").FolderGroup[];
 }) {
   const { user } = useAuth(serverUser);
   const router = useRouter();
@@ -168,6 +172,13 @@ export function EmbedPageInner({
   const selectedFolderRef = useRef(selectedFolder);
   // eslint-disable-next-line react-hooks/refs
   selectedFolderRef.current = selectedFolder;
+
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(
+    serverUserId ? parseInt(serverUserId, 10) : null
+  );
+  const selectedUserIdRef = useRef(selectedUserId);
+  // eslint-disable-next-line react-hooks/refs
+  selectedUserIdRef.current = selectedUserId;
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryCode, setNewCategoryCode] = useState("");
@@ -236,6 +247,7 @@ export function EmbedPageInner({
     catPath?: (string | null)[];
     q?: string;
     folder?: string | null;
+    userId?: number | null;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -269,6 +281,10 @@ export function EmbedPageInner({
     if ("folder" in overrides) {
       if (overrides.folder) params.set("folder", overrides.folder);
       else params.delete("folder");
+    }
+    if ("userId" in overrides) {
+      if (overrides.userId) params.set("user_id", String(overrides.userId));
+      else params.delete("user_id");
     }
 
     if (page > 1) params.set("page", String(page));
@@ -554,16 +570,22 @@ export function EmbedPageInner({
                 selectedIds={selectedIds}
                 serverFolders={serverFolders}
                 serverUsers={serverUsers}
-                onFolderChange={(folder) => {
+                serverFolderGroups={serverFolderGroups}
+                initialUserId={selectedUserId}
+                onFolderChange={(folder, userId) => {
                   setSelectedFolder(folder);
+                  if (userId !== undefined) {
+                    setSelectedUserId(userId);
+                  }
                   // 계층 필터만 초기화 (유사도 검색, 전체/내카테고리, 검색어는 유지)
                   setKeywordSearchActive(false);
                   setHierarchyKeyword("");
                   keywordRef.current = "";
                   setHierarchyResetKey(prev => prev + 1);
-                  // page=1
+                  // page=1, folder + user_id URL 반영
                   const params = new URLSearchParams();
                   if (folder) params.set("folder", folder);
+                  if (userId) params.set("user_id", String(userId));
                   if (perPage !== 20) params.set("per_page", String(perPage));
                   router.replace(`/embed${params.toString() ? "?" + params.toString() : ""}`, { scroll: false });
                   // 폴더 범위로 카테고리 재로드 (기존 필터 유지)
