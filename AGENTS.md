@@ -49,8 +49,9 @@
 - **Laravel `boolean` 유효성 검증** — `"true"`/`"false"` 불허. 쿼리 파라미터는 `params.set(key, bool ? "1" : "0")` 사용.
 - **`category_code` unique 범위** — `(category_code, user_id, folder)`. `CategoryStoreRequest`·`CategoryUpdateTextRequest`에 folder scope 필수. `useCategories.addCategory()` → `createCategory()` → API까지 `folder` 파라미터 전파 필수. 누락 시 기본폴더(null)로 생성되어 중복 체크 오작동.
 - **`RecommendRequest` filter** — `in:my,all`로 `"all"`도 허용 필수. 프론트에서 "전체" 선택 후 유사도검색 시 `filter=all` 전송됨.
-- **폴더 Select** — composite value(`"폴더명:user_id"`), `SelectGroup`+`SelectLabel`(네이티브 `<optgroup>` 금지), italic만 사용(`text-muted-foreground` 병용 금지), 두 Select(메인·이동) 스타일 동기화. `loadFolders()`는 `grouped` 응답 위해 userId 없이 호출. 상세 구현은 `[[frontend/core]]`·`[[laravel/core]]` 참조.
-- **폴더 이동** — 선택이동·전체이동 버튼은 `window.confirm()`으로 개수 고지 후 실행. 이동할 폴더 Select는 현재 선택 폴더 disabled 처리.
+- **폴더 Select** — composite value(`"폴더명:user_id"`), `SelectGroup`+`SelectLabel`, italic만 사용, 두 Select(메인·이동) 스타일 동기화. `loadFolders()`는 userId 없이 호출. 상세: `[[frontend/core]]`·`[[laravel/core]]`.
+- **폴더 이동** — 선택이동·전체이동 `window.confirm()`으로 개수 고지. 전체이동은 `getCategories`로 현재 필터 개수 먼저 조회. 이동할 폴더 Select는 현재 선택 폴더 disabled + 폴더 Select 변경 시 moveTargetFolder 초기화.
+- **Hook 에러 re-throw** — hook 내부에서 에러 catch 후 `throw err`로 재전파하지 않으면 caller가 성공/실패를 구분 불가. UI에서 성공 시에만 state 변경이 필요한 경우 필수 패턴.
 
 ## 하위 디렉토리
 
