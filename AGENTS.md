@@ -22,7 +22,7 @@
 - **이슈 사전 재현** — 수정 작업 전 Playwright로 실제 이슈가 존재하는지 먼저 확인한다.
 - **Sub-agent driven** — 구현은 되도록 Agent(Sub-agent)를 활용한다.
 - **Playwright 테스트 URL** — WSL2 호스트에서 `https://embed.cunlim.dev`로 접속 (Next.js 포트 미공개).
-- **Playwright 인증** — 쿠키 기반(`auth_token`). superadmin 필요 시 `User::where('role','superadmin')->first()`로 조회 (자세한 절차는 `laravel/AGENTS.md` 참조). 쿠키 설정은 `context.clearCookies()` + `context.addCookies()` 사용 (중복 쿠키 방지).
+- **Playwright 인증** — 쿠키 기반(`auth_token`). superadmin 토큰 발급은 `laravel/AGENTS.md` 참조. 쿠키 설정은 `context.clearCookies()` → `page.evaluate(t => document.cookie = \`auth_token=${t}; path=/; SameSite=Lax; max-age=86400\`, token)` 방식 사용 (`addCookies`는 API 요청에 미포함되는 경우 있음). `/api/auth/user` 200 확인 후 진행.
 - **작업 완료 전 검증** — `.claude/hooks/run-all-checks.sh` 실행 후 `cat .claude/hooks/test-results/*.txt`로 결과 확인. tsc, lint, test, pint 모두 EXIT=0 확인 후 마무리.
 
 ## 문서 우선순위
@@ -53,7 +53,14 @@
 - **Docker 바인드 마운트 불일치** — 호스트·컨테이너 간 파일 변경 즉시 반영 안 될 수 있음. 수정 후 `wc -l`로 양쪽 라인 수 비교.
 - **신규 디렉토리** — 호스트·컨테이너 한쪽만 생성 시 자동 반영 안 됨. 양쪽 `mkdir -p`.
 - **Subagent-Driven 동일 파일 작업** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합.
-- **함수 시그니처 변경 시 테스트 기대값 업데이트** — `getCategories()`, `recommend()` 등에 파라미터 추가 시 mock 기대값에도 해당 인자 추가 필요. `run-all-checks.sh`로 확인.
+- **API 필터 파라미터 추가 시 전파 체인** — `getCategories()` 등에 새 파라미터 추가 시 수정 필요한 모든 위치:
+  1. `api.ts`: 함수 시그니처 + query param
+  2. Hooks (`useCategories.ts`): 인터페이스 + 호출부
+  3. `embed-page-inner.tsx`: **모든** `loadCategories()` 호출부 (data-loading useEffect, onFolderChange, resetToDefault, handleKeywordSearch, modal callbacks 등). 한 곳만 수정하면 나머지는 이전 동작 유지.
+  4. SSR `page.tsx`: prefetch `getCategories()`, `fetchCategoryLevels()`, `recommend()` 호출부
+  5. `category-hierarchy.tsx`: 모든 `fetchCategoryLevels` 호출부 (refreshKey, resetKey, 페이지 복원 effect, handleLevelChange)
+  6. 백엔드 컨트롤러: `index()`, `levels()`, `recommend()` 등 **모든** 조회 메서드 — 하나만 수정하면 다른 API는 이전 동작 유지
+  7. 테스트 mock: `toHaveBeenCalledWith` 기대값에 새 인자 추가
 - **SSR 조건부 렌더링** — client component 내 `getToken()`은 SSR 시 `null` 반환 (`typeof document === "undefined"`). 인증 기반 렌더링 분기는 `serverHadToken` prop 사용. `token && <Component>` 대신 `serverHadToken && <Component>`.
 - **Laravel `boolean` 유효성 검증** — `"true"`/`"false"` 문자열은 통과하지 않음 (`"1"`/`"0"`만 허용). 쿼리 파라미터로 boolean 전달 시 `params.set(key, bool ? "1" : "0")` 사용.
 - **폴더는 `folders` 테이블로 독립 관리** — `user_id` + `name` unique. `categories.folder` 컬럼은 문자열 참조로 유지. 더미 카테고리 방식 폐기.

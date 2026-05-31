@@ -127,6 +127,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **폴더 삭제 후 onFolderActionComplete 호출 금지** — onFolderChange(null)이 이미 folder=undefined로 올바르게 카테고리 재로드. onFolderActionComplete는 state 변경 전 클로저의 stale selectedFolder로 중복 호출되어 빈 리스트 유발.
 - **폴더 Select·이동할 폴더 Select 스타일 동기화** — 두 Select는 `folder-section.tsx` 내 동일 optgroup 구조 공유. 한쪽 SelectValue render나 SelectItem 스타일 수정 시 다른 쪽도 동일하게 반영.
 - **`loadFolders()` userId 인자 전달 시 optgroup 소실** — 백엔드 `FolderController::index()`는 `user_id` 쿼리 파라미터 수신 시 `grouped` 데이터 미반환. admin optgroup 표시가 필요하면 `fetchFolders(token)`으로 userId 없이 호출.
+- **SSR page.tsx 파라미터 전파 누락** — `embed-page-inner.tsx`의 prop 추가 시 SSR `page.tsx`의 prefetch 호출(`getCategories`, `fetchCategoryLevels`, `recommend`)에도 동일 파라미터 전달 필요. 클라이언트 측만 수정하면 SSR prefetch 데이터는 이전 동작 유지.
 
 ## 관련 문서
 

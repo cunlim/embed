@@ -15,7 +15,7 @@ AI 기반 다국어 카테고리 추천 시스템. 벡터 검색(pgvector)으로
 ## 카테고리 접근 제어
 
 - `user_id=1`(공개), 비로그인: 본인+공개, 로그인: 본인+공개, admin: 전체
-- 모든 조회 API(`levels()`, `recommend()` 등)에 동일 적용
+- 모든 조회 API(`levels()`, `recommend()` 등)에 동일 적용 — 새 필터 파라미터 추가 시 `CategoryController`뿐 아니라 `RecommendController` 등 모든 조회 컨트롤러에 추가 필요. 하나만 수정하면 다른 API는 이전 동작 유지.
 
 ## 핵심 비즈니스 로직
 
