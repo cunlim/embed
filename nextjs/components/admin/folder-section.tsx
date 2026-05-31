@@ -225,19 +225,10 @@ export default function FolderSection({
                 onValueChange={handleUserChange}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue
-                    render={(value) => {
-                      if (!value || value === "all") return <span>전체</span>;
-                      const u = users.find(u => String(u.id) === value);
-                      if (u) return <span>{u.name} ({u.email})</span>;
-                      return <span>{value}</span>;
-                    }}
-                  />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">
-                    <span className="italic text-muted-foreground">전체</span>
-                  </SelectItem>
+                  <SelectItem value="all">전체</SelectItem>
                   {users.map((u) => (
                     <SelectItem key={u.id} value={String(u.id)}>
                       {u.name} ({u.email})
@@ -258,34 +249,16 @@ export default function FolderSection({
               }
             >
               <SelectTrigger className="w-full">
-                <SelectValue
-                  render={(value) => {
-                    if (!value || value === ALL_FOLDERS_VALUE) return <span className="italic text-muted-foreground">전체</span>;
-                    if (value === DEFAULT_FOLDER_LABEL) return <span className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</span>;
-                    return <span>{value}</span>;
-                  }}
-                />
+              <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_FOLDERS_VALUE}>
-                  <span className="italic text-muted-foreground">전체</span>
-                </SelectItem>
-                <SelectItem value={DEFAULT_FOLDER_LABEL}>
-                  <span className="italic text-muted-foreground">
-                    {DEFAULT_FOLDER_LABEL}
-                  </span>
-                </SelectItem>
+                <SelectItem value={ALL_FOLDERS_VALUE}>전체</SelectItem>
+                <SelectItem value={DEFAULT_FOLDER_LABEL}>{DEFAULT_FOLDER_LABEL}</SelectItem>
                 {isViewerAdmin && !selectedUserId && folderGroups.length > 0
                   ? folderGroups.map((group) => (
                       <optgroup key={group.user_id} label={group.user_name}>
-                        <SelectItem value="all">
-                          <span className="italic text-muted-foreground">전체</span>
-                        </SelectItem>
-                        <SelectItem value={DEFAULT_FOLDER_LABEL}>
-                          <span className="italic text-muted-foreground">
-                            {DEFAULT_FOLDER_LABEL}
-                          </span>
-                        </SelectItem>
+                        <SelectItem value="all">전체</SelectItem>
+                        <SelectItem value={DEFAULT_FOLDER_LABEL}>{DEFAULT_FOLDER_LABEL}</SelectItem>
                         {group.folders.map((f) => (
                           <SelectItem key={f} value={f}>
                             {f}

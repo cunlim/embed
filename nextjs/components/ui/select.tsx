@@ -20,12 +20,9 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
 
 function SelectValue({
   className,
-  render,
   children,
   ...props
-}: Omit<SelectPrimitive.Value.Props, "render"> & {
-  render?: (value: string) => React.ReactNode
-}) {
+}: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
