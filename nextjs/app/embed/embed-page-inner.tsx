@@ -165,6 +165,9 @@ export function EmbedPageInner({
   const [hierarchyResetKey, setHierarchyResetKey] = useState(0);
   const [hierarchyKeyword, setHierarchyKeyword] = useState(initialFilterKeyword);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(serverFolder ?? null);
+  const selectedFolderRef = useRef(selectedFolder);
+  // eslint-disable-next-line react-hooks/refs
+  selectedFolderRef.current = selectedFolder;
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryCode, setNewCategoryCode] = useState("");
@@ -569,7 +572,7 @@ export function EmbedPageInner({
                 onFolderActionComplete={() => {
                   // 폴더 이동 후 선택 해제
                   setSelectedIds(new Set());
-                  loadCategories(page, perPage, effectiveFilter, keywordRef.current, selectedFolder ?? undefined);
+                  loadCategories(page, perPage, effectiveFilter, keywordRef.current, selectedFolderRef.current ?? undefined);
                 }}
               />
             )}

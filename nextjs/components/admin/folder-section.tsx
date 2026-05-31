@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,9 @@ export default function FolderSection({
   const [error, setError] = useState<string | null>(null);
   const [users] = useState<{ id: number; name: string; email: string }[]>(serverUsers);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const selectedUserIdRef = useRef(selectedUserId);
+  // eslint-disable-next-line react-hooks/refs
+  selectedUserIdRef.current = selectedUserId;
   const [renameTarget, setRenameTarget] = useState<string>("");
 
   // "기능시연" 클릭 시 폴더 section 초기화
@@ -79,13 +82,13 @@ export default function FolderSection({
   const loadFolders = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetchFolders(token, selectedUserId);
+      const res = await fetchFolders(token, selectedUserIdRef.current);
       setFolders(res.data);
       setFolderGroups(res.grouped ?? []);
     } catch {
       // 무시
     }
-  }, [token, selectedUserId]);
+  }, [token]);
 
   // 폴더 추가
   const handleAddFolder = useCallback(async () => {
@@ -144,9 +147,10 @@ export default function FolderSection({
       try {
         await deleteFolder(selectedFolder, token, selectedUserId, moveToDefault);
         setDeleteModalOpen(false);
+        // onFolderChange(null)에서 이미 카테고리를 올바른 folder=undefined로 재로드하므로
+        // onFolderActionComplete 호출은 불필요하며 stale selectedFolder를 사용할 위험이 있음
         onFolderChange(null);
         await loadFolders();
-        onFolderActionComplete();
       } catch (err) {
         setError(err instanceof Error ? err.message : "폴더 삭제 실패");
       }
@@ -157,7 +161,6 @@ export default function FolderSection({
       selectedUserId,
       loadFolders,
       onFolderChange,
-      onFolderActionComplete,
     ],
   );
 
@@ -194,13 +197,11 @@ export default function FolderSection({
   // 회원 변경
   const handleUserChange = useCallback(
     (value: string | null) => {
-      if (!value || value === "all") {
-        setSelectedUserId(null);
-      } else {
-        setSelectedUserId(Number(value));
-      }
+      const newUserId = !value || value === "all" ? null : Number(value);
+      selectedUserIdRef.current = newUserId;
+      setSelectedUserId(newUserId);
       onFolderChange(null);
-      // 폴더 목록 재로드
+      // 폴더 목록 재로드 (ref로 최신 userId 사용)
       loadFolders();
     },
     [onFolderChange, loadFolders],
@@ -227,7 +228,7 @@ export default function FolderSection({
                 <SelectTrigger className="w-full">
                   <SelectValue
                     render={(value) => {
-                      if (!value || value === "all") return <span>전체</span>;
+                      if (!value || value === "all") return <span className="italic text-muted-foreground">전체</span>;
                       const u = users.find(u => String(u.id) === value);
                       if (u) return <span>{u.name} ({u.email})</span>;
                       return <span>{String(value)}</span>;
@@ -235,7 +236,7 @@ export default function FolderSection({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">전체</SelectItem>
+                  <SelectItem value="all" className="italic text-muted-foreground">전체</SelectItem>
                   {users.map((u) => (
                     <SelectItem key={u.id} value={String(u.id)}>
                       {u.name} ({u.email})
@@ -265,8 +266,8 @@ export default function FolderSection({
                 />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_FOLDERS_VALUE}>전체</SelectItem>
-                <SelectItem value={DEFAULT_FOLDER_LABEL}>{DEFAULT_FOLDER_LABEL}</SelectItem>
+                <SelectItem value={ALL_FOLDERS_VALUE} className="italic text-muted-foreground">전체</SelectItem>
+                <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</SelectItem>
                 {isViewerAdmin && !selectedUserId && folderGroups.length > 0
                   ? folderGroups.map((group) => (
                       <optgroup key={group.user_id} label={group.user_name}>
@@ -397,7 +398,7 @@ export default function FolderSection({
           </div>
 
           {/* 폴더 삭제 */}
-          {selectedFolder && selectedFolder !== ALL_FOLDERS_VALUE && (
+          {selectedFolder && selectedFolder !== ALL_FOLDERS_VALUE && selectedFolder !== DEFAULT_FOLDER_LABEL && (
             <Button
               size="sm"
               variant="destructive"
