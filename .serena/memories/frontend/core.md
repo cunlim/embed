@@ -6,6 +6,7 @@
 
 - **shadcn/ui** `base-nova` 스타일. 컴포넌트 추가: `docker exec cl_embed_nextjs npx shadcn@latest add <component>`
 - **CSS 변수 text 색상**: `text-foreground`는 light(검정)/dark(white) 자동 적응. `text-accent`는 양쪽 모두 어두운 색상(0.45)이므로 text에 부적합, 배경(`bg-accent/10`, `bg-accent/20`)으로만 사용.
+- **SelectTrigger 기본 height**: `data-[size=default]:h-8` (32px). 인접 버튼도 동일 height(`h-8`)로 통일해야 UI 깨짐 방지. `h-9` 사용 시 4px 불일치.
 
 ## 테스트
 
