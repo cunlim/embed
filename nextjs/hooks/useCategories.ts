@@ -37,6 +37,7 @@ export function useCategories(
   const currentPerPage = useRef<number>(20);
   const currentFilter = useRef<string | undefined>(undefined);
   const currentSearch = useRef<string | undefined>(undefined);
+  const currentFolder = useRef<string | undefined>(undefined);
 
   const loadCategories = useCallback(async (page?: number, perPage?: number, filter?: string, search?: string, folder?: string, userId?: number | null) => {
     setIsLoading(true);
@@ -49,6 +50,7 @@ export function useCategories(
       currentPerPage.current = data.meta.per_page;
       currentFilter.current = filter;
       currentSearch.current = search !== undefined ? search : currentSearch.current;
+      currentFolder.current = folder;
       setIsLoaded(true);
     } catch (err) {
       setError(
@@ -77,7 +79,7 @@ export function useCategories(
       setError(null);
       try {
         await createCategory(categoryNameKo, token, categoryCode, categoryNameEn, categoryNameZh, folder);
-        const data = await getCategories(token, currentPage.current, currentPerPage.current, currentFilter.current, currentSearch.current);
+        const data = await getCategories(token, currentPage.current, currentPerPage.current, currentFilter.current, currentSearch.current, currentFolder.current);
         setCategories(data.data);
         setMeta(data.meta);
       } catch (err) {
@@ -107,7 +109,7 @@ export function useCategories(
       setError(null);
       try {
         await deleteCategoryApi(id, token);
-        const data = await getCategories(token, currentPage.current, currentPerPage.current, currentFilter.current, currentSearch.current);
+        const data = await getCategories(token, currentPage.current, currentPerPage.current, currentFilter.current, currentSearch.current, currentFolder.current);
         setCategories(data.data);
         setMeta(data.meta);
       } catch (err) {

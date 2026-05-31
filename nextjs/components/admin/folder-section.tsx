@@ -79,7 +79,6 @@ export default function FolderSection({
   useEffect(() => {
     const handleReset = () => {
       setSelectedUserId(null);
-      onFolderChange(null, null);
       setNewFolderName("");
       setRenameTarget("");
       setMoveTargetFolder("");
@@ -450,7 +449,7 @@ export default function FolderSection({
           {/* 폴더 이동 */}
           <div className="space-y-2">
             <div className="flex gap-1">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
             <Select value={moveTargetFolder} onValueChange={(v) => setMoveTargetFolder(v ?? "")}>
               <SelectTrigger className="w-full">
                 <SelectValue
