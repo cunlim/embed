@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -58,7 +58,20 @@ export default function FolderSection({
   const [users] = useState<{ id: number; name: string; email: string }[]>(serverUsers);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [renameTarget, setRenameTarget] = useState<string>("");
-  const [renameName, setRenameName] = useState<string>("");
+
+  // "기능시연" 클릭 시 폴더 section 초기화
+  useEffect(() => {
+    const handleReset = () => {
+      setSelectedUserId(null);
+      onFolderChange(null);
+      setNewFolderName("");
+      setRenameTarget("");
+      setMoveTargetFolder("");
+      setError(null);
+    };
+    window.addEventListener("resetEmbedPage", handleReset);
+    return () => window.removeEventListener("resetEmbedPage", handleReset);
+  }, [onFolderChange]);
 
   const isViewerAdmin = user ? isAdmin(user) : false;
 
@@ -99,29 +112,29 @@ export default function FolderSection({
 
   // 폴더명 수정
   const handleRenameFolder = useCallback(async () => {
-    if (!token || !renameTarget || !renameName.trim()) return;
+    if (!token || !renameTarget || !newFolderName.trim()) return;
     if (renameTarget === DEFAULT_FOLDER_LABEL) {
       setError("기본폴더는 이름을 변경할 수 없습니다.");
       return;
     }
-    if (RESERVED_NAMES.includes(renameName.trim())) {
-      setError(`"${renameName.trim()}"은(는) 사용할 수 없는 이름입니다.`);
+    if (RESERVED_NAMES.includes(newFolderName.trim())) {
+      setError(`"${newFolderName.trim()}"은(는) 사용할 수 없는 이름입니다.`);
       return;
     }
     try {
-      await renameFolder(renameTarget, renameName.trim(), token, selectedUserId);
+      await renameFolder(renameTarget, newFolderName.trim(), token, selectedUserId);
       setRenameTarget("");
-      setRenameName("");
+      setNewFolderName("");
       setError(null);
       await loadFolders();
       if (selectedFolder === renameTarget) {
-        onFolderChange(renameName.trim());
+        onFolderChange(newFolderName.trim());
       }
       onFolderActionComplete();
     } catch (err) {
       setError(err instanceof Error ? err.message : "폴더명 수정 실패");
     }
-  }, [token, renameTarget, renameName, selectedUserId, loadFolders, selectedFolder, onFolderChange, onFolderActionComplete]);
+  }, [token, renameTarget, newFolderName, selectedUserId, loadFolders, selectedFolder, onFolderChange, onFolderActionComplete]);
 
   // 폴더 삭제
   const handleDeleteFolder = useCallback(
@@ -212,7 +225,14 @@ export default function FolderSection({
                 onValueChange={handleUserChange}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue
+                    render={(value) => {
+                      if (!value || value === "all") return <span>전체</span>;
+                      const u = users.find(u => String(u.id) === value);
+                      if (u) return <span>{u.name} ({u.email})</span>;
+                      return <span>{value}</span>;
+                    }}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">
@@ -238,7 +258,13 @@ export default function FolderSection({
               }
             >
               <SelectTrigger className="w-full">
-                <SelectValue />
+                <SelectValue
+                  render={(value) => {
+                    if (!value || value === ALL_FOLDERS_VALUE) return <span className="italic text-muted-foreground">전체</span>;
+                    if (value === DEFAULT_FOLDER_LABEL) return <span className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</span>;
+                    return <span>{value}</span>;
+                  }}
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_FOLDERS_VALUE}>
@@ -276,60 +302,49 @@ export default function FolderSection({
             </Select>
           </div>
 
-          {/* 새 폴더 추가 + 폴더명 수정 */}
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2">
-              <Input
-                placeholder="새 폴더명"
-                value={newFolderName}
-                onChange={(e) => {
-                  setNewFolderName(e.target.value);
-                  setError(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleAddFolder();
-                }}
-                className="h-8 text-sm"
-              />
-              <Button
-                size="sm"
-                onClick={handleAddFolder}
-                disabled={!newFolderName.trim()}
-                className="h-8 shrink-0"
-              >
-                <FolderPlus className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-
-            {/* 폴더명 수정 */}
+          {/* 폴더 추가 + 수정 */}
+          <div className="flex gap-2">
+            <Input
+              placeholder="새 폴더명"
+              value={newFolderName}
+              onChange={(e) => {
+                setNewFolderName(e.target.value);
+                setError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (renameTarget) {
+                    handleRenameFolder();
+                  } else {
+                    handleAddFolder();
+                  }
+                }
+              }}
+              className="h-8 text-sm"
+            />
+            <Button
+              size="sm"
+              onClick={handleAddFolder}
+              disabled={!newFolderName.trim()}
+              className="h-8 shrink-0"
+            >
+              <FolderPlus className="h-3.5 w-3.5" />
+            </Button>
             {selectedFolder &&
               selectedFolder !== ALL_FOLDERS_VALUE &&
               selectedFolder !== DEFAULT_FOLDER_LABEL && (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="새 폴더명"
-                    value={renameName}
-                    onChange={(e) => {
-                      setRenameName(e.target.value);
-                      setRenameTarget(selectedFolder);
-                      setError(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleRenameFolder();
-                    }}
-                    className="h-8 text-sm"
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleRenameFolder}
-                    disabled={!renameName.trim() || renameTarget !== selectedFolder}
-                    className="h-8 shrink-0"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setRenameTarget(selectedFolder);
+                    setNewFolderName(selectedFolder); // 기존 폴더명 pre-fill
+                  }}
+                  className="h-8 shrink-0"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+            )}
           </div>
 
           {/* 폴더 이동 */}
@@ -339,14 +354,38 @@ export default function FolderSection({
                 <SelectValue placeholder="이동할 폴더 선택" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={DEFAULT_FOLDER_LABEL}>
-                  {DEFAULT_FOLDER_LABEL}
-                </SelectItem>
-                {folders.map((f) => (
-                  <SelectItem key={f} value={f}>
-                    {f}
-                  </SelectItem>
-                ))}
+                {isViewerAdmin && !selectedUserId ? (
+                  // 관리자 + 회원 "전체" → optgroup 표시
+                  <>
+                    <SelectItem value={DEFAULT_FOLDER_LABEL}>
+                      {DEFAULT_FOLDER_LABEL}
+                    </SelectItem>
+                    {folderGroups.map((group) => (
+                      <optgroup key={group.user_id} label={group.user_name}>
+                        <SelectItem value={DEFAULT_FOLDER_LABEL}>
+                          {DEFAULT_FOLDER_LABEL}
+                        </SelectItem>
+                        {group.folders.map((f) => (
+                          <SelectItem key={f} value={f}>
+                            {f}
+                          </SelectItem>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </>
+                ) : (
+                  // 특정 회원 or 일반 회원 → flat list
+                  <>
+                    <SelectItem value={DEFAULT_FOLDER_LABEL}>
+                      {DEFAULT_FOLDER_LABEL}
+                    </SelectItem>
+                    {folders.map((f) => (
+                      <SelectItem key={f} value={f}>
+                        {f}
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
             <div className="flex gap-2">
