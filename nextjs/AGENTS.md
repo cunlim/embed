@@ -78,6 +78,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 - URL을 state의 source of truth로 — `useSearchParams()` 변경 감지 → URL→state 단방향 싱크
 - `useCallback` 내 stale state 방지를 위해 ref로 최신값 읽기 (`searchLangRef`, `perPageRef` 등)
 - 컴포넌트 props 추가 시 `npx tsc --noEmit` 확인 (npm test는 모킹으로 타입 체크 우회)
+- **`getToken()`은 SSR 시 `null`** — `typeof document === "undefined"` 체크로 인해 서버에서 항상 `null`. client component 내 조건부 렌더링은 `token` 대신 `serverHadToken` prop 사용 (`!!(await cookies()).get("auth_token")?.value`).
 
 ## 인증 페이지 SSR 깜빡임 방지
 

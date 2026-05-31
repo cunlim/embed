@@ -34,6 +34,11 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **Resource collection에 전달되는 각 항목은 객체여야 한다** — 연관 배열 전달 시 `Attempt to read property on array` 에러 발생
 - **PHP 변경 완료 전** 반드시 `vendor/bin/pint --format agent` 실행
 
+### Form Request boolean 유효성 검증
+
+- **`boolean` rule은 `"true"`/`"false"` 문자열 불허** — `true`, `false`, `1`, `0`, `"1"`, `"0"`만 허용. 프론트엔드에서 `String(moveToDefault)`로 `"true"`/`"false"` 전송 시 유효성 실패. **해결**: `params.set(key, bool ? "1" : "0")` 사용.
+- **`$request->boolean()`은 `"true"`/`"false"`도 허용** — `filter_var($val, FILTER_VALIDATE_BOOL)` 사용. FormRequest 검증을 통과한 후의 값 변환만 담당하므로, 유효성 실패 자체를 막을 수는 없음.
+
 ### L5-Swagger OA 어노테이션
 
 - `OA\JsonContent`에 `type: 'object'` 명시 필수

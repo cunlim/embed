@@ -54,6 +54,9 @@
 - **신규 디렉토리** — 호스트·컨테이너 한쪽만 생성 시 자동 반영 안 됨. 양쪽 `mkdir -p`.
 - **Subagent-Driven 동일 파일 작업** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합.
 - **함수 시그니처 변경 시 테스트 기대값 업데이트** — `getCategories()`, `recommend()` 등에 파라미터 추가 시 mock 기대값에도 해당 인자 추가 필요. `run-all-checks.sh`로 확인.
+- **SSR 조건부 렌더링** — client component 내 `getToken()`은 SSR 시 `null` 반환 (`typeof document === "undefined"`). 인증 기반 렌더링 분기는 `serverHadToken` prop 사용. `token && <Component>` 대신 `serverHadToken && <Component>`.
+- **Laravel `boolean` 유효성 검증** — `"true"`/`"false"` 문자열은 통과하지 않음 (`"1"`/`"0"`만 허용). 쿼리 파라미터로 boolean 전달 시 `params.set(key, bool ? "1" : "0")` 사용.
+- **폴더 플레이스홀더** — 폴더 생성 시 `category_name_ko = '__folder_placeholder__'` 더미 카테고리로 존재 표시. 모든 카테고리 조회 쿼리에서 `where('category_name_ko', '!=', '__folder_placeholder__')` 필터링 필수.
 
 ## 유틸리티
 
