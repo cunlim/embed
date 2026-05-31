@@ -121,7 +121,7 @@ export default function FolderDeleteModal({
           </Button>
           <Button
             variant="destructive"
-            onClick={() => onConfirm(moveToDefault)}
+            onClick={() => onConfirm(hasCategories ? moveToDefault : true)}
           >
             삭제
           </Button>
