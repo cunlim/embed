@@ -452,8 +452,8 @@ export function moveCategoriesToFolder(
   categoryIds: number[],
   targetFolder: string | null,
   token?: string | null,
-): Promise<{ message: string; moved: number }> {
-  return request<{ message: string; moved: number }>("/categories/move-folder", {
+): Promise<{ message: string; moved: number; failed: number }> {
+  return request<{ message: string; moved: number; failed: number }>("/categories/move-folder", {
     method: "POST",
     body: { category_ids: categoryIds, target_folder: targetFolder },
     token,

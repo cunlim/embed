@@ -237,19 +237,56 @@ class FolderController extends Controller
 
         // 권한 확인: 본인 소유 또는 admin만
         $categories = Category::whereIn('id', $categoryIds)->get();
-        $allowedIds = $categories->filter(function ($cat) use ($user) {
+        $allowed = $categories->filter(function ($cat) use ($user) {
             return $user->isAdmin() || $cat->user_id === $user->id;
-        })->pluck('id')->toArray();
+        });
 
-        if (empty($allowedIds)) {
+        if ($allowed->isEmpty()) {
             return response()->json(['message' => '이동 가능한 카테고리가 없습니다.'], 400);
         }
 
-        Category::whereIn('id', $allowedIds)->update(['folder' => $targetFolder]);
+        // 타겟 폴더에 동일 (category_code, user_id) 중복이 있는지 미리 확인
+        // (이동 대상 자신은 제외 — 이미 같은 폴더에 있는 경우 no-op)
+        $allowedIds = $allowed->pluck('id')->toArray();
+        $allowedCodes = $allowed->pluck('category_code')->unique()->toArray();
+        $allowedUserIds = $allowed->pluck('user_id')->unique()->toArray();
+
+        $existingInTarget = Category::where('folder', $targetFolder)
+            ->whereIn('category_code', $allowedCodes)
+            ->whereIn('user_id', $allowedUserIds)
+            ->whereNotIn('id', $allowedIds)
+            ->select('category_code', 'user_id')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return [$item->category_code.'_'.$item->user_id => true];
+            });
+
+        $safeIds = [];
+        $skipped = 0;
+
+        foreach ($allowed as $cat) {
+            $key = $cat->category_code.'_'.$cat->user_id;
+            if (isset($existingInTarget[$key])) {
+                $skipped++;
+            } else {
+                $safeIds[] = $cat->id;
+            }
+        }
+
+        if (! empty($safeIds)) {
+            Category::whereIn('id', $safeIds)->update(['folder' => $targetFolder]);
+        }
+
+        $moved = count($safeIds);
+        $msg = "{$moved}개 이동 성공";
+        if ($skipped > 0) {
+            $msg .= ", {$skipped}개 실패 (중복)";
+        }
 
         return response()->json([
-            'message' => count($allowedIds).'개 카테고리를 이동했습니다.',
-            'moved' => count($allowedIds),
+            'message' => $msg,
+            'moved' => $moved,
+            'failed' => $skipped,
         ]);
     }
 }

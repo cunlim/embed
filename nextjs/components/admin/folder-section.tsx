@@ -197,8 +197,9 @@ export default function FolderSection({
     const target =
       resolvedFolder === DEFAULT_FOLDER_LABEL ? null : resolvedFolder || null;
     try {
-      await moveCategoriesToFolder(Array.from(selectedIds), target, token);
+      const result = await moveCategoriesToFolder(Array.from(selectedIds), target, token);
       setMoveTargetFolder("");
+      setError(result.failed > 0 ? result.message : null);
       await loadFolders();
       onFolderActionComplete();
     } catch (err) {
@@ -234,8 +235,9 @@ export default function FolderSection({
     const target =
       resolvedFolder === DEFAULT_FOLDER_LABEL ? null : resolvedFolder || null;
     try {
-      await moveCategoriesToFolder(allIds, target, token);
+      const result = await moveCategoriesToFolder(allIds, target, token);
       setMoveTargetFolder("");
+      setError(result.failed > 0 ? result.message : null);
       await loadFolders();
       onFolderActionComplete();
     } catch (err) {
@@ -517,7 +519,7 @@ export default function FolderSection({
                   size="sm"
                   variant="outline"
                   onClick={() => setMoveTargetFolder("")}
-                  className="h-9 w-9 shrink-0 p-0"
+                  className="h-8 w-8 shrink-0 p-0"
                   title="초기화"
                 >
                   <X className="h-3.5 w-3.5" />
