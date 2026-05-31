@@ -236,8 +236,10 @@ export default function FolderSection({
                   setSelectedUserId(uid);
                   if (prefix === "all") {
                     onFolderChange(null, uid);
-                  } else {
+                  } else if (prefix === DEFAULT_FOLDER_LABEL) {
                     onFolderChange(DEFAULT_FOLDER_LABEL, uid);
+                  } else {
+                    onFolderChange(prefix, uid);
                   }
                   return;
                 }
