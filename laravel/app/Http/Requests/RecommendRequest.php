@@ -21,7 +21,7 @@ class RecommendRequest extends FormRequest
             'target_language' => ['required', 'string', 'in:ko,zh,en'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'filter' => ['nullable', 'string', 'in:my'],
+            'filter' => ['nullable', 'string', 'in:my,all'],
             'keyword' => ['nullable', 'string', 'max:500'],
             'folder' => ['nullable', 'string', 'max:100'],
         ];

@@ -23,7 +23,9 @@ class CategoryStoreRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('categories', 'category_code')->where('user_id', $this->user()?->id ?? 1),
+                Rule::unique('categories', 'category_code')
+                    ->where('user_id', $this->user()?->id ?? 1)
+                    ->where('folder', $this->input('folder') ?: null),
             ],
             'category_name_en' => ['nullable', 'string', 'max:255'],
             'category_name_zh' => ['nullable', 'string', 'max:255'],

@@ -20,10 +20,11 @@ class CategoryUpdateTextRequest extends FormRequest
             'value' => ['nullable', 'string', 'max:255'],
         ];
 
-        // category_code 업데이트 시 사용자별 유일성 검증
+        // category_code 업데이트 시 사용자+폴더별 유일성 검증
         if ($this->input('field') === 'category_code') {
             $rules['value'][] = Rule::unique('categories', 'category_code')
                 ->where('user_id', $this->user()?->id ?? 1)
+                ->where('folder', $this->input('folder') ?: null)
                 ->ignore($this->route('category')?->id);
         }
 

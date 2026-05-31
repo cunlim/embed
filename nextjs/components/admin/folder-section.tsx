@@ -124,7 +124,7 @@ export default function FolderSection({
     } catch (err) {
       setError(err instanceof Error ? err.message : "폴더 생성 실패");
     }
-  }, [newFolderName, token, folders, folderGroups, selectedUserId, loadFolders]);
+  }, [newFolderName, token, folders, folderGroups, selectedUserId, user, loadFolders]);
 
   // 폴더명 수정
   const handleRenameFolder = useCallback(async () => {
@@ -180,6 +180,7 @@ export default function FolderSection({
   // 선택 폴더 이동
   const handleMoveSelected = useCallback(async () => {
     if (!token || selectedIds.size === 0) return;
+    if (!window.confirm(`선택한 ${selectedIds.size}개 카테고리를 이동하시겠습니까?`)) return;
     let resolvedFolder = moveTargetFolder;
     if (resolvedFolder && resolvedFolder.includes(":")) {
       const [name] = resolvedFolder.split(":");
@@ -200,6 +201,7 @@ export default function FolderSection({
   // 전체 폴더 이동
   const handleMoveAll = useCallback(async () => {
     if (!token) return;
+    if (!window.confirm("현재 범위의 모든 카테고리를 이동하시겠습니까?")) return;
     let resolvedFolder = moveTargetFolder;
     if (resolvedFolder && resolvedFolder.includes(":")) {
       const [name] = resolvedFolder.split(":");
@@ -216,6 +218,14 @@ export default function FolderSection({
       setError(err instanceof Error ? err.message : "폴더 이동 실패");
     }
   }, [token, moveTargetFolder, loadFolders, onFolderActionComplete]);
+
+  // 현재 선택된 폴더는 이동 대상에서 제외
+  const disabledMoveTarget =
+    selectedFolder && selectedFolder !== ALL_FOLDERS_VALUE
+      ? isViewerAdmin && selectedUserId !== null
+        ? `${selectedFolder}:${selectedUserId}`
+        : selectedFolder
+      : null;
 
   return (
     <>
@@ -445,11 +455,11 @@ export default function FolderSection({
                     folderGroups.map((group, idx) => (
                       <SelectGroup key={group.user_id} className={idx > 0 ? "mt-1 pt-1 border-t border-border" : ""}>
                         <SelectLabel>{group.user_name} ({group.user_email})</SelectLabel>
-                        <SelectItem value={`${DEFAULT_FOLDER_LABEL}:${group.user_id}`} className="italic">
+                        <SelectItem value={`${DEFAULT_FOLDER_LABEL}:${group.user_id}`} className="italic" disabled={disabledMoveTarget === `${DEFAULT_FOLDER_LABEL}:${group.user_id}`}>
                           {DEFAULT_FOLDER_LABEL}
                         </SelectItem>
                         {group.folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
-                          <SelectItem key={f} value={`${f}:${group.user_id}`}>
+                          <SelectItem key={f} value={`${f}:${group.user_id}`} disabled={disabledMoveTarget === `${f}:${group.user_id}`}>
                             {f}
                           </SelectItem>
                         ))}
@@ -457,17 +467,17 @@ export default function FolderSection({
                     ))
                   ) : (
                     <>
-                      <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                      <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic" disabled={disabledMoveTarget === DEFAULT_FOLDER_LABEL}>{DEFAULT_FOLDER_LABEL}</SelectItem>
                       {folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
-                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                        <SelectItem key={f} value={f} disabled={disabledMoveTarget === f}>{f}</SelectItem>
                       ))}
                     </>
                   )
                 ) : (
                   <>
-                    <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                    <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic" disabled={disabledMoveTarget === DEFAULT_FOLDER_LABEL}>{DEFAULT_FOLDER_LABEL}</SelectItem>
                     {folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
-                      <SelectItem key={f} value={f}>{f}</SelectItem>
+                      <SelectItem key={f} value={f} disabled={disabledMoveTarget === f}>{f}</SelectItem>
                     ))}
                   </>
                 )}

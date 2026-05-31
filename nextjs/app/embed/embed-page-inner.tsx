@@ -232,11 +232,11 @@ export function EmbedPageInner({
 
   const handleAddCategory = useCallback(async () => {
     if (!newCategoryName.trim()) return;
-    await addCategory(newCategoryName.trim(), newCategoryCode.trim() || undefined);
+    await addCategory(newCategoryName.trim(), newCategoryCode.trim() || undefined, undefined, undefined, selectedFolder ?? undefined);
     setNewCategoryName("");
     setNewCategoryCode("");
     setHierarchyRefreshKey(prev => prev + 1);
-  }, [newCategoryName, newCategoryCode, addCategory]);
+  }, [newCategoryName, newCategoryCode, selectedFolder, addCategory]);
 
   // URL 업데이트 (현재 URL 보존 + 오버라이드만 적용)
   const updateURL = useCallback((overrides: {
