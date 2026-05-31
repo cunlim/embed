@@ -553,22 +553,18 @@ export function EmbedPageInner({
                 serverUsers={serverUsers}
                 onFolderChange={(folder) => {
                   setSelectedFolder(folder);
-                  // 필터/계층 초기화
-                  setFilterSelection(null);
+                  // 계층 필터만 초기화 (유사도 검색, 전체/내카테고리, 검색어는 유지)
                   setKeywordSearchActive(false);
                   setHierarchyKeyword("");
+                  keywordRef.current = "";
                   setHierarchyResetKey(prev => prev + 1);
-                  setSearchResults(null);
-                  setSearchMeta(null);
-                  setSearchError(null);
-                  setSearchText("");
-                  // page=1, per_page 유지
+                  // page=1
                   const params = new URLSearchParams();
                   if (folder) params.set("folder", folder);
                   if (perPage !== 20) params.set("per_page", String(perPage));
                   router.replace(`/embed${params.toString() ? "?" + params.toString() : ""}`, { scroll: false });
-                  // 카테고리 목록 리로드
-                  loadCategories(1, perPage, undefined, undefined, folder ?? undefined);
+                  // 폴더 범위로 카테고리 재로드 (기존 필터 유지)
+                  loadCategories(1, perPage, effectiveFilter, keywordRef.current, folder ?? undefined);
                 }}
                 onFolderActionComplete={() => {
                   // 폴더 이동 후 선택 해제
