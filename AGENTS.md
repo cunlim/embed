@@ -59,6 +59,7 @@
 - **폴더는 `folders` 테이블로 독립 관리** — `user_id` + `name` unique. `categories.folder` 컬럼은 문자열 참조로 유지. 더미 카테고리 방식 폐기.
 - **@base-ui/react SelectValue render** — `ReactElement` 반환 필수. 커스텀 render는 `Omit<..., "render">` + 어댑터 패턴 사용.
 - **Base UI Select 내 `<optgroup>` 사용 금지** — 네이티브 `<optgroup>`은 `<div>` 자식 불허로 hydration error. `SelectGroup` + `SelectLabel` 사용.
+- **Base UI Select `SelectGroup` 내 동일 value 충돌** — 여러 그룹이 같은 `value`(예: `"all"`)를 공유하면 모든 그룹의 해당 아이템이 동시 선택됨. `value={`all:${group.user_id}`}`처럼 composite value 사용 후 `onValueChange`에서 파싱.
 - **Playwright snapshot Select 확인** — Base UI Select는 combobox 내 `generic` 요소로 표시 텍스트를 렌더링. `textbox` 요소는 내부 value 저장용 (사용자 비노출).
 
 ## 유틸리티
