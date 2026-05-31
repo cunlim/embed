@@ -131,6 +131,9 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **`addCategory()` 에러 re-throw** — hook 내부에서 catch 후 `setError`만 호출하면 caller가 성공/실패를 구분할 수 없어 입력값이 항상 초기화됨. hook에서 `throw err`로 재전파 후 caller에서 try/catch로 감싸 성공 시에만 input 초기화.
 - **`resetToDefault` selectedIds 누락** — `resetToDefault()` 호출 시 필터·검색어·페이지뿐 아니라 `setSelectedIds(new Set())`으로 체크박스도 초기화 필수.
 - **SSR page.tsx 파라미터 전파 누락** — `embed-page-inner.tsx` prop 추가 시 SSR `page.tsx`의 prefetch 호출에도 동일 파라미터 전달 필요.
+- **커스텀 이벤트 다중 리스너 레이스 컨디션** — `resetEmbedPage` 등 동일 `CustomEvent`에 여러 컴포넌트가 리스닝 시 모든 핸들러가 동기 실행됨. 자식(FolderSection 등)의 핸들러는 부모 콜백(onFolderChange) 호출 금지, 로컬 UI 상태만 초기화. 부모 콜백은 stale closure로 올바른 `loadCategories`를 덮어씀.
+- **Flex 내 truncate는 `min-w-0` 필수** — flex 아이템 기본 `min-width: auto`가 `truncate` CSS를 무력화. `SelectTrigger` 등 flex 레이아웃 내 truncation 필요 시 부모 컨테이너에 `min-w-0` 추가.
+- **Playwright shadcn Select** — `browser_select_option`은 native `<select>` 전용. shadcn Select(role="combobox")는 `browser_run_code_unsafe` + `async (page) => {...}`로 조작. `window.fetch` monkey-patch로 API 호출 스택 추적 가능.
 
 ## 관련 문서
 

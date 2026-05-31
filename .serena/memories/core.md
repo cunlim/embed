@@ -30,3 +30,4 @@ AI 기반 다국어 카테고리 추천 시스템. 벡터 검색(pgvector)으로
 - Laravel `boolean` validation: `"true"`/`"false"` 불허 → `"1"`/`"0"` 사용
 - 폴더는 `folders` 테이블(`user_id`, `name` unique)로 독립 관리, `categories.folder`는 문자열 참조
 - Docker `docker exec`로 명령 실행, base64 방식으로 파일 전송
+- **커스텀 이벤트 패턴**: `CustomEvent` + `window.dispatchEvent`로 즉시 상태 리셋 가능하나, 다중 리스너 등록 시 모든 핸들러 동기 실행 주의. 자식은 로컬 상태만 초기화하고 부모 콜백 호출 금지.

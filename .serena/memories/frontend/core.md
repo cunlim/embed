@@ -29,3 +29,5 @@
 - **`addCategory()` 에러 re-throw**: hook 내부 catch 후 `throw err`로 재전파 → caller try/catch에서 성공 시에만 input 초기화. 미적용 시 에러 상황에서도 입력값이 초기화됨.
 - **폴더 이동**: 선택이동·전체이동 버튼은 `window.confirm()`으로 개수 고지. 전체이동은 `getCategories`로 현재 필터에 해당하는 개수를 먼저 조회 후 confirm에 표시. 이동할 폴더 Select는 현재 선택 폴더 disabled.
 - **폴더 Select 변경 → 이동할 폴더 초기화**: 폴더 Select의 `onValueChange`에서 새 선택값이 `moveTargetFolder`와 일치하면 `setMoveTargetFolder("")`로 초기화. disabled로 남는 문제 방지.
+- **커스텀 이벤트 리스너 레이스 컨디션**: 동일 `CustomEvent` 다중 리스너는 동기 실행. 자식 컴포넌트는 부모 콜백 호출 금지, 로컬 상태만 초기화. 부모가 유일한 데이터 재로드 주체.
+- **useCategories mutation reload 컨텍스트**: `addCategory()`·`deleteCategory()` 내부 GET reload 시 `currentFolder` 등 모든 ref 전달 필수. `loadCategories`가 ref 갱신, mutation 함수가 ref 소비.
