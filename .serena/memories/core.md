@@ -28,5 +28,5 @@ AI 기반 다국어 카테고리 추천 시스템. 벡터 검색(pgvector)으로
 
 - SSR 조건부 렌더링: `getToken()`은 서버에서 `null` → `serverHadToken` prop 사용
 - Laravel `boolean` validation: `"true"`/`"false"` 불허 → `"1"`/`"0"` 사용
-- 폴더 플레이스홀더: `__folder_placeholder__` → 모든 카테고리 쿼리에서 필터링
+- 폴더는 `folders` 테이블(`user_id`, `name` unique)로 독립 관리, `categories.folder`는 문자열 참조
 - Docker `docker exec`로 명령 실행, base64 방식으로 파일 전송

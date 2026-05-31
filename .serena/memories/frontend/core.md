@@ -24,4 +24,4 @@
 - CSS 트랜지션 사이드바: `h-0 overflow-hidden` + `whitespace-nowrap overflow-hidden` 패턴 사용
 - shadcn Sheet: `showCloseButton={false}` 커스텀 닫기 버튼 사용 시 필수
 - `router.replace` + `<Link>` 동일 URL 충돌 — `window.history.replaceState()` 사용
-- 폴더 플레이스홀더: `__folder_placeholder__` → 모든 카테고리 쿼리에서 필터링
+- `@base-ui/react` SelectValue: render prop으로 선택값 표시 커스터마이징 (`ReactElement` 반환 필수, `Omit` 타입 충돌 해소)

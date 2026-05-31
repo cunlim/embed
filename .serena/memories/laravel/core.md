@@ -12,7 +12,7 @@
 - **PHP 8 속성(Attribute)**: `$fillable`/`$hidden` 대신 `#[Fillable([...])]`, `#[Hidden([...])]`
 - **API 리소스**: `Resource::collection()`은 `{data: [...]}`, 단일은 `{data: {...}}` 래퍼 자동 적용. Resource collection 항목은 객체여야 함.
 - **`boolean` 유효성 검증**: `"true"`/`"false"` 문자열 불허 (true, false, 1, 0, "1", "0"만 허용). 쿼리 파라미터로 전달 시 `"1"`/`"0"` 사용.
-- **폴더 플레이스홀더**: 폴더 생성 시 `category_name_ko = '__folder_placeholder__'` 더미 카테고리로 존재 표시. 모든 카테고리 쿼리에서 `where('category_name_ko', '!=', '__folder_placeholder__')` 필터링.
+- **폴더는 `folders` 테이블로 독립 관리** — `user_id` + `name` unique. `categories.folder`는 문자열 참조로 유지. FolderController는 `Folder` 모델 사용.
 
 ## 테스트 환경
 
