@@ -2,7 +2,7 @@
 
 AI 기반 다국어 카테고리 추천 시스템. 벡터 검색(pgvector)으로 다국어 카테고리를 추천한다.
 
-> 상세 내용은 `mem:tech_stack`, 루트 `AGENTS.md` 참조.
+> 기술 스택 상세는 `composer.json`, `package.json`, `docker-compose.yml` 참조.
 
 ## 핵심 컨벤션
 

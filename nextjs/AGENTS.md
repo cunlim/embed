@@ -124,10 +124,11 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **`router.replace` + `<Link>` 동일 URL 충돌** — `router.replace("/embed")`와 `<Link href="/embed">`가 동시에 실행되면 URL이 변경되지 않음. 즉시 URL 변경이 필요하면 `router.replace` 대신 `window.history.replaceState()` 사용.
 - **useCallback + setState stale closure** — 이벤트 핸들러에서 setState 후 동기 호출되는 useCallback은 이전 render의 state를 캡처. 해결: useRef로 최신 값 추적 → 핸들러에서 ref 먼저 업데이트 → 콜백은 ref 읽고 의존성에서 state 제거.
 - **비동기 reload 전 `setState([])`로 stale guard** — 데이터 소스 변경(예: 회원 전환) 후 `loadData()` 호출 전에 `setData([])`로 즉시 초기화. 비동기 로드 완료 전 stale 데이터로 인한 false-positive 중복 체크 방지.
-- **폴더 삭제 후 onFolderActionComplete 호출 금지** — onFolderChange(null)이 이미 folder=undefined로 올바르게 카테고리 재로드. onFolderActionComplete는 state 변경 전 클로저의 stale selectedFolder로 중복 호출되어 빈 리스트 유발.
-- **폴더 Select·이동할 폴더 Select 스타일 동기화** — 두 Select는 `folder-section.tsx` 내 동일 optgroup 구조 공유. 한쪽 SelectValue render나 SelectItem 스타일 수정 시 다른 쪽도 동일하게 반영.
-- **`loadFolders()` userId 인자 전달 시 optgroup 소실** — 백엔드 `FolderController::index()`는 `user_id` 쿼리 파라미터 수신 시 `grouped` 데이터 미반환. admin optgroup 표시가 필요하면 `fetchFolders(token)`으로 userId 없이 호출.
-- **SSR page.tsx 파라미터 전파 누락** — `embed-page-inner.tsx`의 prop 추가 시 SSR `page.tsx`의 prefetch 호출(`getCategories`, `fetchCategoryLevels`, `recommend`)에도 동일 파라미터 전달 필요. 클라이언트 측만 수정하면 SSR prefetch 데이터는 이전 동작 유지.
+- **폴더 삭제 후 onFolderActionComplete 호출 금지** — onFolderChange(null)이 이미 folder=undefined로 올바르게 카테고리 재로드.
+- **폴더 Select** — 두 Select(메인·이동) 스타일 동기화. `loadFolders()`는 `grouped` 응답 위해 userId 없이 호출. 상세: 루트 `AGENTS.md` 및 `[[frontend/core]]`.
+- **폴더 이동** — 선택이동·전체이동 버튼은 `window.confirm()`으로 개수 고지. 이동할 폴더 Select는 현재 선택 폴더 disabled.
+- **`addCategory()` folder 전파** — `folder` 파라미터를 `useCategories.addCategory()` → `createCategory()` → API까지 전달 필수. 누락 시 기본폴더로 생성됨.
+- **SSR page.tsx 파라미터 전파 누락** — `embed-page-inner.tsx` prop 추가 시 SSR `page.tsx`의 prefetch 호출에도 동일 파라미터 전달 필요.
 
 ## 관련 문서
 

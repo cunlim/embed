@@ -36,52 +36,21 @@
 - **머지 후 worktree branch 삭제 실패** — `rm -rf .git/worktrees/<name>` 후 `git branch -D <branch>`.
 - **worktree agent 사용 전 stale worktree 정리** — `rm -rf .claude/worktrees/* && rm -rf .git/worktrees/* && git worktree prune`.
 
-## Docker
-
-- **base64 방식만 사용** — `docker exec cat > host`와 `docker cp`는 WSL2 바인드 마운트에서 0바이트 파일 생성.
-- **컨테이너 재시작 후 HMR 불통** — WebSocket 502. `browser.newContext()` 또는 Ctrl+Shift+R.
-- **컨테이너 파일 변경 후 HMR 미감지** — `.next/` 삭제 후 `docker compose stop` + `up -d`.
-- **Pint 바인드 마운트 파일 손상** — `/tmp/` 경유 방식 사용.
-
 ## 카테고리 접근 제어
 
 - **user scope 규칙** — `user_id=1`(공개), 비로그인: 본인+공개, 로그인: 본인+공개, admin: 전체. 모든 카테고리 조회 API(`levels()`, `recommend()` 등)에 동일 적용.
 
 ## 알려진 이슈
 
-- **Sub-agent 인터페이스 수정 시 중복 코드** — api.ts 등 interface에 필드 추가 시 agent가 이전 블록을 삭제하지 않고 새 블록을 중복 생성할 수 있음. `tsc --noEmit`은 통과해도 dev server parse error 발생. 수정 후 `grep`으로 중복 키 확인.
-- **Docker 바인드 마운트 불일치** — 호스트·컨테이너 간 파일 변경 즉시 반영 안 될 수 있음. 수정 후 `wc -l`로 양쪽 라인 수 비교.
-- **신규 디렉토리** — 호스트·컨테이너 한쪽만 생성 시 자동 반영 안 됨. 양쪽 `mkdir -p`.
-- **Subagent-Driven 동일 파일 작업** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합.
-- **API 필터 파라미터 추가 시 전파 체인** — `getCategories()` 등에 새 파라미터 추가 시 수정 필요한 모든 위치:
-  1. `api.ts`: 함수 시그니처 + query param
-  2. Hooks (`useCategories.ts`): 인터페이스 + 호출부
-  3. `embed-page-inner.tsx`: **모든** `loadCategories()` 호출부 (data-loading useEffect, onFolderChange, resetToDefault, handleKeywordSearch, modal callbacks 등). 한 곳만 수정하면 나머지는 이전 동작 유지.
-  4. SSR `page.tsx`: prefetch `getCategories()`, `fetchCategoryLevels()`, `recommend()` 호출부
-  5. `category-hierarchy.tsx`: 모든 `fetchCategoryLevels` 호출부 (refreshKey, resetKey, 페이지 복원 effect, handleLevelChange)
-  6. 백엔드 컨트롤러: `index()`, `levels()`, `recommend()` 등 **모든** 조회 메서드 — 하나만 수정하면 다른 API는 이전 동작 유지
-  7. 테스트 mock: `toHaveBeenCalledWith` 기대값에 새 인자 추가
-- **SSR 조건부 렌더링** — client component 내 `getToken()`은 SSR 시 `null` 반환 (`typeof document === "undefined"`). 인증 기반 렌더링 분기는 `serverHadToken` prop 사용. `token && <Component>` 대신 `serverHadToken && <Component>`.
-- **Laravel `boolean` 유효성 검증** — `"true"`/`"false"` 문자열은 통과하지 않음 (`"1"`/`"0"`만 허용). 쿼리 파라미터로 boolean 전달 시 `params.set(key, bool ? "1" : "0")` 사용.
-- **폴더는 `folders` 테이블로 독립 관리** — `user_id` + `name` unique. `categories.folder` 컬럼은 문자열 참조로 유지. 더미 카테고리 방식 폐기.
-- **@base-ui/react SelectValue render** — `ReactElement` 반환 필수. 커스텀 render는 `Omit<..., "render">` + 어댑터 패턴 사용.
-- **Base UI Select 내 `<optgroup>` 사용 금지** — 네이티브 `<optgroup>`은 `<div>` 자식 불허로 hydration error. `SelectGroup` + `SelectLabel` 사용.
-- **Base UI Select `SelectGroup` 내 동일 value 충돌** — 여러 그룹이 같은 `value`(예: `"all"`)를 공유하면 모든 그룹의 해당 아이템이 동시 선택됨. **모든 폴더 항목**에 `value={`폴더명:${group.user_id}`}` composite value 사용. `onValueChange`에서 `":"` 파싱 시 prefix=`"all"` → `folder=null`, prefix=`"기본폴더"` → `folder="기본폴더"`, 그 외 → `folder=prefix`로 분기.
-- **폴더 Select top-level 항목** — 관리자 폴더 Select에는 optgroup 위에 top-level "전체"(모든 회원, 모든 폴더)와 "기본폴더"(모든 회원, 폴더 미지정) 항목이 존재해야 함. optgroup 내 "전체"/"기본폴더"는 해당 회원만 범위로 함. **top-level 항목 선택 시 `setSelectedUserId(null)` + `selectedUserIdRef.current = null` 필수** — 누락 시 `selectedUserId`가 이전 값으로 남아 `value={selectedFolder + ":" + selectedUserId}`가 변경되지 않아 Select가 무반응.
-- **폴더명 중복 체크는 현재 회원 범위로** — `selectedUserId` 설정 시 `folderGroups.find(g => g.user_id === selectedUserId)?.folders`로 범위 제한.
-- **Playwright snapshot Select 확인** — Base UI Select는 combobox 내 `generic` 요소로 표시 텍스트를 렌더링. `textbox` 요소는 내부 value 저장용 (사용자 비노출).
-- **italic + text-muted-foreground = disabled처럼 보임** — "전체", "기본폴더" 등 특수 표시에는 italic만 사용. `text-muted-foreground` 병용 시 회색으로 비활성화된 것처럼 인지됨.
-- **폴더 Select 스타일 동기화** — `folder-section.tsx` 내 메인 폴더 Select와 "이동할 폴더" Select는 동일한 optgroup 구조·스타일 공유. 한쪽의 italic, 색상, truncation 등 스타일 수정 시 다른 쪽도 동일하게 수정.
-- **`loadFolders()` userId 필터 시 optgroup 소실** — 백엔드 `FolderController::index()`는 `user_id` 전달 시 `grouped` 미반환. admin optgroup 유지하려면 `fetchFolders(token)`으로 userId 없이 전체 조회.
-
-## 유틸리티
-
-- `scripts/cosine_similarity.py` — 두 임베딩 벡터 JSON 배열로 코사인 유사도 계산. `python scripts/cosine_similarity.py '[...]' '[...]'`
-
-## CI/CD
-
-- **릴리스**: `scripts/git_release.sh` (develop → main 머지 후 푸시)
-- **`.env`/`.env.local`**: gitignore, CI에서 `$LIVE_ROOT`로부터 복사
+- **Sub-agent 동일 파일 수정** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합. interface 필드 추가 시 agent가 이전 블록 미삭제 가능하므로 수정 후 `grep`으로 중복 키 확인.
+- **Docker 바인드 마운트 불일치** — 호스트·컨테이너 간 파일 변경 즉시 반영 안 될 수 있음. 수정 후 `wc -l`로 양쪽 확인. 신규 디렉토리는 양쪽 `mkdir -p`. Pint는 `/tmp/` 경유.
+- **API 필터 파라미터 전파 체인** — `getCategories()` 등에 새 파라미터 추가 시 frontend(api.ts → hooks → embed-page-inner.tsx → page.tsx → category-hierarchy.tsx), backend(모든 조회 컨트롤러), test mock 모두 수정 필요. 한 곳만 수정하면 나머지는 이전 동작 유지.
+- **SSR 조건부 렌더링** — `getToken()`은 SSR 시 `null`. 인증 기반 분기는 `serverHadToken` prop 사용.
+- **Laravel `boolean` 유효성 검증** — `"true"`/`"false"` 불허. 쿼리 파라미터는 `params.set(key, bool ? "1" : "0")` 사용.
+- **`category_code` unique 범위** — `(category_code, user_id, folder)`. `CategoryStoreRequest`·`CategoryUpdateTextRequest`에 folder scope 필수. `useCategories.addCategory()` → `createCategory()` → API까지 `folder` 파라미터 전파 필수. 누락 시 기본폴더(null)로 생성되어 중복 체크 오작동.
+- **`RecommendRequest` filter** — `in:my,all`로 `"all"`도 허용 필수. 프론트에서 "전체" 선택 후 유사도검색 시 `filter=all` 전송됨.
+- **폴더 Select** — composite value(`"폴더명:user_id"`), `SelectGroup`+`SelectLabel`(네이티브 `<optgroup>` 금지), italic만 사용(`text-muted-foreground` 병용 금지), 두 Select(메인·이동) 스타일 동기화. `loadFolders()`는 `grouped` 응답 위해 userId 없이 호출. 상세 구현은 `[[frontend/core]]`·`[[laravel/core]]` 참조.
+- **폴더 이동** — 선택이동·전체이동 버튼은 `window.confirm()`으로 개수 고지 후 실행. 이동할 폴더 Select는 현재 선택 폴더 disabled 처리.
 
 ## 하위 디렉토리
 

@@ -64,7 +64,8 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 
 - 번역/임베딩은 비동기 Job이 아닌 **동기 HTTP 컨트롤러**에서 실행. step 단위 처리 후 `translations` 필드 포함 응답.
 - `PUT /api/categories/{id}/update-text`는 텍스트 업데이트 후 해당 언어의 CategoryEmbedding을 **삭제**.
-- `category_code`: `(category_code, user_id)` 복합 unique. 같은 코드를 다른 사용자가各自 사용 가능. `filled()`로 체크 (`??`는 빈 문자열 통과)
+- `category_code`: `(category_code, user_id, folder)` 복합 unique. `CategoryStoreRequest`·`CategoryUpdateTextRequest` 모두 folder scope 포함 필수. `filled()`로 체크 (`??`는 빈 문자열 통과)
+- `RecommendRequest` filter: `in:my,all` — `"all"`도 허용 (프론트 "전체" 선택 + 유사도검색 시 `filter=all` 전송)
 
 ### 카테고리 검색 API
 

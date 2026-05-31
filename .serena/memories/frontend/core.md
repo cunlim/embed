@@ -24,5 +24,7 @@
 - CSS 트랜지션 사이드바: `h-0 overflow-hidden` + `whitespace-nowrap overflow-hidden` 패턴 사용
 - shadcn Sheet: `showCloseButton={false}` 커스텀 닫기 버튼 사용 시 필수
 - `router.replace` + `<Link>` 동일 URL 충돌 — `window.history.replaceState()` 사용
-- **폴더 Select**: composite value(`"폴더명:user_id"`), top-level "전체"/"기본폴더" + optgroup 구조, italic 특수 처리(`text-muted-foreground` 금지 — disabled처럼 보임), 긴 폴더명 JS truncation(10자+…), 두 Select 인스턴스(메인·이동할 폴더) 스타일 동기화 필수. `loadFolders()`는 backend grouped 응답을 위해 userId 필터 없이 호출. 상세: 루트 `AGENTS.md` "알려진 이슈" 폴더 항목들.
+- **폴더 Select**: composite value(`"폴더명:user_id"`), top-level "전체"/"기본폴더" + optgroup 구조. `loadFolders()`는 backend grouped 응답을 위해 userId 필터 없이 호출. 두 Select(메인·이동) 스타일 동기화 필수.
+- **폴더 이동**: 선택이동·전체이동 버튼은 `window.confirm()`으로 개수 고지 후 실행. 이동할 폴더 Select는 현재 선택 폴더 disabled 처리.
+- **`addCategory()` folder 전파**: `useCategories.addCategory()` → `createCategory()` → API 까지 `folder` 파라미터 전달 필수. 누락 시 기본폴더(null)로 생성되어 중복 체크 오작동.
 - useCallback 내 state는 setState 직후에도 이전 값 — ref로 최신값 추적, 의존성에서 state 제거
