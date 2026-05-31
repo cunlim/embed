@@ -285,31 +285,33 @@ export default function FolderSection({
               </SelectTrigger>
               <SelectContent>
                 {isViewerAdmin ? (
-                  folderGroups.length > 0 ? (
-                    folderGroups.map((group, idx) => (
-                      <SelectGroup key={group.user_id} className={idx > 0 ? "mt-1 pt-1 border-t border-border" : ""}>
-                        <SelectLabel>{group.user_name} ({group.user_email})</SelectLabel>
-                        <SelectItem value={`all:${group.user_id}`} className="italic text-muted-foreground truncate">전체</SelectItem>
-                        <SelectItem value={`${DEFAULT_FOLDER_LABEL}:${group.user_id}`} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
-                        {group.folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
-                          <SelectItem key={f} value={`${f}:${group.user_id}`} className="truncate">
-                            {f}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))
-                  ) : (
-                    // Fallback: folderGroups not loaded yet
-                    <>
-                      <SelectItem value={ALL_FOLDERS_VALUE} className="italic text-muted-foreground truncate">전체</SelectItem>
-                      <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
-                      {folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
+                  <>
+                    {/* top-level "전체" (모든 회원, 모든 폴더) */}
+                    <SelectItem value={ALL_FOLDERS_VALUE} className="italic text-muted-foreground truncate">전체</SelectItem>
+                    {/* top-level "기본폴더" (모든 회원, 폴더 미지정 카테고리) */}
+                    <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                    {folderGroups.length > 0 ? (
+                      folderGroups.map((group, idx) => (
+                        <SelectGroup key={group.user_id} className={idx > 0 ? "mt-1 pt-1 border-t border-border" : ""}>
+                          <SelectLabel>{group.user_name} ({group.user_email})</SelectLabel>
+                          <SelectItem value={`all:${group.user_id}`} className="italic text-muted-foreground truncate">전체</SelectItem>
+                          <SelectItem value={`${DEFAULT_FOLDER_LABEL}:${group.user_id}`} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                          {group.folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
+                            <SelectItem key={f} value={`${f}:${group.user_id}`} className="truncate">
+                              {f}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ))
+                    ) : (
+                      // Fallback: folderGroups not loaded yet — show folders flat
+                      folders.filter(f => f !== DEFAULT_FOLDER_LABEL).map((f) => (
                         <SelectItem key={f} value={f} className="truncate">
                           {f}
                         </SelectItem>
-                      ))}
-                    </>
-                  )
+                      ))
+                    )}
+                  </>
                 ) : (
                   // 일반 회원: flat list
                   <>
