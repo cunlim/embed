@@ -41,7 +41,7 @@ class FolderController extends Controller
                 // 전체 회원: grouped 데이터 함께 반환 (optgroup 용)
                 $grouped = Folder::query()
                     ->join('users', 'folders.user_id', '=', 'users.id')
-                    ->select('folders.name', 'folders.user_id', 'users.name as user_name')
+                    ->select('folders.name', 'folders.user_id', 'users.name as user_name', 'users.email as user_email')
                     ->orderBy('folders.user_id')
                     ->orderBy('folders.name')
                     ->get()
@@ -49,6 +49,7 @@ class FolderController extends Controller
                     ->map(fn ($items, $uid) => [
                         'user_id' => (int) $uid,
                         'user_name' => $items->first()->user_name ?? '알 수 없음',
+                        'user_email' => $items->first()->user_email ?? '',
                         'folders' => $items->pluck('name')->toArray(),
                     ])
                     ->values()
