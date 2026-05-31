@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FolderPlus, FolderMinus, ArrowRightLeft, Pencil } from "lucide-react";
+import { FolderPlus, FolderMinus, ArrowRightLeft, Pencil, Check, X } from "lucide-react";
 import {
   fetchFolders,
   createFolder,
@@ -208,6 +208,8 @@ export default function FolderSection({
       selectedUserIdRef.current = newUserId;
       setSelectedUserId(newUserId);
       onFolderChange(null);
+      // 이전 사용자의 folders로 인한 중복 체크 오탐 방지
+      setFolders([]);
       // 폴더 목록 재로드 (ref로 최신 userId 사용)
       loadFolders();
     },
@@ -320,7 +322,7 @@ export default function FolderSection({
           {/* 폴더 추가 + 수정 */}
           <div className="flex gap-2">
             <Input
-              placeholder="새 폴더명"
+              placeholder={renameTarget ? "폴더명 수정..." : "새 폴더명"}
               value={newFolderName}
               onChange={(e) => {
                 setNewFolderName(e.target.value);
@@ -337,28 +339,55 @@ export default function FolderSection({
               }}
               className="h-8 text-sm"
             />
-            <Button
-              size="sm"
-              onClick={handleAddFolder}
-              disabled={!newFolderName.trim()}
-              className="h-8 shrink-0"
-            >
-              <FolderPlus className="h-3.5 w-3.5" />
-            </Button>
-            {selectedFolder &&
-              selectedFolder !== ALL_FOLDERS_VALUE &&
-              selectedFolder !== DEFAULT_FOLDER_LABEL && (
+            {renameTarget ? (
+              <>
+                <Button
+                  size="sm"
+                  onClick={handleRenameFolder}
+                  disabled={!newFolderName.trim()}
+                  className="h-8 shrink-0"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    setRenameTarget(selectedFolder);
-                    setNewFolderName(selectedFolder); // 기존 폴더명 pre-fill
+                    setRenameTarget("");
+                    setNewFolderName("");
+                    setError(null);
                   }}
                   className="h-8 shrink-0"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <X className="h-3.5 w-3.5" />
                 </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  onClick={handleAddFolder}
+                  disabled={!newFolderName.trim()}
+                  className="h-8 shrink-0"
+                >
+                  <FolderPlus className="h-3.5 w-3.5" />
+                </Button>
+                {selectedFolder &&
+                  selectedFolder !== ALL_FOLDERS_VALUE &&
+                  selectedFolder !== DEFAULT_FOLDER_LABEL && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setRenameTarget(selectedFolder);
+                        setNewFolderName(selectedFolder);
+                      }}
+                      className="h-8 shrink-0"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                )}
+              </>
             )}
           </div>
 
