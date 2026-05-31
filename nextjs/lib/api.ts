@@ -412,6 +412,7 @@ export function updateSetting(
 export interface FolderGroup {
   user_id: number;
   user_name: string;
+  user_email: string;
   folders: string[];
 }
 
