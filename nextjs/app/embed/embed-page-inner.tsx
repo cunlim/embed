@@ -561,44 +561,6 @@ export function EmbedPageInner({
         <div className="grid gap-6 lg:grid-cols-3">
           {/* 사이드바 */}
           <div className="space-y-6">
-            {/* 폴더 */}
-            {serverHadToken && (
-              <FolderSection
-                token={token}
-                user={effectiveUser ?? null}
-                selectedFolder={selectedFolder}
-                selectedIds={selectedIds}
-                serverFolders={serverFolders}
-                serverUsers={serverUsers}
-                serverFolderGroups={serverFolderGroups}
-                initialUserId={selectedUserId}
-                onFolderChange={(folder, userId) => {
-                  setSelectedFolder(folder);
-                  if (userId !== undefined) {
-                    setSelectedUserId(userId);
-                  }
-                  // 계층 필터만 초기화 (유사도 검색, 전체/내카테고리, 검색어는 유지)
-                  setKeywordSearchActive(false);
-                  setHierarchyKeyword("");
-                  keywordRef.current = "";
-                  setHierarchyResetKey(prev => prev + 1);
-                  // page=1, folder + user_id URL 반영
-                  const params = new URLSearchParams();
-                  if (folder) params.set("folder", folder);
-                  if (userId) params.set("user_id", String(userId));
-                  if (perPage !== 20) params.set("per_page", String(perPage));
-                  router.replace(`/embed${params.toString() ? "?" + params.toString() : ""}`, { scroll: false });
-                  // 폴더 범위로 카테고리 재로드 (기존 필터 유지)
-                  loadCategories(1, perPage, effectiveFilter, keywordRef.current, folder ?? undefined);
-                }}
-                onFolderActionComplete={() => {
-                  // 폴더 이동 후 선택 해제
-                  setSelectedIds(new Set());
-                  loadCategories(page, perPage, effectiveFilter, keywordRef.current, selectedFolderRef.current ?? undefined);
-                }}
-              />
-            )}
-
             {/* 유사도 검색 */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -674,6 +636,44 @@ export function EmbedPageInner({
                 )}
               </CardContent>
             </Card>
+
+            {/* 폴더 */}
+            {serverHadToken && (
+              <FolderSection
+                token={token}
+                user={effectiveUser ?? null}
+                selectedFolder={selectedFolder}
+                selectedIds={selectedIds}
+                serverFolders={serverFolders}
+                serverUsers={serverUsers}
+                serverFolderGroups={serverFolderGroups}
+                initialUserId={selectedUserId}
+                onFolderChange={(folder, userId) => {
+                  setSelectedFolder(folder);
+                  if (userId !== undefined) {
+                    setSelectedUserId(userId);
+                  }
+                  // 계층 필터만 초기화 (유사도 검색, 전체/내카테고리, 검색어는 유지)
+                  setKeywordSearchActive(false);
+                  setHierarchyKeyword("");
+                  keywordRef.current = "";
+                  setHierarchyResetKey(prev => prev + 1);
+                  // page=1, folder + user_id URL 반영
+                  const params = new URLSearchParams();
+                  if (folder) params.set("folder", folder);
+                  if (userId) params.set("user_id", String(userId));
+                  if (perPage !== 20) params.set("per_page", String(perPage));
+                  router.replace(`/embed${params.toString() ? "?" + params.toString() : ""}`, { scroll: false });
+                  // 폴더 범위로 카테고리 재로드 (기존 필터 유지)
+                  loadCategories(1, perPage, effectiveFilter, keywordRef.current, folder ?? undefined);
+                }}
+                onFolderActionComplete={() => {
+                  // 폴더 이동 후 선택 해제
+                  setSelectedIds(new Set());
+                  loadCategories(page, perPage, effectiveFilter, keywordRef.current, selectedFolderRef.current ?? undefined);
+                }}
+              />
+            )}
 
             {/* 필터 */}
             <CategoryHierarchy

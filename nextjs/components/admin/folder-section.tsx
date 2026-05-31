@@ -107,7 +107,10 @@ export default function FolderSection({
       setError(`"${name}"은(는) 사용할 수 없는 이름입니다.`);
       return;
     }
-    if (folders.includes(name)) {
+    const currentUserFolders = selectedUserId
+      ? (folderGroups.find(g => g.user_id === selectedUserId)?.folders ?? [])
+      : folders;
+    if (currentUserFolders.includes(name)) {
       setError("이미 존재하는 폴더명입니다.");
       return;
     }
@@ -120,7 +123,7 @@ export default function FolderSection({
     } catch (err) {
       setError(err instanceof Error ? err.message : "폴더 생성 실패");
     }
-  }, [newFolderName, token, folders, selectedUserId, loadFolders]);
+  }, [newFolderName, token, folders, folderGroups, selectedUserId, loadFolders]);
 
   // 폴더명 수정
   const handleRenameFolder = useCallback(async () => {
@@ -250,6 +253,8 @@ export default function FolderSection({
                   return;
                 }
                 if (value === DEFAULT_FOLDER_LABEL) {
+                  selectedUserIdRef.current = null;
+                  setSelectedUserId(null);
                   onFolderChange(DEFAULT_FOLDER_LABEL, null);
                   return;
                 }
@@ -386,7 +391,6 @@ export default function FolderSection({
                   selectedFolder !== DEFAULT_FOLDER_LABEL && (
                     <Button
                       size="sm"
-                      variant="outline"
                       onClick={() => {
                         setRenameTarget(selectedFolder);
                         setNewFolderName(selectedFolder);
@@ -402,9 +406,33 @@ export default function FolderSection({
 
           {/* 폴더 이동 */}
           <div className="space-y-2">
+            <div className="flex gap-1">
+              <div className="flex-1">
             <Select value={moveTargetFolder} onValueChange={(v) => setMoveTargetFolder(v ?? "")}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="이동할 폴더 선택" />
+                <SelectValue
+                  render={(value) => {
+                    const v = String(value ?? "");
+                    if (!v) return <span className="italic text-muted-foreground truncate">이동할 폴더 선택</span>;
+                    if (v === DEFAULT_FOLDER_LABEL) return <span className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</span>;
+                    if (v.includes(":")) {
+                      const [prefix, uidStr] = v.split(":");
+                      const uid = Number(uidStr);
+                      const group = folderGroups.find(g => g.user_id === uid);
+                      const userName = group?.user_name ?? serverUsers?.find(u => u.id === uid)?.name ?? `#${uid}`;
+                      if (isViewerAdmin) {
+                        return <span className="truncate">{userName} / {prefix}</span>;
+                      }
+                      return <span className="truncate">{prefix}</span>;
+                    }
+                    if (isViewerAdmin && selectedUserId) {
+                      const group = folderGroups.find(g => g.user_id === selectedUserId);
+                      const userName = group?.user_name ?? "";
+                      return <span className="truncate">{userName} / {v}</span>;
+                    }
+                    return <span className="truncate">{v}</span>;
+                  }}
+                />
               </SelectTrigger>
               <SelectContent>
                 {isViewerAdmin ? (
@@ -440,6 +468,19 @@ export default function FolderSection({
                 )}
               </SelectContent>
             </Select>
+              </div>
+              {moveTargetFolder && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setMoveTargetFolder("")}
+                  className="h-9 w-9 shrink-0 p-0"
+                  title="초기화"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -470,8 +511,8 @@ export default function FolderSection({
               onClick={() => setDeleteModalOpen(true)}
               className="w-full h-8 text-xs"
             >
-              <FolderMinus className="h-3.5 w-3.5 mr-1" />
-              &ldquo;{selectedFolder}&rdquo; 삭제
+              <FolderMinus className="h-3.5 w-3.5 mr-1 shrink-0" />
+              <span className="truncate">&ldquo;{selectedFolder}&rdquo; 삭제</span>
             </Button>
           )}
 
