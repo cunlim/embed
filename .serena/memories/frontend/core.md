@@ -24,6 +24,5 @@
 - CSS 트랜지션 사이드바: `h-0 overflow-hidden` + `whitespace-nowrap overflow-hidden` 패턴 사용
 - shadcn Sheet: `showCloseButton={false}` 커스텀 닫기 버튼 사용 시 필수
 - `router.replace` + `<Link>` 동일 URL 충돌 — `window.history.replaceState()` 사용
-- `@base-ui/react` SelectValue: render prop으로 선택값 표시 커스터마이징 (`ReactElement` 반환 필수, `Omit` 타입 충돌 해소)
-- Base UI Select: `<optgroup>` 대신 `SelectGroup`+`SelectLabel` 사용 (네이티브 optgroup은 hydration error)
+- **Base UI Select composite value**: 모든 폴더 SelectItem은 `"폴더명:user_id"` composite value 사용. `onValueChange`에서 `split(":")` → prefix 분기(all/기본폴더/일반명). 관리자는 top-level "전체"/"기본폴더" + optgroup 구조.
 - useCallback 내 state는 setState 직후에도 이전 값 — ref로 최신값 추적, 의존성에서 state 제거
