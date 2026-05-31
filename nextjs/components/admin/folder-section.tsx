@@ -235,17 +235,17 @@ export default function FolderSection({
                 <SelectTrigger className="w-full">
                   <SelectValue
                     render={(value) => {
-                      if (!value || value === "all") return <span className="italic text-muted-foreground">전체</span>;
+                      if (!value || value === "all") return <span className="italic text-muted-foreground truncate">전체</span>;
                       const u = users.find(u => String(u.id) === value);
-                      if (u) return <span>{u.name} ({u.email})</span>;
-                      return <span>{String(value)}</span>;
+                      if (u) return <span className="truncate">{u.name} ({u.email})</span>;
+                      return <span className="truncate">{String(value)}</span>;
                     }}
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all" className="italic text-muted-foreground">전체</SelectItem>
+                  <SelectItem value="all" className="italic text-muted-foreground truncate">전체</SelectItem>
                   {users.map((u) => (
-                    <SelectItem key={u.id} value={String(u.id)}>
+                    <SelectItem key={u.id} value={String(u.id)} className="truncate">
                       {u.name} ({u.email})
                     </SelectItem>
                   ))}
@@ -259,37 +259,57 @@ export default function FolderSection({
             {showLabels && <Label className="text-xs">폴더</Label>}
             <Select
               value={selectedFolder ?? ALL_FOLDERS_VALUE}
-              onValueChange={(value) =>
-                onFolderChange(value === ALL_FOLDERS_VALUE ? null : value)
-              }
+              onValueChange={(value) => {
+                // composite value 파싱: "all:user_id" 또는 "기본폴더:user_id"
+                if (value && value.includes(":")) {
+                  const [prefix, userIdStr] = value.split(":");
+                  const uid = Number(userIdStr);
+                  selectedUserIdRef.current = uid;
+                  setSelectedUserId(uid);
+                  if (prefix === "all") {
+                    onFolderChange(null);
+                  } else {
+                    onFolderChange("기본폴더");
+                  }
+                  return;
+                }
+                onFolderChange(value === ALL_FOLDERS_VALUE ? null : value);
+              }}
             >
               <SelectTrigger className="w-full">
               <SelectValue
                   render={(value) => {
-                    if (!value || value === ALL_FOLDERS_VALUE) return <span className="italic text-muted-foreground">전체</span>;
-                    if (value === DEFAULT_FOLDER_LABEL) return <span className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</span>;
-                    return <span>{String(value)}</span>;
+                    const v = String(value ?? "");
+                    if (!v || v === ALL_FOLDERS_VALUE) return <span className="italic text-muted-foreground truncate">전체</span>;
+                    if (v === DEFAULT_FOLDER_LABEL) return <span className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</span>;
+                    // composite value: 접두사 제거 후 표시
+                    if (v.includes(":")) {
+                      const [prefix] = v.split(":");
+                      if (prefix === "all") return <span className="italic text-muted-foreground truncate">전체</span>;
+                      return <span className="truncate">{DEFAULT_FOLDER_LABEL}</span>;
+                    }
+                    return <span className="truncate">{v}</span>;
                   }}
                 />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_FOLDERS_VALUE} className="italic text-muted-foreground">전체</SelectItem>
-                <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                <SelectItem value={ALL_FOLDERS_VALUE} className="italic text-muted-foreground truncate">전체</SelectItem>
+                <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
                 {isViewerAdmin && !selectedUserId && folderGroups.length > 0
-                  ? folderGroups.map((group) => (
-                      <SelectGroup key={group.user_id}>
+                  ? folderGroups.map((group, idx) => (
+                      <SelectGroup key={group.user_id} className={idx > 0 ? "mt-1 pt-1 border-t border-border" : ""}>
                         <SelectLabel>{group.user_name}</SelectLabel>
-                        <SelectItem value="all" className="italic text-muted-foreground">전체</SelectItem>
-                        <SelectItem value={DEFAULT_FOLDER_LABEL} className="italic text-muted-foreground">{DEFAULT_FOLDER_LABEL}</SelectItem>
+                        <SelectItem value={`all:${group.user_id}`} className="italic text-muted-foreground truncate">전체</SelectItem>
+                        <SelectItem value={`${DEFAULT_FOLDER_LABEL}:${group.user_id}`} className="italic text-muted-foreground truncate">{DEFAULT_FOLDER_LABEL}</SelectItem>
                         {group.folders.map((f) => (
-                          <SelectItem key={f} value={f}>
+                          <SelectItem key={f} value={f} className="truncate">
                             {f}
                           </SelectItem>
                         ))}
                       </SelectGroup>
                     ))
                   : folders.map((f) => (
-                      <SelectItem key={f} value={f}>
+                      <SelectItem key={f} value={f} className="truncate">
                         {f}
                       </SelectItem>
                     ))}
