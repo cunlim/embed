@@ -58,8 +58,10 @@
 - **Hook 에러 re-throw** — hook 내부에서 에러 catch 후 `throw err`로 재전파 필수. 상세: `nextjs/AGENTS.md`.
 - **커스텀 이벤트 다중 리스너 레이스 컨디션** — 동일 `CustomEvent`에 여러 컴포넌트가 리스너를 등록하면 모든 핸들러가 동기 실행. 자식 컴포넌트의 이벤트 핸들러는 부모 콜백(onFolderChange 등)을 호출하지 말고 로컬 상태만 초기화. 부모가 유일한 데이터 재로드 주체여야 하며, 자식이 부모 콜백을 통해 `loadCategories`를 호출하면 stale closure로 올바른 데이터를 덮어씀.
 - **`useCategories` mutation reload 컨텍스트 완전성** — `addCategory()`·`deleteCategory()` 내부 reload(`getCategories`)는 `currentPage`·`currentPerPage`·`currentFilter`·`currentSearch`·`currentFolder` 모든 ref를 전달해야 함. `loadCategories`에서 ref 갱신 → mutation 함수에서 ref 소비 구조. 새 컨텍스트 파라미터 추가 시 ref 선언과 reload 호출 인자 양쪽 모두 업데이트.
-- **async batch 진행률 실시간 갱신** — 다수 API 순차 호출 시 진행률이 마지막에만 반영되는 이슈는 React 19가 `await` 경계를 넘어 상태 업데이트를 배칭하기 때문. 루프 내 `setProgress` 호출을 **모두** `flushSync(() => setProgress(...))`로 감싸야 함. **Phase 1 폐지**: 확인 단계를 `POST /api/categories/batch-status` 단일 호출로 대체. `steps[]` 파라미터로 사용자 선택 checkbox를 전달, 서버에서 missing_steps를 교집합+의존성 필터링하여 반환. progress bar는 run-step 실행만 100%로 표시. 상세: `nextjs/AGENTS.md`·`laravel/AGENTS.md`·`task-execution.tsx`.
+- **async batch flushSync 패턴** — `nextjs/AGENTS.md` 알려진 이슈 참조.
 - **`no_preview` 파라미터 패턴** — 동일 API 엔드포인트를 여러 소비자가 사용할 때 무거운 필드(임베딩 벡터 등)를 쿼리 파라미터로 제어. `?no_preview=true` 시 preview 제외 → 배치 작업 시 응답 크기 절약. `CategoryTranslationsResource`·`fetchCategoryTranslations()` 참조.
+- **batch `onComplete`·`onCategoryComplete` 콜백 패턴** — `onComplete`는 `filterRef.current`로 현재 필터를 읽고 `loadCategories(1, ...)` + `updateURL({ page: 1 })`로 URL 동기화. `onCategoryComplete`는 루프 중 `loadCategories` 호출 금지 — page 불일치로 URL의 page=N이 API 요청에 붙는 버그 유발. `CategoryDelete`도 동일 패턴. 상세: `nextjs/AGENTS.md`.
+- **progress step 기반 표시** — `BatchProgress` interface에 `initialTotalSteps` 필드 추가. 큐 구성 시 저장, `queueEmpty` 시에도 보존. progress 오른쪽 `[N/M]`은 카테고리 수가 아닌 step 수 기준.
 
 ## 하위 디렉토리
 
