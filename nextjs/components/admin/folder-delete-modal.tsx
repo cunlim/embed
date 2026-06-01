@@ -83,9 +83,14 @@ export default function FolderDeleteModal({
               이 폴더에는 {categoryCount}개의 카테고리가 있습니다.
             </p>
             {duplicateCount > 0 && (
-              <p className="text-sm text-destructive">
-                기본폴더에 이미 {duplicateCount}개의 동일한 카테고리({duplicateCodes.slice(0, 3).join(", ")}{duplicateCodes.length > 3 ? "..." : ""})가 존재하여 기본폴더로 이동할 수 없습니다.
-              </p>
+              <div className="text-sm text-destructive">
+                <p>
+                  기본폴더에 이미 {duplicateCount}개의 동일한 카테고리가 존재하여 기본폴더로 이동할 수 없습니다.
+                </p>
+                <p className="truncate max-w-full mt-1" title={duplicateCodes.join(", ")}>
+                  ({duplicateCodes.slice(0, 3).join(", ")}{duplicateCodes.length > 3 ? ", ..." : ""})
+                </p>
+              </div>
             )}
             <button
               type="button"

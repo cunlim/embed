@@ -159,13 +159,15 @@ export default function FolderSection({
       if (selectedFolder === renameTarget) {
         onFolderChange(newFolderName.trim());
       }
-      onFolderActionComplete();
+      // onFolderActionComplete() 호출 금지 — onFolderChange가 이미 올바른 새 폴더명으로
+      // loadCategories를 트리거함. 여기서 호출하면 selectedFolderRef.current가 아직
+      // 갱신되지 않아(stale closure) 옛 폴더명으로 조회하여 빈 결과로 덮어쓰는 레이스 컨디션 발생.
     } catch (err) {
       const msg = err instanceof Error ? err.message : "폴더명 수정 실패";
       setError(msg);
       toast.error(msg);
     }
-  }, [token, renameTarget, newFolderName, selectedUserId, loadFolders, selectedFolder, onFolderChange, onFolderActionComplete]);
+  }, [token, renameTarget, newFolderName, selectedUserId, loadFolders, selectedFolder, onFolderChange]);
 
   // 폴더 삭제
   const handleDeleteFolder = useCallback(
