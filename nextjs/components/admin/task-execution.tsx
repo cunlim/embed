@@ -40,6 +40,7 @@ interface BatchProgress {
   currentStepIndex: number;
   queueEmpty: boolean;
   phase: "process" | "done";
+  initialTotalSteps: number;
 }
 
 interface StepJob {
@@ -135,6 +136,7 @@ export default function TaskExecution({
             currentStepIndex: 0,
             queueEmpty: true,
             phase: "done",
+            initialTotalSteps: 0,
           });
         });
         setRunning(false);
@@ -169,6 +171,7 @@ export default function TaskExecution({
           currentStepIndex: 0,
           queueEmpty: false,
           phase: "process",
+          initialTotalSteps: queue.length,
         });
       });
 
@@ -400,9 +403,9 @@ export default function TaskExecution({
                   {progress.totalSteps}]
                 </span>
               )}
-              {progress.queueEmpty && (
+              {progress.queueEmpty && progress.initialTotalSteps > 0 && (
                 <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
-                  [{progress.totalCategories}/{progress.totalCategories}]
+                  [{progress.initialTotalSteps}/{progress.initialTotalSteps}]
                 </span>
               )}
             </div>

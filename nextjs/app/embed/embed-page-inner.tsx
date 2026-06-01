@@ -809,11 +809,13 @@ export function EmbedPageInner({
                   setSelectedIds(new Set());
                 }
                 const kw = keywordRef.current;
-                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
+                const ef = filterRef.current === "my" ? "my" : undefined;
+                loadCategories(1, perPage, ef, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
+                updateURL({ page: 1 });
               }}
               onCategoryComplete={() => {
-                const kw = keywordRef.current;
-                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
+                // 배치 루프 중에는 목록을 새로고침하지 않음
+                // (page 불일치 방지 — onComplete에서 최종 새로고침)
               }}
             />
 
@@ -839,12 +841,14 @@ export function EmbedPageInner({
               onComplete={() => {
                 setSelectedIds(new Set());
                 const kw = keywordRef.current;
-                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
+                const ef = filterRef.current === "my" ? "my" : undefined;
+                loadCategories(1, perPage, ef, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
+                updateURL({ page: 1 });
                 setHierarchyRefreshKey((prev) => prev + 1);
               }}
               onCategoryComplete={() => {
-                const kw = keywordRef.current;
-                loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
+                // 배치 루프 중에는 목록을 새로고침하지 않음
+                // (page 불일치 방지 — onComplete에서 최종 새로고침)
               }}
             />
           </div>
