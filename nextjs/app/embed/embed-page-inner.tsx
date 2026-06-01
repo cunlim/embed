@@ -459,12 +459,16 @@ export function EmbedPageInner({
     // 선택 상태 초기화
     setSelectedIds(new Set());
 
+    // 폴더 선택 초기화 (전체)
+    setSelectedFolder(null);
+    setSelectedUserId(null);
+
     // 계층 필터 완전 초기화
     setHierarchyResetKey((prev) => prev + 1);
     setHierarchyKeyword("");
 
-    // 카테고리 목록 리로드 (SSR 기본 필터 적용)
-    loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "", selectedFolder ?? undefined, selectedUserId ?? undefined);
+    // 카테고리 목록 리로드 (SSR 기본 필터 적용, 폴더 초기화)
+    loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "", undefined, undefined);
   }, [loadCategories]);
 
   // "기능시연" 클릭 시 커스텀 이벤트로 즉시 리셋
