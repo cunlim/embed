@@ -66,6 +66,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - `PUT /api/categories/{id}/update-text`는 텍스트 업데이트 후 해당 언어의 CategoryEmbedding을 **삭제**.
 - `category_code`: `(category_code, user_id, folder)` 복합 unique. `CategoryStoreRequest`·`CategoryUpdateTextRequest` 모두 folder scope 포함 필수. `filled()`로 체크 (`??`는 빈 문자열 통과)
 - `RecommendRequest` filter: `in:my,all` — `"all"`도 허용 (프론트 "전체" 선택 + 유사도검색 시 `filter=all` 전송)
+- **`POST /api/categories/batch-status`** — 배치 작업용 벌크 상태 확인. `ids[]`(선택처리) 또는 `filter`/`keyword`/`folder`(전체처리) + `steps[]`(checkbox 상태) 파라미터. 서버에서 `determineMissingSteps()`로 누락 step 계산 시 **세 가지 필터 적용**: ①`steps[]` 교집합(선택된 step만), ②이미 완료된 step 제외(`embedding !== null`), ③embedding 의존성(번역 텍스트 없고 해당 translation step도 미선택이면 embedding 제외). 응답: `{ total_selected, needs_processing, total_steps, categories: [{ id, category_name_ko, missing_steps }] }`.
 
 ### 카테고리 검색 API
 
