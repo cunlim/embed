@@ -36,4 +36,5 @@
 - **`onFolderChange` URL 보존**: 폴더 변경 시 `updateURL({ folder, userId, page: 1 })` 사용. 수동 `URLSearchParams` 생성 시 `filter` 등 기존 파라미터 소실됨.
 - **`resetToDefault` 폴더 초기화**: `resetToDefault()`에서 `setSelectedFolder(null)`, `setSelectedUserId(null)` 필수. 미적용 시 폴더 select가 stale 값 표시. `loadCategories()` 호출 인자도 `undefined`로 변경.
 - **useCategories mutation reload 컨텍스트**: `addCategory()`·`deleteCategory()` 내부 GET reload 시 `currentFolder` 등 모든 ref 전달 필수. `loadCategories`가 ref 갱신, mutation 함수가 ref 소비.
-- **async batch 진행률 `flushSync`**: React 19가 `await` 경계를 넘어 상태 업데이트를 배칭하여 진행률이 실시간 갱신되지 않을 때, `import { flushSync } from "react-dom"`으로 `flushSync(() => setProgress(...))`를 `await` 직전에 호출하여 강제 렌더링. Phase 1(수집)→Phase 2(실행) 분할 + progress bar 0-50%/50-100% 분할 표시.
+- **async batch 진행률 `flushSync`**: React 19가 `await` 경계를 넘어 상태 업데이트를 배칭하여 진행률이 실시간 갱신되지 않을 때, `import { flushSync } from "react-dom"`으로 **루프 내 모든 `setProgress` 호출**을 `flushSync(() => setProgress(...))`로 감싸야 함. 일부만 감싸면 감싸지 않은 업데이트는 batching되어 렌더 누락. Phase 1(수집)→Phase 2(실행) 분할 + progress bar 0-50%/50-100% 분할 표시. **빈 카테고리 보정**: 확인만으로 완료된 카테고리는 Phase 1에서 전체 할당 즉시 부여 → Phase 2에서 갑자기 튀는 현상 방지.
+- **`fetchCategoryTranslations` `noPreview` 옵션**: `noPreview: true` → `?no_preview=true`로 임베딩 벡터 제외. 배치 확인용 호출에서 응답 크기 절약.
