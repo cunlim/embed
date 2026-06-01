@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Square } from "lucide-react";
+import { toast } from "sonner";
 import {
   runStep,
   getCategories,
@@ -158,6 +159,7 @@ export default function TaskExecution({
         setStopping(false);
         setRunning(false);
         setWasStopped(true);
+        toast.warning("처리가 중지되었습니다");
         onComplete(true);
         return;
       }
@@ -176,6 +178,7 @@ export default function TaskExecution({
         );
         setStopping(false);
         setRunning(false);
+        toast("모든 카테고리가 이미 처리되었습니다");
         onComplete(false);
         return;
       }
@@ -276,11 +279,17 @@ export default function TaskExecution({
         setStopping(false);
         setRunning(false);
         setWasStopped(true);
+        toast.warning(`처리 중지: ${completedCategories}개 완료, ${failedCategories}개 실패`);
         onComplete(true);
         return;
       }
 
       setRunning(false);
+      if (failedCategories > 0) {
+        toast.warning(`처리 완료: ${completedCategories}개 성공, ${failedCategories}개 실패`);
+      } else {
+        toast.success(`처리 완료: ${completedCategories}개 처리됨`);
+      }
       onComplete(false);
     },
     [token, onComplete, onCategoryComplete, checkedSteps],

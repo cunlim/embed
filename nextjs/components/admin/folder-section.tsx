@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FolderPlus, FolderMinus, ArrowRightLeft, Pencil, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import {
   fetchFolders,
   createFolder,
@@ -128,9 +129,12 @@ export default function FolderSection({
       await createFolder(name, token, selectedUserId);
       setNewFolderName("");
       setError(null);
+      toast(`"${name}" 폴더가 생성되었습니다`);
       await loadFolders();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "폴더 생성 실패");
+      const msg = err instanceof Error ? err.message : "폴더 생성 실패";
+      setError(msg);
+      toast.error(msg);
     }
   }, [newFolderName, token, folders, folderGroups, selectedUserId, user, loadFolders]);
 
@@ -150,13 +154,16 @@ export default function FolderSection({
       setRenameTarget("");
       setNewFolderName("");
       setError(null);
+      toast(`"${renameTarget}" → "${newFolderName.trim()}"으로 변경되었습니다`);
       await loadFolders();
       if (selectedFolder === renameTarget) {
         onFolderChange(newFolderName.trim());
       }
       onFolderActionComplete();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "폴더명 수정 실패");
+      const msg = err instanceof Error ? err.message : "폴더명 수정 실패";
+      setError(msg);
+      toast.error(msg);
     }
   }, [token, renameTarget, newFolderName, selectedUserId, loadFolders, selectedFolder, onFolderChange, onFolderActionComplete]);
 
@@ -168,12 +175,15 @@ export default function FolderSection({
       try {
         await deleteFolder(selectedFolder, token, selectedUserId, moveToDefault);
         setDeleteModalOpen(false);
+        toast(`"${selectedFolder}" 폴더가 삭제되었습니다`);
         // onFolderChange(null)에서 이미 카테고리를 올바른 folder=undefined로 재로드하므로
         // onFolderActionComplete 호출은 불필요하며 stale selectedFolder를 사용할 위험이 있음
         onFolderChange(null);
         await loadFolders();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "폴더 삭제 실패");
+        const msg = err instanceof Error ? err.message : "폴더 삭제 실패";
+        setError(msg);
+        toast.error(msg);
       }
     },
     [
@@ -200,10 +210,17 @@ export default function FolderSection({
       const result = await moveCategoriesToFolder(Array.from(selectedIds), target, token);
       setMoveTargetFolder("");
       setError(result.failed > 0 ? result.message : null);
+      if (result.failed > 0) {
+        toast.warning(result.message);
+      } else {
+        toast.success(result.message);
+      }
       await loadFolders();
       onFolderActionComplete();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "폴더 이동 실패");
+      const msg = err instanceof Error ? err.message : "폴더 이동 실패";
+      setError(msg);
+      toast.error(msg);
     }
   }, [token, selectedIds, moveTargetFolder, loadFolders, onFolderActionComplete]);
 
@@ -238,10 +255,17 @@ export default function FolderSection({
       const result = await moveCategoriesToFolder(allIds, target, token);
       setMoveTargetFolder("");
       setError(result.failed > 0 ? result.message : null);
+      if (result.failed > 0) {
+        toast.warning(result.message);
+      } else {
+        toast.success(result.message);
+      }
       await loadFolders();
       onFolderActionComplete();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "폴더 이동 실패");
+      const msg = err instanceof Error ? err.message : "폴더 이동 실패";
+      setError(msg);
+      toast.error(msg);
     }
   }, [token, moveTargetFolder, loadFolders, onFolderActionComplete, filter, keyword, currentFolder, currentUserId]);
 

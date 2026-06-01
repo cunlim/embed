@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Square, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   getCategories,
   deleteCategory,
@@ -102,11 +103,19 @@ export default function CategoryDelete({
         setStopping(false);
         setRunning(false);
         setWasStopped(true);
+        toast.warning(`삭제 중지: ${progress?.completed ?? 0}개 완료, ${progress?.failed ?? 0}개 실패`);
         onComplete();
         return;
       }
 
       setRunning(false);
+      const finalCompleted = progress?.completed ?? 0;
+      const finalFailed = progress?.failed ?? 0;
+      if (finalFailed > 0) {
+        toast.warning(`삭제 완료: ${finalCompleted}개 성공, ${finalFailed}개 실패`);
+      } else {
+        toast.success(`삭제 완료: ${finalCompleted}개 삭제됨`);
+      }
       onComplete();
     },
     [token, categories, onComplete, onCategoryComplete],

@@ -126,7 +126,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **비동기 reload 전 `setState([])`로 stale guard** — 데이터 소스 변경(예: 회원 전환) 후 `loadData()` 호출 전에 `setData([])`로 즉시 초기화. 비동기 로드 완료 전 stale 데이터로 인한 false-positive 중복 체크 방지.
 - **폴더 삭제 후 onFolderActionComplete 호출 금지** — onFolderChange(null)이 이미 folder=undefined로 올바르게 카테고리 재로드.
 - **폴더 Select** — 두 Select(메인·이동) 스타일 동기화. `loadFolders()`는 `grouped` 응답 위해 userId 없이 호출. 상세: 루트 `AGENTS.md` 및 `[[frontend/core]]`.
-- **폴더 이동** — 선택이동·전체이동 버튼은 `window.confirm()`으로 개수 고지. 이동할 폴더 Select는 현재 선택 폴더 disabled. API 응답 `{ moved, failed }`로 중복 실패 시에도 통계 표시 (`result.failed > 0` → `setError(result.message)`).
+- **Admin 사이드바 작업 피드백** — 모든 폴더·카테고리 작업(추가/수정/삭제/이동/처리)은 `sonner` `toast()`로 결과 통계 표시. 성공 `toast.success()`, 일부 실패 `toast.warning()`, 에러 `toast.error()`. inline `setError()`와 병행. 폴더 이동은 API 응답 `{ moved, failed, message }`를 그대로 toast에 전달.
 - **`addCategory()` folder 전파** — `folder` 파라미터를 `useCategories.addCategory()` → `createCategory()` → API까지 전달 필수. 누락 시 기본폴더로 생성됨.
 - **`addCategory()` 에러 re-throw** — hook 내부에서 catch 후 `setError`만 호출하면 caller가 성공/실패를 구분할 수 없어 입력값이 항상 초기화됨. hook에서 `throw err`로 재전파 후 caller에서 try/catch로 감싸 성공 시에만 input 초기화.
 - **`resetToDefault` selectedIds 누락** — `resetToDefault()` 호출 시 필터·검색어·페이지뿐 아니라 `setSelectedIds(new Set())`으로 체크박스도 초기화 필수.
