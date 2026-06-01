@@ -72,7 +72,12 @@ class CategoryController extends Controller
 
         $query = Category::query()->with('embeddings');
 
-        if ($request->input('filter') === 'my') {
+        // 관리자가 명시적 user_id를 전달한 경우 해당 사용자로 필터 (filter=my 무시)
+        $hasExplicitUserId = $request->filled('user_id') && $user && $user->isAdmin();
+
+        if ($hasExplicitUserId) {
+            $query->where('user_id', (int) $request->input('user_id'));
+        } elseif ($request->input('filter') === 'my') {
             if ($user) {
                 $query->where('user_id', $user->id);
             } else {
@@ -97,11 +102,6 @@ class CategoryController extends Controller
                 $q->where('category_name_ko', 'LIKE', '%'.$search.'%')
                     ->orWhere('category_code', 'LIKE', '%'.$search.'%');
             });
-        }
-
-        // user_id 필터 (관리자가 특정 회원의 폴더 선택 시)
-        if ($request->filled('user_id') && $user && $user->isAdmin()) {
-            $query->where('user_id', (int) $request->input('user_id'));
         }
 
         // folder 필터
@@ -338,7 +338,8 @@ class CategoryController extends Controller
             'category_name_en' => $request->input('category_name_en'),
             'category_name_zh' => $request->input('category_name_zh'),
             'user_id' => $request->user('sanctum')->id,
-            'folder' => $request->input('folder'),
+            // "기본폴더"는 폴더 미지정을 의미하므로 NULL로 저장
+            'folder' => $request->input('folder') === '기본폴더' ? null : $request->input('folder'),
         ]);
 
         return new CategoryResource($category);

@@ -252,6 +252,7 @@ export function EmbedPageInner({
     q?: string;
     folder?: string | null;
     userId?: number | null;
+    page?: number;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -291,7 +292,9 @@ export function EmbedPageInner({
       else params.delete("user_id");
     }
 
-    if (page > 1) params.set("page", String(page));
+    const effectivePage = overrides.page ?? page;
+    if (effectivePage > 1) params.set("page", String(effectivePage));
+    else params.delete("page");
     if (perPage !== 20) params.set("per_page", String(perPage));
 
     const qs = params.toString();
@@ -669,12 +672,8 @@ export function EmbedPageInner({
                   setHierarchyKeyword("");
                   keywordRef.current = "";
                   setHierarchyResetKey(prev => prev + 1);
-                  // page=1, folder + user_id URL 반영
-                  const params = new URLSearchParams();
-                  if (folder) params.set("folder", folder);
-                  if (userId) params.set("user_id", String(userId));
-                  if (perPage !== 20) params.set("per_page", String(perPage));
-                  router.replace(`/embed${params.toString() ? "?" + params.toString() : ""}`, { scroll: false });
+                  // page=1, folder + user_id URL 반영 (기존 filter 등 파라미터 보존)
+                  updateURL({ folder: folder ?? null, userId: userId ?? null, page: 1 });
                   // 폴더 범위로 카테고리 재로드 (기존 필터 유지)
                   loadCategories(1, perPage, effectiveFilter, keywordRef.current, folder ?? undefined, userId ?? undefined);
                 }}

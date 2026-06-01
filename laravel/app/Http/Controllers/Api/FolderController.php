@@ -227,7 +227,10 @@ class FolderController extends Controller
         /** @var User $user */
         $user = $request->user('sanctum');
         $categoryIds = $request->input('category_ids', []);
-        $targetFolder = $request->input('target_folder'); // null이면 기본폴더
+        // "기본폴더"는 폴더 미지정을 의미하므로 NULL로 처리
+        $targetFolder = $request->input('target_folder') === '기본폴더'
+            ? null
+            : $request->input('target_folder');
 
         // category_ids가 비어있으면 현재 사용자의 모든 카테고리 대상
         if (empty($categoryIds)) {

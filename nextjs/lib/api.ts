@@ -253,7 +253,8 @@ export function createCategory(
   if (categoryNameZh) {
     body.category_name_zh = categoryNameZh;
   }
-  if (folder) body.folder = folder;
+  // "기본폴더"는 폴더 미지정을 의미하므로 NULL로 저장
+  if (folder && folder !== "기본폴더") body.folder = folder;
   return request<{ data: Category }>("/categories", {
     method: "POST",
     body,
