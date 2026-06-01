@@ -44,12 +44,12 @@
 
 - **Sub-agent 동일 파일 수정** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합. interface 필드 추가 시 agent가 이전 블록 미삭제 가능하므로 수정 후 `grep`으로 중복 키 확인.
 - **Docker 바인드 마운트 불일치** — 호스트·컨테이너 간 파일 변경 즉시 반영 안 될 수 있음. 수정 후 `wc -l`로 양쪽 확인. 신규 디렉토리는 양쪽 `mkdir -p`. Pint는 `/tmp/` 경유.
-- **API 필터 파라미터 전파 체인** — `getCategories()` 등에 새 파라미터 추가 시 frontend(api.ts → hooks → embed-page-inner.tsx → page.tsx → category-hierarchy.tsx), backend(모든 조회 컨트롤러), test mock 모두 수정 필요. 한 곳만 수정하면 나머지는 이전 동작 유지.
+- **API 필터 파라미터 전파 체인** — 새 파라미터 추가 시 frontend(api.ts → hooks → embed-page-inner.tsx → page.tsx → category-hierarchy.tsx), backend(모든 조회 컨트롤러), test mock 모두 수정 필요. 생성 API(`createCategory`)도 동일 — `api.ts` → `useCategories.addCategory()` → `embed-page-inner.tsx` 핸들러 체인 + 백엔드 `store()`·`CategoryStoreRequest`까지 전파. hook interface 타입(`UseCategoriesReturn`)도 갱신 필수. 한 곳만 수정하면 나머지는 이전 동작 유지.
 - **SSR 조건부 렌더링** — `getToken()`은 SSR 시 `null`. 인증 기반 분기는 `serverHadToken` prop 사용.
 - **Laravel `boolean` 유효성 검증** — `"true"`/`"false"` 불허. 쿼리 파라미터는 `params.set(key, bool ? "1" : "0")` 사용.
 - **`category_code` unique 범위** — `(category_code, user_id, folder)`. `CategoryStoreRequest`·`CategoryUpdateTextRequest`에 folder scope 필수. `useCategories.addCategory()` → `createCategory()` → API까지 `folder` 파라미터 전파 필수. 누락 시 기본폴더(null)로 생성되어 중복 체크 오작동.
 - **`기본폴더` 정의** — `"기본폴더"`는 폴더가 설정되지 않았음을 의미. DB에서 `folder = NULL`로 저장. 프론트엔드 `api.ts`에서 `"기본폴더"` 전송 시 folder 파라미터 미전송으로 변환. 백엔드에서도 `store()`·`moveFolder()`에서 `"기본폴더"` → `null` 변환 (defense in depth). 조회 시 `folder=기본폴더` → `WHERE folder IS NULL`로 처리. 카테고리 생성 시 `"기본폴더"`를 리터럴 문자열로 저장하면 안 됨.
-- **admin `user_id` 우선 규칙** — 관리자가 URL에 `user_id`를 명시하여 특정 회원의 카테고리를 조회할 때 `filter=my`가 있어도 `user_id`를 우선 적용. `filter=my`는 로그인한 사용자 본인의 카테고리만 조회하므로, admin이 다른 회원을 조회할 때 충돌 발생. `CategoryController::index()`·`RecommendController::recommend()`에서 `user_id` 파라미터가 있으면 `filter=my` 무시.
+- **admin `user_id` 우선 규칙** — 조회·생성 모두 적용. **조회**: 관리자가 URL에 `user_id`를 명시하여 특정 회원의 카테고리를 조회할 때 `filter=my`가 있어도 `user_id`를 우선 적용. `CategoryController::index()`·`RecommendController::recommend()`에서 `user_id` 파라미터가 있으면 `filter=my` 무시. **생성**: 관리자가 특정 회원 폴더를 선택한 후 카테고리를 추가하면 해당 회원 소유로 생성. 프론트 `selectedUserId` → `addCategory(userId)` → `createCategory(userId)` → API body `user_id` 전파. 백엔드 `CategoryController::store()`에서 `isAdmin() && filled('user_id')`일 때 `targetUserId` 사용. `CategoryStoreRequest` unique 검증도 `targetUserId` 기준.
 - **`RecommendRequest` filter** — `in:my,all`로 `"all"`도 허용 필수. 프론트에서 "전체" 선택 후 유사도검색 시 `filter=all` 전송됨.
 - **`onFolderChange` URL 파라미터 보존** — 폴더 변경 시 `onFolderChange` 핸들러에서 URL을 수동 생성하면 기존 파라미터(`filter` 등)가 소실됨. `updateURL({ folder, userId, page: 1 })`을 사용하여 기존 파라미터를 보존해야 함. `updateURL()`은 `page` 오버라이드를 지원.
 - **폴더 Select** — composite value(`"폴더명:user_id"`), `SelectGroup`+`SelectLabel`, italic만 사용, 두 Select(메인·이동) 스타일 동기화. `loadFolders()`는 userId 없이 호출. 상세: `[[frontend/core]]`·`[[laravel/core]]`.
