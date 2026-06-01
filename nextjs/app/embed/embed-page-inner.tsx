@@ -233,14 +233,14 @@ export function EmbedPageInner({
   const handleAddCategory = useCallback(async () => {
     if (!newCategoryName.trim()) return;
     try {
-      await addCategory(newCategoryName.trim(), newCategoryCode.trim() || undefined, undefined, undefined, selectedFolder ?? undefined);
+      await addCategory(newCategoryName.trim(), newCategoryCode.trim() || undefined, undefined, undefined, selectedFolder ?? undefined, selectedUserId ?? undefined);
       setNewCategoryName("");
       setNewCategoryCode("");
       setHierarchyRefreshKey(prev => prev + 1);
     } catch {
       // 에러는 useCategories에서 이미 처리됨 (catError state)
     }
-  }, [newCategoryName, newCategoryCode, selectedFolder, addCategory]);
+  }, [newCategoryName, newCategoryCode, selectedFolder, selectedUserId, addCategory]);
 
   // URL 업데이트 (현재 URL 보존 + 오버라이드만 적용)
   const updateURL = useCallback((overrides: {

@@ -16,7 +16,7 @@ interface UseCategoriesReturn {
   isLoaded: boolean;
   error: string | null;
   loadCategories: (page?: number, perPage?: number, filter?: string, search?: string, folder?: string, userId?: number | null) => Promise<void>;
-  addCategory: (categoryNameKo: string, categoryCode?: string, categoryNameEn?: string, categoryNameZh?: string, folder?: string) => Promise<void>;
+  addCategory: (categoryNameKo: string, categoryCode?: string, categoryNameEn?: string, categoryNameZh?: string, folder?: string, userId?: number) => Promise<void>;
   updateCategoryStatus: (id: number, updates: Partial<Category>) => void;
   deleteCategory: (id: number) => Promise<void>;
 }
@@ -74,11 +74,11 @@ export function useCategories(
   }, [token]);
 
   const addCategory = useCallback(
-    async (categoryNameKo: string, categoryCode?: string, categoryNameEn?: string, categoryNameZh?: string, folder?: string) => {
+    async (categoryNameKo: string, categoryCode?: string, categoryNameEn?: string, categoryNameZh?: string, folder?: string, userId?: number) => {
       setIsLoading(true);
       setError(null);
       try {
-        await createCategory(categoryNameKo, token, categoryCode, categoryNameEn, categoryNameZh, folder);
+        await createCategory(categoryNameKo, token, categoryCode, categoryNameEn, categoryNameZh, folder, userId);
         const data = await getCategories(token, currentPage.current, currentPerPage.current, currentFilter.current, currentSearch.current, currentFolder.current);
         setCategories(data.data);
         setMeta(data.meta);

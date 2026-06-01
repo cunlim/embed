@@ -330,14 +330,20 @@ class CategoryController extends Controller
     )]
     public function store(CategoryStoreRequest $request): CategoryResource
     {
+        $user = $request->user('sanctum');
+        // admin이 특정 회원의 user_id를 지정한 경우 해당 회원 소유로 생성
+        $targetUserId = ($user->isAdmin() && $request->filled('user_id'))
+            ? (int) $request->input('user_id')
+            : $user->id;
+
         $category = Category::create([
             'category_code' => $request->filled('category_code')
                 ? $request->category_code
-                : Category::generateCode($request->user('sanctum')->id),
+                : Category::generateCode($targetUserId),
             'category_name_ko' => $request->category_name_ko,
             'category_name_en' => $request->input('category_name_en'),
             'category_name_zh' => $request->input('category_name_zh'),
-            'user_id' => $request->user('sanctum')->id,
+            'user_id' => $targetUserId,
             // "기본폴더"는 폴더 미지정을 의미하므로 NULL로 저장
             'folder' => $request->input('folder') === '기본폴더' ? null : $request->input('folder'),
         ]);

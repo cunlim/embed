@@ -242,6 +242,7 @@ export function createCategory(
   categoryNameEn?: string,
   categoryNameZh?: string,
   folder?: string,
+  userId?: number,
 ): Promise<{ data: Category }> {
   const body: Record<string, string> = { category_name_ko: categoryNameKo };
   if (categoryCode) {
@@ -255,6 +256,10 @@ export function createCategory(
   }
   // "기본폴더"는 폴더 미지정을 의미하므로 NULL로 저장
   if (folder && folder !== "기본폴더") body.folder = folder;
+  // admin이 특정 회원의 폴더를 선택한 경우 해당 회원의 user_id 전송
+  if (userId) {
+    body.user_id = String(userId);
+  }
   return request<{ data: Category }>("/categories", {
     method: "POST",
     body,
