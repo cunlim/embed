@@ -32,6 +32,8 @@ export default function FolderDeleteModal({
   const [moveToDefault, setMoveToDefault] = useState(true);
   const [hasCategories, setHasCategories] = useState<boolean | null>(null);
   const [categoryCount, setCategoryCount] = useState(0);
+  const [duplicateCount, setDuplicateCount] = useState(0);
+  const [duplicateCodes, setDuplicateCodes] = useState<string[]>([]);
   const prevOpenRef = useRef(open);
 
   // 모달이 열릴 때마다 카테고리 존재 여부 조회
@@ -39,10 +41,14 @@ export default function FolderDeleteModal({
     if (open && !prevOpenRef.current && token && folderName) {
       setHasCategories(null);
       setCategoryCount(0);
+      setDuplicateCount(0);
+      setDuplicateCodes([]);
       checkFolderHasCategories(folderName, token, userId)
         .then((res) => {
           setHasCategories(res.data.has_categories);
           setCategoryCount(res.data.count);
+          setDuplicateCount(res.data.duplicate_count ?? 0);
+          setDuplicateCodes(res.data.duplicate_codes ?? []);
         })
         .catch(() => {
           setHasCategories(true);
@@ -50,6 +56,14 @@ export default function FolderDeleteModal({
     }
     prevOpenRef.current = open;
   }, [open, folderName, token, userId]);
+
+  // 중복이 있을 때 "기본폴더로 이동"이 선택되어 있으면 "카테고리도 함께 삭제"로 전환
+  useEffect(() => {
+    if (duplicateCount > 0 && moveToDefault) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMoveToDefault(false);
+    }
+  }, [duplicateCount, moveToDefault]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -68,13 +82,21 @@ export default function FolderDeleteModal({
             <p className="text-sm text-muted-foreground">
               이 폴더에는 {categoryCount}개의 카테고리가 있습니다.
             </p>
+            {duplicateCount > 0 && (
+              <p className="text-sm text-destructive">
+                기본폴더에 이미 {duplicateCount}개의 동일한 카테고리({duplicateCodes.slice(0, 3).join(", ")}{duplicateCodes.length > 3 ? "..." : ""})가 존재하여 기본폴더로 이동할 수 없습니다.
+              </p>
+            )}
             <button
               type="button"
+              disabled={duplicateCount > 0}
               onClick={() => setMoveToDefault(true)}
               className={`flex items-center gap-2 w-full p-2 rounded-md border text-sm transition-colors ${
-                moveToDefault
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:bg-muted"
+                duplicateCount > 0
+                  ? "opacity-50 cursor-not-allowed"
+                  : moveToDefault
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:bg-muted"
               }`}
             >
               <span

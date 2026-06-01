@@ -176,6 +176,26 @@ class FolderController extends Controller
         $count = $catQuery->count();
 
         if ($moveToDefault && $count > 0) {
+            // 기본폴더 중복 체크
+            $duplicateCodes = Category::where('folder', $folderName)
+                ->where('user_id', $userId)
+                ->whereIn('category_code', function ($query) use ($userId) {
+                    $query->select('category_code')
+                        ->from('categories')
+                        ->whereNull('folder')
+                        ->where('user_id', $userId);
+                })
+                ->pluck('category_code')
+                ->toArray();
+
+            if (! empty($duplicateCodes)) {
+                return response()->json([
+                    'message' => '기본폴더에 동일한 카테고리 코드가 있어 이동할 수 없습니다. 중복된 항목을 먼저 처리해주세요.',
+                    'duplicate_count' => count($duplicateCodes),
+                    'duplicate_codes' => $duplicateCodes,
+                ], 409);
+            }
+
             $catQuery->update(['folder' => null]);
         } elseif (! $moveToDefault && $count > 0) {
             $catIds = $catQuery->pluck('id');
@@ -210,10 +230,24 @@ class FolderController extends Controller
             ->where('user_id', $userId)
             ->count();
 
+        // 중복 체크: 기본폴더(folder IS NULL)에 동일한 (category_code, user_id) 존재 여부
+        $duplicateCodes = Category::where('folder', $folderName)
+            ->where('user_id', $userId)
+            ->whereIn('category_code', function ($query) use ($userId) {
+                $query->select('category_code')
+                    ->from('categories')
+                    ->whereNull('folder')
+                    ->where('user_id', $userId);
+            })
+            ->pluck('category_code')
+            ->toArray();
+
         return response()->json([
             'data' => [
                 'has_categories' => $count > 0,
                 'count' => $count,
+                'duplicate_count' => count($duplicateCodes),
+                'duplicate_codes' => $duplicateCodes,
             ],
         ]);
     }

@@ -499,11 +499,11 @@ export function checkFolderHasCategories(
   folderName: string,
   token?: string | null,
   userId?: number | null,
-): Promise<{ data: { has_categories: boolean; count: number } }> {
+): Promise<{ data: { has_categories: boolean; count: number; duplicate_count: number; duplicate_codes: string[] } }> {
   const params = new URLSearchParams();
   if (userId) params.set("user_id", String(userId));
   const qs = params.toString();
-  return request<{ data: { has_categories: boolean; count: number } }>(
+  return request<{ data: { has_categories: boolean; count: number; duplicate_count: number; duplicate_codes: string[] } }>(
     `/folders/${encodeURIComponent(folderName)}/has-categories${qs ? "?" + qs : ""}`,
     { token },
   );

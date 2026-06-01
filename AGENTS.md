@@ -53,6 +53,7 @@
 - **`RecommendRequest` filter** — `in:my,all`로 `"all"`도 허용 필수. 프론트에서 "전체" 선택 후 유사도검색 시 `filter=all` 전송됨.
 - **`onFolderChange` URL 파라미터 보존** — 폴더 변경 시 `onFolderChange` 핸들러에서 URL을 수동 생성하면 기존 파라미터(`filter` 등)가 소실됨. `updateURL({ folder, userId, page: 1 })`을 사용하여 기존 파라미터를 보존해야 함. `updateURL()`은 `page` 오버라이드를 지원.
 - **폴더 Select** — composite value(`"폴더명:user_id"`), `SelectGroup`+`SelectLabel`. 상세: `nextjs/AGENTS.md`·`[[frontend/core]]`.
+- **폴더 삭제 중복 체크** — `destroy()`에서 `move_to_default=true` 시 기본폴더 중복 `(category_code, user_id)` 검사 → 409 거부. `hasCategories` API도 `duplicate_count`/`duplicate_codes` 반환 → 모달에서 radio disabled + 경고. 상세: `[[laravel/core]]`·`[[frontend/core]]`.
 - **폴더 이동** — `window.confirm()`으로 개수 고지. 이동할 폴더 Select는 현재 선택 폴더 disabled. 백엔드 `{moved, failed, message}` 응답 → 프론트 `toast()`로 통계 피드백. 상세: `nextjs/AGENTS.md`·`[[frontend/core]]`·`[[laravel/core]]`.
 - **Hook 에러 re-throw** — hook 내부에서 에러 catch 후 `throw err`로 재전파 필수. 상세: `nextjs/AGENTS.md`.
 - **커스텀 이벤트 다중 리스너 레이스 컨디션** — 동일 `CustomEvent`에 여러 컴포넌트가 리스너를 등록하면 모든 핸들러가 동기 실행. 자식 컴포넌트의 이벤트 핸들러는 부모 콜백(onFolderChange 등)을 호출하지 말고 로컬 상태만 초기화. 부모가 유일한 데이터 재로드 주체여야 하며, 자식이 부모 콜백을 통해 `loadCategories`를 호출하면 stale closure로 올바른 데이터를 덮어씀.
