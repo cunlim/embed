@@ -130,6 +130,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **`addCategory()` folder 전파** — `folder` 파라미터를 `useCategories.addCategory()` → `createCategory()` → API까지 전달 필수. 누락 시 기본폴더로 생성됨.
 - **`addCategory()` 에러 re-throw** — hook 내부에서 catch 후 `setError`만 호출하면 caller가 성공/실패를 구분할 수 없어 입력값이 항상 초기화됨. hook에서 `throw err`로 재전파 후 caller에서 try/catch로 감싸 성공 시에만 input 초기화.
 - **`resetToDefault` selectedIds 누락** — `resetToDefault()` 호출 시 필터·검색어·페이지뿐 아니라 `setSelectedIds(new Set())`으로 체크박스도 초기화 필수.
+- **`resetToDefault` 폴더 상태 누락** — `resetToDefault()`에서 `selectedFolder`·`selectedUserId`를 `null`로 초기화 필수. 미적용 시 폴더 select가 옵션에 없는 stale 값("테스트폴더" 등) 표시. `loadCategories()` 호출 시에도 folder·userId에 stale 값 대신 `undefined` 전달.
 - **SSR page.tsx 파라미터 전파 누락** — `embed-page-inner.tsx` prop 추가 시 SSR `page.tsx`의 prefetch 호출에도 동일 파라미터 전달 필요.
 - **커스텀 이벤트 다중 리스너 레이스 컨디션** — `resetEmbedPage` 등 동일 `CustomEvent`에 여러 컴포넌트가 리스닝 시 모든 핸들러가 동기 실행됨. 자식(FolderSection 등)의 핸들러는 부모 콜백(onFolderChange) 호출 금지, 로컬 UI 상태만 초기화. 부모 콜백은 stale closure로 올바른 `loadCategories`를 덮어씀.
 - **SelectTrigger 기본 height**: `data-[size=default]:h-8` (32px). 인접 버튼 height 불일치 방지 위해 `h-8`로 통일 (`h-9` 사용 시 4px 차이).
