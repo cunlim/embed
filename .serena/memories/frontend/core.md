@@ -28,8 +28,8 @@
 - **폴더 Select**: composite value(`"폴더명:user_id"`), top-level "전체"/"기본폴더" + optgroup 구조. `loadFolders()`는 backend grouped 응답을 위해 userId 필터 없이 호출. 두 Select(메인·이동) 스타일 동기화 필수.
 - **`addCategory()` folder·userId 전파**: `useCategories.addCategory()` → `createCategory()` → API 까지 `folder`·`userId` 파라미터 전달 필수. `folder` 누락 시 기본폴더(null)로 생성. `userId` 누락 시 admin이 다른 회원 폴더를 선택해도 본인 소유로 생성됨. hook interface 타입(`UseCategoriesReturn`)도 갱신 필수.
 - **`addCategory()` 에러 re-throw**: hook 내부 catch 후 `throw err`로 재전파 → caller try/catch에서 성공 시에만 input 초기화. 미적용 시 에러 상황에서도 입력값이 초기화됨.
-- **폴더 추가/수정/삭제**: `createFolder()` / `renameFolder()` / `deleteFolder()` → `toast()`로 성공/실패 피드백. `onFolderActionComplete()`는 데이터 재로드 전용.
-  - **삭제 모달 중복 체크**: `hasCategories` API로 `duplicate_count` 확인. 중복 시 "기본폴더로 이동" radio `disabled`+`opacity-50 cursor-not-allowed`, `text-destructive` 경고 (중복 코드 최대 3개 표시), "카테고리도 함께 삭제"로 자동 전환 (`useEffect` + `eslint-disable-next-line react-hooks/set-state-in-effect`). 백엔드 `destroy()`도 409 방어.
+- **폴더 추가/수정/삭제**: `createFolder()` / `renameFolder()` / `deleteFolder()` → `toast()`로 성공/실패 피드백. `onFolderActionComplete()`는 폴더 이동 후에만 호출. 삭제·수정(rename) 시에는 `onFolderChange`가 이미 올바른 폴더명으로 `loadCategories` 트리거하므로 `onFolderActionComplete` 호출 금지 (stale `selectedFolderRef`로 레이스 컨디션).
+  - **삭제 모달 중복 체크**: `hasCategories` API로 `duplicate_count` 확인. 중복 시 "기본폴더로 이동" radio `disabled`+`opacity-50 cursor-not-allowed`, `text-destructive` 경고 (중복 코드 별도 `<p>`에 `truncate` 표시, 3개 초과 시 `, ...`, `title` 툴팁으로 전체 목록 제공), "카테고리도 함께 삭제"로 자동 전환 (`useEffect` + `eslint-disable-next-line react-hooks/set-state-in-effect`). 백엔드 `destroy()`도 409 방어.
 - **폴더 이동**: `window.confirm()`으로 개수 고지. 이동할 폴더 Select는 현재 선택 폴더 disabled. API 응답 `{ moved, failed, message }` → `toast.success()` / `toast.warning()` / `toast.error()`로 피드백.
 - **폴더 Select 변경 → 이동할 폴더 초기화**: 폴더 Select의 `onValueChange`에서 새 선택값이 `moveTargetFolder`와 일치하면 `setMoveTargetFolder("")`로 초기화. disabled로 남는 문제 방지.
 - **커스텀 이벤트 리스너 레이스 컨디션**: 동일 `CustomEvent` 다중 리스너는 동기 실행. 자식 컴포넌트는 부모 콜백 호출 금지, 로컬 상태만 초기화. 부모가 유일한 데이터 재로드 주체.

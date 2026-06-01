@@ -124,7 +124,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **`router.replace` + `<Link>` 동일 URL 충돌** — `router.replace("/embed")`와 `<Link href="/embed">`가 동시에 실행되면 URL이 변경되지 않음. 즉시 URL 변경이 필요하면 `router.replace` 대신 `window.history.replaceState()` 사용.
 - **useCallback + setState stale closure** — 이벤트 핸들러에서 setState 후 동기 호출되는 useCallback은 이전 render의 state를 캡처. 해결: useRef로 최신 값 추적 → 핸들러에서 ref 먼저 업데이트 → 콜백은 ref 읽고 의존성에서 state 제거.
 - **비동기 reload 전 `setState([])`로 stale guard** — 데이터 소스 변경(예: 회원 전환) 후 `loadData()` 호출 전에 `setData([])`로 즉시 초기화. 비동기 로드 완료 전 stale 데이터로 인한 false-positive 중복 체크 방지.
-- **폴더 삭제 후 onFolderActionComplete 호출 금지** — onFolderChange(null)이 이미 folder=undefined로 올바르게 카테고리 재로드.
+- **`onFolderChange` 호출 후 `onFolderActionComplete` 호출 금지** — `onFolderChange`가 이미 올바른 폴더명으로 `loadCategories` 트리거. `onFolderActionComplete`는 `selectedFolderRef.current`를 사용하는데 `onFolderChange` 내 `setSelectedFolder`가 아직 render에 반영되지 않아 stale ref로 빈 결과를 덮어쓰는 레이스 컨디션 발생. 삭제·수정(rename) 모두 해당.
 - **폴더 Select** — 두 Select(메인·이동) 스타일 동기화. `loadFolders()`는 `grouped` 응답 위해 userId 없이 호출. 상세: 루트 `AGENTS.md` 및 `[[frontend/core]]`.
 - **Admin 사이드바 작업 피드백** — 모든 폴더·카테고리 작업(추가/수정/삭제/이동/처리)은 `sonner` `toast()`로 결과 통계 표시. 성공 `toast.success()`, 일부 실패 `toast.warning()`, 에러 `toast.error()`. inline `setError()`와 병행. 폴더 이동은 API 응답 `{ moved, failed, message }`를 그대로 toast에 전달.
 - **`addCategory()` folder 전파** — `folder` 파라미터를 `useCategories.addCategory()` → `createCategory()` → API까지 전달 필수. 누락 시 기본폴더로 생성됨.
@@ -132,7 +132,6 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **`resetToDefault` selectedIds 누락** — `resetToDefault()` 호출 시 필터·검색어·페이지뿐 아니라 `setSelectedIds(new Set())`으로 체크박스도 초기화 필수.
 - **`resetToDefault` 폴더 상태 누락** — `resetToDefault()`에서 `selectedFolder`·`selectedUserId`를 `null`로 초기화 필수. 미적용 시 폴더 select가 옵션에 없는 stale 값("테스트폴더" 등) 표시. `loadCategories()` 호출 시에도 folder·userId에 stale 값 대신 `undefined` 전달.
 - **SSR page.tsx 파라미터 전파 누락** — `embed-page-inner.tsx` prop 추가 시 SSR `page.tsx`의 prefetch 호출에도 동일 파라미터 전달 필요.
-- **커스텀 이벤트 다중 리스너 레이스 컨디션** — `resetEmbedPage` 등 동일 `CustomEvent`에 여러 컴포넌트가 리스닝 시 모든 핸들러가 동기 실행됨. 자식(FolderSection 등)의 핸들러는 부모 콜백(onFolderChange) 호출 금지, 로컬 UI 상태만 초기화. 부모 콜백은 stale closure로 올바른 `loadCategories`를 덮어씀.
 - **SelectTrigger 기본 height**: `data-[size=default]:h-8` (32px). 인접 버튼 height 불일치 방지 위해 `h-8`로 통일 (`h-9` 사용 시 4px 차이).
 - **Flex 내 truncate는 `min-w-0` 필수** — flex 아이템 기본 `min-width: auto`가 `truncate` CSS를 무력화. `SelectTrigger` 등 flex 레이아웃 내 truncation 필요 시 부모 컨테이너에 `min-w-0` 추가.
 - **Playwright shadcn Select** — `browser_select_option`은 native `<select>` 전용. shadcn Select(role="combobox")는 `browser_run_code_unsafe` + `async (page) => {...}`로 조작. `window.fetch` monkey-patch로 API 호출 스택 추적 가능.
