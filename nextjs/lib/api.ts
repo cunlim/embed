@@ -78,6 +78,36 @@ export function fetchCategoryTranslations(
   );
 }
 
+// --- 배치 작업 상태 확인 ---
+
+export interface BatchStatusCategory {
+  id: number;
+  category_name_ko: string;
+  missing_steps: StepName[];
+}
+
+export interface BatchStatusData {
+  total_selected: number;
+  needs_processing: number;
+  total_steps: number;
+  categories: BatchStatusCategory[];
+}
+
+export interface BatchStatusResponse {
+  data: BatchStatusData;
+}
+
+export async function fetchBatchStatus(
+  token: string,
+  params: { ids?: number[]; filter?: string; keyword?: string; folder?: string; steps?: StepName[] }
+): Promise<BatchStatusResponse> {
+  return request<BatchStatusResponse>("/categories/batch-status", {
+    method: "POST",
+    body: params,
+    token,
+  });
+}
+
 // --- 추천 ---
 
 export interface LanguageScore {

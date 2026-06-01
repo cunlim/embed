@@ -119,6 +119,158 @@ class CategoryController extends Controller
         );
     }
 
+    /**
+     * 배치 작업 실행용 벌크 상태 확인 API.
+     * ids[] 또는 filter/keyword/folder 파라미터로 카테고리를 조회하고,
+     * 각 카테고리의 누락 step을 계산하여 통계와 함께 반환합니다.
+     */
+    public function batchStatus(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = auth('sanctum')->user();
+
+        $query = Category::query()->with('embeddings');
+
+        // ids 모드 vs 필터 모드
+        if ($request->filled('ids')) {
+            $ids = $request->input('ids');
+            if (! is_array($ids)) {
+                return response()->json(['message' => 'ids는 배열이어야 합니다.'], 422);
+            }
+            $query->whereIn('id', array_map('intval', $ids));
+        }
+
+        // 사용자 필터 (index()와 동일 로직)
+        $hasExplicitUserId = $request->filled('user_id') && $user && $user->isAdmin();
+
+        if ($hasExplicitUserId) {
+            $query->where('user_id', (int) $request->input('user_id'));
+        } elseif ($request->input('filter') === 'my') {
+            if ($user) {
+                $query->where('user_id', $user->id);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        } else {
+            if ($user && $user->isAdmin()) {
+                // admin: 전체 조회
+            } elseif ($user) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id)->orWhere('user_id', 1);
+                });
+            } else {
+                $query->where('user_id', 1);
+            }
+        }
+
+        // 검색어 필터
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('category_name_ko', 'LIKE', '%'.$search.'%')
+                    ->orWhere('category_code', 'LIKE', '%'.$search.'%');
+            });
+        }
+
+        // 폴더 필터
+        if ($request->filled('folder')) {
+            $folder = $request->input('folder');
+            if ($folder === '기본폴더') {
+                $query->whereNull('folder');
+            } else {
+                $query->where('folder', $folder);
+            }
+        }
+
+        $categories = $query->orderBy('id', 'desc')->get();
+
+        // 프론트엔드에서 전달된 선택 step 목록 (없으면 전체)
+        $validSteps = ['translation.en', 'translation.zh', 'embedding.ko', 'embedding.en', 'embedding.zh'];
+        $checkedSteps = $request->input('steps');
+        if (is_array($checkedSteps)) {
+            $checkedSteps = array_values(array_intersect($checkedSteps, $validSteps));
+        } else {
+            $checkedSteps = $validSteps;
+        }
+
+        // 누락 step 계산 (선택된 step 필터 + embedding 의존성 적용)
+        $embedModelName = config('services.ollama.embedding_model');
+        $result = [];
+        $totalSteps = 0;
+
+        foreach ($categories as $cat) {
+            /** @var Category $cat */
+            $missing = $this->determineMissingSteps($cat, $embedModelName, $checkedSteps);
+            if (! empty($missing)) {
+                $result[] = [
+                    'id' => $cat->id,
+                    'category_name_ko' => $cat->category_name_ko,
+                    'missing_steps' => $missing,
+                ];
+                $totalSteps += count($missing);
+            }
+        }
+
+        return response()->json([
+            'data' => [
+                'total_selected' => $categories->count(),
+                'needs_processing' => count($result),
+                'total_steps' => $totalSteps,
+                'categories' => $result,
+            ],
+        ]);
+    }
+
+    /**
+     * 카테고리의 누락 step을 계산합니다.
+     *
+     * 로직:
+     * 1. checkedSteps에 포함된 step만 대상 (사용자 선택 필터)
+     * 2. 이미 완료된 step은 제외 (embedding 벡터 존재 = completed)
+     * 3. embedding은 해당 언어 번역 텍스트가 존재해야 실행 가능 (의존성)
+     *    - 번역 텍스트가 없고, translation step도 선택되지 않았으면 embedding 제외
+     *
+     * @param  string[]  $checkedSteps  프론트엔드에서 전달된 선택 step 목록
+     * @return string[] 처리가 필요한 step 이름 배열
+     */
+    private function determineMissingSteps(Category $category, string $embedModelName, array $checkedSteps): array
+    {
+        $steps = [];
+        $embeddings = $category->embeddings;
+
+        // en: 번역 + 임베딩
+        $enTranslated = (bool) $category->category_name_en;
+        $enEmbedded = $embeddings->contains(fn ($e) => $e->language === 'en' && $e->embed_model_name === $embedModelName && $e->embedding !== null);
+
+        if (! $enTranslated && in_array('translation.en', $checkedSteps)) {
+            $steps[] = 'translation.en';
+        }
+        // embedding은 번역 텍스트가 있어야 실행 가능 (의존성)
+        // 번역이 없고 translation step도 선택 안 됐으면 embedding 불가
+        if (! $enEmbedded && in_array('embedding.en', $checkedSteps) && ($enTranslated || in_array('translation.en', $checkedSteps))) {
+            $steps[] = 'embedding.en';
+        }
+
+        // zh: 번역 + 임베딩
+        $zhTranslated = (bool) $category->category_name_zh;
+        $zhEmbedded = $embeddings->contains(fn ($e) => $e->language === 'zh' && $e->embed_model_name === $embedModelName && $e->embedding !== null);
+
+        if (! $zhTranslated && in_array('translation.zh', $checkedSteps)) {
+            $steps[] = 'translation.zh';
+        }
+        if (! $zhEmbedded && in_array('embedding.zh', $checkedSteps) && ($zhTranslated || in_array('translation.zh', $checkedSteps))) {
+            $steps[] = 'embedding.zh';
+        }
+
+        // ko: 임베딩만 (원본 언어 — 번역 불필요)
+        $koEmbedded = $embeddings->contains(fn ($e) => $e->language === 'ko' && $e->embed_model_name === $embedModelName && $e->embedding !== null);
+        if (! $koEmbedded && in_array('embedding.ko', $checkedSteps)) {
+            $steps[] = 'embedding.ko';
+        }
+
+        return $steps;
+    }
+
     public function levels(Request $request): JsonResponse
     {
         $user = $request->user('sanctum');

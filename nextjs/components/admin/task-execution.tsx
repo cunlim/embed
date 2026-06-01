@@ -11,10 +11,9 @@ import { Square } from "lucide-react";
 import { toast } from "sonner";
 import {
   runStep,
-  getCategories,
-  fetchCategoryTranslations,
+  fetchBatchStatus,
 } from "@/lib/api";
-import type { Category, Recommendation, CategoryTranslations, StepName } from "@/lib/api";
+import type { Category, Recommendation, StepName, BatchStatusData } from "@/lib/api";
 
 interface TaskExecutionProps {
   token: string | null;
@@ -32,8 +31,6 @@ interface BatchProgress {
   totalCategories: number;
   completedCategories: number;
   failedCategories: number;
-  checkedInPhase1: number;
-  emptyCategories: number;
   totalSteps: number;
   totalStepsInCategory: number;
   completedSteps: number;
@@ -42,30 +39,13 @@ interface BatchProgress {
   currentStep: string;
   currentStepIndex: number;
   queueEmpty: boolean;
-  phase: "check" | "process" | "done";
+  phase: "process" | "done";
 }
 
 interface StepJob {
   categoryId: number;
   categoryName: string;
   stepName: StepName;
-}
-
-function determineMissingSteps(data: CategoryTranslations): StepName[] {
-  const steps: StepName[] = [];
-
-  // en: 번역 + 임베딩
-  if (!data.languages.en.translation_text) steps.push("translation.en");
-  if (data.languages.en.embedding.status !== "completed") steps.push("embedding.en");
-
-  // zh: 번역 + 임베딩
-  if (!data.languages.zh.translation_text) steps.push("translation.zh");
-  if (data.languages.zh.embedding.status !== "completed") steps.push("embedding.zh");
-
-  // ko: 임베딩만 (원본 언어)
-  if (data.languages.ko.embedding.status !== "completed") steps.push("embedding.ko");
-
-  return steps;
 }
 
 export default function TaskExecution({
@@ -115,101 +95,48 @@ export default function TaskExecution({
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef(false);
   const targetIdsRef = useRef<number[]>([]);
+  const lastBatchRef = useRef<BatchStatusData | null>(null);
 
   const executeQueue = useCallback(
-    async (targetCategoryIds: number[]) => {
+    async (batchData: BatchStatusData) => {
       setRunning(true);
       setWasStopped(false);
       setStopping(false);
       setError(null);
       abortRef.current = false;
-      targetIdsRef.current = targetCategoryIds;
 
-      // Phase 1: 카테고리별 누락 step 수집
-      flushSync(() => {
-        setProgress({
-          totalCategories: targetCategoryIds.length,
-          completedCategories: 0,
-          failedCategories: 0,
-          checkedInPhase1: 0,
-          emptyCategories: 0,
-          totalSteps: 0,
-          totalStepsInCategory: 0,
-          completedSteps: 0,
-          failedSteps: 0,
-          currentCategory: "준비 중...",
-          currentStep: "",
-          currentStepIndex: 0,
-          queueEmpty: false,
-          phase: "check",
-        });
-      });
-
+      // 벌크 API 응답으로 큐 구성 (서버에서 이미 checkedSteps + 의존성 필터링 완료)
       const queue: StepJob[] = [];
-      for (let i = 0; i < targetCategoryIds.length; i++) {
-        if (abortRef.current) break;
-        const id = targetCategoryIds[i];
-        try {
-          const res = await fetchCategoryTranslations(id, token, true);
-          const missing = determineMissingSteps(res.data);
-          const enabled = missing.filter(step => checkedSteps.has(step));
-          for (const step of enabled) {
-            queue.push({
-              categoryId: id,
-              categoryName: res.data.category_name_ko,
-              stepName: step,
-            });
-          }
-          const isEmpty = enabled.length === 0;
-          flushSync(() => {
-            setProgress((p) =>
-              p
-                ? {
-                    ...p,
-                    checkedInPhase1: i + 1,
-                    emptyCategories: p.emptyCategories + (isEmpty ? 1 : 0),
-                    currentCategory: res.data.category_name_ko,
-                  }
-                : p,
-            );
-          });
-        } catch {
-          flushSync(() => {
-            setProgress((p) =>
-              p
-                ? {
-                    ...p,
-                    checkedInPhase1: i + 1,
-                  }
-                : p,
-            );
+      for (const cat of batchData.categories) {
+        for (const step of cat.missing_steps) {
+          queue.push({
+            categoryId: cat.id,
+            categoryName: cat.category_name_ko,
+            stepName: step,
           });
         }
       }
 
-      if (abortRef.current) {
-        setStopping(false);
-        setRunning(false);
-        setWasStopped(true);
-        toast.warning("처리가 중지되었습니다");
-        onComplete(true);
-        return;
-      }
+      targetIdsRef.current = batchData.categories.map(c => c.id);
+      lastBatchRef.current = batchData;
 
       if (queue.length === 0) {
-        setProgress((p) =>
-          p
-            ? {
-                ...p,
-                queueEmpty: true,
-                phase: "done",
-                completedCategories: targetCategoryIds.length,
-                currentCategory: "",
-                currentStep: "",
-              }
-            : p,
-        );
-        setStopping(false);
+        flushSync(() => {
+          setProgress({
+            totalCategories: batchData.total_selected,
+            completedCategories: batchData.total_selected,
+            failedCategories: 0,
+            totalSteps: 0,
+            totalStepsInCategory: 0,
+            completedSteps: 0,
+            failedSteps: 0,
+            currentCategory: "",
+            currentStep: "",
+            currentStepIndex: 0,
+            queueEmpty: true,
+            phase: "done",
+          });
+        });
         setRunning(false);
         toast("모든 카테고리가 이미 처리되었습니다");
         onComplete(false);
@@ -227,11 +154,22 @@ export default function TaskExecution({
         stepsByCategory.get(job.categoryId)!.push(job);
       }
 
-      // Phase 2: 카테고리별 step 순차 실행
+      // 처리 시작
       flushSync(() => {
-        setProgress((p) =>
-          p ? { ...p, totalSteps: queue.length, phase: "process" } : p,
-        );
+        setProgress({
+          totalCategories: orderedCategoryIds.length,
+          completedCategories: 0,
+          failedCategories: 0,
+          totalSteps: queue.length,
+          totalStepsInCategory: 0,
+          completedSteps: 0,
+          failedSteps: 0,
+          currentCategory: "",
+          currentStep: "",
+          currentStepIndex: 0,
+          queueEmpty: false,
+          phase: "process",
+        });
       });
 
       let completedCategories = 0;
@@ -339,7 +277,7 @@ export default function TaskExecution({
       }
       onComplete(false);
     },
-    [token, onComplete, onCategoryComplete, checkedSteps],
+    [token, onComplete, onCategoryComplete],
   );
 
   const handleSelectedProcess = useCallback(async () => {
@@ -355,9 +293,20 @@ export default function TaskExecution({
       alert("선택된 수정 가능한 카테고리가 없습니다");
       return;
     }
-    if (!window.confirm(`선택한 ${targetIds.length}개 카테고리를 처리하시겠습니까?`)) return;
-    await executeQueue(targetIds);
-  }, [token, selectedIds, categories, canModify, executeQueue]);
+    try {
+      const steps = Array.from(checkedSteps);
+      const res = await fetchBatchStatus(token, { ids: targetIds, steps });
+      const d = res.data;
+      if (d.needs_processing === 0) {
+        toast("모든 카테고리가 이미 처리되었습니다");
+        return;
+      }
+      if (!window.confirm(`선택한 ${d.total_selected}개 카테고리 중 ${d.needs_processing}개에서 ${d.total_steps}개 step이 필요합니다. 처리하시겠습니까?`)) return;
+      await executeQueue(d);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "상태 확인 실패");
+    }
+  }, [token, selectedIds, categories, canModify, executeQueue, checkedSteps]);
 
   const handleFullProcess = useCallback(async () => {
     if (!token) {
@@ -365,22 +314,19 @@ export default function TaskExecution({
       return;
     }
     try {
-      const res = await getCategories(token, 1, 100000, filter, keyword, folder);
-      const targetIds = res.data
-        .filter((cat) => canModify(cat))
-        .map((cat) => cat.id);
-      if (targetIds.length === 0) {
-        alert("처리 가능한 카테고리가 없습니다");
+      const steps = Array.from(checkedSteps);
+      const res = await fetchBatchStatus(token, { filter, keyword, folder, steps });
+      const d = res.data;
+      if (d.needs_processing === 0) {
+        toast("처리 가능한 카테고리가 없습니다");
         return;
       }
-      if (!window.confirm(`현재 필터에 해당하는 ${targetIds.length}개 카테고리를 처리하시겠습니까?`)) return;
-      await executeQueue(targetIds);
+      if (!window.confirm(`현재 필터에 해당하는 ${d.total_selected}개 카테고리 중 ${d.needs_processing}개에서 ${d.total_steps}개 step이 필요합니다. 처리하시겠습니까?`)) return;
+      await executeQueue(d);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "카테고리 목록 조회 실패",
-      );
+      setError(err instanceof Error ? err.message : "상태 확인 실패");
     }
-  }, [token, filter, keyword, folder, canModify, executeQueue]);
+  }, [token, filter, keyword, folder, executeQueue, checkedSteps]);
 
   const handleStop = useCallback(() => {
     abortRef.current = true;
@@ -389,26 +335,17 @@ export default function TaskExecution({
   }, []);
 
   const handleRetry = useCallback(async () => {
-    if (targetIdsRef.current.length === 0) return;
-    await executeQueue(targetIdsRef.current);
+    if (!lastBatchRef.current) return;
+    await executeQueue(lastBatchRef.current);
   }, [executeQueue]);
 
   const pct =
-    progress && progress.totalCategories > 0
-      ? progress.phase === "check"
-        ? Math.round(
-            ((progress.checkedInPhase1 + progress.emptyCategories) /
-              progress.totalCategories) *
-              50,
-          )
-        : progress.totalSteps > 0
-          ? Math.round(
-              50 +
-                ((progress.completedSteps + progress.failedSteps) /
-                  progress.totalSteps) *
-                  50,
-            )
-          : 50
+    progress && progress.totalSteps > 0
+      ? Math.round(
+          ((progress.completedSteps + progress.failedSteps) /
+            progress.totalSteps) *
+            100,
+        )
       : 0;
 
   return (
@@ -457,12 +394,7 @@ export default function TaskExecution({
                 value={progress.queueEmpty ? 100 : pct}
                 className="flex-1"
               />
-              {!progress.queueEmpty && progress.phase === "check" && (
-                <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
-                  [{progress.checkedInPhase1}/{progress.totalCategories}]
-                </span>
-              )}
-              {!progress.queueEmpty && progress.phase === "process" && progress.totalSteps > 0 && (
+              {!progress.queueEmpty && progress.totalSteps > 0 && (
                 <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
                   [{progress.completedSteps + progress.failedSteps}/
                   {progress.totalSteps}]
@@ -475,11 +407,6 @@ export default function TaskExecution({
               )}
             </div>
             <div className="text-xs text-muted-foreground space-y-0.5">
-              {progress.phase === "check" && (
-                <p>
-                  카테고리 확인 중: {progress.checkedInPhase1}/{progress.totalCategories}
-                </p>
-              )}
               {(progress.phase === "process" || progress.phase === "done") && (
                 <p>
                   전체 {progress.totalCategories}개 / 완료{" "}
@@ -495,7 +422,7 @@ export default function TaskExecution({
                   <p className="truncate">
                     현재 카테고리: &ldquo;{progress.currentCategory}&rdquo;
                   </p>
-                  {progress.phase === "process" && progress.currentStep && (
+                  {progress.currentStep && (
                     <p className="truncate">
                       현재: [{progress.currentStepIndex}/{progress.totalStepsInCategory}]{" "}
                       {progress.currentStep}
