@@ -434,11 +434,11 @@ class CategoryController extends Controller
             ),
         ]
     )]
-    public function translations(Category $category): CategoryTranslationsResource
+    public function translations(Request $request, Category $category): CategoryTranslationsResource
     {
         $category->load('embeddings');
 
-        return new CategoryTranslationsResource($category);
+        return new CategoryTranslationsResource($category, $request->boolean('no_preview'));
     }
 
     #[OA\Post(

@@ -46,7 +46,7 @@ export interface LanguageDetail {
   translation_text: string | null;
   embedding: {
     status: EmbeddingStatus;
-    preview: number[] | null;
+    preview?: number[] | null;
   };
 }
 
@@ -68,10 +68,12 @@ export interface CategoryTranslationsResponse {
 
 export function fetchCategoryTranslations(
   categoryId: number,
-  token?: string | null
+  token?: string | null,
+  noPreview?: boolean
 ): Promise<CategoryTranslationsResponse> {
+  const params = noPreview ? '?no_preview=true' : '';
   return request<CategoryTranslationsResponse>(
-    `/categories/${categoryId}/translations`,
+    `/categories/${categoryId}/translations${params}`,
     { token }
   );
 }

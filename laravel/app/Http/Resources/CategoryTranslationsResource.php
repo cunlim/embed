@@ -43,7 +43,13 @@ class CategoryTranslationsResource extends JsonResource
         $emb = $this->findEmbedding($lang);
 
         if (! $emb || ! $emb->embedding) {
-            return ['status' => 'pending', 'preview' => null];
+            return request()->boolean('no_preview')
+                ? ['status' => 'pending']
+                : ['status' => 'pending', 'preview' => null];
+        }
+
+        if (request()->boolean('no_preview')) {
+            return ['status' => 'completed'];
         }
 
         $vector = $emb->embedding->toArray();

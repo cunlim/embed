@@ -33,6 +33,7 @@ interface BatchProgress {
   completedCategories: number;
   failedCategories: number;
   checkedInPhase1: number;
+  emptyCategories: number;
   totalSteps: number;
   totalStepsInCategory: number;
   completedSteps: number;
@@ -131,6 +132,7 @@ export default function TaskExecution({
           completedCategories: 0,
           failedCategories: 0,
           checkedInPhase1: 0,
+          emptyCategories: 0,
           totalSteps: 0,
           totalStepsInCategory: 0,
           completedSteps: 0,
@@ -148,7 +150,7 @@ export default function TaskExecution({
         if (abortRef.current) break;
         const id = targetCategoryIds[i];
         try {
-          const res = await fetchCategoryTranslations(id, token);
+          const res = await fetchCategoryTranslations(id, token, true);
           const missing = determineMissingSteps(res.data);
           const enabled = missing.filter(step => checkedSteps.has(step));
           for (const step of enabled) {
@@ -158,12 +160,14 @@ export default function TaskExecution({
               stepName: step,
             });
           }
+          const isEmpty = enabled.length === 0;
           flushSync(() => {
             setProgress((p) =>
               p
                 ? {
                     ...p,
                     checkedInPhase1: i + 1,
+                    emptyCategories: p.emptyCategories + (isEmpty ? 1 : 0),
                     currentCategory: res.data.category_name_ko,
                   }
                 : p,
@@ -276,20 +280,26 @@ export default function TaskExecution({
           try {
             const result = await runStep(job.categoryId, job.stepName, token);
             if (result.status === "completed") {
-              setProgress((p) =>
-                p ? { ...p, completedSteps: p.completedSteps + 1 } : p,
-              );
+              flushSync(() => {
+                setProgress((p) =>
+                  p ? { ...p, completedSteps: p.completedSteps + 1 } : p,
+                );
+              });
             } else {
-              setProgress((p) =>
-                p ? { ...p, failedSteps: p.failedSteps + 1 } : p,
-              );
+              flushSync(() => {
+                setProgress((p) =>
+                  p ? { ...p, failedSteps: p.failedSteps + 1 } : p,
+                );
+              });
               catFailed = true;
               break;
             }
           } catch {
-            setProgress((p) =>
-              p ? { ...p, failedSteps: p.failedSteps + 1 } : p,
-            );
+            flushSync(() => {
+              setProgress((p) =>
+                p ? { ...p, failedSteps: p.failedSteps + 1 } : p,
+              );
+            });
             catFailed = true;
             break;
           }
@@ -387,7 +397,7 @@ export default function TaskExecution({
     progress && progress.totalCategories > 0
       ? progress.phase === "check"
         ? Math.round(
-            (progress.checkedInPhase1 /
+            ((progress.checkedInPhase1 + progress.emptyCategories) /
               progress.totalCategories) *
               50,
           )
