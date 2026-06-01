@@ -36,3 +36,4 @@
 - **`onFolderChange` URL 보존**: 폴더 변경 시 `updateURL({ folder, userId, page: 1 })` 사용. 수동 `URLSearchParams` 생성 시 `filter` 등 기존 파라미터 소실됨.
 - **`resetToDefault` 폴더 초기화**: `resetToDefault()`에서 `setSelectedFolder(null)`, `setSelectedUserId(null)` 필수. 미적용 시 폴더 select가 stale 값 표시. `loadCategories()` 호출 인자도 `undefined`로 변경.
 - **useCategories mutation reload 컨텍스트**: `addCategory()`·`deleteCategory()` 내부 GET reload 시 `currentFolder` 등 모든 ref 전달 필수. `loadCategories`가 ref 갱신, mutation 함수가 ref 소비.
+- **async batch 진행률 `flushSync`**: React 19가 `await` 경계를 넘어 상태 업데이트를 배칭하여 진행률이 실시간 갱신되지 않을 때, `import { flushSync } from "react-dom"`으로 `flushSync(() => setProgress(...))`를 `await` 직전에 호출하여 강제 렌더링. Phase 1(수집)→Phase 2(실행) 분할 + progress bar 0-50%/50-100% 분할 표시.

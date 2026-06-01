@@ -58,6 +58,7 @@
 - **Hook 에러 re-throw** — hook 내부에서 에러 catch 후 `throw err`로 재전파 필수. 상세: `nextjs/AGENTS.md`.
 - **커스텀 이벤트 다중 리스너 레이스 컨디션** — 동일 `CustomEvent`에 여러 컴포넌트가 리스너를 등록하면 모든 핸들러가 동기 실행. 자식 컴포넌트의 이벤트 핸들러는 부모 콜백(onFolderChange 등)을 호출하지 말고 로컬 상태만 초기화. 부모가 유일한 데이터 재로드 주체여야 하며, 자식이 부모 콜백을 통해 `loadCategories`를 호출하면 stale closure로 올바른 데이터를 덮어씀.
 - **`useCategories` mutation reload 컨텍스트 완전성** — `addCategory()`·`deleteCategory()` 내부 reload(`getCategories`)는 `currentPage`·`currentPerPage`·`currentFilter`·`currentSearch`·`currentFolder` 모든 ref를 전달해야 함. `loadCategories`에서 ref 갱신 → mutation 함수에서 ref 소비 구조. 새 컨텍스트 파라미터 추가 시 ref 선언과 reload 호출 인자 양쪽 모두 업데이트.
+- **async batch 진행률 실시간 갱신** — 다수 API 순차 호출 시 진행률이 마지막에만 반영되는 이슈는 React 19가 `await` 경계를 넘어 상태 업데이트를 배칭하기 때문. `flushSync(() => setProgress(...))`를 `await` 직전에 호출하여 강제 렌더링. 상세: `nextjs/AGENTS.md`·`task-execution.tsx`.
 
 ## 하위 디렉토리
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { flushSync } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,6 +32,7 @@ interface BatchProgress {
   totalCategories: number;
   completedCategories: number;
   failedCategories: number;
+  checkedInPhase1: number;
   totalSteps: number;
   totalStepsInCategory: number;
   completedSteps: number;
@@ -39,6 +41,7 @@ interface BatchProgress {
   currentStep: string;
   currentStepIndex: number;
   queueEmpty: boolean;
+  phase: "check" | "process" | "done";
 }
 
 interface StepJob {
@@ -122,23 +125,28 @@ export default function TaskExecution({
       targetIdsRef.current = targetCategoryIds;
 
       // Phase 1: 카테고리별 누락 step 수집
-      setProgress({
-        totalCategories: targetCategoryIds.length,
-        completedCategories: 0,
-        failedCategories: 0,
-        totalSteps: 0,
-        totalStepsInCategory: 0,
-        completedSteps: 0,
-        failedSteps: 0,
-        currentCategory: "준비 중...",
-        currentStep: "",
-        currentStepIndex: 0,
-        queueEmpty: false,
+      flushSync(() => {
+        setProgress({
+          totalCategories: targetCategoryIds.length,
+          completedCategories: 0,
+          failedCategories: 0,
+          checkedInPhase1: 0,
+          totalSteps: 0,
+          totalStepsInCategory: 0,
+          completedSteps: 0,
+          failedSteps: 0,
+          currentCategory: "준비 중...",
+          currentStep: "",
+          currentStepIndex: 0,
+          queueEmpty: false,
+          phase: "check",
+        });
       });
 
       const queue: StepJob[] = [];
-      for (const id of targetCategoryIds) {
+      for (let i = 0; i < targetCategoryIds.length; i++) {
         if (abortRef.current) break;
+        const id = targetCategoryIds[i];
         try {
           const res = await fetchCategoryTranslations(id, token);
           const missing = determineMissingSteps(res.data);
@@ -150,8 +158,28 @@ export default function TaskExecution({
               stepName: step,
             });
           }
+          flushSync(() => {
+            setProgress((p) =>
+              p
+                ? {
+                    ...p,
+                    checkedInPhase1: i + 1,
+                    currentCategory: res.data.category_name_ko,
+                  }
+                : p,
+            );
+          });
         } catch {
-          // 조회 실패한 카테고리는 건너뜀
+          flushSync(() => {
+            setProgress((p) =>
+              p
+                ? {
+                    ...p,
+                    checkedInPhase1: i + 1,
+                  }
+                : p,
+            );
+          });
         }
       }
 
@@ -170,6 +198,7 @@ export default function TaskExecution({
             ? {
                 ...p,
                 queueEmpty: true,
+                phase: "done",
                 completedCategories: targetCategoryIds.length,
                 currentCategory: "",
                 currentStep: "",
@@ -195,9 +224,11 @@ export default function TaskExecution({
       }
 
       // Phase 2: 카테고리별 step 순차 실행
-      setProgress((p) =>
-        p ? { ...p, totalSteps: queue.length } : p,
-      );
+      flushSync(() => {
+        setProgress((p) =>
+          p ? { ...p, totalSteps: queue.length, phase: "process" } : p,
+        );
+      });
 
       let completedCategories = 0;
       let failedCategories = 0;
@@ -209,34 +240,38 @@ export default function TaskExecution({
         const catSteps = stepsByCategory.get(catId) || [];
         let catFailed = false;
 
-        setProgress((p) =>
-          p
-            ? {
-                ...p,
-                currentCategory: catSteps[0].categoryName,
-                totalStepsInCategory: catSteps.length,
-                currentStepIndex: 0,
-                currentStep: "",
-                completedCategories,
-                failedCategories,
-              }
-            : p,
-        );
+        flushSync(() => {
+          setProgress((p) =>
+            p
+              ? {
+                  ...p,
+                  currentCategory: catSteps[0].categoryName,
+                  totalStepsInCategory: catSteps.length,
+                  currentStepIndex: 0,
+                  currentStep: "",
+                  completedCategories,
+                  failedCategories,
+                }
+              : p,
+          );
+        });
 
         for (let si = 0; si < catSteps.length; si++) {
           if (abortRef.current) break;
 
           const job = catSteps[si];
 
-          setProgress((p) =>
-            p
-              ? {
-                  ...p,
-                  currentStepIndex: si + 1,
-                  currentStep: job.stepName,
-                }
-              : p,
-          );
+          flushSync(() => {
+            setProgress((p) =>
+              p
+                ? {
+                    ...p,
+                    currentStepIndex: si + 1,
+                    currentStep: job.stepName,
+                  }
+                : p,
+            );
+          });
 
           try {
             const result = await runStep(job.categoryId, job.stepName, token);
@@ -268,9 +303,11 @@ export default function TaskExecution({
           completedCategories++;
         }
 
-        setProgress((p) =>
-          p ? { ...p, completedCategories, failedCategories } : p,
-        );
+        flushSync(() => {
+          setProgress((p) =>
+            p ? { ...p, completedCategories, failedCategories } : p,
+          );
+        });
 
         onCategoryComplete?.();
       }
@@ -347,12 +384,21 @@ export default function TaskExecution({
   }, [executeQueue]);
 
   const pct =
-    progress && progress.totalSteps > 0
-      ? Math.round(
-          ((progress.completedSteps + progress.failedSteps) /
-            progress.totalSteps) *
-            100,
-        )
+    progress && progress.totalCategories > 0
+      ? progress.phase === "check"
+        ? Math.round(
+            (progress.checkedInPhase1 /
+              progress.totalCategories) *
+              50,
+          )
+        : progress.totalSteps > 0
+          ? Math.round(
+              50 +
+                ((progress.completedSteps + progress.failedSteps) /
+                  progress.totalSteps) *
+                  50,
+            )
+          : 50
       : 0;
 
   return (
@@ -401,7 +447,12 @@ export default function TaskExecution({
                 value={progress.queueEmpty ? 100 : pct}
                 className="flex-1"
               />
-              {!progress.queueEmpty && progress.totalSteps > 0 && (
+              {!progress.queueEmpty && progress.phase === "check" && (
+                <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+                  [{progress.checkedInPhase1}/{progress.totalCategories}]
+                </span>
+              )}
+              {!progress.queueEmpty && progress.phase === "process" && progress.totalSteps > 0 && (
                 <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
                   [{progress.completedSteps + progress.failedSteps}/
                   {progress.totalSteps}]
@@ -414,11 +465,18 @@ export default function TaskExecution({
               )}
             </div>
             <div className="text-xs text-muted-foreground space-y-0.5">
-              <p>
-                전체 {progress.totalCategories}개 / 완료{" "}
-                {progress.completedCategories}개 / 실패{" "}
-                {progress.failedCategories}개
-              </p>
+              {progress.phase === "check" && (
+                <p>
+                  카테고리 확인 중: {progress.checkedInPhase1}/{progress.totalCategories}
+                </p>
+              )}
+              {(progress.phase === "process" || progress.phase === "done") && (
+                <p>
+                  전체 {progress.totalCategories}개 / 완료{" "}
+                  {progress.completedCategories}개 / 실패{" "}
+                  {progress.failedCategories}개
+                </p>
+              )}
               {progress.queueEmpty && (
                 <p>모든 카테고리가 이미 처리되었습니다</p>
               )}
@@ -427,10 +485,12 @@ export default function TaskExecution({
                   <p className="truncate">
                     현재 카테고리: &ldquo;{progress.currentCategory}&rdquo;
                   </p>
-                  <p className="truncate">
-                    현재: [{progress.currentStepIndex}/{progress.totalStepsInCategory}]{" "}
-                    {progress.currentStep}
-                  </p>
+                  {progress.phase === "process" && progress.currentStep && (
+                    <p className="truncate">
+                      현재: [{progress.currentStepIndex}/{progress.totalStepsInCategory}]{" "}
+                      {progress.currentStep}
+                    </p>
+                  )}
                 </>
               )}
             </div>

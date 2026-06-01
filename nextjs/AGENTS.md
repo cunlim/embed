@@ -121,7 +121,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **컨테이너 재생성 후** — `docker compose stop` + `up -d` 후 `npm run build`로 타입 체크 확인.
 - **CSS 트랜지션 사이드바 패턴** — 접기/펼치기 시 `{!collapsed && <nav>}` 조건부 렌더링은 width 트랜지션 중 텍스트 래핑으로 높이 깨짐 발생. 해결: nav에 `h-0 overflow-hidden` 적용, 자식 버튼에 `whitespace-nowrap overflow-hidden` 추가. shadcn Sheet의 `showCloseButton` 기본값이 `true` — 커스텀 닫기 버튼 사용 시 `showCloseButton={false}` 필수.
 - **폼 버튼 순서 컨벤션** — 입력 폼에서 초기화 버튼은 검색 버튼 앞에 배치: `Input → 초기화(X) → 검색(Search)`. 검색 버튼이 disabled일 때도 초기화 버튼이 보이도록 조건부 렌더링 순서 준수.
-- **`router.replace` + `<Link>` 동일 URL 충돌** — `router.replace("/embed")`와 `<Link href="/embed">`가 동시에 실행되면 URL이 변경되지 않음. 즉시 URL 변경이 필요하면 `router.replace` 대신 `window.history.replaceState()` 사용.
+- **async batch 진행률 `flushSync` 패턴** — 다수 API를 순차 호출하는 배치 작업(선택 처리, 삭제 등)에서 진행률이 실시간 갱신되지 않는 현상은 React 19가 `await` 경계를 넘어 상태 업데이트를 배칭하기 때문. `import { flushSync } from "react-dom"`으로 `flushSync(() => setProgress(...))`를 `await` 직전에 호출하여 강제 렌더링. Phase 1(수집)→Phase 2(실행)로 나누고 진행률을 0-50%/50-100%로 분할 표시. 상세: `task-execution.tsx`·`category-delete.tsx` 참조.
 - **useCallback + setState stale closure** — 이벤트 핸들러에서 setState 후 동기 호출되는 useCallback은 이전 render의 state를 캡처. 해결: useRef로 최신 값 추적 → 핸들러에서 ref 먼저 업데이트 → 콜백은 ref 읽고 의존성에서 state 제거.
 - **비동기 reload 전 `setState([])`로 stale guard** — 데이터 소스 변경(예: 회원 전환) 후 `loadData()` 호출 전에 `setData([])`로 즉시 초기화. 비동기 로드 완료 전 stale 데이터로 인한 false-positive 중복 체크 방지.
 - **`onFolderChange` 호출 후 `onFolderActionComplete` 호출 금지** — `onFolderChange`가 이미 올바른 폴더명으로 `loadCategories` 트리거. `onFolderActionComplete`는 `selectedFolderRef.current`를 사용하는데 `onFolderChange` 내 `setSelectedFolder`가 아직 render에 반영되지 않아 stale ref로 빈 결과를 덮어쓰는 레이스 컨디션 발생. 삭제·수정(rename) 모두 해당.
