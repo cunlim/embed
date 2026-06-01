@@ -249,30 +249,34 @@ class FolderController extends Controller
         }
 
         // 타겟 폴더에 동일 (category_code, user_id) 중복이 있는지 미리 확인
-        // (이동 대상 자신은 제외 — 이미 같은 폴더에 있는 경우 no-op)
-        $allowedIds = $allowed->pluck('id')->toArray();
+        // whereNotIn 제거: 이미 타겟에 있는 레코드도 포함하여 중복 체크
         $allowedCodes = $allowed->pluck('category_code')->unique()->toArray();
         $allowedUserIds = $allowed->pluck('user_id')->unique()->toArray();
 
         $existingInTarget = Category::where('folder', $targetFolder)
             ->whereIn('category_code', $allowedCodes)
             ->whereIn('user_id', $allowedUserIds)
-            ->whereNotIn('id', $allowedIds)
-            ->select('category_code', 'user_id')
-            ->get()
-            ->mapWithKeys(function ($item) {
-                return [$item->category_code.'_'.$item->user_id => true];
-            });
+            ->select('id', 'category_code', 'user_id')
+            ->get();
+
+        // 타겟 폴더에 이미 존재하는 (category_code, user_id) 조합 맵
+        $conflictKeys = $existingInTarget->mapWithKeys(function ($item) {
+            return [$item->category_code.'_'.$item->user_id => $item->id];
+        });
 
         $safeIds = [];
         $skipped = 0;
 
         foreach ($allowed as $cat) {
             $key = $cat->category_code.'_'.$cat->user_id;
-            if (isset($existingInTarget[$key])) {
+            if (isset($conflictKeys[$key])) {
+                // 타겟 폴더에 이미 동일 (code, user_id) 존재 → 스킵
+                // (자기 자신이거나, 다른 레코드이거나 동일하게 처리)
                 $skipped++;
             } else {
                 $safeIds[] = $cat->id;
+                // 배치 내부 중복 방지: 이후 항목과의 충돌 방지
+                $conflictKeys[$key] = $cat->id;
             }
         }
 
