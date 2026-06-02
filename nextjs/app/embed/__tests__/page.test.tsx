@@ -111,7 +111,7 @@ describe("EmbedPage", () => {
   });
 
   it("카테고리 코드 input이 렌더링된다", () => {
-    render(<EmbedPageInner serverLevelOptions={[]} serverMaxDepth={1} serverCategories={[]} serverMeta={null} serverHadToken={false} serverFilter={null} serverSearchResults={null} serverSearchMeta={null} serverSearchText={null} serverSearchLang="ko" />);
+    render(<EmbedPageInner serverLevelOptions={[]} serverMaxDepth={1} serverCategories={[]} serverMeta={null} serverHadToken={true} serverFilter={null} serverSearchResults={null} serverSearchMeta={null} serverSearchText={null} serverSearchLang="ko" />);
     expect(screen.getByLabelText("카테고리 코드")).toBeInTheDocument();
   });
 
@@ -160,7 +160,7 @@ describe("EmbedPage", () => {
       addCategory: vi.fn(),
     });
 
-    render(<EmbedPageInner serverLevelOptions={[]} serverMaxDepth={1} serverCategories={[]} serverMeta={null} serverHadToken={false} serverFilter={null} serverSearchResults={null} serverSearchMeta={null} serverSearchText={null} serverSearchLang="ko" />);
+    render(<EmbedPageInner serverLevelOptions={[]} serverMaxDepth={1} serverCategories={[]} serverMeta={null} serverHadToken={true} serverFilter={null} serverSearchResults={null} serverSearchMeta={null} serverSearchText={null} serverSearchLang="ko" />);
     const errorMessages = screen.getAllByText("서버 오류");
     expect(errorMessages.length).toBe(1);
     expect(screen.queryByText("재시도")).not.toBeInTheDocument();

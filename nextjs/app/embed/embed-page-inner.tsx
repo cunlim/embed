@@ -714,6 +714,7 @@ export function EmbedPageInner({
             />
 
             {/* 추가 */}
+            {serverHadToken && (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -794,6 +795,7 @@ export function EmbedPageInner({
                 )}
               </CardContent>
             </Card>
+            )}
 
             {/* 작업 실행 */}
             <TaskExecution
@@ -820,6 +822,7 @@ export function EmbedPageInner({
             />
 
             {/* 다운로드 */}
+            {serverHadToken && (
             <CategoryDownload
               token={token}
               selectedIds={selectedIds}
@@ -828,8 +831,10 @@ export function EmbedPageInner({
               keyword={hierarchyKeyword || undefined}
               folder={selectedFolder ?? undefined}
             />
+            )}
 
             {/* 삭제 */}
+            {serverHadToken && (
             <CategoryDelete
               token={token}
               selectedIds={selectedIds}
@@ -851,6 +856,7 @@ export function EmbedPageInner({
                 // (page 불일치 방지 — onComplete에서 최종 새로고침)
               }}
             />
+            )}
           </div>
 
           {/* 카테고리 목록 테이블 */}
