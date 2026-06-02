@@ -78,7 +78,7 @@ describe("useCategories", () => {
       expect(result.current.categories).toEqual([mockCategory]);
       expect(result.current.isLoading).toBe(false);
       expect(result.current.error).toBeNull();
-      expect(mockGetCategories).toHaveBeenCalledWith("token", 1, 20, undefined, undefined, undefined, undefined);
+      expect(mockGetCategories).toHaveBeenCalledWith("token", 1, 20, undefined, undefined, undefined, undefined, undefined);
     });
 
     it("성공 시 meta와 categories를 반환한다", async () => {
@@ -94,7 +94,7 @@ describe("useCategories", () => {
       expect(result.current.meta).toEqual(mockCategoryList.meta);
       expect(result.current.isLoading).toBe(false);
       expect(result.current.error).toBeNull();
-      expect(mockGetCategories).toHaveBeenCalledWith("token", 1, 20, undefined, undefined, undefined, undefined);
+      expect(mockGetCategories).toHaveBeenCalledWith("token", 1, 20, undefined, undefined, undefined, undefined, undefined);
     });
 
     it("실패 시 error 메시지가 설정되고 isLoading은 false다", async () => {

@@ -114,6 +114,79 @@ class CategoryController extends Controller
             }
         }
 
+        // steps 필터: 체크된 step 중 하나라도 누락된 카테고리만 조회 (batchStatus와 동일 로직)
+        $validSteps = ['translation.en', 'translation.zh', 'embedding.ko', 'embedding.en', 'embedding.zh'];
+        $checkedSteps = $request->input('steps');
+        if (is_array($checkedSteps) && ! empty($checkedSteps)) {
+            $checkedSteps = array_values(array_intersect($checkedSteps, $validSteps));
+        } else {
+            $checkedSteps = [];
+        }
+
+        if (! empty($checkedSteps)) {
+            $embedModelName = config('services.ollama.embedding_model');
+
+            $query->where(function ($q) use ($checkedSteps, $embedModelName) {
+                // embedding.ko: ko 임베딩이 없는 카테고리
+                if (in_array('embedding.ko', $checkedSteps)) {
+                    $q->orWhere(function ($q2) use ($embedModelName) {
+                        $q2->whereDoesntHave('embeddings', function ($q3) use ($embedModelName) {
+                            $q3->where('language', 'ko')
+                                ->where('embed_model_name', $embedModelName)
+                                ->whereNotNull('embedding');
+                        });
+                    });
+                }
+
+                // translation.en: en 번역 텍스트가 없는 카테고리
+                if (in_array('translation.en', $checkedSteps)) {
+                    $q->orWhere(function ($q2) {
+                        $q2->whereNull('category_name_en')
+                            ->orWhere('category_name_en', '');
+                    });
+                }
+
+                // embedding.en: en 임베딩이 없고 (en 번역 있음 OR translation.en도 checked)
+                if (in_array('embedding.en', $checkedSteps)) {
+                    $q->orWhere(function ($q2) use ($checkedSteps, $embedModelName) {
+                        $q2->whereDoesntHave('embeddings', function ($q3) use ($embedModelName) {
+                            $q3->where('language', 'en')
+                                ->where('embed_model_name', $embedModelName)
+                                ->whereNotNull('embedding');
+                        });
+                        // translation.en이 체크 안 됐으면 번역 텍스트가 있어야 embedding 실행 가능
+                        if (! in_array('translation.en', $checkedSteps)) {
+                            $q2->whereNotNull('category_name_en')
+                                ->where('category_name_en', '!=', '');
+                        }
+                    });
+                }
+
+                // translation.zh: zh 번역 텍스트가 없는 카테고리
+                if (in_array('translation.zh', $checkedSteps)) {
+                    $q->orWhere(function ($q2) {
+                        $q2->whereNull('category_name_zh')
+                            ->orWhere('category_name_zh', '');
+                    });
+                }
+
+                // embedding.zh: zh 임베딩이 없고 (zh 번역 있음 OR translation.zh도 checked)
+                if (in_array('embedding.zh', $checkedSteps)) {
+                    $q->orWhere(function ($q2) use ($checkedSteps, $embedModelName) {
+                        $q2->whereDoesntHave('embeddings', function ($q3) use ($embedModelName) {
+                            $q3->where('language', 'zh')
+                                ->where('embed_model_name', $embedModelName)
+                                ->whereNotNull('embedding');
+                        });
+                        if (! in_array('translation.zh', $checkedSteps)) {
+                            $q2->whereNotNull('category_name_zh')
+                                ->where('category_name_zh', '!=', '');
+                        }
+                    });
+                }
+            });
+        }
+
         return new CategoryCollection(
             $query->orderBy('id', 'desc')->paginate($perPage)
         );

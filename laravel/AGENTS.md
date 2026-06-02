@@ -69,6 +69,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - `category_code`: `(category_code, user_id, folder)` 복합 unique. `CategoryStoreRequest`·`CategoryUpdateTextRequest` 모두 folder scope 포함 필수. `filled()`로 체크 (`??`는 빈 문자열 통과)
 - `RecommendRequest` filter: `in:my,all` — `"all"`도 허용 (프론트 "전체" 선택 + 유사도검색 시 `filter=all` 전송)
 - **`POST /api/categories/batch-status`** — 배치 작업용 벌크 상태 확인. `ids[]`(선택처리) 또는 `filter`/`keyword`/`folder`(전체처리) + `steps[]`(checkbox 상태) 파라미터. 서버에서 `determineMissingSteps()`로 누락 step 계산 시 **세 가지 필터 적용**: ①`steps[]` 교집합(선택된 step만), ②이미 완료된 step 제외(`embedding !== null`), ③embedding 의존성(번역 텍스트 없고 해당 translation step도 미선택이면 embedding 제외). 응답: `{ total_selected, needs_processing, total_steps, categories: [{ id, category_name_ko, missing_steps }] }`. **⚠️ `->with('embeddings')` 금지** — 대량 데이터(5k+ 카테고리, 10k 임베딩)에서 벡터 이저 로딩 시 메모리 208MB 초과로 500 에러. `CategoryEmbedding::whereIn('category_id', ...)->whereNotNull('embedding')->select('category_id', 'language')->get()`로 존재 여부만 조회.
+- **`GET /api/categories` `steps` 파라미터** — `index()`에서 `steps[]` 쿼리 파라미터 지원. `batchStatus`의 `determineMissingSteps`와 동일한 5단계 선별 로직을 `whereDoesntHave` + OR 조건으로 SQL WHERE에 적용. `steps` 미전달 시 필터링 없이 기존 동작 유지. 프론트 `TaskExecution` 체크박스 토글 시 `onStepsChange` → `loadCategories`로 호출.
 - **폴더 이동 시 소유권 변경** — `POST /api/categories/move-folder`에 `target_user_id` 파라미터 추가. 관리자가 지정 시 `folder` + `user_id` 동시 업데이트. 중복 체크도 새 `user_id` 기준으로 수행. 비관리자는 `target_user_id` 무시됨.
 
 ### 카테고리 검색 API

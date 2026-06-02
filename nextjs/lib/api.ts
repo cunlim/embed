@@ -217,6 +217,7 @@ export function getCategories(
   search?: string,
   folder?: string,
   userId?: number | null,
+  steps?: StepName[],
 ): Promise<CategoryListResponse> {
   const params = new URLSearchParams();
   if (page && page > 1) params.set("page", String(page));
@@ -225,6 +226,9 @@ export function getCategories(
   if (search) params.set("search", search);
   if (folder) params.set("folder", folder);
   if (userId) params.set("user_id", String(userId));
+  if (steps && steps.length > 0) {
+    steps.forEach((step) => params.append("steps[]", step));
+  }
   const qs = params.toString();
   return request<CategoryListResponse>(`/categories?${qs}`, { token });
 }

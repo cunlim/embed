@@ -42,5 +42,6 @@
 - **`moveCategoriesToFolder` `targetUserId`**: 관리자 소유권 이전용 파라미터. `folder-section.tsx`에서 composite value(`"폴더명:userId"`) 파싱해 추출.
 - **비로그인 사이드바 auth-gating**: `{serverHadToken && (...)}`로 추가·다운로드·삭제 섹션 숨김. 유사도 검색·필터·작업 실행은 항상 표시.
 - **`fetchCategoryTranslations` `noPreview` 옵션**: `noPreview: true` → `?no_preview=true`로 임베딩 벡터 제외. 카테고리 모달 상세 조회에서 사용. 배치 작업은 `batch-status` API로 대체됨.
-- **batch `onComplete`·`onCategoryComplete` 콜백**: `filterRef.current`로 현재 필터 읽기. `onComplete`는 `loadCategories(1, ...)` + `updateURL({ page: 1 })`로 URL 동기화. `onCategoryComplete`는 루프 중 `loadCategories` 호출 금지 (page 불일치).
+- **batch `onComplete`·`onCategoryComplete` 콜백**: `filterRef.current`로 현재 필터 읽기. `onComplete`는 `loadCategories(1, ...)` + `updateURL({ page: 1 })`로 URL 동기화. `onCategoryComplete`는 루프 중 `loadCategories` 호출 금지 (page 불일치). `stepsRef.current`도 reload 시 전달.
+- **TaskExecution `onStepsChange` + 기본 해제**: `checkedSteps` 기본값 `new Set()` (전체 해제). 체크박스 토글 시 `onStepsChange(steps)` 콜백 → `EmbedPageInner`의 `handleStepsChange`가 `stepsRef` 갱신 + `loadCategories(1, ..., steps)`로 page=1 리셋. `CategoryController::index()`는 `steps[]` 파라미터로 `determineMissingSteps`와 동일 로직 필터링. `steps` 파라미터는 frontend 전 체인(`api.ts` → `useCategories` → `embed-page-inner.tsx` 모든 `loadCategories` 호출 지점)과 backend(`index()`) 모두 전파.
 - **progress `initialTotalSteps`**: `BatchProgress`에 `initialTotalSteps` 추가. 큐 구성 시 저장, `queueEmpty` 시에도 보존. progress `[N/M]`은 step 수 기준.

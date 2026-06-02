@@ -44,7 +44,7 @@
 
 - **Sub-agent 동일 파일 수정** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합. interface 필드 추가 시 agent가 이전 블록 미삭제 가능하므로 수정 후 `grep`으로 중복 키 확인.
 - **Docker 바인드 마운트 불일치** — 호스트·컨테이너 간 파일 변경 즉시 반영 안 될 수 있음. 수정 후 `wc -l`로 양쪽 확인. 신규 디렉토리는 양쪽 `mkdir -p`. Pint는 `/tmp/` 경유.
-- **API 필터 파라미터 전파 체인** — 새 파라미터 추가 시 frontend(api.ts → hooks → embed-page-inner.tsx → page.tsx → category-hierarchy.tsx), backend(모든 조회 컨트롤러), test mock 모두 수정 필요. 생성 API(`createCategory`)도 동일 — `api.ts` → `useCategories.addCategory()` → `embed-page-inner.tsx` 핸들러 체인 + 백엔드 `store()`·`CategoryStoreRequest`까지 전파. hook interface 타입(`UseCategoriesReturn`)도 갱신 필수. 한 곳만 수정하면 나머지는 이전 동작 유지.
+- **API 필터 파라미터 전파 체인** — 새 파라미터 추가 시 frontend(api.ts → hooks → embed-page-inner.tsx → page.tsx → category-hierarchy.tsx), backend(모든 조회 컨트롤러), test mock 모두 수정 필요. `TaskExecution`의 `onStepsChange` → `loadCategories`도 동일 체인. 생성 API(`createCategory`)도 동일 — `api.ts` → `useCategories.addCategory()` → `embed-page-inner.tsx` 핸들러 체인 + 백엔드 `store()`·`CategoryStoreRequest`까지 전파. hook interface 타입(`UseCategoriesReturn`)도 갱신 필수. 한 곳만 수정하면 나머지는 이전 동작 유지.
 - **SSR 조건부 렌더링** — `getToken()`은 SSR 시 `null`. 인증 기반 분기는 `serverHadToken` prop 사용.
 - **Laravel `boolean` 유효성 검증** — `"true"`/`"false"` 불허. 쿼리 파라미터는 `params.set(key, bool ? "1" : "0")` 사용.
 - **`category_code` unique 범위** — `(category_code, user_id, folder)`. `CategoryStoreRequest`·`CategoryUpdateTextRequest`에 folder scope 필수. `useCategories.addCategory()` → `createCategory()` → API까지 `folder` 파라미터 전파 필수. 누락 시 기본폴더(null)로 생성되어 중복 체크 오작동.
@@ -63,6 +63,7 @@
 - **batch `onComplete`·`onCategoryComplete` 콜백 패턴** — `onComplete`는 `filterRef.current`로 현재 필터를 읽고 `loadCategories(1, ...)` + `updateURL({ page: 1 })`로 URL 동기화. `onCategoryComplete`는 루프 중 `loadCategories` 호출 금지 — page 불일치로 URL의 page=N이 API 요청에 붙는 버그 유발. `CategoryDelete`도 동일 패턴. 상세: `nextjs/AGENTS.md`.
 - **progress step 기반 표시** — `BatchProgress` interface에 `initialTotalSteps` 필드 추가. 큐 구성 시 저장, `queueEmpty` 시에도 보존. progress 오른쪽 `[N/M]`은 카테고리 수가 아닌 step 수 기준.
 - **batch-status `with('embeddings')` 메모리 초과** — 대량 데이터에서 임베딩 벡터 전체를 이저 로딩하면 메모리 제한(128MB) 초과로 500 에러. 임베딩 존재 여부 확인은 `whereNotNull('embedding')->select('category_id', 'language')` 경량 쿼리 사용. 상세: `laravel/AGENTS.md`.
+- **`CategoryController::index()` `steps` 파라미터** — `steps[]=embedding.ko&steps[]=translation.en` 쿼리 파라미터로 체크된 step 중 하나라도 누락된 카테고리만 필터링. `batchStatus`의 `determineMissingSteps`와 동일 로직을 SQL WHERE 조건으로 구현 (embedding 의존성 포함). `TaskExecution` 체크박스 토글 → `onStepsChange` → `loadCategories(1, ..., steps)`로 page=1 리셋 후 호출.
 
 ## 하위 디렉토리
 

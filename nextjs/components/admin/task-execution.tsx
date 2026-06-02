@@ -25,6 +25,7 @@ interface TaskExecutionProps {
   onComplete: (wasStopped: boolean) => void;
   onCategoryComplete?: () => void;
   folder?: string;
+  onStepsChange?: (steps: StepName[]) => void;
 }
 
 interface BatchProgress {
@@ -59,6 +60,7 @@ export default function TaskExecution({
   onComplete,
   onCategoryComplete,
   folder,
+  onStepsChange,
 }: TaskExecutionProps) {
   const STEP_ORDER: StepName[] = [
     "embedding.ko",
@@ -84,7 +86,7 @@ export default function TaskExecution({
   const [running, setRunning] = useState(false);
   const [wasStopped, setWasStopped] = useState(false);
   const [checkedSteps, setCheckedSteps] = useState<Set<StepName>>(
-    new Set<StepName>(["embedding.ko"])
+    new Set<StepName>()
   );
 
   const toggleStep = (step: StepName) => {
@@ -92,6 +94,7 @@ export default function TaskExecution({
       const next = new Set(prev);
       if (next.has(step)) next.delete(step);
       else next.add(step);
+      onStepsChange?.(Array.from(next));
       return next;
     });
   };

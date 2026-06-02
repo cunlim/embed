@@ -212,6 +212,8 @@ export function EmbedPageInner({
   // filterSelection을 추적 (effectiveFilter 아님 — "전체" 선택 시 effectiveFilter=undefined가 되어 hasResidual에서 누락됨)
   const filterRef = useRef(filterSelection);
   useEffect(() => { filterRef.current = filterSelection });
+  // steps 필터 (TaskExecution 체크박스 상태)
+  const stepsRef = useRef<import("@/lib/api").StepName[] | undefined>(undefined);
 
   // URL에 초기 필터 파라미터가 있으면 첫 loadCategories를 건너뛴다 (CategoryHierarchy mount effect가 대신 처리)
   const skipInitialLoad = useRef(initialHierarchy.length > 0 || !!initialFilterKeyword);
@@ -241,6 +243,13 @@ export function EmbedPageInner({
       // 에러는 useCategories에서 이미 처리됨 (catError state)
     }
   }, [newCategoryName, newCategoryCode, selectedFolder, selectedUserId, addCategory]);
+
+  // TaskExecution 체크박스 변경 시 카테고리 목록을 steps 필터로 갱신
+  const handleStepsChange = useCallback((steps: import("@/lib/api").StepName[]) => {
+    stepsRef.current = steps.length > 0 ? steps : undefined;
+    const kw = keywordRef.current;
+    loadCategories(1, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
+  }, [perPage, effectiveFilter, loadCategories, selectedFolder, selectedUserId]);
 
   // URL 업데이트 (현재 URL 보존 + 오버라이드만 적용)
   const updateURL = useCallback((overrides: {
@@ -362,7 +371,7 @@ export function EmbedPageInner({
       handleSearchRef.current(page);
     } else {
       const kw = keywordRef.current;
-      loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
+      loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
     }
   }, [mounted, page, perPage, effectiveFilter, loadCategories]);
 
@@ -399,6 +408,7 @@ export function EmbedPageInner({
         // 필터 ref 초기화 (SSR 기본값으로 복원)
         filterRef.current = defaultFilter;
         // 디폴트 카테고리 목록 리로드 (SSR 기본 필터 적용)
+        stepsRef.current = undefined;
         loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "", selectedFolder ?? undefined, selectedUserId ?? undefined);
       }
     } else {
@@ -468,6 +478,7 @@ export function EmbedPageInner({
     setHierarchyKeyword("");
 
     // 카테고리 목록 리로드 (SSR 기본 필터 적용, 폴더 초기화)
+    stepsRef.current = undefined;
     loadCategories(1, 20, defaultFilter === "my" ? "my" : undefined, "", undefined, undefined);
   }, [loadCategories]);
 
@@ -494,14 +505,14 @@ export function EmbedPageInner({
     }
     if (!keyword) {
       setKeywordSearchActive(false);
-      loadCategories(1, perPage, effectiveFilter, "", selectedFolder ?? undefined, selectedUserId ?? undefined);
+      loadCategories(1, perPage, effectiveFilter, "", selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
       return;
     }
     setSearchResults(null);
     setSearchMeta(null);
     setSearchError(null);
     setKeywordSearchActive(true);
-    loadCategories(1, perPage, effectiveFilter, keyword, selectedFolder ?? undefined, selectedUserId ?? undefined);
+    loadCategories(1, perPage, effectiveFilter, keyword, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
   }, [perPage, effectiveFilter, loadCategories, searchResults, handleSearch]);
 
   // 필터 상태 변경 시 URL 업데이트
@@ -679,12 +690,12 @@ export function EmbedPageInner({
                   // page=1, folder + user_id URL 반영 (기존 filter 등 파라미터 보존)
                   updateURL({ folder: folder ?? null, userId: userId ?? null, page: 1 });
                   // 폴더 범위로 카테고리 재로드 (기존 필터 유지)
-                  loadCategories(1, perPage, effectiveFilter, keywordRef.current, folder ?? undefined, userId ?? undefined);
+                  loadCategories(1, perPage, effectiveFilter, keywordRef.current, folder ?? undefined, userId ?? undefined, stepsRef.current);
                 }}
                 onFolderActionComplete={() => {
                   // 폴더 이동 후 선택 해제
                   setSelectedIds(new Set());
-                  loadCategories(page, perPage, effectiveFilter, keywordRef.current, selectedFolderRef.current ?? undefined, selectedUserId ?? undefined);
+                  loadCategories(page, perPage, effectiveFilter, keywordRef.current, selectedFolderRef.current ?? undefined, selectedUserId ?? undefined, stepsRef.current);
                 }}
               />
             )}
@@ -785,7 +796,7 @@ export function EmbedPageInner({
                     token={token}
                     folder={selectedFolder ?? undefined}
                     onSuccess={() => {
-                      loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined, selectedUserId ?? undefined);
+                      loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
                       setHierarchyRefreshKey((prev) => prev + 1);
                     }}
                   />
@@ -806,13 +817,14 @@ export function EmbedPageInner({
               keyword={hierarchyKeyword || undefined}
               canModify={canModify}
               folder={selectedFolder ?? undefined}
+              onStepsChange={handleStepsChange}
               onComplete={(wasStopped) => {
                 if (!wasStopped) {
                   setSelectedIds(new Set());
                 }
                 const kw = keywordRef.current;
                 const ef = filterRef.current === "my" ? "my" : undefined;
-                loadCategories(1, perPage, ef, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
+                loadCategories(1, perPage, ef, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
                 updateURL({ page: 1 });
               }}
               onCategoryComplete={() => {
@@ -847,7 +859,7 @@ export function EmbedPageInner({
                 setSelectedIds(new Set());
                 const kw = keywordRef.current;
                 const ef = filterRef.current === "my" ? "my" : undefined;
-                loadCategories(1, perPage, ef, kw, selectedFolder ?? undefined, selectedUserId ?? undefined);
+                loadCategories(1, perPage, ef, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
                 updateURL({ page: 1 });
                 setHierarchyRefreshKey((prev) => prev + 1);
               }}
@@ -1218,12 +1230,12 @@ export function EmbedPageInner({
         execState={modalCategoryId ? getState(modalCategoryId) : null}
         onSingleAction={async (stepName) => {
           if (modalCategoryId !== null) {
-            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined), setData);
+            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined, undefined, stepsRef.current), setData);
           }
         }}
         onRunAll={async () => {
           if (modalCategoryId !== null && detailData) {
-            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined), setData);
+            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined, undefined, stepsRef.current), setData);
           }
         }}
         onCancelPending={() => {

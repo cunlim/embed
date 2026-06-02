@@ -47,31 +47,24 @@ describe("TaskExecution", () => {
     vi.clearAllMocks();
   });
 
-  it("5개 체크박스를 렌더링하고 embedding.ko만 기본 체크된다", () => {
+  it("5개 체크박스를 렌더링하고 기본적으로 모두 해제되어 있다", () => {
     renderTaskExecution();
 
-    // shadcn base-ui Checkbox는 label이 붙은 visible span과 hidden input
-    // 두 가지로 렌더링되므로 getByRole로 찾는다
     const koEmb = screen.getByRole("checkbox", { name: "한국어 임베딩" });
     const enTrans = screen.getByRole("checkbox", { name: "영어 번역" });
     const enEmb = screen.getByRole("checkbox", { name: "영어 임베딩" });
     const zhTrans = screen.getByRole("checkbox", { name: "중국어 번역" });
     const zhEmb = screen.getByRole("checkbox", { name: "중국어 임베딩" });
 
-    // shadcn base-ui Checkbox uses aria-checked
-    expect(koEmb.getAttribute("aria-checked")).toBe("true");
+    expect(koEmb.getAttribute("aria-checked")).toBe("false");
     expect(enTrans.getAttribute("aria-checked")).toBe("false");
     expect(enEmb.getAttribute("aria-checked")).toBe("false");
     expect(zhTrans.getAttribute("aria-checked")).toBe("false");
     expect(zhEmb.getAttribute("aria-checked")).toBe("false");
   });
 
-  it("모든 체크박스 해제 시 선택 처리·전체 처리 버튼이 disabled 된다", () => {
+  it("체크박스가 모두 해제되어 있으면 선택 처리·전체 처리 버튼이 disabled 된다", () => {
     renderTaskExecution();
-
-    // embedding.ko 체크 해제
-    const koEmb = screen.getByRole("checkbox", { name: "한국어 임베딩" });
-    fireEvent.click(koEmb);
 
     const selectBtn = screen.getByText("선택 처리");
     const fullBtn = screen.getByText("전체 처리");
@@ -82,6 +75,10 @@ describe("TaskExecution", () => {
 
   it("하나라도 체크되어 있으면 선택 처리·전체 처리 버튼이 활성화된다", () => {
     renderTaskExecution({ selectedIds: new Set([1]) });
+
+    // 체크박스를 하나 체크해야 버튼이 활성화됨
+    const koEmb = screen.getByRole("checkbox", { name: "한국어 임베딩" });
+    fireEvent.click(koEmb);
 
     const selectBtn = screen.getByText("선택 처리");
     const fullBtn = screen.getByText("전체 처리");
@@ -102,6 +99,8 @@ describe("TaskExecution", () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
     renderTaskExecution({ selectedIds: new Set([1]) });
 
+    // 한국어 임베딩 체크
+    fireEvent.click(screen.getByRole("checkbox", { name: "한국어 임베딩" }));
     fireEvent.click(screen.getByText("선택 처리"));
 
     await vi.waitFor(() => {
@@ -123,6 +122,8 @@ describe("TaskExecution", () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
     renderTaskExecution();
 
+    // 한국어 임베딩 체크
+    fireEvent.click(screen.getByRole("checkbox", { name: "한국어 임베딩" }));
     fireEvent.click(screen.getByText("전체 처리"));
 
     await vi.waitFor(() => {

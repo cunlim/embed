@@ -20,6 +20,7 @@
 - **폴더 이동 중복 처리**: `moveFolder()`는 타겟 폴더의 **모든** `(category_code, user_id)`를 사전 조회(`whereNotIn` 사용 금지 — 이미 타겟에 있는 레코드 누락 시 unique constraint 위반). `$conflictKeys` 맵을 배치 처리 중에도 갱신하여 같은 `(category_code, user_id)`가 배치에 여러 개 있어도 첫 번째만 이동하고 나머지 스킵. 응답은 `{ moved, failed, message }` 통계 형식. **소유권 변경**: 관리자가 `target_user_id` 지정 시 `folder` + `user_id` 동시 업데이트. 중복 체크도 새 `user_id` 기준.
 - **폴더 삭제 중복 체크**: `destroy()`에서 `move_to_default=true`일 때 기본폴더(`folder IS NULL`)에 동일 `(category_code, user_id)`가 있는지 사전 확인. 중복 발견 시 409 + `{duplicate_count, duplicate_codes}` 반환으로 폴더 삭제 거부. `hasCategories()` API도 `duplicate_count`/`duplicate_codes` 필드를 반환하도록 확장되어 프론트 모달에서 선제 차단.
 - **`기본폴더` → NULL defense in depth**: `store()`·`moveFolder()`에서 `$request->input('folder') === '기본폴더'` → `null` 변환. 프론트엔드 누락 시에도 DB 일관성 보장.
+- **`CategoryController::index()` `steps` 필터**: `steps[]=embedding.ko` 쿼리 파라미터 지원. `batchStatus`의 `determineMissingSteps`와 동일 로직을 `whereDoesntHave` + OR 조건으로 SQL WHERE에 적용. `steps` 미전달 시 기존 동작. 프론트 `TaskExecution` 체크박스 토글 → `onStepsChange` → `loadCategories`로 호출.
 
 ## 테스트 환경
 
