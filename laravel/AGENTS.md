@@ -64,9 +64,12 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 
 - 번역/임베딩은 비동기 Job이 아닌 **동기 HTTP 컨트롤러**에서 실행. step 단위 처리 후 `translations` 필드 포함 응답.
 - `PUT /api/categories/{id}/update-text`는 텍스트 업데이트 후 해당 언어의 CategoryEmbedding을 **삭제**.
+- **OllamaClient `retryCall()`** — HTTP 429/5xx, 연결 타임아웃 발생 시 지수 백오프(1s→2s→4s) + 지터(0~500ms)로 최대 `http_max_attempts`(기본 3)회 자동 재시도. 400/401/403/404/422는 재시도 제외. `chat()`·`embed()` 모두 적용. `checkRateLimit()`은 재시도 래퍼 밖에서 실행.
+- **OllamaTranslator 환각 재시도** — `translateSingle()`에서 `isValidTranslation()` 실패 시 최대 `translation_max_attempts`(기본 3)회 재시도, 각 시도 간 500ms `usleep` 지연.
 - `category_code`: `(category_code, user_id, folder)` 복합 unique. `CategoryStoreRequest`·`CategoryUpdateTextRequest` 모두 folder scope 포함 필수. `filled()`로 체크 (`??`는 빈 문자열 통과)
 - `RecommendRequest` filter: `in:my,all` — `"all"`도 허용 (프론트 "전체" 선택 + 유사도검색 시 `filter=all` 전송)
 - **`POST /api/categories/batch-status`** — 배치 작업용 벌크 상태 확인. `ids[]`(선택처리) 또는 `filter`/`keyword`/`folder`(전체처리) + `steps[]`(checkbox 상태) 파라미터. 서버에서 `determineMissingSteps()`로 누락 step 계산 시 **세 가지 필터 적용**: ①`steps[]` 교집합(선택된 step만), ②이미 완료된 step 제외(`embedding !== null`), ③embedding 의존성(번역 텍스트 없고 해당 translation step도 미선택이면 embedding 제외). 응답: `{ total_selected, needs_processing, total_steps, categories: [{ id, category_name_ko, missing_steps }] }`.
+- **폴더 이동 시 소유권 변경** — `POST /api/categories/move-folder`에 `target_user_id` 파라미터 추가. 관리자가 지정 시 `folder` + `user_id` 동시 업데이트. 중복 체크도 새 `user_id` 기준으로 수행. 비관리자는 `target_user_id` 무시됨.
 
 ### 카테고리 검색 API
 

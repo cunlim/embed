@@ -37,6 +37,10 @@
 - **`resetToDefault` 폴더 초기화**: `resetToDefault()`에서 `setSelectedFolder(null)`, `setSelectedUserId(null)` 필수. 미적용 시 폴더 select가 stale 값 표시. `loadCategories()` 호출 인자도 `undefined`로 변경.
 - **useCategories mutation reload 컨텍스트**: `addCategory()`·`deleteCategory()` 내부 GET reload 시 `currentFolder` 등 모든 ref 전달 필수. `loadCategories`가 ref 갱신, mutation 함수가 ref 소비.
 - **async batch 진행률 `flushSync`**: `nextjs/AGENTS.md` 알려진 이슈 참조.
+- **task-execution 단계별 재시도**: `MAX_RETRIES=2`(총 3회), `RETRY_DELAY_MS=1000`(지수 증가). `status:"failed"`(422 등)는 재시도 안 함. `STEP_DELAY_MS=2000`(단계 간 지연). `handleRetry`는 `retryParamsRef` → `fetchBatchStatus` 재호출로 stale 데이터 방지.
+- **`ApiError` 클래스**: `api.ts`에서 HTTP status 보존. `request()` → `throw new ApiError(msg, res.status)`. 422(재시도 불가) vs 500(재시도) 판별용.
+- **`moveCategoriesToFolder` `targetUserId`**: 관리자 소유권 이전용 파라미터. `folder-section.tsx`에서 composite value(`"폴더명:userId"`) 파싱해 추출.
+- **비로그인 사이드바 auth-gating**: `{serverHadToken && (...)}`로 추가·다운로드·삭제 섹션 숨김. 유사도 검색·필터·작업 실행은 항상 표시.
 - **`fetchCategoryTranslations` `noPreview` 옵션**: `noPreview: true` → `?no_preview=true`로 임베딩 벡터 제외. 카테고리 모달 상세 조회에서 사용. 배치 작업은 `batch-status` API로 대체됨.
 - **batch `onComplete`·`onCategoryComplete` 콜백**: `filterRef.current`로 현재 필터 읽기. `onComplete`는 `loadCategories(1, ...)` + `updateURL({ page: 1 })`로 URL 동기화. `onCategoryComplete`는 루프 중 `loadCategories` 호출 금지 (page 불일치).
 - **progress `initialTotalSteps`**: `BatchProgress`에 `initialTotalSteps` 추가. 큐 구성 시 저장, `queueEmpty` 시에도 보존. progress `[N/M]`은 step 수 기준.
