@@ -129,7 +129,7 @@ class CategoryController extends Controller
         /** @var User|null $user */
         $user = auth('sanctum')->user();
 
-        $query = Category::query()->with('embeddings');
+        $query = Category::query();
 
         // ids 모드 vs 필터 모드
         if ($request->filled('ids')) {
@@ -195,12 +195,28 @@ class CategoryController extends Controller
 
         // 누락 step 계산 (선택된 step 필터 + embedding 의존성 적용)
         $embedModelName = config('services.ollama.embedding_model');
+
+        // 임베딩 존재 여부를 경량 쿼리로 조회 (벡터 데이터 제외)
+        $categoryIds = $categories->pluck('id')->toArray();
+        $embeddingExistsMap = [];
+        if (! empty($categoryIds)) {
+            $embeddingRows = CategoryEmbedding::whereIn('category_id', $categoryIds)
+                ->where('embed_model_name', $embedModelName)
+                ->whereNotNull('embedding')
+                ->select('category_id', 'language')
+                ->get();
+            foreach ($embeddingRows as $row) {
+                $embeddingExistsMap[$row->category_id][] = $row->language;
+            }
+        }
+
         $result = [];
         $totalSteps = 0;
 
         foreach ($categories as $cat) {
             /** @var Category $cat */
-            $missing = $this->determineMissingSteps($cat, $embedModelName, $checkedSteps);
+            $embeddedLangs = $embeddingExistsMap[$cat->id] ?? [];
+            $missing = $this->determineMissingSteps($cat, $checkedSteps, $embeddedLangs);
             if (! empty($missing)) {
                 $result[] = [
                     'id' => $cat->id,
@@ -231,16 +247,16 @@ class CategoryController extends Controller
      *    - 번역 텍스트가 없고, translation step도 선택되지 않았으면 embedding 제외
      *
      * @param  string[]  $checkedSteps  프론트엔드에서 전달된 선택 step 목록
+     * @param  string[]  $embeddedLangs  이미 임베딩이 존재하는 언어 목록 (벡터 데이터 제외)
      * @return string[] 처리가 필요한 step 이름 배열
      */
-    private function determineMissingSteps(Category $category, string $embedModelName, array $checkedSteps): array
+    private function determineMissingSteps(Category $category, array $checkedSteps, array $embeddedLangs): array
     {
         $steps = [];
-        $embeddings = $category->embeddings;
 
         // en: 번역 + 임베딩
         $enTranslated = (bool) $category->category_name_en;
-        $enEmbedded = $embeddings->contains(fn ($e) => $e->language === 'en' && $e->embed_model_name === $embedModelName && $e->embedding !== null);
+        $enEmbedded = in_array('en', $embeddedLangs);
 
         if (! $enTranslated && in_array('translation.en', $checkedSteps)) {
             $steps[] = 'translation.en';
@@ -253,7 +269,7 @@ class CategoryController extends Controller
 
         // zh: 번역 + 임베딩
         $zhTranslated = (bool) $category->category_name_zh;
-        $zhEmbedded = $embeddings->contains(fn ($e) => $e->language === 'zh' && $e->embed_model_name === $embedModelName && $e->embedding !== null);
+        $zhEmbedded = in_array('zh', $embeddedLangs);
 
         if (! $zhTranslated && in_array('translation.zh', $checkedSteps)) {
             $steps[] = 'translation.zh';
@@ -263,7 +279,7 @@ class CategoryController extends Controller
         }
 
         // ko: 임베딩만 (원본 언어 — 번역 불필요)
-        $koEmbedded = $embeddings->contains(fn ($e) => $e->language === 'ko' && $e->embed_model_name === $embedModelName && $e->embedding !== null);
+        $koEmbedded = in_array('ko', $embeddedLangs);
         if (! $koEmbedded && in_array('embedding.ko', $checkedSteps)) {
             $steps[] = 'embedding.ko';
         }

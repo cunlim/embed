@@ -31,3 +31,4 @@
 
 - **pgvector raw SQL**: `::vector` 명시적 캐스트 필수 (PDO는 text로 바인딩). `array_fill` 금지 (collinear 벡터).
 - **RANK() + LEFT JOIN 함정**: LEFT JOIN 결과가 NULL이어도 RANK()는 전체 결과셋에서 순위 반환. Service에서 `distance` null이면 `rank`도 null로 명시적 처리.
+- **임베딩 존재 여부 조회 시 벡터 데이터 제외** — `CategoryEmbedding` 조회 시 `->select('category_id', 'language')`로 필요한 컬럼만 가져오고 `embedding`(vector) 컬럼은 제외. 5k+ 카테고리 기준 `->with('embeddings')` 이저 로딩은 208MB 메모리 사용하나, 경량 쿼리는 수 MB 이내. `whereNotNull('embedding')`으로 null 체크는 유지.
