@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Download } from "lucide-react";
 import { getCategories } from "@/lib/api";
 import type { Category, Recommendation } from "@/lib/api";
 
@@ -82,22 +81,16 @@ export default function CategoryDownload({
       <div className="space-y-2">
         <div className="flex gap-2">
           <Button
-            variant="outline"
-            size="sm"
             onClick={handleSelectedDownload}
             disabled={selectedIds.size === 0}
-            className="flex-1 text-xs"
+            className="flex-1"
           >
-            <Download className="h-3.5 w-3.5 mr-1" />
             선택다운로드
           </Button>
           <Button
-            variant="outline"
-            size="sm"
             onClick={handleFullDownload}
-            className="flex-1 text-xs"
+            className="flex-1"
           >
-            <Download className="h-3.5 w-3.5 mr-1" />
             전체다운로드
           </Button>
         </div>

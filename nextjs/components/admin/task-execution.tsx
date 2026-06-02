@@ -90,13 +90,11 @@ export default function TaskExecution({
   );
 
   const toggleStep = (step: StepName) => {
-    setCheckedSteps(prev => {
-      const next = new Set(prev);
-      if (next.has(step)) next.delete(step);
-      else next.add(step);
-      onStepsChange?.(Array.from(next));
-      return next;
-    });
+    const next = new Set(checkedSteps);
+    if (next.has(step)) next.delete(step);
+    else next.add(step);
+    setCheckedSteps(next);
+    onStepsChange?.(Array.from(next));
   };
 
   const [stopping, setStopping] = useState(false);
