@@ -76,6 +76,11 @@ export default function TaskExecution({
     "embedding.zh": "중국어 임베딩",
   };
 
+  const MAX_RETRIES = 2; // 총 3회 시도
+  const RETRY_DELAY_MS = 1000;
+  const STEP_DELAY_MS = 2000;
+  const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
   const [running, setRunning] = useState(false);
   const [wasStopped, setWasStopped] = useState(false);
   const [checkedSteps, setCheckedSteps] = useState<Set<StepName>>(
@@ -97,6 +102,14 @@ export default function TaskExecution({
   const abortRef = useRef(false);
   const targetIdsRef = useRef<number[]>([]);
   const lastBatchRef = useRef<BatchStatusData | null>(null);
+  const retryParamsRef = useRef<{
+    type: "selected" | "full";
+    ids?: number[];
+    filter?: string;
+    keyword?: string;
+    folder?: string;
+    steps: StepName[];
+  } | null>(null);
 
   const executeQueue = useCallback(
     async (batchData: BatchStatusData) => {
@@ -218,24 +231,37 @@ export default function TaskExecution({
             );
           });
 
-          try {
-            const result = await runStep(job.categoryId, job.stepName, token);
-            if (result.status === "completed") {
-              flushSync(() => {
-                setProgress((p) =>
-                  p ? { ...p, completedSteps: p.completedSteps + 1 } : p,
-                );
-              });
-            } else {
-              flushSync(() => {
-                setProgress((p) =>
-                  p ? { ...p, failedSteps: p.failedSteps + 1 } : p,
-                );
-              });
-              catFailed = true;
+          let stepSucceeded = false;
+
+          for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              const result = await runStep(job.categoryId, job.stepName, token);
+              if (result.status === "completed") {
+                stepSucceeded = true;
+                break;
+              }
+              // status "failed" — 재시도 불가 (422 validation 등)
               break;
+            } catch {
+              // 네트워크/500 에러 — 재시도
             }
-          } catch {
+
+            if (attempt < MAX_RETRIES && !abortRef.current) {
+              await delay(RETRY_DELAY_MS * Math.pow(2, attempt));
+            }
+          }
+
+          if (stepSucceeded) {
+            flushSync(() => {
+              setProgress((p) =>
+                p ? { ...p, completedSteps: p.completedSteps + 1 } : p,
+              );
+            });
+            // 단계 간 지연 (Ollama 부하 방지)
+            if (si < catSteps.length - 1) {
+              await delay(STEP_DELAY_MS);
+            }
+          } else {
             flushSync(() => {
               setProgress((p) =>
                 p ? { ...p, failedSteps: p.failedSteps + 1 } : p,
@@ -305,6 +331,7 @@ export default function TaskExecution({
         return;
       }
       if (!window.confirm(`선택한 ${d.total_selected}개 카테고리 중 ${d.needs_processing}개에서 ${d.total_steps}개 step이 필요합니다. 처리하시겠습니까?`)) return;
+      retryParamsRef.current = { type: "selected", ids: targetIds, steps };
       await executeQueue(d);
     } catch (err) {
       setError(err instanceof Error ? err.message : "상태 확인 실패");
@@ -325,6 +352,7 @@ export default function TaskExecution({
         return;
       }
       if (!window.confirm(`현재 필터에 해당하는 ${d.total_selected}개 카테고리 중 ${d.needs_processing}개에서 ${d.total_steps}개 step이 필요합니다. 처리하시겠습니까?`)) return;
+      retryParamsRef.current = { type: "full", filter, keyword, folder, steps };
       await executeQueue(d);
     } catch (err) {
       setError(err instanceof Error ? err.message : "상태 확인 실패");
@@ -338,9 +366,25 @@ export default function TaskExecution({
   }, []);
 
   const handleRetry = useCallback(async () => {
-    if (!lastBatchRef.current) return;
-    await executeQueue(lastBatchRef.current);
-  }, [executeQueue]);
+    if (!retryParamsRef.current || !token) return;
+    const params = retryParamsRef.current;
+    try {
+      const res = await fetchBatchStatus(token, {
+        ...(params.type === "selected"
+          ? { ids: params.ids }
+          : { filter: params.filter, keyword: params.keyword, folder: params.folder }),
+        steps: params.steps,
+      });
+      const d = res.data;
+      if (d.needs_processing === 0) {
+        toast("모든 카테고리가 이미 처리되었습니다");
+        return;
+      }
+      await executeQueue(d);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "재실행 실패");
+    }
+  }, [executeQueue, token]);
 
   const pct =
     progress && progress.totalSteps > 0

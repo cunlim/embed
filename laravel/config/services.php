@@ -43,6 +43,7 @@ return [
         'rate_limit_decay_seconds' => 60,
         'timeout' => 300,
         'translation_max_attempts' => 3,
+        'http_max_attempts' => 3,
     ],
 
     'google' => [

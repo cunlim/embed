@@ -87,6 +87,10 @@ class OllamaTranslator
             }
 
             $attempts++;
+
+            if ($attempts < $maxAttempts) {
+                usleep(500000); // 500ms 지연 후 재시도 (즉시 재시도 시 동일 환각 가능성 높음)
+            }
         } while ($attempts < $maxAttempts);
 
         throw new RuntimeException(

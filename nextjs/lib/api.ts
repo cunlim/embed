@@ -1,5 +1,14 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api";
 
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 interface RequestOptions {
   method?: string;
   body?: unknown;
@@ -28,7 +37,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message || `API Error: ${res.status}`);
+    throw new ApiError(error.message || `API Error: ${res.status}`, res.status);
   }
 
   return res.json();
@@ -310,16 +319,24 @@ export interface RunStepResponse {
   translations?: CategoryTranslations;
 }
 
-export function runStep(
+export async function runStep(
   categoryId: number,
   step: string,
   token?: string | null
 ): Promise<RunStepResponse> {
-  return request<RunStepResponse>(`/categories/${categoryId}/run-step`, {
-    method: "POST",
-    body: { step },
-    token,
-  });
+  try {
+    return await request<RunStepResponse>(`/categories/${categoryId}/run-step`, {
+      method: "POST",
+      body: { step },
+      token,
+    });
+  } catch (err) {
+    // 422 유효성 검증 실패는 재시도 불가 — failed 상태로 반환
+    if (err instanceof ApiError && err.status === 422) {
+      return { step, status: "failed", error: err.message };
+    }
+    throw err;
+  }
 }
 
 // --- 카테고리 텍스트 업데이트 ---
@@ -490,10 +507,13 @@ export function moveCategoriesToFolder(
   categoryIds: number[],
   targetFolder: string | null,
   token?: string | null,
+  targetUserId?: number | null,
 ): Promise<{ message: string; moved: number; failed: number }> {
+  const body: Record<string, unknown> = { category_ids: categoryIds, target_folder: targetFolder };
+  if (targetUserId != null) body.target_user_id = targetUserId;
   return request<{ message: string; moved: number; failed: number }>("/categories/move-folder", {
     method: "POST",
-    body: { category_ids: categoryIds, target_folder: targetFolder },
+    body,
     token,
   });
 }
