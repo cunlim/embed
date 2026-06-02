@@ -17,6 +17,7 @@ class MoveFolderRequest extends FormRequest
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
             'target_folder' => ['nullable', 'string', 'max:100'],
+            'target_user_id' => ['nullable', 'integer', 'exists:users,id'],
         ];
     }
 }

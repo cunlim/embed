@@ -202,14 +202,16 @@ export default function FolderSection({
     if (!token || selectedIds.size === 0) return;
     if (!window.confirm(`선택한 ${selectedIds.size}개 카테고리를 이동하시겠습니까?`)) return;
     let resolvedFolder = moveTargetFolder;
+    let resolvedUserId: number | undefined;
     if (resolvedFolder && resolvedFolder.includes(":")) {
-      const [name] = resolvedFolder.split(":");
+      const [name, userIdStr] = resolvedFolder.split(":");
       resolvedFolder = name;
+      resolvedUserId = userIdStr ? parseInt(userIdStr, 10) : undefined;
     }
     const target =
       resolvedFolder === DEFAULT_FOLDER_LABEL ? null : resolvedFolder || null;
     try {
-      const result = await moveCategoriesToFolder(Array.from(selectedIds), target, token);
+      const result = await moveCategoriesToFolder(Array.from(selectedIds), target, token, resolvedUserId);
       setMoveTargetFolder("");
       setError(result.failed > 0 ? result.message : null);
       if (result.failed > 0) {
@@ -247,14 +249,16 @@ export default function FolderSection({
     }
     if (!window.confirm(`현재 필터에 해당하는 ${count}개 카테고리를 이동하시겠습니까?`)) return;
     let resolvedFolder = moveTargetFolder;
+    let resolvedUserId: number | undefined;
     if (resolvedFolder && resolvedFolder.includes(":")) {
-      const [name] = resolvedFolder.split(":");
+      const [name, userIdStr] = resolvedFolder.split(":");
       resolvedFolder = name;
+      resolvedUserId = userIdStr ? parseInt(userIdStr, 10) : undefined;
     }
     const target =
       resolvedFolder === DEFAULT_FOLDER_LABEL ? null : resolvedFolder || null;
     try {
-      const result = await moveCategoriesToFolder(allIds, target, token);
+      const result = await moveCategoriesToFolder(allIds, target, token, resolvedUserId);
       setMoveTargetFolder("");
       setError(result.failed > 0 ? result.message : null);
       if (result.failed > 0) {

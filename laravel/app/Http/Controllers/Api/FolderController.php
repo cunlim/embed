@@ -266,6 +266,12 @@ class FolderController extends Controller
             ? null
             : $request->input('target_folder');
 
+        // 관리자만 target_user_id로 소유권 변경 가능
+        $targetUserId = $request->input('target_user_id');
+        if ($targetUserId && ! $user->isAdmin()) {
+            $targetUserId = null;
+        }
+
         // category_ids가 비어있으면 현재 사용자의 모든 카테고리 대상
         if (empty($categoryIds)) {
             $query = Category::where('user_id', $user->id);
@@ -283,13 +289,16 @@ class FolderController extends Controller
         }
 
         // 타겟 폴더에 동일 (category_code, user_id) 중복이 있는지 미리 확인
-        // whereNotIn 제거: 이미 타겟에 있는 레코드도 포함하여 중복 체크
         $allowedCodes = $allowed->pluck('category_code')->unique()->toArray();
-        $allowedUserIds = $allowed->pluck('user_id')->unique()->toArray();
+
+        // 중복 체크 시 사용할 user_id: 소유권 변경 시 targetUserId, 아니면 원본 user_id들
+        $checkUserIds = $targetUserId
+            ? [$targetUserId]
+            : $allowed->pluck('user_id')->unique()->toArray();
 
         $existingInTarget = Category::where('folder', $targetFolder)
             ->whereIn('category_code', $allowedCodes)
-            ->whereIn('user_id', $allowedUserIds)
+            ->whereIn('user_id', $checkUserIds)
             ->select('id', 'category_code', 'user_id')
             ->get();
 
@@ -302,10 +311,11 @@ class FolderController extends Controller
         $skipped = 0;
 
         foreach ($allowed as $cat) {
-            $key = $cat->category_code.'_'.$cat->user_id;
+            // 소유권 변경 시 새로운 user_id로 중복 체크
+            $checkUserId = $targetUserId ?? $cat->user_id;
+            $key = $cat->category_code.'_'.$checkUserId;
             if (isset($conflictKeys[$key])) {
                 // 타겟 폴더에 이미 동일 (code, user_id) 존재 → 스킵
-                // (자기 자신이거나, 다른 레코드이거나 동일하게 처리)
                 $skipped++;
             } else {
                 $safeIds[] = $cat->id;
@@ -315,7 +325,14 @@ class FolderController extends Controller
         }
 
         if (! empty($safeIds)) {
-            Category::whereIn('id', $safeIds)->update(['folder' => $targetFolder]);
+            if ($targetUserId && $user->isAdmin()) {
+                Category::whereIn('id', $safeIds)->update([
+                    'folder' => $targetFolder,
+                    'user_id' => $targetUserId,
+                ]);
+            } else {
+                Category::whereIn('id', $safeIds)->update(['folder' => $targetFolder]);
+            }
         }
 
         $moved = count($safeIds);
