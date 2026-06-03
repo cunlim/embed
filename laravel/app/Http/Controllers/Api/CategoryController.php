@@ -124,7 +124,7 @@ class CategoryController extends Controller
         }
 
         if (! empty($checkedSteps)) {
-            $embedModelName = config('services.ollama.embedding_model');
+            $embedModelName = config('services.embed.model');
 
             $query->where(function ($q) use ($checkedSteps, $embedModelName) {
                 // embedding.ko: ko 임베딩이 없는 카테고리
@@ -267,7 +267,7 @@ class CategoryController extends Controller
         }
 
         // 누락 step 계산 (선택된 step 필터 + embedding 의존성 적용)
-        $embedModelName = config('services.ollama.embedding_model');
+        $embedModelName = config('services.embed.model');
 
         // 임베딩 존재 여부를 경량 쿼리로 조회 (벡터 데이터 제외)
         $categoryIds = $categories->pluck('id')->toArray();
@@ -806,7 +806,7 @@ class CategoryController extends Controller
 
         $step = $request->input('step');
         $categoryNameKo = $category->category_name_ko;
-        $embedModelName = config('services.ollama.embedding_model');
+        $embedModelName = config('services.embed.model');
         $translator = app(Translator::class);
         $embedder = app(EmbeddingGenerator::class);
 

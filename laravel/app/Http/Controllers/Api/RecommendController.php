@@ -121,7 +121,7 @@ class RecommendController extends Controller
         }
 
         $userId = $user?->id;
-        $modelName = config('services.ollama.embedding_model', 'bge-m3:latest');
+        $modelName = config('services.embed.model', 'bge-m3:latest');
 
         $searchLog = $this->embeddingCache->getOrCreateEmbedding(
             $text, $modelName, $userId
