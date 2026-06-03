@@ -9,63 +9,100 @@ class SettingsSeeder extends Seeder
 {
     public function run(): void
     {
+        // embed (임베딩)
         Setting::firstOrCreate(
-            ['group' => 'ollama', 'key' => 'host'],
+            ['group' => 'embed', 'key' => 'host'],
             [
                 'value' => 'http://host.docker.internal:11434',
                 'type' => 'string',
-                'description' => 'Ollama API 서버 주소',
+                'description' => '임베딩 API 서버 주소',
             ]
         );
 
         Setting::firstOrCreate(
-            ['group' => 'ollama', 'key' => 'translation_model'],
+            ['group' => 'embed', 'key' => 'api_key'],
             [
-                'value' => 'translategemma:4b',
+                'value' => '',
                 'type' => 'string',
-                'description' => '번역에 사용할 Ollama 모델명',
+                'description' => '임베딩 API 키 (Ollama은 불필요)',
             ]
         );
 
         Setting::firstOrCreate(
-            ['group' => 'ollama', 'key' => 'embedding_model'],
+            ['group' => 'embed', 'key' => 'model'],
             [
                 'value' => 'bge-m3:latest',
                 'type' => 'string',
-                'description' => '임베딩에 사용할 Ollama 모델명',
+                'description' => '임베딩 모델명',
             ]
         );
 
         Setting::firstOrCreate(
-            ['group' => 'ollama', 'key' => 'rate_limit_max_attempts'],
-            [
-                'value' => '60',
-                'type' => 'integer',
-                'description' => 'Rate Limit: 시간 창 내 최대 Ollama API 호출 횟수',
-            ]
-        );
-
-        Setting::firstOrCreate(
-            ['group' => 'ollama', 'key' => 'rate_limit_decay_seconds'],
-            [
-                'value' => '60',
-                'type' => 'integer',
-                'description' => 'Rate Limit: 시간 창(초). 이 시간 동안 max_attempts만큼 허용',
-            ]
-        );
-
-        // ollama 추가
-        Setting::firstOrCreate(
-            ['group' => 'ollama', 'key' => 'timeout'],
+            ['group' => 'embed', 'key' => 'timeout'],
             [
                 'value' => '300',
                 'type' => 'integer',
-                'description' => 'Ollama API HTTP 요청 타임아웃(초)',
+                'description' => '임베딩 API HTTP 타임아웃(초)',
             ]
         );
 
         Setting::firstOrCreate(
-            ['group' => 'ollama', 'key' => 'translation_max_attempts'],
+            ['group' => 'embed', 'key' => 'rate_limit_max_attempts'],
+            [
+                'value' => '60',
+                'type' => 'integer',
+                'description' => '임베딩 Rate Limit: 시간 창 내 최대 API 호출 횟수',
+            ]
+        );
+
+        Setting::firstOrCreate(
+            ['group' => 'embed', 'key' => 'rate_limit_decay_seconds'],
+            [
+                'value' => '60',
+                'type' => 'integer',
+                'description' => '임베딩 Rate Limit: 시간 창(초)',
+            ]
+        );
+
+        // translate (번역)
+        Setting::firstOrCreate(
+            ['group' => 'translate', 'key' => 'host'],
+            [
+                'value' => 'http://host.docker.internal:11434',
+                'type' => 'string',
+                'description' => '번역 API 서버 주소',
+            ]
+        );
+
+        Setting::firstOrCreate(
+            ['group' => 'translate', 'key' => 'api_key'],
+            [
+                'value' => '',
+                'type' => 'string',
+                'description' => '번역 API 키 (Ollama은 불필요)',
+            ]
+        );
+
+        Setting::firstOrCreate(
+            ['group' => 'translate', 'key' => 'model'],
+            [
+                'value' => 'translategemma:4b',
+                'type' => 'string',
+                'description' => '번역 모델명',
+            ]
+        );
+
+        Setting::firstOrCreate(
+            ['group' => 'translate', 'key' => 'timeout'],
+            [
+                'value' => '300',
+                'type' => 'integer',
+                'description' => '번역 API HTTP 타임아웃(초)',
+            ]
+        );
+
+        Setting::firstOrCreate(
+            ['group' => 'translate', 'key' => 'max_attempts'],
             [
                 'value' => '3',
                 'type' => 'integer',
