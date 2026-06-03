@@ -107,7 +107,7 @@
 
 ### 6.4 `/admin` 관리자 페이지
 
-- **superadmin 전용**. 사이드바 메뉴(시스템 설정 / 안내). SettingsPanel에서 Ollama·pagination·cache 설정 조회/수정. 인증 실패 시 서버사이드 redirect로 어떤 UI도 노출되지 않음.
+- **superadmin 전용**. 사이드바 메뉴(시스템 설정 / 안내). SettingsPanel에서 임베딩/번역 프로바이더 설정(임베딩·번역 API 키 포함)·pagination·cache 설정 조회/수정. 인증 실패 시 서버사이드 redirect로 어떤 UI도 노출되지 않음.
 
 ### 6.5 공통 패턴
 
