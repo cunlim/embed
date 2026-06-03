@@ -2,8 +2,9 @@
 
 namespace App\Providers;
 
-use App\Services\OllamaClient;
-use App\Services\OllamaRateLimiter;
+use App\Services\Contracts\EmbeddingProviderInterface;
+use App\Services\Contracts\TranslationProviderInterface;
+use App\Services\ProviderFactory;
 use App\Services\SettingsService;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -15,19 +16,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(OllamaRateLimiter::class, function ($app) {
-            return new OllamaRateLimiter(
-                maxAttempts: (int) config('services.ollama.rate_limit_max_attempts', 60),
-                decaySeconds: (int) config('services.ollama.rate_limit_decay_seconds', 60),
-            );
+        $this->app->bind(EmbeddingProviderInterface::class, function ($app) {
+            return $app->make(ProviderFactory::class)->createEmbeddingProvider();
         });
 
-        $this->app->singleton(OllamaClient::class, function ($app) {
-            return new OllamaClient(
-                rateLimiter: $app->make(OllamaRateLimiter::class),
-                baseUrl: config('services.ollama.host'),
-                timeout: (int) config('services.ollama.timeout', 300),
-            );
+        $this->app->bind(TranslationProviderInterface::class, function ($app) {
+            return $app->make(ProviderFactory::class)->createTranslationProvider();
         });
     }
 
@@ -50,14 +44,19 @@ class AppServiceProvider extends ServiceProvider
 
         $settings = app(SettingsService::class);
         config([
-            // ollama (기존 + 신규)
-            'services.ollama.host' => $settings->get('ollama', 'host', config('services.ollama.host')),
-            'services.ollama.translation_model' => $settings->get('ollama', 'translation_model', config('services.ollama.translation_model')),
-            'services.ollama.embedding_model' => $settings->get('ollama', 'embedding_model', config('services.ollama.embedding_model')),
-            'services.ollama.rate_limit_max_attempts' => $settings->get('ollama', 'rate_limit_max_attempts', config('services.ollama.rate_limit_max_attempts', 60)),
-            'services.ollama.rate_limit_decay_seconds' => $settings->get('ollama', 'rate_limit_decay_seconds', config('services.ollama.rate_limit_decay_seconds', 60)),
-            'services.ollama.timeout' => $settings->get('ollama', 'timeout', config('services.ollama.timeout', 300)),
-            'services.ollama.translation_max_attempts' => $settings->get('ollama', 'translation_max_attempts', config('services.ollama.translation_max_attempts', 3)),
+            // embed (임베딩)
+            'services.embed.host' => $settings->get('embed', 'host', config('services.embed.host')),
+            'services.embed.api_key' => $settings->get('embed', 'api_key', ''),
+            'services.embed.model' => $settings->get('embed', 'model', 'bge-m3:latest'),
+            'services.embed.timeout' => $settings->get('embed', 'timeout', 300),
+            'services.embed.rate_limit_max_attempts' => $settings->get('embed', 'rate_limit_max_attempts', 60),
+            'services.embed.rate_limit_decay_seconds' => $settings->get('embed', 'rate_limit_decay_seconds', 60),
+            // translate (번역)
+            'services.translate.host' => $settings->get('translate', 'host', config('services.translate.host')),
+            'services.translate.api_key' => $settings->get('translate', 'api_key', ''),
+            'services.translate.model' => $settings->get('translate', 'model', 'translategemma:4b'),
+            'services.translate.timeout' => $settings->get('translate', 'timeout', 300),
+            'services.translate.max_attempts' => $settings->get('translate', 'max_attempts', 3),
             // pagination
             'services.pagination.default_per_page' => $settings->get('pagination', 'default_per_page', config('services.pagination.default_per_page', 20)),
             'services.pagination.max_per_page_guest' => $settings->get('pagination', 'max_per_page_guest', config('services.pagination.max_per_page_guest', 100)),
