@@ -3,12 +3,13 @@
 namespace App\Services;
 
 use App\Models\TranslationCache;
+use App\Services\Contracts\TranslationProviderInterface;
 use RuntimeException;
 
-class OllamaTranslator
+class Translator
 {
     public function __construct(
-        private OllamaClient $ollama,
+        private TranslationProviderInterface $provider,
     ) {}
 
     /**
@@ -69,12 +70,12 @@ class OllamaTranslator
             return $cached->translated_text;
         }
 
-        $model = config('services.ollama.translation_model', 'translategemma:4b');
-        $maxAttempts = (int) config('services.ollama.translation_max_attempts', 3);
+        $model = config('services.translate.model', 'translategemma:4b');
+        $maxAttempts = (int) config('services.translate.max_attempts', 3);
         $attempts = 0;
 
         do {
-            $result = $this->ollama->chat($model, $this->buildPrompt($text, $targetLang));
+            $result = $this->provider->chat($model, $this->buildPrompt($text, $targetLang));
             $result = trim($result);
 
             if ($this->isValidTranslation($result, $targetLang)) {

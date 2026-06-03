@@ -1,20 +1,20 @@
 <?php
 
 use App\Models\TranslationCache;
-use App\Services\OllamaClient;
-use App\Services\OllamaTranslator;
+use App\Services\Contracts\TranslationProviderInterface;
+use App\Services\Translator;
 
 beforeEach(function () {
-    config(['services.ollama.translation_model' => 'translategemma:4b']);
+    config(['services.translate.model' => 'translategemma:4b']);
 });
 
 test('4계층 > 구분자 카테고리: 첫 번째 번역은 모든 세그먼트를 Ollama로 번역 후 개별 캐싱한다', function () {
-    $mock = $this->mock(OllamaClient::class);
+    $mock = $this->mock(TranslationProviderInterface::class);
     $mock->shouldReceive('chat')
         ->times(4)
         ->andReturn('Furniture/Interior', 'DIY Materials/Supplies', 'Furniture Parts', 'Furniture Legs');
 
-    $translator = app(OllamaTranslator::class);
+    $translator = app(Translator::class);
     $result = $translator->translate('가구/인테리어>DIY자재/용품>가구부속품>가구다리', 'en');
 
     expect($result)->toBe('Furniture/Interior>DIY Materials/Supplies>Furniture Parts>Furniture Legs');
@@ -37,22 +37,22 @@ test('4계층 > 구분자 카테고리: 첫 번째 번역은 모든 세그먼트
 
 test('4계층 > 구분자 카테고리: 공통 prefix 세그먼트는 캐시 히트, 마지막 세그먼트만 Ollama 호출', function () {
     // 선행 번역으로 공통 prefix 3개 세그먼트를 캐싱
-    $mock1 = $this->mock(OllamaClient::class);
+    $mock1 = $this->mock(TranslationProviderInterface::class);
     $mock1->shouldReceive('chat')
         ->times(4)
         ->andReturn('Furniture/Interior', 'DIY Materials/Supplies', 'Furniture Parts', 'Furniture Legs');
 
-    $translator1 = app(OllamaTranslator::class);
+    $translator1 = app(Translator::class);
     $translator1->translate('가구/인테리어>DIY자재/용품>가구부속품>가구다리', 'en');
 
     // 두 번째 번역: 공통 3개 세그먼트는 캐시 히트 → "가구바퀴"만 Ollama 호출
-    $mock2 = $this->mock(OllamaClient::class);
+    $mock2 = $this->mock(TranslationProviderInterface::class);
     $mock2->shouldReceive('chat')
         ->once()
         ->with('translategemma:4b', Mockery::pattern('/가구바퀴/'))
         ->andReturn('Furniture Wheels');
 
-    $translator2 = app(OllamaTranslator::class);
+    $translator2 = app(Translator::class);
     $result = $translator2->translate('가구/인테리어>DIY자재/용품>가구부속품>가구바퀴', 'en');
 
     expect($result)->toBe('Furniture/Interior>DIY Materials/Supplies>Furniture Parts>Furniture Wheels');
@@ -83,12 +83,12 @@ test('4계층 > 구분자 카테고리 4종 연속 번역: 총 Ollama 호출 횟
     ];
 
     // 총 7개 고유 세그먼트 → 7회 Ollama 호출
-    $mock = $this->mock(OllamaClient::class);
+    $mock = $this->mock(TranslationProviderInterface::class);
     $mock->shouldReceive('chat')
         ->times(7)
         ->andReturnValues($expectedTranslations);
 
-    $translator = app(OllamaTranslator::class);
+    $translator = app(Translator::class);
 
     $result1 = $translator->translate($categories[0], 'en');
     expect($result1)->toBe('Furniture/Interior>DIY Materials/Supplies>Furniture Parts>Furniture Legs');
@@ -125,22 +125,22 @@ test('4계층 > 구분자 카테고리 4종 연속 번역: 총 Ollama 호출 횟
 
 test('zh 타겟 언어에서도 세그먼트 캐싱이 동일하게 동작한다', function () {
     // 첫 번째 카테고리: 4회 호출
-    $mock1 = $this->mock(OllamaClient::class);
+    $mock1 = $this->mock(TranslationProviderInterface::class);
     $mock1->shouldReceive('chat')
         ->times(4)
         ->andReturn('家具/室内', 'DIY材料/用品', '家具配件', '家具腿');
 
-    $translator1 = app(OllamaTranslator::class);
+    $translator1 = app(Translator::class);
     $translator1->translate('가구/인테리어>DIY자재/용품>가구부속품>가구다리', 'zh');
 
     // 두 번째 카테고리: 마지막 세그먼트만 1회 호출
-    $mock2 = $this->mock(OllamaClient::class);
+    $mock2 = $this->mock(TranslationProviderInterface::class);
     $mock2->shouldReceive('chat')
         ->once()
         ->with('translategemma:4b', Mockery::pattern('/가구바퀴/'))
         ->andReturn('家具轮');
 
-    $translator2 = app(OllamaTranslator::class);
+    $translator2 = app(Translator::class);
     $result = $translator2->translate('가구/인테리어>DIY자재/용품>가구부속품>가구바퀴', 'zh');
 
     expect($result)->toBe('家具/室内>DIY材料/用品>家具配件>家具轮');

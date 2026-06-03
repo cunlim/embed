@@ -3,7 +3,7 @@
 use App\Models\Category;
 use App\Models\User;
 use App\Services\EmbeddingGenerator;
-use App\Services\OllamaTranslator;
+use App\Services\Translator;
 
 test('POST /api/categories/{category}/run-step — 인증 없이 401을 반환한다', function () {
     $category = Category::factory()->create();
@@ -28,12 +28,12 @@ test('POST /api/categories/{category}/run-step — 유효하지 않은 step은 4
 });
 
 test('POST /api/categories/{category}/run-step — translation.zh가 정상 동작한다', function () {
-    $translator = mock(OllamaTranslator::class);
+    $translator = mock(Translator::class);
     $translator->shouldReceive('translate')
         ->once()
         ->with('테스트 카테고리', 'zh')
         ->andReturn('测试分类');
-    app()->instance(OllamaTranslator::class, $translator);
+    app()->instance(Translator::class, $translator);
 
     $user = User::factory()->create();
     $category = Category::factory()->create(['category_name_ko' => '테스트 카테고리', 'user_id' => $user->id]);
@@ -104,11 +104,11 @@ test('POST /api/categories/{category}/run-step — 번역 없이 임베딩 실�
 });
 
 test('POST /api/categories/{category}/run-step — Ollama 실패 시 500과 failed 상태를 반환한다', function () {
-    $translator = mock(OllamaTranslator::class);
+    $translator = mock(Translator::class);
     $translator->shouldReceive('translate')
         ->once()
         ->andThrow(new RuntimeException('Ollama rate limit exceeded'));
-    app()->instance(OllamaTranslator::class, $translator);
+    app()->instance(Translator::class, $translator);
 
     $user = User::factory()->create();
     $category = Category::factory()->create(['category_name_ko' => '테스트', 'user_id' => $user->id]);
@@ -138,9 +138,9 @@ test('POST /api/categories/{category}/run-step — 일반회원은 타인 카테
 });
 
 test('POST /api/categories/{category}/run-step — admin은 타인 카테고리에도 run-step을 실행할 수 있다', function () {
-    $translator = mock(OllamaTranslator::class);
+    $translator = mock(Translator::class);
     $translator->shouldReceive('translate')->once()->andReturn('测试');
-    app()->instance(OllamaTranslator::class, $translator);
+    app()->instance(Translator::class, $translator);
 
     $owner = User::factory()->create(['role' => 'member']);
     $admin = User::factory()->create(['role' => 'admin']);

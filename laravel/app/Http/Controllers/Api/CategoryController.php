@@ -13,7 +13,7 @@ use App\Models\Category;
 use App\Models\CategoryEmbedding;
 use App\Models\User;
 use App\Services\EmbeddingGenerator;
-use App\Services\OllamaTranslator;
+use App\Services\Translator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -807,7 +807,7 @@ class CategoryController extends Controller
         $step = $request->input('step');
         $categoryNameKo = $category->category_name_ko;
         $embedModelName = config('services.ollama.embedding_model');
-        $translator = app(OllamaTranslator::class);
+        $translator = app(Translator::class);
         $embedder = app(EmbeddingGenerator::class);
 
         try {
