@@ -35,15 +35,21 @@ return [
         ],
     ],
 
-    'ollama' => [
-        'host' => 'http://host.docker.internal:11434',
-        'translation_model' => 'translategemma:4b',
-        'embedding_model' => 'bge-m3:latest',
+    'embed' => [
+        'host' => env('EMBED_HOST', 'http://host.docker.internal:11434'),
+        'api_key' => env('EMBED_API_KEY', ''),
+        'model' => 'bge-m3:latest',
+        'timeout' => 300,
         'rate_limit_max_attempts' => 60,
         'rate_limit_decay_seconds' => 60,
+    ],
+
+    'translate' => [
+        'host' => env('TRANSLATE_HOST', 'http://host.docker.internal:11434'),
+        'api_key' => env('TRANSLATE_API_KEY', ''),
+        'model' => 'translategemma:4b',
         'timeout' => 300,
-        'translation_max_attempts' => 3,
-        'http_max_attempts' => 3,
+        'max_attempts' => 3,
     ],
 
     'google' => [
