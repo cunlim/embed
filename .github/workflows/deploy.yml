@@ -78,7 +78,7 @@ jobs:
           cd $LIVE_ROOT/docker
           docker compose stop cl_embed_laravel cl_embed_nextjs
           docker compose up -d cl_embed_laravel cl_embed_nextjs
-          docker exec docker-nginx-1 nginx -s reload
+          docker exec nginx nginx -s reload
           sleep 3
 
       # 7. 헬스체크 — 모든 서비스 정상 응답 확인
