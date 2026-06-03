@@ -258,7 +258,7 @@ export default function TaskExecution({
                 p ? { ...p, completedSteps: p.completedSteps + 1 } : p,
               );
             });
-            // 단계 간 지연 (Ollama 부하 방지)
+            // 단계 간 지연 (API 부하 방지)
             if (si < catSteps.length - 1) {
               await delay(STEP_DELAY_MS);
             }

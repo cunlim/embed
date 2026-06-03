@@ -12,7 +12,8 @@ interface Props {
 }
 
 const GROUP_LABELS: Record<string, string> = {
-  ollama: "Ollama",
+  embed: "임베딩",
+  translate: "번역",
   pagination: "페이지네이션",
   recommend: "추천",
   auth: "인증",
@@ -23,14 +24,20 @@ const GROUP_LABELS: Record<string, string> = {
 };
 
 const FIELD_LABELS: Record<string, Record<string, string>> = {
-  ollama: {
+  embed: {
     host: "API 서버 주소",
-    translation_model: "번역 모델명",
-    embedding_model: "임베딩 모델명",
+    api_key: "API 키",
+    model: "임베딩 모델명",
+    timeout: "HTTP 타임아웃(초)",
     rate_limit_max_attempts: "Rate Limit 최대 시도",
     rate_limit_decay_seconds: "Rate Limit 시간 창(초)",
+  },
+  translate: {
+    host: "API 서버 주소",
+    api_key: "API 키",
+    model: "번역 모델명",
     timeout: "HTTP 타임아웃(초)",
-    translation_max_attempts: "번역 재시도 횟수",
+    max_attempts: "번역 재시도 횟수",
   },
   pagination: {
     default_per_page: "기본 페이지 크기",
@@ -121,13 +128,14 @@ export function SettingsPanel({ token }: Props) {
               {Object.keys(items).map((key) => {
                 const fieldKey = `${group}.${key}`;
                 const isInteger = typeof items[key] === "number";
+                const isApiKey = key === "api_key";
                 return (
                   <div key={key} className="flex items-center gap-3">
                     <Label className="w-48 shrink-0 text-xs text-muted-foreground">
                       {FIELD_LABELS[group]?.[key] ?? key}
                     </Label>
                     <Input
-                      type={isInteger ? "number" : "text"}
+                      type={isApiKey ? "password" : isInteger ? "number" : "text"}
                       value={editing[fieldKey] ?? ""}
                       onChange={(e) =>
                         setEditing((prev) => ({ ...prev, [fieldKey]: e.target.value }))
