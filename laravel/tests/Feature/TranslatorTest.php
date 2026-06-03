@@ -116,7 +116,7 @@ test('분할된 개별 세그먼트는 TranslationCache에 저장되어 후속 �
         ->where('target_lang', 'en')
         ->exists())->toBeTrue();
 
-    // 공통 세그먼트("패션의류", "여성의류")는 캐시 히트 → 신규 세그먼트만 Ollama 호출
+    // 공통 세그먼트("패션의류", "여성의류")는 캐시 히트 → 신규 세그먼트만 Provider 호출
     $mock2 = $this->mock(TranslationProviderInterface::class);
     $mock2->shouldReceive('chat')
         ->once()

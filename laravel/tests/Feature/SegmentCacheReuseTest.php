@@ -8,7 +8,7 @@ beforeEach(function () {
     config(['services.translate.model' => 'translategemma:4b']);
 });
 
-test('4계층 > 구분자 카테고리: 첫 번째 번역은 모든 세그먼트를 Ollama로 번역 후 개별 캐싱한다', function () {
+test('4계층 > 구분자 카테고리: 첫 번째 번역은 모든 세그먼트를 Provider로 번역 후 개별 캐싱한다', function () {
     $mock = $this->mock(TranslationProviderInterface::class);
     $mock->shouldReceive('chat')
         ->times(4)
@@ -35,7 +35,7 @@ test('4계층 > 구분자 카테고리: 첫 번째 번역은 모든 세그먼트
         ->exists())->toBeTrue();
 });
 
-test('4계층 > 구분자 카테고리: 공통 prefix 세그먼트는 캐시 히트, 마지막 세그먼트만 Ollama 호출', function () {
+test('4계층 > 구분자 카테고리: 공통 prefix 세그먼트는 캐시 히트, 마지막 세그먼트만 Provider 호출', function () {
     // 선행 번역으로 공통 prefix 3개 세그먼트를 캐싱
     $mock1 = $this->mock(TranslationProviderInterface::class);
     $mock1->shouldReceive('chat')
@@ -45,7 +45,7 @@ test('4계층 > 구분자 카테고리: 공통 prefix 세그먼트는 캐시 히
     $translator1 = app(Translator::class);
     $translator1->translate('가구/인테리어>DIY자재/용품>가구부속품>가구다리', 'en');
 
-    // 두 번째 번역: 공통 3개 세그먼트는 캐시 히트 → "가구바퀴"만 Ollama 호출
+    // 두 번째 번역: 공통 3개 세그먼트는 캐시 히트 → "가구바퀴"만 Provider 호출
     $mock2 = $this->mock(TranslationProviderInterface::class);
     $mock2->shouldReceive('chat')
         ->once()
@@ -64,7 +64,7 @@ test('4계층 > 구분자 카테고리: 공통 prefix 세그먼트는 캐시 히
         ->exists())->toBeTrue();
 });
 
-test('4계층 > 구분자 카테고리 4종 연속 번역: 총 Ollama 호출 횟수 검증', function () {
+test('4계층 > 구분자 카테고리 4종 연속 번역: 총 Provider 호출 횟수 검증', function () {
     $categories = [
         '가구/인테리어>DIY자재/용품>가구부속품>가구다리',
         '가구/인테리어>DIY자재/용품>가구부속품>가구바퀴',
@@ -82,7 +82,7 @@ test('4계층 > 구분자 카테고리 4종 연속 번역: 총 Ollama 호출 횟
         'Other Parts',           // 카테고리4 마지막
     ];
 
-    // 총 7개 고유 세그먼트 → 7회 Ollama 호출
+    // 총 7개 고유 세그먼트 → 7회 Provider 호출
     $mock = $this->mock(TranslationProviderInterface::class);
     $mock->shouldReceive('chat')
         ->times(7)

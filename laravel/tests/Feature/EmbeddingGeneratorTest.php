@@ -1,12 +1,12 @@
 <?php
 
+use App\Services\Contracts\EmbeddingProviderInterface;
 use App\Services\EmbeddingGenerator;
-use App\Services\OllamaClient;
 
-test('generate는 config의 embedding_model로 OllamaClient embed를 호출한다', function () {
-    config(['services.ollama.embedding_model' => 'bge-m3:latest']);
+test('generate는 config의 model로 EmbeddingProviderInterface embed를 호출한다', function () {
+    config(['services.embed.model' => 'bge-m3:latest']);
 
-    $mock = $this->mock(OllamaClient::class);
+    $mock = $this->mock(EmbeddingProviderInterface::class);
     $mock->shouldReceive('embed')
         ->once()
         ->with('bge-m3:latest', '테스트 텍스트')
@@ -19,9 +19,9 @@ test('generate는 config의 embedding_model로 OllamaClient embed를 호출한�
 });
 
 test('generate는 커스텀 config 값을 사용한다', function () {
-    config(['services.ollama.embedding_model' => 'custom-model:v2']);
+    config(['services.embed.model' => 'custom-model:v2']);
 
-    $mock = $this->mock(OllamaClient::class);
+    $mock = $this->mock(EmbeddingProviderInterface::class);
     $mock->shouldReceive('embed')
         ->once()
         ->with('custom-model:v2', Mockery::any())
@@ -36,7 +36,7 @@ test('generate는 커스텀 config 값을 사용한다', function () {
 test('generate는 1024차원 벡터를 반환할 수 있다', function () {
     $vector = array_fill(0, 1024, 0.0);
 
-    $mock = $this->mock(OllamaClient::class);
+    $mock = $this->mock(EmbeddingProviderInterface::class);
     $mock->shouldReceive('embed')
         ->once()
         ->andReturn($vector);

@@ -103,7 +103,7 @@ test('POST /api/categories/{category}/run-step — 번역 없이 임베딩 실�
     $response->assertStatus(422);
 });
 
-test('POST /api/categories/{category}/run-step — Ollama 실패 시 500과 failed 상태를 반환한다', function () {
+test('POST /api/categories/{category}/run-step — Provider 실패 시 500과 failed 상태를 반환한다', function () {
     $translator = mock(Translator::class);
     $translator->shouldReceive('translate')
         ->once()
