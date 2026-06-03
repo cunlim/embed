@@ -15,7 +15,8 @@ class AdminSettingsController extends Controller
     ) {}
 
     private const GROUPS = [
-        'ollama',
+        'embed',
+        'translate',
         'pagination',
         'recommend',
         'auth',
