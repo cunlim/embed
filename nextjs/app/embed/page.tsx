@@ -23,7 +23,7 @@ type EmbedPageParams = {
 export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   const sp = await searchParams;
   const reader = serverParamsReader(sp);
-  const { keyword, searchText, searchLang, filter: urlFilter, folder: urlFolder, userId: urlUserId } = parseEmbedParams(reader);
+  const { keyword, searchText, searchLang, hierarchyLang, filter: urlFilter, folder: urlFolder, userId: urlUserId } = parseEmbedParams(reader);
 
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value ?? null;
@@ -61,6 +61,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   try {
     // 최상위 옵션 조회
     const topParams: Record<string, string> = {};
+    if (hierarchyLang !== "ko") topParams["lang"] = hierarchyLang;
     if (urlFolder) topParams["folder"] = urlFolder;
     const topRes = await fetchCategoryLevels(Object.keys(topParams).length > 0 ? topParams : undefined, token, urlUserIdNum);
     levelOptions.push(topRes.data.options as string[]);
@@ -79,6 +80,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
 
     for (let i = 0; i < catPath.length && i < maxDepth - 1; i++) {
       const catParams: Record<string, string> = {};
+      if (hierarchyLang !== "ko") catParams["lang"] = hierarchyLang;
       for (let j = 0; j <= i; j++) {
         catParams[`cat${j + 1}`] = catPath[j];
       }
@@ -142,6 +144,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
         serverSearchMeta={serverSearchMeta}
         serverSearchText={searchText}
         serverSearchLang={searchLang}
+        serverHierarchyLang={hierarchyLang}
         serverFolder={urlFolder}
         serverFolders={serverFolders}
         serverFolderGroups={serverFolderGroups}

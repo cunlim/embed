@@ -97,6 +97,7 @@ export function EmbedPageInner({
   serverSearchMeta,
   serverSearchText,
   serverSearchLang,
+  serverHierarchyLang,
   serverFolder,
   serverFolders,
   serverUsers,
@@ -114,6 +115,7 @@ export function EmbedPageInner({
   serverSearchMeta: PaginationMeta | null;
   serverSearchText: string | null;
   serverSearchLang: string;
+  serverHierarchyLang?: string;
   serverFolder?: string | null;
   serverFolders?: string[];
   serverUsers?: { id: number; name: string; email: string }[];
@@ -187,6 +189,7 @@ export function EmbedPageInner({
   // 검색 state (URL 및 SSR prefetch에서 초기값)
   const [searchText, setSearchText] = useState(serverSearchText ?? embedParams.searchText ?? "");
   const [searchLanguage, setSearchLanguage] = useState(serverSearchLang ?? embedParams.searchLang);
+  const [hierarchyLang, setHierarchyLang] = useState(serverHierarchyLang ?? embedParams.hierarchyLang ?? "ko");
   const [searchResults, setSearchResults] = useState<Recommendation[] | null>(serverSearchResults ?? null);
   // useRef로 searchResults 참조 — useEffect 의존성 배열에 추가하지 않고 최신값 읽기
   const searchResultsRef = useRef(searchResults);
@@ -256,6 +259,7 @@ export function EmbedPageInner({
     filter?: string | undefined;
     searchText?: string;
     searchLanguage?: string;
+    hierarchyLang?: string;
     mode?: string;
     catPath?: (string | null)[];
     q?: string;
@@ -279,6 +283,10 @@ export function EmbedPageInner({
     if ("searchLanguage" in overrides) {
       if (overrides.searchLanguage && overrides.searchLanguage !== "ko") params.set("slang", overrides.searchLanguage);
       else params.delete("slang");
+    }
+    if ("hierarchyLang" in overrides) {
+      if (overrides.hierarchyLang && overrides.hierarchyLang !== "ko") params.set("lang", overrides.hierarchyLang);
+      else params.delete("lang");
     }
     if ("mode" in overrides && overrides.mode) params.set("mode", overrides.mode);
     if ("catPath" in overrides) {
@@ -451,6 +459,7 @@ export function EmbedPageInner({
     // 검색 상태 초기화
     setSearchText("");
     setSearchLanguage("ko");
+    setHierarchyLang("ko");
     setSearchResults(null);
     setSearchMeta(null);
     setSearchError(null);
@@ -595,7 +604,7 @@ export function EmbedPageInner({
                     size="sm"
                     variant="outline"
                     className={getPillButtonClass(searchLanguage === "ko")}
-                    onClick={() => setSearchLanguage("ko")}
+                    onClick={() => { setSearchLanguage("ko"); updateURL({ searchLanguage: "ko" }); }}
                     aria-pressed={searchLanguage === "ko"}
                   >
                     한국어
@@ -604,7 +613,7 @@ export function EmbedPageInner({
                     size="sm"
                     variant="outline"
                     className={getPillButtonClass(searchLanguage === "en")}
-                    onClick={() => setSearchLanguage("en")}
+                    onClick={() => { setSearchLanguage("en"); updateURL({ searchLanguage: "en" }); }}
                     aria-pressed={searchLanguage === "en"}
                   >
                     영어
@@ -613,7 +622,7 @@ export function EmbedPageInner({
                     size="sm"
                     variant="outline"
                     className={getPillButtonClass(searchLanguage === "zh")}
-                    onClick={() => setSearchLanguage("zh")}
+                    onClick={() => { setSearchLanguage("zh"); updateURL({ searchLanguage: "zh" }); }}
                     aria-pressed={searchLanguage === "zh"}
                   >
                     중국어
@@ -722,6 +731,11 @@ export function EmbedPageInner({
               token={token}
               folder={selectedFolder}
               userId={selectedUserId}
+              lang={hierarchyLang}
+              onLangChange={(lang) => {
+                setHierarchyLang(lang);
+                updateURL({ hierarchyLang: lang });
+              }}
             />
 
             {/* 추가 */}
