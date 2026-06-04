@@ -75,6 +75,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 ### 카테고리 검색 API
 
 - `GET /api/categories?search=...` 파라미터는 `category_name_ko`·`category_name_en`·`category_name_zh`·`category_code` 네 필드를 LIKE(`%검색어%`) 부분 검색 (검색 모드). `search_lang=ko|en|zh` 추가 시 해당 언어 컬럼에서만 **접두사 검색**(`검색어>%`) 수행 (분류선택 모드). `batchStatus()`도 동일 로직 적용. **⚠️ 검색 모드에서는 `search_lang`을 전송하지 않아야 함** — 프론트엔드 `handleKeywordSearch`에서 8번째 인자 생략 필요.
+- **`RecommendService::recommendPaginated()` `searchLang` 파라미터** — keyword 필터 분기. `$searchLang=ko` → `category_name_ko LIKE 'keyword%'` (접두사), `$searchLang=null` → 다국어 부분 검색 `category_name_ko/en/zh/code LIKE '%keyword%'`. 외부 API에서 `mode=hierarchy`+`lang` 조합 시 사용. 기본값 `null`(기존 동작 유지).
 - 엑셀 다운로드 포맷: `category_code | category_ko | category_en | category_zh` (업로드 양식과 일치)
 
 ### 카테고리 계층 API
@@ -125,6 +126,10 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - API 라우트에는 세션 미들웨어 없음. `$request->user('sanctum')` 또는 `auth('sanctum')->user()` 사용.
 - `RecommendResource`에 `user_id` 필수 — `canModify` 판별용.
 - **관리자 전용 엔드포인트** — `routes/api.php`의 `auth:sanctum` 미들웨어 그룹에 추가. 컨트롤러에서 `$user->isAdmin()`으로 추가 권한 검증.
+- **외부 API key 인증** — `ApiKeyAuth` 미들웨어가 `Authorization: Bearer cl_xxx` 헤더에서 API key 추출 → `ApiKeyService::findByKey()`로 검증 → status/pause/quota 체크 → `_api_key_id`·`_api_user_id`를 request에 merge. `ApiRateLimit` 미들웨어가 `RateLimiter::for()`로 분당 제한(Redis 기반). 미들웨어 체인: `api.rate_limit` → `api.key_auth` → 컨트롤러.
+- **`POST /api/v1/search`** — 외부 유사도 검색 전용. `filter`는 내부에서 항상 `'my'`(사용자 본인 카테고리) 고정, 외부에 노출 안 함. quota 감소는 `DB::table('users')->where('id', $userId)->decrement('api_quota_remaining', 1)`로 직접 처리. `ApiKeyService::touchLastUsed()`로 last_used_at 갱신.
+- **마이페이지 API** — `auth:sanctum` + `/api/mypage/` prefix. API key CRUD(`apiKeys`·`storeApiKey`·`updateApiKey`·`destroyApiKey`), 사용량 통계(`usage`·`usageHistory`·`usageChart`). 소유권 검증: `apiKey->user_id !== $request->user()->id` → 404.
+- **관리자 회원 관리** — `GET /api/admin/users/{id}`(상세+사용량), `PATCH /api/admin/users/{id}/quota`(회수 조절: `type=absolute|increment`). `QuotaAdjustRequest`에서 `authorize()`로 `isSuperAdmin()` 검증.
 
 ### OAuth (Socialite)
 

@@ -107,7 +107,16 @@
 
 ### 6.4 `/admin` 관리자 페이지
 
-- **superadmin 전용**. 사이드바 메뉴(시스템 설정 / 안내). SettingsPanel에서 임베딩/번역 프로바이더 설정(임베딩·번역 API 키 포함)·pagination·cache 설정 조회/수정. 인증 실패 시 서버사이드 redirect로 어떤 UI도 노출되지 않음.
+- **superadmin 전용**. 사이드바 메뉴(시스템 설정 / 회원 관리 / 안내). SettingsPanel에서 임베딩/번역 프로바이더 설정(임베딩·번역 API 키 포함)·pagination·cache 설정 조회/수정. 회원 관리 패널에서 회원 목록·상세 모달·API 사용량 통계·회수 조절. 인증 실패 시 서버사이드 redirect로 어떤 UI도 노출되지 않음.
+
+### 6.5 `/mypage` 마이페이지
+
+- **로그인 사용자 전용**. 독립 경로(`/mypage`). 헤더 닉네임에서 링크.
+- **구성 순서**: API key 관리 → 사용량 대시보드 → 기간별 추이 차트 → 최근 호출 이력
+- **API key 관리**: Card + key 목록(이름·상태배지·truncated key·복사·편집·일시정지·삭제). 생성 Dialog.
+- **사용량 대시보드**: 4-stat grid(총 호출·오늘 호출·남은 회수·활성 key). 2cols mobile / 4cols desktop.
+- **기간별 차트**: div 기반 bar chart(결정적 height 수식). no chart library.
+- **호출 이력**: Table(날짜·API key·상태배지·처리시간).
 
 ### 6.5 공통 패턴
 

@@ -68,6 +68,8 @@
 - **`lang` URL 파라미터 (분류선택 계층 언어)** — `lang=ko|en|zh`, 기본값 `ko`. 분류선택 필터의 계층 드롭다운 표시 언어를 제어. 전파 체인: `embed-params.ts`(파싱) → `embed-page-inner.tsx`(상태) → `updateURL()`(URL 동기화) → `page.tsx`(SSR 프리페치) → `CategoryHierarchy`(props). 백엔드 `CategoryController::levels()`에서 `$langColumn = 'category_name_'.$lang`로 동적 컬럼 선택.
 - **`slang` URL 즉시 반영** — 유사도 검색 언어 radio button 클릭 시 `updateURL({ searchLanguage })`를 즉시 호출하여 URL에 반영. 검색 실행 없이도 `slang` 파라미터가 URL에 저장되고, 새로고침 시 SSR로 해당 언어가 복원됨. URL 업데이트는 `window.history.replaceState()`로 동기 처리 (아래 "URL 동기화 지연" 참조).
 - **URL 동기화 지연 (`router.replace`/`router.push`)** — Next.js App Router에서 `router.replace()`·`router.push()`는 비동기. `searchParams`는 React 렌더링 시점 스냅샷이므로 빠른 연속 호출 시 stale 값을 읽어 race condition 발생 (1~5초 지연). **해결**: `window.history.replaceState()`·`pushState()`로 즉시 URL 업데이트. `searchParams.toString()` 대신 `window.location.search`에서 현재 URL 읽기. `page`는 computed 값이 아닌 `useState`로 관리하여 즉시 반영. `resetToDefault`에서 이미 사용 중인 패턴. 상세: `nextjs/AGENTS.md`.
+- **`RecommendService::recommendPaginated()` `searchLang` 파라미터** — keyword 필터 시 언어별 접두사/부분 검색 분기. `searchLang=ko` → `category_name_ko LIKE 'keyword%'` (접두사), `searchLang=null` → 다국어 부분 검색 (`%keyword%`). 외부 API(`/api/v1/search`)에서 `mode=hierarchy`+`lang=ko` 시 `searchLang=ko` 전달. `RecommendController`에서는 미전달(기존 동작 유지). 상세: `laravel/AGENTS.md`.
+- **외부 API 패턴 (`/api/v1/search`)** — API key 인증(`ApiKeyAuth`), quota 체크, rate limit(`ApiRateLimit`) 미들웨어 체인. `filter`는 내부에서 항상 `'my'` 고정(외부 노출 안 함). quota 감소는 `DB::table()->decrement()`로 직접 처리(모델 이벤트 우회). 상세: `laravel/AGENTS.md`·`docs/api-v1.md`.
 
 ## 하위 디렉토리
 
