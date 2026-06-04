@@ -74,7 +74,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 
 ### 카테고리 검색 API
 
-- `GET /api/categories?search=...` 파라미터는 `category_name_ko` OR `category_code` 두 필드를 LIKE 검색
+- `GET /api/categories?search=...` 파라미터는 `category_name_ko`·`category_name_en`·`category_name_zh`·`category_code` 네 필드를 LIKE 검색 (다국어 카테고리명 지원). `batchStatus()`도 동일 로직 적용.
 - 엑셀 다운로드 포맷: `category_code | category_ko | category_en | category_zh` (업로드 양식과 일치)
 
 ### 카테고리 계층 API

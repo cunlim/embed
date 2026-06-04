@@ -100,6 +100,8 @@ class CategoryController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('category_name_ko', 'LIKE', '%'.$search.'%')
+                    ->orWhere('category_name_en', 'LIKE', '%'.$search.'%')
+                    ->orWhere('category_name_zh', 'LIKE', '%'.$search.'%')
                     ->orWhere('category_code', 'LIKE', '%'.$search.'%');
             });
         }
@@ -241,6 +243,8 @@ class CategoryController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('category_name_ko', 'LIKE', '%'.$search.'%')
+                    ->orWhere('category_name_en', 'LIKE', '%'.$search.'%')
+                    ->orWhere('category_name_zh', 'LIKE', '%'.$search.'%')
                     ->orWhere('category_code', 'LIKE', '%'.$search.'%');
             });
         }

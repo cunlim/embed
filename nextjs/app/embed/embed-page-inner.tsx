@@ -732,9 +732,14 @@ export function EmbedPageInner({
               folder={selectedFolder}
               userId={selectedUserId}
               lang={hierarchyLang}
-              onLangChange={(lang) => {
+              onLangChange={(lang, mode, catPath, keyword) => {
                 setHierarchyLang(lang);
-                updateURL({ hierarchyLang: lang });
+                updateURL({
+                  hierarchyLang: lang,
+                  ...(mode !== undefined && { mode }),
+                  ...(catPath !== undefined && { catPath }),
+                  ...(keyword !== undefined && { q: keyword || undefined }),
+                });
               }}
             />
 

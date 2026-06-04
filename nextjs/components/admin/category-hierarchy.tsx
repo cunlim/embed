@@ -36,8 +36,8 @@ interface CategoryHierarchyProps {
   userId?: number | null;
   /** 분류선택 계층 언어 */
   lang?: string;
-  /** 언어 변경 콜백 */
-  onLangChange?: (lang: string) => void;
+  /** 언어 변경 콜백 (언어, 필터모드, 계층경로, 키워드) */
+  onLangChange?: (lang: string, mode?: "hierarchy" | "search", catPath?: HierarchyFilterState, keyword?: string) => void;
 }
 
 function getPillButtonClass(active: boolean): string {
@@ -270,14 +270,13 @@ export default function CategoryHierarchy({
   const handleLangChange = useCallback(
     async (newLang: string) => {
       if (newLang === lang) return;
-      onLangChange?.(newLang);
-      // 모든 드롭다운 초기화
+      // 모든 드롭다운 초기화 (levelOptions는 유지 — 깜빡임 방지)
       setSelectedPath([]);
-      setLevelOptions([]);
       setLoadingStates([]);
       setKeywordText("");
       onKeywordSearch("");
-      reportFilterChange("hierarchy", [], "");
+      // 부모 콜백: 언어 변경 + URL 파라미터를 한 번에 전달
+      onLangChange?.(newLang, "hierarchy", [], "");
       // 새 언어로 최상위 옵션 재조회
       const params: Record<string, string> = {};
       if (newLang !== "ko") params["lang"] = newLang;
@@ -289,7 +288,7 @@ export default function CategoryHierarchy({
         setMaxDepth(res.data.maxDepth);
       } catch {}
     },
-    [lang, onLangChange, onKeywordSearch, reportFilterChange, token, folder, userId]
+    [lang, onLangChange, onKeywordSearch, token, folder, userId]
   );
 
   const switchToHierarchy = useCallback(() => {
@@ -358,7 +357,7 @@ export default function CategoryHierarchy({
           {filterMode === "hierarchy" ? (
             <div className="space-y-2">
               {/* 언어 선택 radio button */}
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap justify-end gap-1">
                 <Button
                   size="sm"
                   variant="outline"

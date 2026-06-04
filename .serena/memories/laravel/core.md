@@ -21,6 +21,7 @@
 - **폴더 삭제 중복 체크**: `destroy()`에서 `move_to_default=true`일 때 기본폴더(`folder IS NULL`)에 동일 `(category_code, user_id)`가 있는지 사전 확인. 중복 발견 시 409 + `{duplicate_count, duplicate_codes}` 반환으로 폴더 삭제 거부. `hasCategories()` API도 `duplicate_count`/`duplicate_codes` 필드를 반환하도록 확장되어 프론트 모달에서 선제 차단.
 - **`기본폴더` → NULL defense in depth**: `store()`·`moveFolder()`에서 `$request->input('folder') === '기본폴더'` → `null` 변환. 프론트엔드 누락 시에도 DB 일관성 보장.
 - **`CategoryController::index()` `steps` 필터**: `steps[]=embedding.ko` 쿼리 파라미터 지원. `batchStatus`의 `determineMissingSteps`와 동일 로직을 `whereDoesntHave` + OR 조건으로 SQL WHERE에 적용. `steps` 미전달 시 기존 동작. 프론트 `TaskExecution` 체크박스 토글 → `onStepsChange` → `loadCategories`로 호출.
+- **`search` 파라미터 다국어 검색**: `GET /api/categories?search=...`는 `category_name_ko`·`category_name_en`·`category_name_zh`·`category_code` 네 필드를 LIKE 검색. 분류선택에서 영어/중국어 카테고리명 선택 시에도 매칭. `batchStatus()`도 동일 로직.
 
 ## 테스트 환경
 

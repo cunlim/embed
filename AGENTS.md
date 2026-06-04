@@ -64,6 +64,7 @@
 - **progress step 기반 표시** — `BatchProgress` interface에 `initialTotalSteps` 필드 추가. 큐 구성 시 저장, `queueEmpty` 시에도 보존. progress 오른쪽 `[N/M]`은 카테고리 수가 아닌 step 수 기준.
 - **batch-status `with('embeddings')` 메모리 초과** — 대량 데이터에서 임베딩 벡터 전체를 이저 로딩하면 메모리 제한(128MB) 초과로 500 에러. 임베딩 존재 여부 확인은 `whereNotNull('embedding')->select('category_id', 'language')` 경량 쿼리 사용. 상세: `laravel/AGENTS.md`.
 - **`CategoryController::index()` `steps` 파라미터** — `steps[]=embedding.ko&steps[]=translation.en` 쿼리 파라미터로 체크된 step 중 하나라도 누락된 카테고리만 필터링. `batchStatus`의 `determineMissingSteps`와 동일 로직을 SQL WHERE 조건으로 구현 (embedding 의존성 포함). `TaskExecution` 체크박스 토글 → `onStepsChange` → `loadCategories(1, ..., steps)`로 page=1 리셋 후 호출.
+- **`search` 파라미터 다국어 검색** — `GET /api/categories?search=...`는 `category_name_ko`·`category_name_en`·`category_name_zh`·`category_code` 네 필드를 LIKE 검색. 분류선택에서 영어/중국어 카테고리명을 선택해도 해당 언어 컬럼에서 매칭됨. `batchStatus()`도 동일 로직.
 - **`lang` URL 파라미터 (분류선택 계층 언어)** — `lang=ko|en|zh`, 기본값 `ko`. 분류선택 필터의 계층 드롭다운 표시 언어를 제어. 전파 체인: `embed-params.ts`(파싱) → `embed-page-inner.tsx`(상태) → `updateURL()`(URL 동기화) → `page.tsx`(SSR 프리페치) → `CategoryHierarchy`(props). 백엔드 `CategoryController::levels()`에서 `$langColumn = 'category_name_'.$lang`로 동적 컬럼 선택.
 - **`slang` URL 즉시 반영** — 유사도 검색 언어 radio button 클릭 시 `updateURL({ searchLanguage })`를 즉시 호출하여 URL에 반영. 검색 실행 없이도 `slang` 파라미터가 URL에 저장되고, 새로고침 시 SSR로 해당 언어가 복원됨.
 
