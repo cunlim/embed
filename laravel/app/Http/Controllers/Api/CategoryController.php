@@ -365,6 +365,13 @@ class CategoryController extends Controller
         $user = $request->user('sanctum');
         $maxDepthSetting = (int) config('services.category.max_depth', 10);
 
+        // 언어 파라미터 검증
+        $lang = $request->query('lang', 'ko');
+        if (! in_array($lang, ['ko', 'en', 'zh'], true)) {
+            return response()->json(['message' => 'lang must be one of: ko, en, zh'], 400);
+        }
+        $langColumn = 'category_name_'.$lang;
+
         // catN 파라미터 추출 (cat1, cat2, cat3, ...)
         $prefixParts = [];
         for ($i = 1; $i <= 20; $i++) {
@@ -417,25 +424,25 @@ class CategoryController extends Controller
         }
 
         // maxDepth = min(DB 실제 최대 깊이, 설정값)
-        $dbMaxDepth = (int) (clone $scopeQuery)->selectRaw('max(array_length(string_to_array(category_name_ko, \'>\'), 1))')->value('max') ?? 1;
+        $dbMaxDepth = (int) (clone $scopeQuery)->selectRaw('max(array_length(string_to_array('.$langColumn.', \'>\'), 1))')->value('max') ?? 1;
         $maxDepth = min($dbMaxDepth, $maxDepthSetting);
 
         // 접두사 필터링
         $query = clone $scopeQuery;
         if (! empty($prefixParts)) {
             $prefix = implode('>', $prefixParts).'>';
-            $query->where('category_name_ko', 'like', $prefix.'%');
+            $query->where($langColumn, 'like', $prefix.'%');
         }
 
         // max_depth 초과 시 잔여 세그먼트를 복합 옵션으로 포함
         if ($currentDepth >= $maxDepthSetting - 1 && ! empty($prefixParts)) {
             $categories = $query
-                ->select('id', 'category_code', 'category_name_ko')
+                ->select('id', 'category_code', $langColumn)
                 ->get();
 
             $options = $categories
-                ->map(function ($c) use ($currentDepth) {
-                    $parts = explode('>', $c->category_name_ko);
+                ->map(function ($c) use ($currentDepth, $langColumn) {
+                    $parts = explode('>', $c->{$langColumn});
                     $remaining = array_slice($parts, $currentDepth);
 
                     return [
@@ -462,10 +469,10 @@ class CategoryController extends Controller
         // 현재 깊이에서 고유 옵션 추출
         $nextDepthIndex = $currentDepth; // 0-based 인덱스
         $options = $query
-            ->select('category_name_ko')
+            ->select($langColumn)
             ->get()
-            ->map(function ($c) use ($nextDepthIndex) {
-                $parts = explode('>', $c->category_name_ko);
+            ->map(function ($c) use ($nextDepthIndex, $langColumn) {
+                $parts = explode('>', $c->{$langColumn});
 
                 return isset($parts[$nextDepthIndex]) ? trim($parts[$nextDepthIndex]) : null;
             })
@@ -481,24 +488,24 @@ class CategoryController extends Controller
 
         if ($isLeaf && ! empty($prefixParts)) {
             $leafPath = implode('>', $prefixParts);
-            $leafCategory = (clone $scopeQuery)->where('category_name_ko', $leafPath)->first();
+            $leafCategory = (clone $scopeQuery)->where($langColumn, $leafPath)->first();
             $leafCategoryId = $leafCategory?->id;
             // 리프 경로에 등록된 카테고리 수 카운트
-            $categoryCount = (clone $scopeQuery)->where('category_name_ko', $leafPath)->count();
+            $categoryCount = (clone $scopeQuery)->where($langColumn, $leafPath)->count();
 
             // 깊이 초과 처리: 더 깊은 카테고리가 있으면 복합 옵션으로 포함
             if ($leafCategoryId === null) {
                 $deeperQuery = clone $scopeQuery;
                 $deeperPrefix = implode('>', $prefixParts).'>';
                 $deeperCategories = $deeperQuery
-                    ->where('category_name_ko', 'like', $deeperPrefix.'%')
-                    ->select('id', 'category_code', 'category_name_ko')
+                    ->where($langColumn, 'like', $deeperPrefix.'%')
+                    ->select('id', 'category_code', $langColumn)
                     ->get();
 
                 if ($deeperCategories->isNotEmpty()) {
                     $options = $deeperCategories
-                        ->map(function ($c) use ($currentDepth) {
-                            $parts = explode('>', $c->category_name_ko);
+                        ->map(function ($c) use ($currentDepth, $langColumn) {
+                            $parts = explode('>', $c->{$langColumn});
                             $remaining = array_slice($parts, $currentDepth);
 
                             return [
