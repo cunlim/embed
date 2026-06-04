@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, createContext, useContext } from "react";
-import { Settings, Inbox } from "lucide-react";
+import { Settings, Inbox, Users } from "lucide-react";
 import { CollapsibleSidebar } from "@/components/collapsible-sidebar";
 import { cn } from "@/lib/utils";
 
-type MenuItem = "settings" | "info";
+type MenuItem = "settings" | "info" | "users";
 
 const MENU: { id: MenuItem; label: string; icon: typeof Settings }[] = [
   { id: "settings", label: "시스템 설정", icon: Settings },
   { id: "info", label: "안내", icon: Inbox },
+  { id: "users", label: "회원 관리", icon: Users },
 ];
 
 interface AdminMenuContextType {

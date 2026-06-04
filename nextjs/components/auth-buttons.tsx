@@ -17,9 +17,12 @@ export function AuthButtons({ serverUser }: { serverUser?: User | null }) {
   return (
     <div className="flex min-w-0 items-center gap-1">
       {user && (
-        <span className="hidden text-sm font-medium text-foreground sm:inline">
+        <Link
+          href="/mypage"
+          className="hidden text-sm font-medium text-foreground hover:underline sm:inline"
+        >
           {user.name}
-        </span>
+        </Link>
       )}
 
       {admin && (

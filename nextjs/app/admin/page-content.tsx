@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import type { User } from "@/lib/api";
 import { SettingsPanel } from "@/components/admin/settings-panel";
+import { UserManagement } from "@/components/admin/user-management";
 import { useAdminMenu } from "./layout";
 
 export function AdminPageContent({ serverUser }: { serverUser: User }) {
@@ -33,6 +34,7 @@ export function AdminPageContent({ serverUser }: { serverUser: User }) {
   return (
     <>
       {active === "settings" && <SettingsPanel token={token} />}
+      {active === "users" && <UserManagement token={token} />}
       {active === "info" && (
         <div className="flex items-center justify-center">
           <Card className="flex w-full max-w-md flex-col items-center gap-4 px-8 py-16 text-center">
