@@ -89,6 +89,14 @@ Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx
 **내부 동작 (외부 노출 안 함):**
 - `filter`는 항상 `"my"`로 고정 (사용자 본인 카테고리만 반환)
 - API key 소유자의 `user_id`를 자동으로 스코핑
+- `mode=hierarchy` + `lang=ko` → 기존 `search_lang=ko` 파라미터 전달 (접두사 검색)
+- `mode=search` (기본값) → `search_lang` 미전달 (부분 검색)
+- `slang` 지정 시 → 유사도 검색 언어로 전달 (기존 `slang` 파라미터와 동일)
+
+**Rate limit 구현:**
+- Redis 기반 (`RateLimiter::for()` 사용)
+- 분당 제한: settings 테이블 `api.rate_limit_per_minute` 값 참조
+- 키: `api_rate_limit:{api_key_id}`
 
 **응답 형식:**
 ```json
