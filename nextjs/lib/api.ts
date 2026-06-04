@@ -570,3 +570,133 @@ export function checkFolderHasCategories(
 export function fetchUsers(token?: string | null): Promise<{ data: { id: number; name: string; email: string }[] }> {
   return request<{ data: { id: number; name: string; email: string }[] }>("/admin/users", { token });
 }
+
+// === 마이페이지 API ===
+
+export interface ApiKeyItem {
+  id: number;
+  name: string;
+  key: string;
+  status: "active" | "paused";
+  last_used_at: string | null;
+  created_at: string;
+}
+
+export interface UsageStats {
+  total_calls: number;
+  today_calls: number;
+  active_keys: number;
+  quota_remaining: number;
+  quota_limit: number;
+}
+
+export interface UsageHistoryItem {
+  id: number;
+  api_key_id: number;
+  endpoint: string;
+  response_status: number;
+  processing_time_ms: number;
+  created_at: string;
+  api_key?: {
+    id: number;
+    name: string;
+    key: string;
+  };
+}
+
+export interface ChartDataPoint {
+  date: string;
+  total: number;
+}
+
+export function getApiKeys(token: string): Promise<{ data: ApiKeyItem[] }> {
+  return request("/mypage/api-keys", { token });
+}
+
+export function createApiKey(token: string, name: string): Promise<{ data: ApiKeyItem }> {
+  return request("/mypage/api-keys", { method: "POST", body: { name }, token });
+}
+
+export function updateApiKey(
+  token: string,
+  id: number,
+  data: { name?: string; status?: string },
+): Promise<{ data: ApiKeyItem }> {
+  return request(`/mypage/api-keys/${id}`, { method: "PATCH", body: data, token });
+}
+
+export function deleteApiKey(token: string, id: number): Promise<void> {
+  return request(`/mypage/api-keys/${id}`, { method: "DELETE", token });
+}
+
+export function getUsageStats(token: string): Promise<UsageStats> {
+  return request("/mypage/usage", { token });
+}
+
+export function getUsageHistory(
+  token: string,
+  limit?: number,
+): Promise<{ data: UsageHistoryItem[] }> {
+  const query = limit ? `?limit=${limit}` : "";
+  return request(`/mypage/usage/history${query}`, { token });
+}
+
+export function getUsageChart(
+  token: string,
+  days?: number,
+): Promise<{ data: ChartDataPoint[] }> {
+  const query = days ? `?days=${days}` : "";
+  return request(`/mypage/usage/chart${query}`, { token });
+}
+
+// === 관리자 회원 관리 API ===
+
+export interface AdminUserListItem {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  created_at: string;
+}
+
+export function fetchAdminUsers(token: string): Promise<{ data: AdminUserListItem[] }> {
+  return request("/admin/users", { token });
+}
+
+export interface AdminUserDetail {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  created_at: string;
+  api_quota_remaining: number;
+  api_quota_limit: number;
+  total_calls: number;
+  today_calls: number;
+  active_keys: number;
+  calls_by_key: {
+    api_key_id: number;
+    total: number;
+    api_key?: { id: number; name: string; key: string };
+  }[];
+}
+
+export function getAdminUserDetail(
+  token: string,
+  userId: number,
+): Promise<{ data: AdminUserDetail }> {
+  return request(`/admin/users/${userId}`, { token });
+}
+
+export function adjustUserQuota(
+  token: string,
+  userId: number,
+  type: "absolute" | "increment",
+  value: number,
+): Promise<{ data: AdminUserDetail }> {
+  return request(`/admin/users/${userId}/quota`, {
+    method: "PATCH",
+    body: { type, value },
+    token,
+  });
+}
