@@ -2,27 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
+#[Fillable(['user_id', 'name', 'key', 'status'])]
+#[Hidden(['key'])]
 class ApiKey extends Model
 {
     /** @use HasFactory<ApiKeyFactory> */
     use HasFactory;
-
-    protected $fillable = [
-        'user_id',
-        'name',
-        'key',
-        'status',
-    ];
-
-    protected $hidden = [
-        'key',
-    ];
 
     public function user(): BelongsTo
     {
