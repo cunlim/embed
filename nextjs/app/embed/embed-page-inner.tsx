@@ -523,8 +523,8 @@ export function EmbedPageInner({
     setSearchMeta(null);
     setSearchError(null);
     setKeywordSearchActive(true);
-    // 분류선택 모드: 선택된 언어 컬럼에서만 검색
-    loadCategories(1, perPage, effectiveFilter, keyword, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current, hierarchyLangRef.current);
+    // 검색 모드: 모든 언어 컬럼에서 부분 검색 (search_lang 미전달)
+    loadCategories(1, perPage, effectiveFilter, keyword, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
   }, [perPage, effectiveFilter, loadCategories, searchResults, handleSearch]);
 
   // 필터 상태 변경 시 URL 업데이트
