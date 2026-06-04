@@ -13,7 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'api.key_auth' => \App\Http\Middleware\ApiKeyAuth::class,
+            'api.rate_limit' => \App\Http\Middleware\ApiRateLimit::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
