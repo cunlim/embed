@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Plus,
   RefreshCw,
@@ -123,7 +123,6 @@ export function EmbedPageInner({
   serverFolderGroups?: import("@/lib/api").FolderGroup[];
 }) {
   const { user } = useAuth(serverUser);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -132,9 +131,11 @@ export function EmbedPageInner({
   );
 
   // Parse page and per_page from URL
-  const pageParam = searchParams.get("page");
-  const urlPage = parseInt(pageParam ?? "1", 10);
-  const page = Number.isNaN(urlPage) || urlPage < 1 ? 1 : urlPage;
+  const [page, setPage] = useState(() => {
+    const pageParam = searchParams.get("page");
+    const urlPage = parseInt(pageParam ?? "1", 10);
+    return Number.isNaN(urlPage) || urlPage < 1 ? 1 : urlPage;
+  });
 
   const perPageParam = searchParams.get("per_page");
   const urlPerPage = parseInt(perPageParam ?? "20", 10);
@@ -269,7 +270,7 @@ export function EmbedPageInner({
     userId?: number | null;
     page?: number;
   }) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
 
     const apply = (key: string, value: string | null | undefined, clearChildren?: string[]) => {
       if (value) { params.set(key, value); return; }
@@ -317,8 +318,8 @@ export function EmbedPageInner({
     if (perPage !== 20) params.set("per_page", String(perPage));
 
     const qs = params.toString();
-    router.replace(`/embed${qs ? "?" + qs : ""}`, { scroll: false });
-  }, [router, searchParams, page, perPage]);
+    window.history.replaceState(null, "", `/embed${qs ? "?" + qs : ""}`);
+  }, [page, perPage]);
 
   const handleSearch = useCallback(async (page?: number, keyword?: string) => {
     const currentPage = page ?? 1;
@@ -576,12 +577,13 @@ export function EmbedPageInner({
     if (isSearchMode) {
       handleSearch(newPage);
     } else {
-      const params = new URLSearchParams(searchParams.toString());
+      setPage(newPage);
+      const params = new URLSearchParams(window.location.search);
       params.set("page", String(newPage));
       params.set("per_page", String(perPage));
-      router.push(`/embed?${params.toString()}`);
+      window.history.pushState(null, "", `/embed?${params.toString()}`);
     }
-  }, [isSearchMode, handleSearch, router, perPage, searchParams]);
+  }, [isSearchMode, handleSearch, perPage]);
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
@@ -1195,10 +1197,11 @@ export function EmbedPageInner({
                                 if (isSearchMode) {
                                   handleSearch(1);
                                 } else {
-                                  const params = new URLSearchParams(searchParams.toString());
+                                  setPage(1);
+                                  const params = new URLSearchParams(window.location.search);
                                   params.set("page", "1");
                                   params.set("per_page", String(newPerPage));
-                                  router.push(`/embed?${params.toString()}`);
+                                  window.history.pushState(null, "", `/embed?${params.toString()}`);
                                 }
                               }}
                             >

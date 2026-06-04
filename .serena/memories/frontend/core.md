@@ -49,3 +49,4 @@
 - **`handleLangChange` 깜빡임 방지**: 언어 변경 시 `setLevelOptions([])`로 초기화하면 `hasOptions=false` → 필터 섹션 통째로 사라짐. **`levelOptions`는 유지**하고 `selectedPath`·`loadingStates`·`keywordText`만 초기화.
 - **`onLangChange` 콜백 통합**: `handleLangChange`에서 `onLangChange`와 `reportFilterChange`를 별도 호출하면 `updateURL`가 두 번 실행되어 두 번째 호출이 첫 번째의 `lang` 설정을 덮어씀. `onLangChange(lang, mode, catPath, keyword)` 시그니처로 부모에게 한 번에 전달.
 - **필터 언어 radio button 오른쪽 정렬**: `category-hierarchy.tsx`의 언어 버튼 컨테이너에 `justify-end` 클래스 필수.
+- **URL 동기화 지연 해결**: `router.replace()`·`router.push()`는 Next.js App Router에서 비동기(1~5초 지연). `window.history.replaceState()`·`pushState()`로 즉시 업데이트. `searchParams` 대신 `window.location.search` 읽기. `page`는 `useState`로 관리. `updateURL`·`handlePageChange`·per-page select·`resetToDefault` 모두 적용됨.

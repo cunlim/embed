@@ -61,7 +61,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 - **nullable state의 잔여 체크는 `!== null`** — `"all" | "my" | null` 타입을 ref로 추적 시 `!== undefined` 체크는 `null !== undefined === true`로 항상 잔여로 감지. `!== null`로 변경.
 - **URL 파라미터에서 파생된 useState는 reset effect에서 명시적 초기화 필요** — `perPage`처럼 URL에서 파생되어 `useState`로 관리되는 값은 URL이 비워져도 state가 자동 리셋되지 않음. reset effect에 `setPerPage(20)` 등 명시적 초기화 추가.
 - **`activeFilterSelection`의 `serverFilter` 폴백 함정** — `filterSelection ?? (serverFilter === "my" ? "my" : "all")`에서 `serverFilter`는 SSR 시점 스냅샷. `setFilterSelection(null)` 후에도 서버 초기값으로 되돌아감. **해결**: `useState`에서 이미 초기 반영되므로 폴백에서 `serverFilter` 제거 → `activeFilterSelection = filterSelection`.
-- **`router.replace()`와 `<Link>` 네비게이션 동시 실행 충돌** — 같은 URL로 `router.replace()`와 `<Link>`가 동시에 실행되면 서로 취소되어 URL 변경 안 됨. 즉시 URL 동기화가 필요하면 `window.history.replaceState()` 사용.
+- **`router.replace()`·`router.push()` 비동기 지연** — Next.js App Router에서 `router.replace()`·`router.push()`는 비동기적(React 상태 배치 + 네비게이션 처리). `searchParams`는 렌더링 시점 스냅샷이므로 같은 이벤트 핸들러 내 연속 호출 시 stale 값을 읽어 race condition 발생. 언어 radio·필터·페이지 변경 등 10곳 이상의 액션에서 URL이 1~5초 지연. **해결**: `window.history.replaceState()`·`pushState()`로 즉시 URL 업데이트. `searchParams.toString()` 대신 `window.location.search` 읽기. `page`는 computed 값 → `useState`로 전환하여 즉시 반영. `resetToDefault`·`handlePageChange`·per-page select·`updateURL` 모두 적용. `<Link>`와 동시 실행 충돌도 동일 원인.
 
 ## 초기 마운트 시 reset effect 함정
 
