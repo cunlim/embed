@@ -12,6 +12,8 @@ use Pgvector\Laravel\Vector;
  */
 class CategoryEmbeddingFactory extends Factory
 {
+    private const DEFAULT_DIMENSIONS = 1024;
+
     protected $model = CategoryEmbedding::class;
 
     public function definition(): array
@@ -20,7 +22,7 @@ class CategoryEmbeddingFactory extends Factory
             'category_id' => Category::factory(),
             'language' => fake()->randomElement(['ko', 'zh', 'en']),
             'embed_model_name' => 'bge-m3:latest',
-            'embedding' => new Vector($this->randomUnitVector(1024)),
+            'embedding' => new Vector($this->randomUnitVector(self::DEFAULT_DIMENSIONS)),
         ];
     }
 

@@ -9,6 +9,8 @@ use Pgvector\Laravel\Vector;
 
 class CategoryEmbeddingSeeder extends Seeder
 {
+    private const DEFAULT_DIMENSIONS = 1024;
+
     public function run(): void
     {
         $categories = Category::all();
@@ -19,7 +21,7 @@ class CategoryEmbeddingSeeder extends Seeder
                     'category_id' => $category->id,
                     'language' => $lang,
                     'embed_model_name' => 'bge-m3:latest',
-                    'embedding' => new Vector($this->randomUnitVector(1024)),
+                    'embedding' => new Vector($this->randomUnitVector(self::DEFAULT_DIMENSIONS)),
                 ]);
             }
         }
