@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\AdminSettingsController;
+use App\Http\Controllers\Api\ApiController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\FolderController;
+use App\Http\Controllers\Api\MyPageController;
 use App\Http\Controllers\Api\RecommendController;
 use App\Http\Controllers\Api\TestController;
 use Illuminate\Support\Facades\Route;
@@ -44,9 +46,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('categories/move-folder', [FolderController::class, 'moveFolder']);
 });
 
+// 마이페이지 (인증 필요)
+Route::middleware('auth:sanctum')->prefix('mypage')->group(function () {
+    Route::get('api-keys', [MyPageController::class, 'apiKeys']);
+    Route::post('api-keys', [MyPageController::class, 'storeApiKey']);
+    Route::patch('api-keys/{id}', [MyPageController::class, 'updateApiKey']);
+    Route::delete('api-keys/{id}', [MyPageController::class, 'destroyApiKey']);
+    Route::get('usage', [MyPageController::class, 'usage']);
+    Route::get('usage/history', [MyPageController::class, 'usageHistory']);
+    Route::get('usage/chart', [MyPageController::class, 'usageChart']);
+});
+
 // 관리자 설정 (superadmin only)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('admin/settings', [AdminSettingsController::class, 'index']);
     Route::put('admin/settings', [AdminSettingsController::class, 'update']);
     Route::get('admin/users', [AdminSettingsController::class, 'users']);
+    Route::get('admin/users/{id}', [AdminSettingsController::class, 'userDetail']);
+    Route::patch('admin/users/{id}/quota', [AdminSettingsController::class, 'adjustQuota']);
+});
+
+// API v1 (API 키 인증 + 속도 제한)
+Route::prefix('v1')->middleware(['api.rate_limit', 'api.key_auth'])->group(function () {
+    Route::post('search', [ApiController::class, 'search']);
 });
