@@ -140,7 +140,10 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **`addCategory()` 에러 re-throw** — hook 내부에서 catch 후 `setError`만 호출하면 caller가 성공/실패를 구분할 수 없어 입력값이 항상 초기화됨. hook에서 `throw err`로 재전파 후 caller에서 try/catch로 감싸 성공 시에만 input 초기화.
 - **`resetToDefault` selectedIds 누락** — `resetToDefault()` 호출 시 필터·검색어·페이지뿐 아니라 `setSelectedIds(new Set())`으로 체크박스도 초기화 필수.
 - **`resetToDefault` 폴더 상태 누락** — `resetToDefault()`에서 `selectedFolder`·`selectedUserId`를 `null`로 초기화 필수. 미적용 시 폴더 select가 옵션에 없는 stale 값("테스트폴더" 등) 표시. `loadCategories()` 호출 시에도 folder·userId에 stale 값 대신 `undefined` 전달.
+- **`resetToDefault` hierarchyLang 초기화** — `resetToDefault()`에서 `setHierarchyLang("ko")`로 분류선택 언어도 초기화 필수. 미적용 시 기본 언어로 복원되지 않음.
 - **SSR page.tsx 파라미터 전파 누락** — `embed-page-inner.tsx` prop 추가 시 SSR `page.tsx`의 prefetch 호출에도 동일 파라미터 전달 필요.
+- **분류선택 언어 변경 `handleLangChange` 패턴** — `CategoryHierarchy`에서 언어 변경 시: ①`onLangChange`로 부모에 알림, ②`selectedPath`·`levelOptions`·`loadingStates`·`keywordText` 초기화, ③`onKeywordSearch("")`로 카테고리 목록 초기화, ④새 언어로 `fetchCategoryLevels({ lang })` 재조회. 부모(`EmbedPageInner`)에서는 `setHierarchyLang` + `updateURL({ hierarchyLang })`로 상태·URL 동기화.
+- **URL 파라미터 2개 언어 독립** — `lang`(분류선택 계층 언어)과 `slang`(유사도 검색 언어)은 독립적. `lang`은 `CategoryHierarchy`에서, `slang`은 유사도 검색 섹션에서 각각 관리. 둘 다 기본값 `ko`이고, `ko`일 때 URL에서 삭제.
 - **SelectTrigger 기본 height**: `data-[size=default]:h-8` (32px). 인접 버튼 height 불일치 방지 위해 `h-8`로 통일 (`h-9` 사용 시 4px 차이).
 - **Flex 내 truncate는 `min-w-0` 필수** — flex 아이템 기본 `min-width: auto`가 `truncate` CSS를 무력화. `SelectTrigger` 등 flex 레이아웃 내 truncation 필요 시 부모 컨테이너에 `min-w-0` 추가.
 - **Playwright shadcn Select** — `browser_select_option`은 native `<select>` 전용. shadcn Select(role="combobox")는 `browser_run_code_unsafe` + `async (page) => {...}`로 조작. `window.fetch` monkey-patch로 API 호출 스택 추적 가능.

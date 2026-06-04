@@ -77,6 +77,10 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - `GET /api/categories?search=...` 파라미터는 `category_name_ko` OR `category_code` 두 필드를 LIKE 검색
 - 엑셀 다운로드 포맷: `category_code | category_ko | category_en | category_zh` (업로드 양식과 일치)
 
+### 카테고리 계층 API
+
+- **`GET /api/categories/levels` `lang` 파라미터** — `lang=ko|en|zh`(기본 `ko`). `$langColumn = 'category_name_'.$lang`로 동적 컬럼 선택. `$dbMaxDepth` 계산, 접두사 필터링, select/map, 리프 확인, 더 깊은 카테고리 블록 모두 `$langColumn` 사용. 잘못된 `lang` 값은 400 반환. 하위 호환: 미지정 시 기존 `category_name_ko` 동작.
+
 ### 프레임워크 주의사항
 
 - **Event::fake()는 Eloquent 라이프사이클 이벤트까지 캡처** — `Event::fake()` (인자 없는 호출) 시 `eloquent.booting` 등 Model 생성 시 프레임워크 내부 이벤트까지 캡처. `Event::fake([SpecificEvent::class])`로 감시 대상 한정 필요.
