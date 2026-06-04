@@ -33,12 +33,15 @@ export function UserManagement({ token }: Props) {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!token) return;
-    setLoading(true);
-    fetchAdminUsers(token)
-      .then((res) => setUsers(res.data))
-      .catch(() => toast.error("회원 목록을 불러오지 못했습니다"))
-      .finally(() => setLoading(false));
+    async function fetchUsers() {
+      if (!token) return;
+      setLoading(true);
+      fetchAdminUsers(token)
+        .then((res) => setUsers(res.data))
+        .catch(() => toast.error("회원 목록을 불러오지 못했습니다"))
+        .finally(() => setLoading(false));
+    }
+    fetchUsers();
   }, [token]);
 
   const handleManage = (userId: number) => {

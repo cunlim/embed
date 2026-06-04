@@ -46,15 +46,18 @@ export function UserDetailModal({
   const [adjusting, setAdjusting] = useState(false);
 
   useEffect(() => {
-    if (!open || !token || !userId) {
-      setDetail(null);
-      return;
+    async function fetchDetail() {
+      if (!open || !token || !userId) {
+        setDetail(null);
+        return;
+      }
+      setLoading(true);
+      getAdminUserDetail(token, userId)
+        .then((res) => setDetail(res.data))
+        .catch(() => toast.error("회원 정보를 불러오지 못했습니다"))
+        .finally(() => setLoading(false));
     }
-    setLoading(true);
-    getAdminUserDetail(token, userId)
-      .then((res) => setDetail(res.data))
-      .catch(() => toast.error("회원 정보를 불러오지 못했습니다"))
-      .finally(() => setLoading(false));
+    fetchDetail();
   }, [open, token, userId]);
 
   const handleQuotaSubmit = async (type: "absolute" | "increment", value: number) => {

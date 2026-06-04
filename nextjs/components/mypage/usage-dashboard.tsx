@@ -4,7 +4,6 @@ import { Activity, CalendarDays, BarChart3, Key } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUsageStats } from "@/hooks/useUsageStats";
-import { cn } from "@/lib/utils";
 
 interface UsageDashboardProps {
   token: string | null;

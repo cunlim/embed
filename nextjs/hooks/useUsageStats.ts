@@ -69,9 +69,10 @@ export function useUsageStats(token?: string | null): UseUsageStatsReturn {
   );
 
   useEffect(() => {
-    loadStats();
-    loadHistory();
-    loadChart();
+    async function init() {
+      await Promise.all([loadStats(), loadHistory(), loadChart()]);
+    }
+    init();
   }, [loadStats, loadHistory, loadChart]);
 
   return {

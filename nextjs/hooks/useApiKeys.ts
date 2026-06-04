@@ -78,7 +78,10 @@ export function useApiKeys(token?: string | null): UseApiKeysReturn {
   );
 
   useEffect(() => {
-    loadApiKeys();
+    async function init() {
+      await loadApiKeys();
+    }
+    init();
   }, [loadApiKeys]);
 
   return {

@@ -22,7 +22,7 @@ export function UsageChart({ token }: UsageChartProps) {
         {isLoading ? (
           <div className="flex items-end gap-1" style={{ height: 160 }}>
             {Array.from({ length: 7 }).map((_, i) => (
-              <Skeleton key={i} className="flex-1" style={{ height: `${30 + Math.random() * 50}%` }} />
+              <Skeleton key={i} className="flex-1" style={{ height: `${30 + ((i * 17 + 13) % 50)}%` }} />
             ))}
           </div>
         ) : chart.length === 0 ? (
