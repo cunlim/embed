@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\QuotaAdjustRequest;
 use App\Models\User;
+use App\Services\ApiUsageService;
 use App\Services\SettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,6 +14,7 @@ class AdminSettingsController extends Controller
 {
     public function __construct(
         private SettingsService $settings,
+        private ApiUsageService $usageService,
     ) {}
 
     private const GROUPS = [
@@ -79,10 +82,84 @@ class AdminSettingsController extends Controller
      * 회원 목록 조회 (관리자용)
      * GET /api/admin/users
      */
-    public function users(): JsonResponse
+    public function users(Request $request): JsonResponse
     {
-        $users = User::select('id', 'name', 'email')->orderBy('name')->get();
+        $user = $request->user('sanctum');
+        if (! $user || ! $user->isSuperAdmin()) {
+            return response()->json(['message' => '권한이 없습니다.'], 403);
+        }
+
+        $users = User::select('id', 'name', 'email', 'role', 'created_at')->orderBy('name')->get();
 
         return response()->json(['data' => $users]);
+    }
+
+    /**
+     * 회원 상세 정보 조회 (관리자용)
+     * GET /api/admin/users/{id}
+     */
+    public function userDetail(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user('sanctum');
+        if (! $user || ! $user->isSuperAdmin()) {
+            return response()->json(['message' => '권한이 없습니다.'], 403);
+        }
+
+        $targetUser = User::select('id', 'name', 'email', 'role', 'created_at', 'api_quota_remaining', 'api_quota_limit')->find($id);
+
+        if ($targetUser === null) {
+            return response()->json(['message' => '회원을 찾을 수 없습니다.'], 404);
+        }
+
+        $totalCalls = $this->usageService->getTotalCalls($targetUser->id);
+        $todayCalls = $this->usageService->getTodayCalls($targetUser->id);
+        $activeKeys = $this->usageService->getActiveKeyCount($targetUser->id);
+        $callsByKey = $this->usageService->getCallsByKey($targetUser->id);
+
+        return response()->json([
+            'data' => [
+                'user' => $targetUser,
+                'total_calls' => $totalCalls,
+                'today_calls' => $todayCalls,
+                'active_keys' => $activeKeys,
+                'calls_by_key' => $callsByKey,
+            ],
+        ]);
+    }
+
+    /**
+     * 회원 API quota를 조정한다 (관리자용)
+     * PATCH /api/admin/users/{id}/quota
+     */
+    public function adjustQuota(QuotaAdjustRequest $request, int $id): JsonResponse
+    {
+        $user = User::find($id);
+
+        if ($user === null) {
+            return response()->json(['message' => '회원을 찾을 수 없습니다.'], 404);
+        }
+
+        $type = $request->validated('type');
+        $value = (int) $request->validated('value');
+
+        if ($type === 'absolute') {
+            $user->update([
+                'api_quota_remaining' => $value,
+                'api_quota_limit' => $value,
+            ]);
+        } else {
+            $user->increment('api_quota_remaining', $value);
+            $user->increment('api_quota_limit', $value);
+        }
+
+        $user = $user->fresh();
+
+        return response()->json([
+            'data' => [
+                'id' => $user->id,
+                'api_quota_remaining' => $user->api_quota_remaining,
+                'api_quota_limit' => $user->api_quota_limit,
+            ],
+        ]);
     }
 }
