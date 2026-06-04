@@ -14,7 +14,7 @@ class ApiKeyFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'name' => fake()->word() . ' key',
+            'name' => fake()->word().' key',
             'key' => ApiKey::generateKey(),
             'status' => 'active',
         ];

@@ -3,12 +3,13 @@
 use App\Http\Middleware\ApiKeyAuth;
 use App\Models\ApiKey;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 beforeEach(function () {
     // 테스트용 라우트 등록 (같은 파일 내에서 중복 등록은 무시됨)
     Route::middleware(ApiKeyAuth::class)->get('/api/test-auth', fn () => response()->json(['ok' => true]));
-    Route::middleware(ApiKeyAuth::class)->get('/api/test-auth-merge', function (\Illuminate\Http\Request $request) {
+    Route::middleware(ApiKeyAuth::class)->get('/api/test-auth-merge', function (Request $request) {
         return response()->json([
             'key_id' => $request->input('_api_key_id'),
             'user_id' => $request->input('_api_user_id'),

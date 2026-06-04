@@ -55,7 +55,7 @@ class RecommendationService
      *
      * @param  int|array<int>|null  $userId  단일 사용자 ID, 배열, 또는 null(제한 없음)
      */
-    public function recommendPaginated(SearchLog $searchLog, string $targetLanguage, int $perPage = 20, int $page = 1, int|array|null $userId = null, ?string $keyword = null, ?string $folder = null): LengthAwarePaginator
+    public function recommendPaginated(SearchLog $searchLog, string $targetLanguage, int $perPage = 20, int $page = 1, int|array|null $userId = null, ?string $keyword = null, ?string $folder = null, ?string $searchLang = null): LengthAwarePaginator
     {
         $embedding = $searchLog->embedding->toArray();
         $vectorLiteral = '['.implode(',', $embedding).']';
@@ -113,7 +113,17 @@ class RecommendationService
         }
 
         if ($keyword) {
-            $query->where('categories.category_name_ko', 'like', $keyword.'%');
+            if ($searchLang) {
+                $nameField = 'category_name_'.$searchLang;
+                $query->where("categories.{$nameField}", 'like', $keyword.'%');
+            } else {
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('categories.category_name_ko', 'like', '%'.$keyword.'%')
+                        ->orWhere('categories.category_name_en', 'like', '%'.$keyword.'%')
+                        ->orWhere('categories.category_name_zh', 'like', '%'.$keyword.'%')
+                        ->orWhere('categories.category_code', 'like', '%'.$keyword.'%');
+                });
+            }
         }
 
         if ($folder) {

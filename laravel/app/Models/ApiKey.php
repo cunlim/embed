@@ -46,6 +46,6 @@ class ApiKey extends Model
 
     public static function generateKey(): string
     {
-        return 'cl_' . Str::random(40);
+        return 'cl_'.Str::random(40);
     }
 }

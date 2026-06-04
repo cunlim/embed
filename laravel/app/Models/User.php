@@ -60,6 +60,7 @@ class User extends Authenticatable
             return false;
         }
         $this->decrement('api_quota_remaining');
+
         return true;
     }
 }

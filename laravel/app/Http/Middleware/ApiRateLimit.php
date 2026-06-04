@@ -6,7 +6,6 @@ use App\Services\SettingsService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class ApiRateLimit
@@ -24,7 +23,7 @@ class ApiRateLimit
         }
 
         $maxAttempts = $this->settingsService->get('api', 'rate_limit_per_minute', 60);
-        $key = 'api_rate_limit:' . md5($token);
+        $key = 'api_rate_limit:'.md5($token);
 
         if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
             $retryAfter = RateLimiter::availableIn($key);

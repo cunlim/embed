@@ -90,7 +90,7 @@ class ApiUsageService
 
         $rawData = ApiUsageLog::where('user_id', $userId)
             ->where('created_at', '>=', $startDate)
-            ->selectRaw("date(created_at) as date, count(*) as total")
+            ->selectRaw('date(created_at) as date, count(*) as total')
             ->groupBy('date')
             ->get()
             ->pluck('total', 'date');
