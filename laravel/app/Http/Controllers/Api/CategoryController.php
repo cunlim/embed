@@ -98,12 +98,21 @@ class CategoryController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('category_name_ko', 'LIKE', '%'.$search.'%')
-                    ->orWhere('category_name_en', 'LIKE', '%'.$search.'%')
-                    ->orWhere('category_name_zh', 'LIKE', '%'.$search.'%')
-                    ->orWhere('category_code', 'LIKE', '%'.$search.'%');
-            });
+            $searchLang = $request->input('search_lang');
+
+            // 분류선택 모드: 선택된 언어 컬럼에서만 접두사 검색 (예: "Food>%" 매칭)
+            if ($searchLang && in_array($searchLang, ['ko', 'en', 'zh'])) {
+                $langColumn = 'category_name_'.$searchLang;
+                $query->where($langColumn, 'LIKE', $search.'>%');
+            } else {
+                // 검색 모드: 모든 언어 컬럼에서 부분 검색
+                $query->where(function ($q) use ($search) {
+                    $q->where('category_name_ko', 'LIKE', '%'.$search.'%')
+                        ->orWhere('category_name_en', 'LIKE', '%'.$search.'%')
+                        ->orWhere('category_name_zh', 'LIKE', '%'.$search.'%')
+                        ->orWhere('category_code', 'LIKE', '%'.$search.'%');
+                });
+            }
         }
 
         // folder 필터
@@ -241,12 +250,21 @@ class CategoryController extends Controller
         // 검색어 필터
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('category_name_ko', 'LIKE', '%'.$search.'%')
-                    ->orWhere('category_name_en', 'LIKE', '%'.$search.'%')
-                    ->orWhere('category_name_zh', 'LIKE', '%'.$search.'%')
-                    ->orWhere('category_code', 'LIKE', '%'.$search.'%');
-            });
+            $searchLang = $request->input('search_lang');
+
+            // 분류선택 모드: 선택된 언어 컬럼에서만 접두사 검색
+            if ($searchLang && in_array($searchLang, ['ko', 'en', 'zh'])) {
+                $langColumn = 'category_name_'.$searchLang;
+                $query->where($langColumn, 'LIKE', $search.'>%');
+            } else {
+                // 검색 모드: 모든 언어 컬럼에서 부분 검색
+                $query->where(function ($q) use ($search) {
+                    $q->where('category_name_ko', 'LIKE', '%'.$search.'%')
+                        ->orWhere('category_name_en', 'LIKE', '%'.$search.'%')
+                        ->orWhere('category_name_zh', 'LIKE', '%'.$search.'%')
+                        ->orWhere('category_code', 'LIKE', '%'.$search.'%');
+                });
+            }
         }
 
         // 폴더 필터

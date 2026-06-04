@@ -16,7 +16,7 @@ interface UseCategoriesReturn {
   isLoading: boolean;
   isLoaded: boolean;
   error: string | null;
-  loadCategories: (page?: number, perPage?: number, filter?: string, search?: string, folder?: string, userId?: number | null, steps?: StepName[]) => Promise<void>;
+  loadCategories: (page?: number, perPage?: number, filter?: string, search?: string, folder?: string, userId?: number | null, steps?: StepName[], searchLang?: string) => Promise<void>;
   addCategory: (categoryNameKo: string, categoryCode?: string, categoryNameEn?: string, categoryNameZh?: string, folder?: string, userId?: number) => Promise<void>;
   updateCategoryStatus: (id: number, updates: Partial<Category>) => void;
   deleteCategory: (id: number) => Promise<void>;
@@ -41,11 +41,11 @@ export function useCategories(
   const currentFolder = useRef<string | undefined>(undefined);
   const currentSteps = useRef<StepName[] | undefined>(undefined);
 
-  const loadCategories = useCallback(async (page?: number, perPage?: number, filter?: string, search?: string, folder?: string, userId?: number | null, steps?: StepName[]) => {
+  const loadCategories = useCallback(async (page?: number, perPage?: number, filter?: string, search?: string, folder?: string, userId?: number | null, steps?: StepName[], searchLang?: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getCategories(token, page ?? currentPage.current, perPage ?? currentPerPage.current, filter, search ?? currentSearch.current, folder, userId, steps);
+      const data = await getCategories(token, page ?? currentPage.current, perPage ?? currentPerPage.current, filter, search ?? currentSearch.current, folder, userId, steps, searchLang);
       setCategories(data.data);
       setMeta(data.meta);
       currentPage.current = data.meta.current_page;

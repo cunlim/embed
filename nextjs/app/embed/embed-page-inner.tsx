@@ -199,6 +199,8 @@ export function EmbedPageInner({
   const prevSearchLangRef = useRef(searchLanguage);
   const searchLangRef = useRef(searchLanguage);
   useEffect(() => { searchLangRef.current = searchLanguage });
+  const hierarchyLangRef = useRef(hierarchyLang);
+  useEffect(() => { hierarchyLangRef.current = hierarchyLang });
   const [searchMeta, setSearchMeta] = useState<PaginationMeta | null>(serverSearchMeta ?? null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -251,7 +253,7 @@ export function EmbedPageInner({
   const handleStepsChange = useCallback((steps: import("@/lib/api").StepName[]) => {
     stepsRef.current = steps.length > 0 ? steps : undefined;
     const kw = keywordRef.current;
-    loadCategories(1, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
+    loadCategories(1, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current, hierarchyLangRef.current);
   }, [perPage, effectiveFilter, loadCategories, selectedFolder, selectedUserId]);
 
   // URL 업데이트 (현재 URL 보존 + 오버라이드만 적용)
@@ -379,7 +381,7 @@ export function EmbedPageInner({
       handleSearchRef.current(page);
     } else {
       const kw = keywordRef.current;
-      loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
+      loadCategories(page, perPage, effectiveFilter, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current, hierarchyLangRef.current);
     }
   }, [mounted, page, perPage, effectiveFilter, loadCategories]);
 
@@ -521,7 +523,8 @@ export function EmbedPageInner({
     setSearchMeta(null);
     setSearchError(null);
     setKeywordSearchActive(true);
-    loadCategories(1, perPage, effectiveFilter, keyword, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
+    // 분류선택 모드: 선택된 언어 컬럼에서만 검색
+    loadCategories(1, perPage, effectiveFilter, keyword, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current, hierarchyLangRef.current);
   }, [perPage, effectiveFilter, loadCategories, searchResults, handleSearch]);
 
   // 필터 상태 변경 시 URL 업데이트
@@ -704,7 +707,7 @@ export function EmbedPageInner({
                 onFolderActionComplete={() => {
                   // 폴더 이동 후 선택 해제
                   setSelectedIds(new Set());
-                  loadCategories(page, perPage, effectiveFilter, keywordRef.current, selectedFolderRef.current ?? undefined, selectedUserId ?? undefined, stepsRef.current);
+                  loadCategories(page, perPage, effectiveFilter, keywordRef.current, selectedFolderRef.current ?? undefined, selectedUserId ?? undefined, stepsRef.current, hierarchyLangRef.current);
                 }}
               />
             )}
@@ -843,7 +846,7 @@ export function EmbedPageInner({
                 }
                 const kw = keywordRef.current;
                 const ef = filterRef.current === "my" ? "my" : undefined;
-                loadCategories(1, perPage, ef, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
+                loadCategories(1, perPage, ef, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current, hierarchyLangRef.current);
                 updateURL({ page: 1 });
               }}
               onCategoryComplete={() => {
@@ -878,7 +881,7 @@ export function EmbedPageInner({
                 setSelectedIds(new Set());
                 const kw = keywordRef.current;
                 const ef = filterRef.current === "my" ? "my" : undefined;
-                loadCategories(1, perPage, ef, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
+                loadCategories(1, perPage, ef, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current, hierarchyLangRef.current);
                 updateURL({ page: 1 });
                 setHierarchyRefreshKey((prev) => prev + 1);
               }}

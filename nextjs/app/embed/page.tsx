@@ -94,7 +94,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   let serverCategories: Category[] = [];
   let serverMeta: PaginationMeta | null = null;
   try {
-    const categoriesRes = await getCategories(token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined, urlUserIdNum);
+    const categoriesRes = await getCategories(token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined, urlUserIdNum, undefined, hierarchyLang !== "ko" ? hierarchyLang : undefined);
     serverCategories = categoriesRes.data;
     serverMeta = categoriesRes.meta;
   } catch {}

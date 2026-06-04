@@ -218,12 +218,14 @@ export function getCategories(
   folder?: string,
   userId?: number | null,
   steps?: StepName[],
+  searchLang?: string,
 ): Promise<CategoryListResponse> {
   const params = new URLSearchParams();
   if (page && page > 1) params.set("page", String(page));
   params.set("per_page", String(perPage ?? 20));
   if (filter) params.set("filter", filter);
   if (search) params.set("search", search);
+  if (searchLang) params.set("search_lang", searchLang);
   if (folder) params.set("folder", folder);
   if (userId) params.set("user_id", String(userId));
   if (steps && steps.length > 0) {
