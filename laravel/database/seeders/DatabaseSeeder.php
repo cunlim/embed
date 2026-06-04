@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             CategoryEmbeddingSeeder::class,
             TranslationCacheSeeder::class,
             SearchLogSeeder::class,
+            ApiSettingsSeeder::class,
         ]);
     }
 }
