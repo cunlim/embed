@@ -18,6 +18,8 @@ export interface EmbedParams {
   searchText: string | null;
   /** 유사도 검색 언어 (기본 ko) */
   searchLang: string;
+  /** 분류선택 계층 언어 (기본 ko) */
+  hierarchyLang: string;
   /** URL에서 파싱된 계층 경로 배열 */
   catPath: string[];
   /** 폴더 필터 */
@@ -55,10 +57,13 @@ export function parseEmbedParams(params: EmbedParamsReader): EmbedParams {
   const slang = params.get("slang");
   const searchLang = slang === "en" || slang === "zh" ? slang : "ko";
 
+  const langParam = params.get("lang");
+  const hierarchyLang = langParam === "en" || langParam === "zh" ? langParam : "ko";
+
   const folder = params.get("folder") || null;
   const userId = params.get("user_id") || null;
 
-  return { mode, keyword, filter, searchText, searchLang, catPath, folder, userId };
+  return { mode, keyword, filter, searchText, searchLang, hierarchyLang, catPath, folder, userId };
 }
 
 /**

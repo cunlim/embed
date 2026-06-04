@@ -34,6 +34,10 @@ interface CategoryHierarchyProps {
   token?: string | null;
   folder?: string | null;
   userId?: number | null;
+  /** 분류선택 계층 언어 */
+  lang?: string;
+  /** 언어 변경 콜백 */
+  onLangChange?: (lang: string) => void;
 }
 
 function getPillButtonClass(active: boolean): string {
@@ -60,6 +64,8 @@ export default function CategoryHierarchy({
   token,
   folder,
   userId,
+  lang = "ko",
+  onLangChange,
 }: CategoryHierarchyProps) {
   const [filterMode, setFilterMode] = useState<"hierarchy" | "search">(initialMode);
   const [selectedPath, setSelectedPath] = useState<HierarchyFilterState>(initialHierarchy);
@@ -84,6 +90,7 @@ export default function CategoryHierarchy({
     hadInitialOptions.current = false;
     if (token && (refreshKey > 0 || (tokenChanged && !skipInitial))) {
       const params: Record<string, string> = {};
+      if (lang !== "ko") params["lang"] = lang;
       if (folder) params["folder"] = folder;
       if (userId) params["user_id"] = String(userId);
       fetchCategoryLevels(Object.keys(params).length > 0 ? params : undefined, token, userId ?? undefined).then((res) => {
@@ -92,7 +99,7 @@ export default function CategoryHierarchy({
         setMaxDepth(res.data.maxDepth);
       }).catch(() => {});
     }
-  }, [refreshKey, token]);
+  }, [refreshKey, token, lang]);
 
   // resetKey 변경 시 계층 필터 상태 완전 초기화 (기능시연 버튼 등)
   const prevResetKeyRef = useRef(resetKey);
@@ -108,6 +115,7 @@ export default function CategoryHierarchy({
     // 최상위 옵션 다시 조회
     if (token) {
       const params: Record<string, string> = {};
+      if (lang !== "ko") params["lang"] = lang;
       if (folder) params["folder"] = folder;
       if (userId) params["user_id"] = String(userId);
       fetchCategoryLevels(Object.keys(params).length > 0 ? params : undefined, token, userId ?? undefined).then((res) => {
@@ -115,7 +123,7 @@ export default function CategoryHierarchy({
         setMaxDepth(res.data.maxDepth);
       }).catch(() => {});
     }
-  }, [resetKey, initialMode, token]);
+  }, [resetKey, initialMode, token, lang]);
 
   // 페이지 새로고침 시 초기 hierarchy 필터 복원
   useEffect(() => {
@@ -128,6 +136,7 @@ export default function CategoryHierarchy({
       // 각 depth에 대해 다음 옵션 로드
       for (let i = 0; i < path.length; i++) {
         const catParams: Record<string, string> = {};
+        if (lang !== "ko") catParams["lang"] = lang;
         for (let j = 0; j <= i; j++) {
           catParams[`cat${j + 1}`] = path[j];
         }
@@ -188,6 +197,7 @@ export default function CategoryHierarchy({
       // 다음 depth 옵션 로드
       try {
         const catParams: Record<string, string> = {};
+        if (lang !== "ko") catParams["lang"] = lang;
         const nonNullPath = newPath.filter((v): v is string => v !== null);
         for (let i = 0; i < nonNullPath.length; i++) {
           catParams[`cat${i + 1}`] = nonNullPath[i];
@@ -220,7 +230,7 @@ export default function CategoryHierarchy({
         });
       }
     },
-    [selectedPath, onKeywordSearch, filterMode, keywordText, reportFilterChange, token, onSelectLeafPath]
+    [selectedPath, onKeywordSearch, filterMode, keywordText, reportFilterChange, token, onSelectLeafPath, lang, folder, userId]
   );
 
   // 초과 깊이 옵션 처리: CategoryLevelOption[]에서 categoryId 추출
@@ -256,6 +266,31 @@ export default function CategoryHierarchy({
     onKeywordSearch("");
     reportFilterChange("hierarchy", [], "");
   }, [onKeywordSearch, reportFilterChange]);
+
+  const handleLangChange = useCallback(
+    async (newLang: string) => {
+      if (newLang === lang) return;
+      onLangChange?.(newLang);
+      // 모든 드롭다운 초기화
+      setSelectedPath([]);
+      setLevelOptions([]);
+      setLoadingStates([]);
+      setKeywordText("");
+      onKeywordSearch("");
+      reportFilterChange("hierarchy", [], "");
+      // 새 언어로 최상위 옵션 재조회
+      const params: Record<string, string> = {};
+      if (newLang !== "ko") params["lang"] = newLang;
+      if (folder) params["folder"] = folder;
+      if (userId) params["user_id"] = String(userId);
+      try {
+        const res = await fetchCategoryLevels(Object.keys(params).length > 0 ? params : undefined, token, userId ?? undefined);
+        setLevelOptions([res.data.options]);
+        setMaxDepth(res.data.maxDepth);
+      } catch {}
+    },
+    [lang, onLangChange, onKeywordSearch, reportFilterChange, token, folder, userId]
+  );
 
   const switchToHierarchy = useCallback(() => {
     setFilterMode("hierarchy");
@@ -322,6 +357,36 @@ export default function CategoryHierarchy({
         <>
           {filterMode === "hierarchy" ? (
             <div className="space-y-2">
+              {/* 언어 선택 radio button */}
+              <div className="flex flex-wrap gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={getPillButtonClass(lang === "ko")}
+                  onClick={() => handleLangChange("ko")}
+                  aria-pressed={lang === "ko"}
+                >
+                  한국어
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={getPillButtonClass(lang === "en")}
+                  onClick={() => handleLangChange("en")}
+                  aria-pressed={lang === "en"}
+                >
+                  영어
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={getPillButtonClass(lang === "zh")}
+                  onClick={() => handleLangChange("zh")}
+                  aria-pressed={lang === "zh"}
+                >
+                  중국어
+                </Button>
+              </div>
               {Array.from({ length: visibleLevels }, (_, depth) => {
                 const opts = levelOptions[depth] ?? [];
                 const isLoading = loadingStates[depth] ?? false;
