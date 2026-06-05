@@ -70,6 +70,10 @@
 - **URL 동기화 지연 (`router.replace`/`router.push`)** — Next.js App Router에서 `router.replace()`·`router.push()`는 비동기. `searchParams`는 React 렌더링 시점 스냅샷이므로 빠른 연속 호출 시 stale 값을 읽어 race condition 발생 (1~5초 지연). **해결**: `window.history.replaceState()`·`pushState()`로 즉시 URL 업데이트. `searchParams.toString()` 대신 `window.location.search`에서 현재 URL 읽기. `page`는 computed 값이 아닌 `useState`로 관리하여 즉시 반영. `resetToDefault`에서 이미 사용 중인 패턴. 상세: `nextjs/AGENTS.md`.
 - **`RecommendService::recommendPaginated()` `searchLang` 파라미터** — keyword 필터 시 언어별 접두사/부분 검색 분기. `searchLang=ko` → `category_name_ko LIKE 'keyword%'` (접두사), `searchLang=null` → 다국어 부분 검색 (`%keyword%`). 외부 API(`/api/v1/search`)에서 `mode=hierarchy`+`lang=ko` 시 `searchLang=ko` 전달. `RecommendController`에서는 미전달(기존 동작 유지). 상세: `laravel/AGENTS.md`.
 - **외부 API 패턴 (`/api/v1/search`)** — API key 인증(`ApiKeyAuth`), quota 체크, rate limit(`ApiRateLimit`) 미들웨어 체인. `filter`는 내부에서 항상 `'my'` 고정(외부 노출 안 함). quota 감소는 `DB::table()->decrement()`로 직접 처리(모델 이벤트 우회). 상세: `laravel/AGENTS.md`·`docs/api-v1.md`.
+- **`useAuth` hydration mismatch** — `isLoading` 초기값을 `!initialUser && !!token`으로 설정하면 서버(`getToken()`=null → `false`)와 클라이언트(쿠키 존재 → `true`) 불일치로 hydration 에러 발생. **해결**: 초기값을 `false`로 고정, `useEffect` 내에서 `setIsLoading(true)` 후 fetch. `SocialLogin` 등 서버/클라이언트 조건부 렌더링이 있는 컴포넌트에서 특히 중요.
+- **`QuotaAdjustRequest` 조건부 유효성 검증** — `increment` 모드에서 음수값 허용 필요. `'min:0'` 대신 커스텀 클로저로 `type === 'absolute'`일 때만 0 미만 검증. 백엔드 `adjustQuota()`에서도 `max(0, newValue)`로 최소값 보장.
+- **`next-themes` + React 19 `<script>` 경고** — `next-themes` 0.4.6가 React 컴포넌트 내부에서 `<script>` 태그를 렌더링하여 React 19에서 "Encountered a script tag while rendering React component" 경고 발생. `suppressHydrationWarning`로는 해결 불가. 라이브러리 업데이트 전까지 개발 모드 경고로 유지.
+- **Admin URL 기반 라우팅** — `admin/layout.tsx`에서 `useState` + `useAdminMenu()` context 대신 `Link` + `usePathname()`으로 URL 기반 네비게이션 사용. `/admin`(시스템 설정), `/admin/member`(회원 관리). 각 페이지는 독립 SSR 인증 게이트.
 
 ## 하위 디렉토리
 

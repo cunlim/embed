@@ -72,6 +72,7 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 
 - **SSR 사용자 prefetch** — `layout.tsx`에서 `cookies()` → `getUser(token)` → client component에 `serverUser` prop 전달. `useAuth(initialUser)`로 hydration 시 `null`→`user` 전환 깜빡임 방지.
 - **`skipInitialFetch` ref** — SSR prefetch 완료 시 `useAuth`의 `useEffect`가 `getUser(token)`을 중복 호출하지 않도록 `useRef(!!initialUser)`로 첫 effect skip.
+- **`useAuth` `isLoading` hydration mismatch** — `isLoading` 초기값이 `!initialUser && !!token`이면 서버(`getToken()`=null → `false`)와 클라이언트(쿠키 → `true`) 불일치로 hydration 에러. `SocialLogin`의 `isLoading ? <Loader2> : <Icon>` 조건부 렌더링에서 서버=아이콘, 클라이언트=스피너 불일치 발생. **해결**: `useState(false)`로 고정, `useEffect` 내 `setIsLoading(true)` + fetch.
 - **`canModify` SSR/CSR 일관성** — `user ?? serverUser`로 양쪽에서 동일한 소유권 판단. SSR 시 `serverUser`, CSR hydration 후 `useAuth().user` 사용.
 - **클라이언트 측 강제 리디렉션은 `window.location.href`** — 전체 페이지 로드로 layout SSR 재실행 → `serverUser` 갱신. OAuth 콜백은 middleware가 먼저 처리하므로 로그아웃·토큰 만료 등 제한적 상황에만 해당.
 - **`useSyncExternalStore` mount 감지 금지** — SSR에서 `return null`로 깜빡임 유발. 서버 컴포넌트 인증 게이트 또는 `initialUser` + `skipInitialFetch`로 대체.
@@ -109,6 +110,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 ## 알려진 이슈
 
 - **반응형 레이아웃 hydration mismatch** — JS 조건부 렌더링(`if (isDesktop)`)은 서버/클라이언트 값 불일치로 hydration 에러 발생. CSS 기반(`hidden lg:block`)으로 전환하거나 `useSyncExternalStore`의 `getServerSnapshot` 사용.
+- **`next-themes` + React 19 `<script>` 경고** — `next-themes` 0.4.6가 React 컴포넌트 내부에서 `<script>` 태그를 렌더링. React 19에서 "Encountered a script tag while rendering React component" 경고 발생. `<html suppressHydrationWarning>` 적용되어 있으나 이 경고는 별개. 라이브러리 업데이트 전까지 개발 모드 경고로 유지.
 - **shadcn `--overwrite` 플래그** — 기존 컴포넌트를 새 버전으로 덮어씀. button.tsx의 `asChild` prop 등 호환성 깨질 수 있음. 사용 후 `git diff` 확인 필수.
 - **`--accent`는 text 색상으로 부적합** — light/dark 모두 `oklch(0.45)` 동일 명도. 테마 자동 적응 text에는 `text-foreground` 사용. 배경색(`bg-accent/10`, `bg-accent/20`)으로만 사용할 것.
 - **Laravel API 응답 형식 불일치** — `Resource::collection()`은 `{data: [...]}`, 단일은 `{data: {...}}`. 인터페이스 정의 시 Network 탭으로 확인.
@@ -151,7 +153,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **ESLint `react-hooks/set-state-in-effect` 데이터 fetch 패턴** — useEffect에서 `loadApiKeys()` 등 비동기 함수를 직접 호출하면 함수 내부의 setState가 동기적으로 트리거되어 에러. **해결**: `async function init() { await loadApiKeys(); }`로 래핑하여 effect body를 비동기로 처리. `useApiKeys`·`useUsageStats` 등 모든 데이터 fetch 훅에 적용.
 - **`Math.random()` render 중 호출 금지** — React pure component 규칙 위반. skeleton loading 등에서 랜덤 height 필요 시 `(i * 17 + 13) % 50` 등 결정적 수식 사용.
 - **마이페이지 `/mypage`** — 독립 경로. 서버 컴포넌트에서 `auth_token` 쿠키 확인 → `getUser(token)` → 미인증 시 `/login?redirect=/mypage`로 리다이렉트. 헤더 닉네임에 `<Link href="/mypage">` 연결.
-- **관리자 회원 관리** — `admin/layout.tsx` MENU에 `"users"` 추가(Users 아이콘). `user-detail-modal.tsx`에서 `getAdminUserDetail()` → 기본정보 + API 사용량 + key별 사용량 + 회수 조절. `QuotaAdjustDialog`에서 `type=absolute|increment`로 절대값/증감 조절. **⚠️ 응답 구조**: 백엔드가 평탄 구조(`{ data: { id, name, ..., total_calls, ... } }`)를 반환하므로 `setDetail(res.data)`로 바로 사용 가능.
+- **관리자 회원 관리** — URL 기반 라우팅: `admin/layout.tsx`에서 `Link` + `usePathname()`으로 네비게이션. MENU: `/admin`(시스템 설정, Settings 아이콘), `/admin/member`(회원 관리, Users 아이콘). 각 페이지는 독립 서버 컴포넌트에서 SSR 인증 게이트(`cookies()` → `getUser()` → `redirect()`) 적용. `user-detail-modal.tsx`에서 `getAdminUserDetail()` → 기본정보 + API 사용량 + key별 사용량 + 쿼타 조절. `QuotaAdjustDialog`에서 `type=absolute|increment`로 절대값/증감 조절. **⚠️ 응답 구조**: 백엔드가 평탄 구조(`{ data: { id, name, ..., total_calls, ... } }`)를 반환하므로 `setDetail(res.data)`로 바로 사용 가능.
 - **마이페이지 API 타입 패턴** — `getUsageStats` 등 마이페이지 API는 백엔드가 `{ data: {... } }` 래퍼로 반환. `request()`는 raw JSON을 그대로 반환하므로, 호출 측에서 `res.data`로 언래핑 필수. `getUsageStats`는 `Promise<{ data: UsageStats }>` 타입이며, hook에서 `const res = await getUsageStats(token); setStats(res.data);` 패턴 사용.
 
 - 디자인 가이드: [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md)
