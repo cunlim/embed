@@ -40,10 +40,14 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **`boolean` rule은 `"true"`/`"false"` 문자열 불허** — `true`, `false`, `1`, `0`, `"1"`, `"0"`만 허용. 프론트엔드에서 `String(moveToDefault)`로 `"true"`/`"false"` 전송 시 유효성 실패. **해결**: `params.set(key, bool ? "1" : "0")` 사용.
 - **`$request->boolean()`은 `"true"`/`"false"`도 허용** — `filter_var($val, FILTER_VALIDATE_BOOL)` 사용. FormRequest 검증을 통과한 후의 값 변환만 담당하므로, 유효성 실패 자체를 막을 수는 없음.
 
-### L5-Swagger OA 어노테이션
+### L5-Swagger / OpenAPI
 
-- `OA\JsonContent`에 `type: 'object'` 명시 필수
-- OA 변경 후 `l5-swagger:generate`로 검증
+- **경로**: OpenAPI 3.0 JSON 스펙 — `GET /api/documentation` (`application/json`). Swagger UI HTML은 `api`·`docs` 라우트가 동일 경로로 설정되어 제공되지 않음.
+- **Swagger Editor 대체**: [editor.swagger.io](https://editor.swagger.io) → File → Import URL → `https://embed.cunlim.dev/api/documentation` 입력.
+- **`OA\JsonContent`에 `type: 'object'` 명시 필수**
+- **OA 변경 후 `l5-swagger:generate`로 검증**
+- **배포 후 stale 방지**: `php artisan l5-swagger:generate` 재실행
+- **미문서 컨트롤러** (OA 어노테이션 누락): `FolderController`(6), `MyPageController`(7), `AdminSettingsController`(5), `ApiController`(1). 파라미터는 docs 페이지 `API_V1` 문서나 `nextjs/public/content/API_V1.md` 참조.
 
 ### 테스트 환경 (PostgreSQL + pgvector)
 
@@ -156,4 +160,3 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
   Playwright에서 쿠키 설정: `document.cookie = "auth_token=<TOKEN>; path=/; expires=...; SameSite=Lax"`
 - **`deploy.yml` `migrate:rollback --step=1` 위험** — batch 1에서 전체 rollback 유발
 - **`bootstrap/cache/config.php` 오염** — `php artisan test` 전 `php artisan config:clear` 필수
-- **Swagger 문서 stale** — 배포 후 `php artisan l5-swagger:generate`로 재생성

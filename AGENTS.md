@@ -29,6 +29,15 @@
 
 - **3축 기준 문서** — `PRD`(Why/What), `ADR`(How), `UI_GUIDE`(UI). `docs/superpowers/specs`와 `plans`는 작업 기록. 기준 문서와 충돌 시 실제 코드 우선.
 
+## Docs 페이지 시스템
+
+- **`/docs?doc=SLUG`** 단일 라우트, 서버 컴포넌트(`app/docs/page.tsx`) + 클라이언트 레이아웃(`app/docs/layout.tsx`)
+- **문서 등록**: `lib/docs.ts` → `docList` 배열에 `{ slug, title, description }` 추가
+- **콘텐츠**: `public/content/{SLUG}.md` — react-markdown + remark-gfm 렌더링
+- **사이드바**: `CollapsibleSidebar` + `<Suspense>` → `useSearchParams().get("doc")` 으로 active 표시
+- **문서 목록** (2026-06-06): USER_GUIDE, API_V1, SIMILARITY_SEARCH, RESUME
+- **API 문서** (`API_V1`): 외부 v1 검색 + 내부 API 파라미터 상세 + Swagger 사용법 — `nextjs/public/content/API_V1.md`
+
 ## Subagent-Driven Development worktree 주의사항
 
 - **worktree agent 수정 파일은 메인에 미반영** — `cp <worktree-path> <main-path>`로 수동 동기화. 완료 후 `git -C <메인-repo> status`로 누락 확인.

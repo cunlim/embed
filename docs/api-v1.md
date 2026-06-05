@@ -1,5 +1,7 @@
 # CL Embed API v1
 
+> **📘 최신 API 문서**: docs 페이지의 **[API 연동 가이드](/docs?doc=API_V1)** 에서 더 상세한 파라미터 설명, 내부 API 엔드포인트, Swagger/OpenAPI 사용법을 확인할 수 있습니다. 본 문서는 외부 API v1 사양의 참조용 스펙입니다.
+
 카테고리 유사도 검색 기능을 외부에서 호출할 수 있는 REST API입니다.
 
 ## 개요

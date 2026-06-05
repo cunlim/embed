@@ -26,6 +26,8 @@ AI 기반 다국어 카테고리 추천 시스템. 벡터 검색(pgvector)으로
 - 외부 API: `POST /api/v1/search` — API key 인증(`cl_` 접두사) + quota(가입 시 100회) + rate limit(분당 60회)
 - 마이페이지: `/mypage` — API key CRUD, 사용량 대시보드, 차트, 이력
 - 관리자 회원 관리: `/admin` 사이드바 "회원 관리" — 회원 상세 모달, quota 절대값/증감 조절
+- Docs 페이지: `/docs?doc=SLUG` 단일 라우트, `lib/docs.ts` 문서 목록, `public/content/*.md` 마크다운 렌더링 (react-markdown+remark-gfm). 문서 목록: USER_GUIDE → API_V1 → SIMILARITY_SEARCH → RESUME.
+- Swagger/OpenAPI: l5-swagger, `GET /api/documentation` JSON 스펙 (Swagger UI HTML은 route 충돌로 미제공). Swagger Editor에서 URL import로 대체. OA 미문서 컨트롤러: FolderController·MyPageController·AdminSettingsController·ApiController.
 
 ## 주요 주의사항
 
