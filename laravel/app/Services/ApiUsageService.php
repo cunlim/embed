@@ -84,7 +84,7 @@ class ApiUsageService
     /**
      * 최근 N일간의 일별 호출 횟수를 반환한다.
      */
-    public function getDailyChart(int $userId, int $days = 30): array
+    public function getDailyChart(int $userId, int $days = 7): array
     {
         $startDate = Carbon::today()->subDays($days - 1);
 

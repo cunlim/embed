@@ -39,7 +39,9 @@ function removeToken() {
 export function useAuth(initialUser?: User | null): UseAuthReturn {
   const [user, setUser] = useState<User | null>(initialUser ?? null);
   const token = getToken();
-  const [isLoading, setIsLoading] = useState(!initialUser && !!token);
+  // 초기값을 false로 고정 — 서버/클라이언트 불일치로 hydration mismatch 방지
+  // (서버에서는 getToken()이 null, 클라이언트에서는 쿠키 존재 → isLoading 차이)
+  const [isLoading, setIsLoading] = useState(false);
   // SSR에서 이미 사용자 정보를 가져온 경우 최초 getUser 호출 건너뜀
   const skipInitialFetch = useRef(!!initialUser);
 
@@ -47,9 +49,9 @@ export function useAuth(initialUser?: User | null): UseAuthReturn {
     if (!token) return;
     if (skipInitialFetch.current) {
       skipInitialFetch.current = false;
-      setIsLoading(false);
       return;
     }
+    setIsLoading(true);
     getUser(token)
       .then(setUser)
       .catch(() => {

@@ -203,10 +203,10 @@ test('getDailyChart — 최근 N일간의 일별 호출 횟수를 반환한다',
     expect($todayTotal)->toBe(2);
 });
 
-test('getDailyChart — 기본 days는 30이다', function () {
+test('getDailyChart — 기본 days는 7이다', function () {
     $chart = $this->service->getDailyChart($this->user->id);
 
-    expect($chart)->toHaveCount(30);
+    expect($chart)->toHaveCount(7);
 });
 
 test('getDailyChart — 로그가 없으면 모두 0을 반환한다', function () {

@@ -150,8 +150,13 @@ class AdminSettingsController extends Controller
                 'api_quota_limit' => $value,
             ]);
         } else {
-            $user->increment('api_quota_remaining', $value);
-            $user->increment('api_quota_limit', $value);
+            // increment/decrement — 최소값 0 보장
+            $newRemaining = max(0, $user->api_quota_remaining + $value);
+            $newLimit = max(0, $user->api_quota_limit + $value);
+            $user->update([
+                'api_quota_remaining' => $newRemaining,
+                'api_quota_limit' => $newLimit,
+            ]);
         }
 
         $user = $user->fresh();
