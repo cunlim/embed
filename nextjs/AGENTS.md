@@ -151,7 +151,8 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **ESLint `react-hooks/set-state-in-effect` 데이터 fetch 패턴** — useEffect에서 `loadApiKeys()` 등 비동기 함수를 직접 호출하면 함수 내부의 setState가 동기적으로 트리거되어 에러. **해결**: `async function init() { await loadApiKeys(); }`로 래핑하여 effect body를 비동기로 처리. `useApiKeys`·`useUsageStats` 등 모든 데이터 fetch 훅에 적용.
 - **`Math.random()` render 중 호출 금지** — React pure component 규칙 위반. skeleton loading 등에서 랜덤 height 필요 시 `(i * 17 + 13) % 50` 등 결정적 수식 사용.
 - **마이페이지 `/mypage`** — 독립 경로. 서버 컴포넌트에서 `auth_token` 쿠키 확인 → `getUser(token)` → 미인증 시 `/login?redirect=/mypage`로 리다이렉트. 헤더 닉네임에 `<Link href="/mypage">` 연결.
-- **관리자 회원 관리** — `admin/layout.tsx` MENU에 `"users"` 추가(Users 아이콘). `user-detail-modal.tsx`에서 `getAdminUserDetail()` → 기본정보 + API 사용량 + key별 사용량 + 회수 조절. `QuotaAdjustDialog`에서 `type=absolute|increment`로 절대값/증감 조절.
+- **관리자 회원 관리** — `admin/layout.tsx` MENU에 `"users"` 추가(Users 아이콘). `user-detail-modal.tsx`에서 `getAdminUserDetail()` → 기본정보 + API 사용량 + key별 사용량 + 회수 조절. `QuotaAdjustDialog`에서 `type=absolute|increment`로 절대값/증감 조절. **⚠️ 응답 구조**: 백엔드가 평탄 구조(`{ data: { id, name, ..., total_calls, ... } }`)를 반환하므로 `setDetail(res.data)`로 바로 사용 가능.
+- **마이페이지 API 타입 패턴** — `getUsageStats` 등 마이페이지 API는 백엔드가 `{ data: {... } }` 래퍼로 반환. `request()`는 raw JSON을 그대로 반환하므로, 호출 측에서 `res.data`로 언래핑 필수. `getUsageStats`는 `Promise<{ data: UsageStats }>` 타입이며, hook에서 `const res = await getUsageStats(token); setStats(res.data);` 패턴 사용.
 
 - 디자인 가이드: [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md)
 - 아키텍처 결정 기록: [`docs/ADR.md`](../docs/ADR.md)

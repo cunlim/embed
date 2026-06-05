@@ -129,7 +129,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **외부 API key 인증** — `ApiKeyAuth` 미들웨어가 `Authorization: Bearer cl_xxx` 헤더에서 API key 추출 → `ApiKeyService::findByKey()`로 검증 → status/pause/quota 체크 → `_api_key_id`·`_api_user_id`를 request에 merge. `ApiRateLimit` 미들웨어가 `RateLimiter::for()`로 분당 제한(Redis 기반). 미들웨어 체인: `api.rate_limit` → `api.key_auth` → 컨트롤러.
 - **`POST /api/v1/search`** — 외부 유사도 검색 전용. `filter`는 내부에서 항상 `'my'`(사용자 본인 카테고리) 고정, 외부에 노출 안 함. quota 감소는 `DB::table('users')->where('id', $userId)->decrement('api_quota_remaining', 1)`로 직접 처리. `ApiKeyService::touchLastUsed()`로 last_used_at 갱신.
 - **마이페이지 API** — `auth:sanctum` + `/api/mypage/` prefix. API key CRUD(`apiKeys`·`storeApiKey`·`updateApiKey`·`destroyApiKey`), 사용량 통계(`usage`·`usageHistory`·`usageChart`). 소유권 검증: `apiKey->user_id !== $request->user()->id` → 404.
-- **관리자 회원 관리** — `GET /api/admin/users/{id}`(상세+사용량), `PATCH /api/admin/users/{id}/quota`(회수 조절: `type=absolute|increment`). `QuotaAdjustRequest`에서 `authorize()`로 `isSuperAdmin()` 검증.
+- **관리자 회원 관리** — `GET /api/admin/users/{id}`(상세+사용량), `PATCH /api/admin/users/{id}/quota`(회수 조절: `type=absolute|increment`). `QuotaAdjustRequest`에서 `authorize()`로 `isSuperAdmin()` 검증. **⚠️ 응답 구조**: `userDetail`과 `adjustQuota` 모두 `data` 아래에 사용자 필드와 사용량을 **평탄 구조**로 반환 (`{ data: { id, name, ..., total_calls, ... } }`). 중첩된 `{ data: { user: {...} } }`가 아님. 프론트엔드 `AdminUserDetail` 타입과 일치해야 함.
 
 ### OAuth (Socialite)
 

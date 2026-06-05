@@ -629,7 +629,7 @@ export function deleteApiKey(token: string, id: number): Promise<void> {
   return request(`/mypage/api-keys/${id}`, { method: "DELETE", token });
 }
 
-export function getUsageStats(token: string): Promise<UsageStats> {
+export function getUsageStats(token: string): Promise<{ data: UsageStats }> {
   return request("/mypage/usage", { token });
 }
 

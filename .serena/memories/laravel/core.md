@@ -15,7 +15,7 @@
 - **외부 API key 인증**: `ApiKeyAuth` 미들웨어 — Bearer `cl_xxx` → `ApiKeyService::findByKey()` → status/pause/quota 체크 → request merge. `ApiRateLimit` — `RateLimiter::for()` 분당 제한(Redis). 미들웨어 체인: `api.rate_limit` → `api.key_auth`.
 - **`POST /api/v1/search`**: 외부 유사도 검색. `filter` 내부 `'my'` 고정. quota 감소 `DB::table()->decrement()`. `ApiKeyService::touchLastUsed()`. `RecommendService::recommendPaginated()`의 `searchLang` 파라미터로 언어별 접두사/부분 검색 분기.
 - **마이페이지 API**: `/api/mypage/` prefix, `auth:sanctum`. API key CRUD + 사용량 통계(총/오늘 호출, key별, 일별 차트).
-- **관리자 회원 관리**: `GET /api/admin/users/{id}`(상세+사용량), `PATCH /api/admin/users/{id}/quota`(absolute/increment). `QuotaAdjustRequest`에서 `isSuperAdmin()` 검증.
+- **관리자 회원 관리**: `GET /api/admin/users/{id}`(상세+사용량), `PATCH /api/admin/users/{id}/quota`(absolute/increment). `QuotaAdjustRequest`에서 `isSuperAdmin()` 검증. **⚠️ 응답 구조**: 평탄 구조(`{ data: { id, name, ..., total_calls, ... } }`), 중첩 아님.
 - **OAuth**: 라우트는 `routes/web.php`, callback은 `RedirectResponse`, provider_token DB 저장 금지
 - **PHP 8 속성(Attribute)**: `$fillable`/`$hidden` 대신 `#[Fillable([...])]`, `#[Hidden([...])]`
 - **API 리소스**: `Resource::collection()`은 `{data: [...]}`, 단일은 `{data: {...}}` 래퍼 자동 적용. Resource collection 항목은 객체여야 함.

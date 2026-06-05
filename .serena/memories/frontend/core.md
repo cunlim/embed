@@ -51,6 +51,7 @@
 - **필터 언어 radio button 오른쪽 정렬**: `category-hierarchy.tsx`의 언어 버튼 컨테이너에 `justify-end` 클래스 필수.
 - **URL 동기화 지연 해결**: `router.replace()`·`router.push()`는 Next.js App Router에서 비동기(1~5초 지연). `window.history.replaceState()`·`pushState()`로 즉시 업데이트. `searchParams` 대신 `window.location.search` 읽기. `page`는 `useState`로 관리. `updateURL`·`handlePageChange`·per-page select·`resetToDefault` 모두 적용됨.
 - **마이페이지 `/mypage`**: 독립 경로. 서버 컴포넌트에서 `auth_token` 쿠키 → `getUser(token)` → 미인증 시 `/login?redirect=/mypage`. 헤더 닉네임 `<Link href="/mypage">`. 구성: API key 관리(`api-key-section`·`api-key-card`·`api-key-create-dialog`), 사용량 대시보드(`usage-dashboard`), 차트(`usage-chart`), 이력(`usage-history`).
-- **관리자 회원 관리**: `admin/layout.tsx` MENU에 `"users"`(Users 아이콘). `user-management.tsx` → `fetchAdminUsers()`로 회원 목록 테이블. "관리" 버튼 → `user-detail-modal.tsx`에서 `getAdminUserDetail()`로 상세(기본정보+사용량+key별). `quota-adjust-dialog.tsx`에서 absolute/increment 조절 → `adjustUserQuota()`.
+- **관리자 회원 관리**: `admin/layout.tsx` MENU에 `"users"`(Users 아이콘). `user-management.tsx` → `fetchAdminUsers()`로 회원 목록 테이블. "관리" 버튼 → `user-detail-modal.tsx`에서 `getAdminUserDetail()`로 상세(기본정보+사용량+key별). `quota-adjust-dialog.tsx`에서 absolute/increment 조절 → `adjustUserQuota()`. **⚠️ 응답 구조**: 백엔드가 평탄 구조 반환 → `setDetail(res.data)`로 바로 사용.
+- **마이페이지 API 타입**: `getUsageStats`는 `Promise<{ data: UsageStats }>`. hook에서 `res.data`로 언래핑 필수.
 - **ESLint `set-state-in-effect` 데이터 fetch 패턴**: useEffect에서 비동기 함수 직접 호출 시 내부 setState가 동기 트리거로 에러. `async function init() { await fn(); }` 래핑 필수. `useApiKeys`·`useUsageStats`·`user-detail-modal`·`user-management` 모두 적용.
 - **`Math.random()` render 중 호출 금지**: React purity 규칙 위반. skeleton loading에서 랜덤 height 필요 시 `(i * 17 + 13) % 50` 등 결정적 수식 사용.

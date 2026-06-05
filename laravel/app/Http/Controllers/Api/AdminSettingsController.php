@@ -117,13 +117,15 @@ class AdminSettingsController extends Controller
         $callsByKey = $this->usageService->getCallsByKey($targetUser->id);
 
         return response()->json([
-            'data' => [
-                'user' => $targetUser,
-                'total_calls' => $totalCalls,
-                'today_calls' => $todayCalls,
-                'active_keys' => $activeKeys,
-                'calls_by_key' => $callsByKey,
-            ],
+            'data' => array_merge(
+                $targetUser->toArray(),
+                [
+                    'total_calls' => $totalCalls,
+                    'today_calls' => $todayCalls,
+                    'active_keys' => $activeKeys,
+                    'calls_by_key' => $callsByKey,
+                ]
+            ),
         ]);
     }
 
@@ -154,12 +156,21 @@ class AdminSettingsController extends Controller
 
         $user = $user->fresh();
 
+        $totalCalls = $this->usageService->getTotalCalls($user->id);
+        $todayCalls = $this->usageService->getTodayCalls($user->id);
+        $activeKeys = $this->usageService->getActiveKeyCount($user->id);
+        $callsByKey = $this->usageService->getCallsByKey($user->id);
+
         return response()->json([
-            'data' => [
-                'id' => $user->id,
-                'api_quota_remaining' => $user->api_quota_remaining,
-                'api_quota_limit' => $user->api_quota_limit,
-            ],
+            'data' => array_merge(
+                $user->toArray(),
+                [
+                    'total_calls' => $totalCalls,
+                    'today_calls' => $todayCalls,
+                    'active_keys' => $activeKeys,
+                    'calls_by_key' => $callsByKey,
+                ]
+            ),
         ]);
     }
 }

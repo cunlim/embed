@@ -33,8 +33,8 @@ export function useUsageStats(token?: string | null): UseUsageStatsReturn {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getUsageStats(token);
-      setStats(data);
+      const res = await getUsageStats(token);
+      setStats(res.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "사용량 통계를 불러오지 못했습니다.");
     } finally {

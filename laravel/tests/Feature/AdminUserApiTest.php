@@ -39,13 +39,13 @@ test('GET /api/admin/users/{id} — superadmin은 회원 상세를 조회할 수
     $response = $this->actingAs($superadmin, 'sanctum')->getJson("/api/admin/users/{$user->id}");
 
     $response->assertOk()
-        ->assertJsonPath('data.user.id', $user->id)
+        ->assertJsonPath('data.id', $user->id)
         ->assertJsonPath('data.total_calls', 3)
         ->assertJsonPath('data.today_calls', 3)
         ->assertJsonPath('data.active_keys', 1)
         ->assertJsonStructure([
             'data' => [
-                'user' => ['id', 'name', 'email', 'role', 'created_at', 'api_quota_remaining', 'api_quota_limit'],
+                'id', 'name', 'email', 'role', 'created_at', 'api_quota_remaining', 'api_quota_limit',
                 'total_calls',
                 'today_calls',
                 'active_keys',
