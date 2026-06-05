@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,9 @@ class ApiKey extends Model
 {
     /** @use HasFactory<ApiKeyFactory> */
     use HasFactory;
+
+    /** JSON 직렬화에 포함할 추가 속성 */
+    protected $appends = ['key_preview'];
 
     public function user(): BelongsTo
     {
@@ -32,6 +36,16 @@ class ApiKey extends Model
         return [
             'last_used_at' => 'datetime',
         ];
+    }
+
+    /**
+     * 잘린 키 미리보기 (예: "cl_152|t9qk...")
+     */
+    protected function keyPreview(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->key ? substr($this->key, 0, 10).'...' : null,
+        );
     }
 
     public function isActive(): bool

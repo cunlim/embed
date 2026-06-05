@@ -576,7 +576,8 @@ export function fetchUsers(token?: string | null): Promise<{ data: { id: number;
 export interface ApiKeyItem {
   id: number;
   name: string;
-  key: string;
+  key?: string;
+  key_preview: string | null;
   status: "active" | "paused";
   last_used_at: string | null;
   created_at: string;
@@ -600,7 +601,7 @@ export interface UsageHistoryItem {
   api_key?: {
     id: number;
     name: string;
-    key: string;
+    key_preview?: string;
   };
 }
 

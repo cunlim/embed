@@ -22,7 +22,7 @@ interface UseApiKeysReturn {
 
 export function useApiKeys(token?: string | null): UseApiKeysReturn {
   const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([]);
-  const [isLoading, setIsLoading] = useState(!!token);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadApiKeys = useCallback(async () => {

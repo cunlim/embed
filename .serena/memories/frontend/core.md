@@ -52,7 +52,7 @@
 - **URL 동기화 지연 해결**: `router.replace()`·`router.push()`는 Next.js App Router에서 비동기(1~5초 지연). `window.history.replaceState()`·`pushState()`로 즉시 업데이트. `searchParams` 대신 `window.location.search` 읽기. `page`는 `useState`로 관리. `updateURL`·`handlePageChange`·per-page select·`resetToDefault` 모두 적용됨.
 - **마이페이지 `/mypage`**: 독립 경로. 서버 컴포넌트에서 `auth_token` 쿠키 → `getUser(token)` → 미인증 시 `/login?redirect=/mypage`. 헤더 닉네임 `<Link href="/mypage">`. 구성: API key 관리(`api-key-section`·`api-key-card`·`api-key-create-dialog`), 사용량 대시보드(`usage-dashboard`), 차트(`usage-chart`), 이력(`usage-history`).
 - **관리자 회원 관리**: URL 기반 라우팅 — `admin/layout.tsx`에서 `Link` + `usePathname()`. MENU: `/admin`(시스템 설정), `/admin/member`(회원 관리). 각 페이지 독립 SSR 인증 게이트. `user-management.tsx` → `fetchAdminUsers()`로 회원 목록. `user-detail-modal.tsx`에서 상세 + `quota-adjust-dialog.tsx`로 쿼타 조절. **⚠️ 응답 구조**: 백엔드 평탄 구조 → `setDetail(res.data)`.
-- **`useAuth` hydration mismatch**: `isLoading` 초기값 `false` 고정. 서버(`getToken()`=null)와 클라이언트(쿠키) 불일치 방지. `useEffect` 내 `setIsLoading(true)` + fetch.
-- **마이페이지 API 타입**: `getUsageStats`는 `Promise<{ data: UsageStats }>`. hook에서 `res.data`로 언래핑 필수.
+- **`isLoading` + `!!token` hydration mismatch**: `useState(!!token)` 초기화 시 서버/클라이언트 불일치. `useAuth`·`useApiKeys`·`useUsageStats` 등 토큰 기반 훅 모두 해당. **해결**: `useState(false)` 고정 + `useEffect` 내 `setIsLoading(true)`.
+- **마이페이지 API 타입**: `getUsageStats`는 `Promise<{ data: UsageStats }>`. hook에서 `res.data`로 언래핑 필수. `ApiKeyItem.key`는 optional — 백엔드 `#[Hidden]`로 제외, `key_preview` accessor 필드 사용.
 - **ESLint `set-state-in-effect` 데이터 fetch 패턴**: useEffect에서 비동기 함수 직접 호출 시 내부 setState가 동기 트리거로 에러. `async function init() { await fn(); }` 래핑 필수. `useApiKeys`·`useUsageStats`·`user-detail-modal`·`user-management` 모두 적용.
 - **`Math.random()` render 중 호출 금지**: React purity 규칙 위반. skeleton loading에서 랜덤 height 필요 시 `(i * 17 + 13) % 50` 등 결정적 수식 사용.

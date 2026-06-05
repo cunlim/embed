@@ -18,6 +18,7 @@
 - **관리자 회원 관리**: `GET /api/admin/users/{id}`(상세+사용량), `PATCH /api/admin/users/{id}/quota`(absolute/increment). `QuotaAdjustRequest`에서 `isSuperAdmin()` 검증. **`value` 유효성**: `absolute`→`min:0`, `increment`→음수 허용. 커스텀 클로저로 조건부 검증. `adjustQuota()`에서 `max(0, newValue)` 보장. **⚠️ 응답 구조**: 평탄 구조(`{ data: { id, name, ..., total_calls, ... } }`), 중첩 아님.
 - **OAuth**: 라우트는 `routes/web.php`, callback은 `RedirectResponse`, provider_token DB 저장 금지
 - **PHP 8 속성(Attribute)**: `$fillable`/`$hidden` 대신 `#[Fillable([...])]`, `#[Hidden([...])]`
+- **`#[Hidden]` 필드 + accessor 패턴**: 보안 필드(키, 비밀번호 등)를 `#[Hidden]`로 제외하되, `$appends` + `Attribute` accessor로 표시용 미리보기 제공. 예: `ApiKey`의 `#[Hidden(['key'])]` + `key_preview` accessor.
 - **API 리소스**: `Resource::collection()`은 `{data: [...]}`, 단일은 `{data: {...}}` 래퍼 자동 적용. Resource collection 항목은 객체여야 함.
 - **`boolean` 유효성 검증**: `"true"`/`"false"` 문자열 불허 (true, false, 1, 0, "1", "0"만 허용). 쿼리 파라미터로 전달 시 `"1"`/`"0"` 사용.
 - **폴더는 `folders` 테이블로 독립 관리** — `user_id` + `name` unique. `categories.folder`는 문자열 참조로 유지. FolderController는 `Folder` 모델 사용.

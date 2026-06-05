@@ -34,13 +34,17 @@ export function ApiKeyCard({
   const [isToggling, setIsToggling] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const truncatedKey = apiKey.key.slice(0, 10) + "...";
+  const truncatedKey = apiKey.key_preview ?? "••••••••••...";
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(apiKey.key);
-    setCopied(true);
-    toast.success("API key가 클립보드에 복사되었습니다.");
-    setTimeout(() => setCopied(false), 2000);
+    if (apiKey.key) {
+      await navigator.clipboard.writeText(apiKey.key);
+      setCopied(true);
+      toast.success("API key가 클립보드에 복사되었습니다.");
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      toast.error("API key를 복사할 수 없습니다. 마이페이지에서 다시 확인하세요.");
+    }
   };
 
   const handleToggle = async () => {
