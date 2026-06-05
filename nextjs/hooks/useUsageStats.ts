@@ -25,7 +25,7 @@ export function useUsageStats(token?: string | null): UseUsageStatsReturn {
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [history, setHistory] = useState<UsageHistoryItem[]>([]);
   const [chart, setChart] = useState<ChartDataPoint[]>([]);
-  const [isLoading, setIsLoading] = useState(!!token);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadStats = useCallback(async () => {
