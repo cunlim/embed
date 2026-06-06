@@ -70,7 +70,17 @@ export function UsageHistory({ token }: UsageHistoryProps) {
                       {new Date(item.created_at).toLocaleString("ko-KR")}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {item.api_key?.name ?? "-"}
+                      {item.source === 'embed' ? (
+                        <Badge variant="secondary" className="bg-blue-500/15 text-blue-700 dark:text-blue-400">
+                          {item.source_label ?? 'Embed 유사도 검색'}
+                        </Badge>
+                      ) : item.source === 'deleted' ? (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          {item.source_label ?? '(삭제됨)'}
+                        </Badge>
+                      ) : (
+                        item.api_key?.name ?? "-"
+                      )}
                     </TableCell>
                     <TableCell>{getStatusBadge(item.response_status)}</TableCell>
                     <TableCell className="text-right text-sm text-muted-foreground">

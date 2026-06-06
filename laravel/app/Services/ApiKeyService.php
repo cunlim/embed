@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ApiKey;
+use App\Models\ApiUsageLog;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -81,6 +82,7 @@ class ApiKeyService
 
     /**
      * API 키를 삭제한다.
+     * 삭제 전 해당 키의 사용 로그 source_label을 키 이름으로 업데이트한다.
      */
     public function delete(int $id): bool
     {
@@ -89,6 +91,14 @@ class ApiKeyService
         if ($apiKey === null) {
             return false;
         }
+
+        // 삭제 전 사용 로그의 source_label을 키 이름으로 업데이트
+        ApiUsageLog::where('api_key_id', $id)
+            ->where('source', 'api_key')
+            ->update([
+                'source' => 'deleted',
+                'source_label' => $apiKey->name,
+            ]);
 
         return $apiKey->delete();
     }

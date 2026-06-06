@@ -19,9 +19,13 @@ class ApiUsageService
         ?array $parameters,
         int $responseStatus,
         int $processingTimeMs,
+        string $source = 'api_key',
+        ?string $sourceLabel = null,
     ): ApiUsageLog {
         return ApiUsageLog::create([
             'api_key_id' => $apiKeyId,
+            'source' => $source,
+            'source_label' => $sourceLabel,
             'user_id' => $userId,
             'endpoint' => $endpoint,
             'parameters' => $parameters,

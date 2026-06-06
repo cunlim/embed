@@ -158,7 +158,9 @@ class RecommendController extends Controller
                 '/api/recommend',
                 $request->validated(),
                 200,
-                0               // 처리 시간 측정 불필요
+                0,              // 처리 시간 측정 불필요
+                'embed',        // embed 페이지에서 호출
+                'Embed 유사도 검색'
             );
         }
 

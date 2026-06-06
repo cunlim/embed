@@ -597,7 +597,9 @@ export interface UsageStats {
 
 export interface UsageHistoryItem {
   id: number;
-  api_key_id: number;
+  api_key_id: number | null;
+  source: 'api_key' | 'embed' | 'deleted';
+  source_label: string | null;
   endpoint: string;
   response_status: number;
   processing_time_ms: number;
