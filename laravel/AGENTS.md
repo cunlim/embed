@@ -130,6 +130,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
   ```php
   DB::statement('CREATE UNIQUE INDEX idx_name ON table (col1, col2, COALESCE(nullable_col, \'\'))');
   ```
+- **FK cascade → set null 전환** — `dropForeign` → `nullable()->change()` → `constrained()->onDelete('set null')`. FK 컬럼을 non-nullable → nullable로 변경 시 doctrine/dbal 없이 raw SQL로도 가능. 예: `api_usage_logs.api_key_id`를 cascade에서 set null로 전환하여 키 삭제 후에도 사용 로그 보존.
 
 ### API 인증
 

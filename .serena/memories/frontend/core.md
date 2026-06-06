@@ -58,4 +58,4 @@
 - **ESLint `set-state-in-effect` 데이터 fetch 패턴**: useEffect에서 비동기 함수 직접 호출 시 내부 setState가 동기 트리거로 에러. `async function init() { await fn(); }` 래핑 필수. `useApiKeys`·`useUsageStats`·`user-detail-modal`·`user-management` 모두 적용.
 - **`Math.random()` render 중 호출 금지**: React purity 규칙 위반. skeleton loading에서 랜덤 height 필요 시 `(i * 17 + 13) % 50` 등 결정적 수식 사용.
 - **Dialog error swallowing**: 부모 `onSubmit`이 re-throw하는 패턴에서 Dialog `handleSubmit`에 `catch {}` 없으면 uncaught rejection 콘솔 에러. `catch { /* toast already shown */ }` 패턴 사용.
-- **데이터 시각화 값 레이블**: 차트·그래프에 시각적 요소만으로 불충분. `text-[10px] font-medium tabular-nums text-foreground`로 수치 레이블 필수.
+- **데이터 시각화 값 레이블**: 차트·그래프에 시각적 요소만으로 불충분. `absolute` + `bottom: calc(height% + 2px)`로 막대 높이에 맞춰 라벨 배치. **PC hover + 모바일 click toggle**: 기본 `opacity-0`, `group-hover:opacity-100`(데스크톱), `useState(activeDate)` + `onClick` 토글 + 외부 클릭 감지 `useEffect`로 dismiss(모바일). 라벨에 `pointer-events-none` 필수 — 미적용 시 라벨이 클릭 이벤트를 가로챔.
