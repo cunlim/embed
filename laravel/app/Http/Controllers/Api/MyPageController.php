@@ -35,6 +35,7 @@ class MyPageController extends Controller
     {
         $user = $request->user('sanctum');
         $key = $this->apiKeyService->create($user->id, $request->validated('name'));
+        $key->makeVisible('key');
 
         return response()->json(['data' => $key], 201);
     }

@@ -30,10 +30,15 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 ### Laravel 코드 컨벤션
 
 - **PHP 8 속성(Attribute) 사용**: `$fillable`/`$hidden` 대신 `#[Fillable([...])]`, `#[Hidden([...])]`
-- **`#[Hidden]` 필드 + accessor 패턴** — 보안 필드(키, 비밀번호 등)를 `#[Hidden]`로 제외하되, 프론트엔드 표시용 미리보기는 `$appends` + `Attribute` accessor로 제공. 예: `ApiKey`의 `#[Hidden(['key'])]` + `key_preview` accessor. 프론트엔드 타입에도 optional + preview 필드 추가 필수.
+- **`#[Hidden]` 필드 + accessor 패턴** — 보안 필드(키, 비밀번호 등)를 `#[Hidden]`로 제외하되, 프론트엔드 표시용 미리보기는 `$appends` + `Attribute` accessor로 제공. 예: `ApiKey`의 `#[Hidden(['key'])]` + `key_preview` accessor. **생성 시점에만 평문 노출 필요 시** 컨트롤러에서 `$model->makeVisible('key')` 호출. 프론트엔드 타입에도 optional + preview 필드 추가 필수.
 - **API 리소스**: `Resource::collection()`은 `{data: [...]}`, 단일은 `{data: {...}}` 래퍼 자동 적용
 - **Resource collection에 전달되는 각 항목은 객체여야 한다** — 연관 배열 전달 시 `Attempt to read property on array` 에러 발생
 - **PHP 변경 완료 전** 반드시 `vendor/bin/pint --format agent` 실행
+
+### API key 유효성 검증
+
+- **이름 중복 금지** — `(user_id, name)` 복합 unique. `ApiKeyStoreRequest`에 `Rule::unique('api_keys', 'name')->where('user_id', $userId)`, `ApiKeyUpdateRequest`에 `->ignore($this->route('id'))` 추가. DB에도 `$table->unique(['user_id', 'name'])` 마이그레이션으로 방어. 마이그레이션에선 기존 중복 제거 후 인덱스 추가.
+- **중복 이름 메시지**: `'name.unique' => '이미 사용 중인 API key 이름입니다.'`
 
 ### Form Request boolean 유효성 검증
 

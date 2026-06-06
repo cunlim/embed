@@ -35,6 +35,8 @@ export function ApiKeyCreateDialog({
       await onSubmit(name.trim());
       setName("");
       onOpenChange(false);
+    } catch {
+      // 에러 토스트는 부모 handleCreate에서 이미 표시됨
     } finally {
       setIsSubmitting(false);
     }

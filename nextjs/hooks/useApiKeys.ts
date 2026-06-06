@@ -54,7 +54,7 @@ export function useApiKeys(token?: string | null): UseApiKeysReturn {
       if (!token) throw new Error("인증이 필요합니다.");
       const newStatus = currentStatus === "active" ? "paused" : "active";
       const response = await updateApiKey(token, id, { status: newStatus });
-      setApiKeys((prev) => prev.map((k) => (k.id === id ? response.data : k)));
+      setApiKeys((prev) => prev.map((k) => (k.id === id ? { ...k, ...response.data } : k)));
     },
     [token],
   );
@@ -72,7 +72,7 @@ export function useApiKeys(token?: string | null): UseApiKeysReturn {
     async (id: number, name: string) => {
       if (!token) throw new Error("인증이 필요합니다.");
       const response = await updateApiKey(token, id, { name });
-      setApiKeys((prev) => prev.map((k) => (k.id === id ? response.data : k)));
+      setApiKeys((prev) => prev.map((k) => (k.id === id ? { ...k, ...response.data } : k)));
     },
     [token],
   );

@@ -28,9 +28,11 @@ export function ApiKeySection({ token }: ApiKeySectionProps) {
   const handleCreate = async (name: string) => {
     try {
       await addApiKey(name);
-      toast.success("API key가 생성되었습니다.");
-    } catch {
-      toast.error("API key 생성에 실패했습니다.");
+      toast.success("API key가 생성되었습니다.", {
+        description: "새로고침 전에 반드시 복사해두세요. 이후에는 키 전문을 확인할 수 없습니다.",
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "API key 생성에 실패했습니다.");
       throw new Error("API key 생성 실패");
     }
   };

@@ -30,7 +30,7 @@ export function UsageChart({ token }: UsageChartProps) {
             차트 데이터가 없습니다.
           </div>
         ) : (
-          <div className="flex items-end gap-1" style={{ height: 160 }}>
+          <div className="flex items-end gap-1" style={{ height: 176 }}>
             {chart.map((point) => {
               const height = Math.max((point.total / maxValue) * 100, 2);
               const dateLabel = point.date.slice(5); // MM-DD
@@ -39,6 +39,9 @@ export function UsageChart({ token }: UsageChartProps) {
                   key={point.date}
                   className="group flex flex-1 flex-col items-center gap-1"
                 >
+                  <span className="text-[10px] font-medium tabular-nums text-foreground">
+                    {point.total}
+                  </span>
                   <div className="relative w-full" style={{ height: 140 }}>
                     <div
                       className="absolute bottom-0 w-full rounded-t bg-primary/80 transition-all group-hover:bg-primary"

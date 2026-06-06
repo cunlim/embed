@@ -38,7 +38,7 @@
 - **useCategories mutation reload 컨텍스트**: `addCategory()`·`deleteCategory()` 내부 GET reload 시 `currentFolder` 등 모든 ref 전달 필수. `loadCategories`가 ref 갱신, mutation 함수가 ref 소비.
 - **async batch 진행률 `flushSync`**: `nextjs/AGENTS.md` 알려진 이슈 참조.
 - **task-execution 단계별 재시도**: `MAX_RETRIES=2`(총 3회), `RETRY_DELAY_MS=1000`(지수 증가). `status:"failed"`(422 등)는 재시도 안 함. `STEP_DELAY_MS=2000`(단계 간 지연). `handleRetry`는 `retryParamsRef` → `fetchBatchStatus` 재호출로 stale 데이터 방지.
-- **`ApiError` 클래스**: `api.ts`에서 HTTP status 보존. `request()` → `throw new ApiError(msg, res.status)`. 422(재시도 불가) vs 500(재시도) 판별용.
+- **`ApiError` 클래스**: `api.ts`에서 HTTP status 보존. `request()` → `throw new ApiError(msg, res.status)`. 422(재시도 불가) vs 500(재시도) 판별용. **204 No Content 처리**: `if (res.status === 204) return undefined as T;` 필수 — 미처리 시 `res.json()`이 `SyntaxError` throw.
 - **`moveCategoriesToFolder` `targetUserId`**: 관리자 소유권 이전용 파라미터. `folder-section.tsx`에서 composite value(`"폴더명:userId"`) 파싱해 추출.
 - **비로그인 사이드바 auth-gating**: `{serverHadToken && (...)}`로 추가·다운로드·삭제 섹션 숨김. 유사도 검색·필터·작업 실행은 항상 표시.
 - **`fetchCategoryTranslations` `noPreview` 옵션**: `noPreview: true` → `?no_preview=true`로 임베딩 벡터 제외. 카테고리 모달 상세 조회에서 사용. 배치 작업은 `batch-status` API로 대체됨.
@@ -54,6 +54,8 @@
 - **관리자 회원 관리**: URL 기반 라우팅 — `admin/layout.tsx`에서 `Link` + `usePathname()`. MENU: `/admin`(시스템 설정), `/admin/member`(회원 관리). 각 페이지 독립 SSR 인증 게이트. `user-management.tsx` → `fetchAdminUsers()`로 회원 목록. `user-detail-modal.tsx`에서 상세 + `quota-adjust-dialog.tsx`로 쿼타 조절. **⚠️ 응답 구조**: 백엔드 평탄 구조 → `setDetail(res.data).
 - **관리자 설정 panel `api` 그룹**: `settings-panel.tsx`의 `GROUP_LABELS`·`FIELD_LABELS`에 `api` 그룹 추가. `free_quota`(무료 호출 회수), `rate_limit_per_minute`(분당 호출 제한) 표시. 백엔드 `AdminSettingsController::GROUPS`에도 `'api'` 포함.
 - **`isLoading` + `!!token` hydration mismatch**: `useState(!!token)` 초기화 시 서버/클라이언트 불일치. `useAuth`·`useApiKeys`·`useUsageStats` 등 토큰 기반 훅 모두 해당. **해결**: `useState(false)` 고정 + `useEffect` 내 `setIsLoading(true)`.
-- **마이페이지 API 타입**: `getUsageStats`는 `Promise<{ data: UsageStats }>`. hook에서 `res.data`로 언래핑 필수. `ApiKeyItem.key`는 optional — 백엔드 `#[Hidden]`로 제외, `key_preview` accessor 필드 사용.
+- **마이페이지 API 타입**: `getUsageStats`는 `Promise<{ data: UsageStats }>`. hook에서 `res.data`로 언래핑 필수. `ApiKeyItem.key`는 optional — 백엔드 `#[Hidden]`로 제외, 생성 시 `makeVisible`로만 노출. **API key 복사 UX**: `key` 있을 때만 복사 버튼 + amber 배지 `"새로고침 전 복사하세요"` 표시. 상태 업데이트(rename·toggle) 시 `{ ...prev, ...response.data }`로 `key` 보존. 생성 성공 toast에 `description`으로 경고 추가.
 - **ESLint `set-state-in-effect` 데이터 fetch 패턴**: useEffect에서 비동기 함수 직접 호출 시 내부 setState가 동기 트리거로 에러. `async function init() { await fn(); }` 래핑 필수. `useApiKeys`·`useUsageStats`·`user-detail-modal`·`user-management` 모두 적용.
 - **`Math.random()` render 중 호출 금지**: React purity 규칙 위반. skeleton loading에서 랜덤 height 필요 시 `(i * 17 + 13) % 50` 등 결정적 수식 사용.
+- **Dialog error swallowing**: 부모 `onSubmit`이 re-throw하는 패턴에서 Dialog `handleSubmit`에 `catch {}` 없으면 uncaught rejection 콘솔 에러. `catch { /* toast already shown */ }` 패턴 사용.
+- **데이터 시각화 값 레이블**: 차트·그래프에 시각적 요소만으로 불충분. `text-[10px] font-medium tabular-nums text-foreground`로 수치 레이블 필수.

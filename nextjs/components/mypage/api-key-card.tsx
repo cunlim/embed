@@ -56,8 +56,8 @@ export function ApiKeyCard({
           ? "API key가 일시정지되었습니다."
           : "API key가 활성화되었습니다."
       );
-    } catch {
-      toast.error("상태 변경에 실패했습니다.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "상태 변경에 실패했습니다.");
     } finally {
       setIsToggling(false);
     }
@@ -69,8 +69,8 @@ export function ApiKeyCard({
     try {
       await onDelete(apiKey.id);
       toast.success("API key가 삭제되었습니다.");
-    } catch {
-      toast.error("삭제에 실패했습니다.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "삭제에 실패했습니다.");
     } finally {
       setIsDeleting(false);
     }
@@ -82,8 +82,8 @@ export function ApiKeyCard({
       await onRename(apiKey.id, editName.trim());
       setIsEditing(false);
       toast.success("이름이 변경되었습니다.");
-    } catch {
-      toast.error("이름 변경에 실패했습니다.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "이름 변경에 실패했습니다.");
     }
   };
 
@@ -125,18 +125,25 @@ export function ApiKeyCard({
           <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
             {truncatedKey}
           </code>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            onClick={handleCopy}
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-green-500" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          {apiKey.key && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={handleCopy}
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-green-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </Button>
+              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                새로고침 전 복사하세요
+              </span>
+            </>
+          )}
           <span className="text-xs">최근 사용: {lastUsed}</span>
         </div>
       </div>
