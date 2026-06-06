@@ -36,7 +36,7 @@
 - **콘텐츠**: `public/content/{SLUG}.md` — react-markdown + remark-gfm 렌더링
 - **사이드바**: `CollapsibleSidebar` + `<Suspense>` → `useSearchParams().get("doc")` 으로 active 표시
 - **문서 목록** (2026-06-06): USER_GUIDE, API_V1, SIMILARITY_SEARCH, RESUME
-- **API 문서** (`API_V1`): 외부 v1 검색 + 내부 API 파라미터 상세 + Swagger 사용법 — `nextjs/public/content/API_V1.md`
+- **API 문서** (`API_V1`): API v1 검색 파라미터 상세 + Swagger 사용법 — `nextjs/public/content/API_V1.md`
 
 ## Subagent-Driven Development worktree 주의사항
 

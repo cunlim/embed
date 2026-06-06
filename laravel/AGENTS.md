@@ -133,8 +133,10 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **관리자 전용 엔드포인트** — `routes/api.php`의 `auth:sanctum` 미들웨어 그룹에 추가. 컨트롤러에서 `$user->isAdmin()`으로 추가 권한 검증.
 - **외부 API key 인증** — `ApiKeyAuth` 미들웨어가 `Authorization: Bearer cl_xxx` 헤더에서 API key 추출 → `ApiKeyService::findByKey()`로 검증 → status/pause/quota 체크 → `_api_key_id`·`_api_user_id`를 request에 merge. `ApiRateLimit` 미들웨어가 `RateLimiter::for()`로 분당 제한(Redis 기반). 미들웨어 체인: `api.rate_limit` → `api.key_auth` → 컨트롤러.
 - **`POST /api/v1/search`** — 외부 유사도 검색 전용. `filter`는 내부에서 항상 `'my'`(사용자 본인 카테고리) 고정, 외부에 노출 안 함. quota 감소는 `DB::table('users')->where('id', $userId)->decrement('api_quota_remaining', 1)`로 직접 처리. `ApiKeyService::touchLastUsed()`로 last_used_at 갱신.
+- **`POST /api/recommend` quota 차감** — 로그인 사용자가 `text` 포함 유사도 검색 시 `api_quota_remaining` 1 차감 (`DB::table()->decrement()`). 관리자(`isAdmin()`)는 우회. 비로그인은 체크 없음. quota 소진 시 429 + `code: 'quota_exceeded'` 반환. `text` 없이 카테고리 목록 조회만 할 때는 차감 없음.
 - **마이페이지 API** — `auth:sanctum` + `/api/mypage/` prefix. API key CRUD(`apiKeys`·`storeApiKey`·`updateApiKey`·`destroyApiKey`), 사용량 통계(`usage`·`usageHistory`·`usageChart`). 소유권 검증: `apiKey->user_id !== $request->user()->id` → 404.
 - **관리자 회원 관리** — `GET /api/admin/users/{id}`(상세+사용량), `PATCH /api/admin/users/{id}/quota`(쿼타 조절: `type=absolute|increment`). `QuotaAdjustRequest`에서 `authorize()`로 `isSuperAdmin()` 검증. **`value` 유효성**: `absolute` 모드는 `min:0`(절대값은 음수 불허), `increment` 모드는 음수 허용(감소). 커스텀 클로저로 조건부 검증. 백엔드 `adjustQuota()`에서 `max(0, newValue)`로 최소값 보장. **⚠️ 응답 구조**: `userDetail`과 `adjustQuota` 모두 `data` 아래에 사용자 필드와 사용량을 **평탄 구조**로 반환 (`{ data: { id, name, ..., total_calls, ... } }`). 중첩된 `{ data: { user: {...} } }`가 아님. 프론트엔드 `AdminUserDetail` 타입과 일치해야 함.
+- **관리자 설정 (`api` 그룹)** — `AdminSettingsController::GROUPS`에 `'api'` 포함. `settings` 테이블의 `api.free_quota`(가입 시 무료 회수, 기본 500), `api.rate_limit_per_minute`(분당 제한, 기본 60)을 `/admin` 페이지에서 수정 가능. `AuthController::register()`가 `SettingsService::get('api', 'free_quota', 500)`으로 읽어 새 회원 quota 설정.
 
 ### OAuth (Socialite)
 

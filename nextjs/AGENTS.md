@@ -154,6 +154,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **`Math.random()` render 중 호출 금지** — React pure component 규칙 위반. skeleton loading 등에서 랜덤 height 필요 시 `(i * 17 + 13) % 50` 등 결정적 수식 사용.
 - **마이페이지 `/mypage`** — 독립 경로. 서버 컴포넌트에서 `auth_token` 쿠키 확인 → `getUser(token)` → 미인증 시 `/login?redirect=/mypage`로 리다이렉트. 헤더 닉네임에 `<Link href="/mypage">` 연결.
 - **관리자 회원 관리** — URL 기반 라우팅: `admin/layout.tsx`에서 `Link` + `usePathname()`으로 네비게이션. MENU: `/admin`(시스템 설정, Settings 아이콘), `/admin/member`(회원 관리, Users 아이콘). 각 페이지는 독립 서버 컴포넌트에서 SSR 인증 게이트(`cookies()` → `getUser()` → `redirect()`) 적용. `user-detail-modal.tsx`에서 `getAdminUserDetail()` → 기본정보 + API 사용량 + key별 사용량 + 쿼타 조절. `QuotaAdjustDialog`에서 `type=absolute|increment`로 절대값/증감 조절. **⚠️ 응답 구조**: 백엔드가 평탄 구조(`{ data: { id, name, ..., total_calls, ... } }`)를 반환하므로 `setDetail(res.data)`로 바로 사용 가능.
+- **관리자 시스템 설정 `api` 그룹** — `settings-panel.tsx`에서 `GROUP_LABELS`·`FIELD_LABELS`에 `api` 그룹 추가됨. `free_quota`(무료 호출 회수), `rate_limit_per_minute`(분당 호출 제한) 표시. 새 설정 추가 시 백엔드 `AdminSettingsController::GROUPS` + 프론트 `GROUP_LABELS`·`FIELD_LABELS` 양쪽 업데이트 필수.
 - **마이페이지 API 타입 패턴** — `getUsageStats` 등 마이페이지 API는 백엔드가 `{ data: {... } }` 래퍼로 반환. `request()`는 raw JSON을 그대로 반환하므로, 호출 측에서 `res.data`로 언래핑 필수. `getUsageStats`는 `Promise<{ data: UsageStats }>` 타입이며, hook에서 `const res = await getUsageStats(token); setStats(res.data);` 패턴 사용. **`ApiKeyItem.key`는 optional** — 백엔드 `#[Hidden(['key'])]`로 제외되므로 `key_preview` accessor 필드 사용. 상세: `laravel/AGENTS.md`.
 
 - 디자인 가이드: [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md)

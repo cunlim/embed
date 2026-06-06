@@ -14,6 +14,8 @@
 - **API 인증**: 세션 미들웨어 없음, `$request->user('sanctum')` 또는 `auth('sanctum')->user()` 사용
 - **외부 API key 인증**: `ApiKeyAuth` 미들웨어 — Bearer `cl_xxx` → `ApiKeyService::findByKey()` → status/pause/quota 체크 → request merge. `ApiRateLimit` — `RateLimiter::for()` 분당 제한(Redis). 미들웨어 체인: `api.rate_limit` → `api.key_auth`.
 - **`POST /api/v1/search`**: 외부 유사도 검색. `filter` 내부 `'my'` 고정. quota 감소 `DB::table()->decrement()`. `ApiKeyService::touchLastUsed()`. `RecommendService::recommendPaginated()`의 `searchLang` 파라미터로 언어별 접두사/부분 검색 분기.
+- **`POST /api/recommend` quota**: 로그인 사용자 + `text` 있을 때 `api_quota_remaining` 1 차감. 관리자 우회, 비로그인 체크 없음. quota 0 → 429. `text` 없이 목록 조회만 할 때는 차감 없음.
+- **관리자 설정 `api` 그룹**: `AdminSettingsController::GROUPS`에 `'api'` 포함. `api.free_quota`(기본 500), `api.rate_limit_per_minute`(기본 60)을 admin 페이지에서 수정 가능.
 - **마이페이지 API**: `/api/mypage/` prefix, `auth:sanctum`. API key CRUD + 사용량 통계(총/오늘 호출, key별, 일별 차트).
 - **관리자 회원 관리**: `GET /api/admin/users/{id}`(상세+사용량), `PATCH /api/admin/users/{id}/quota`(absolute/increment). `QuotaAdjustRequest`에서 `isSuperAdmin()` 검증. **`value` 유효성**: `absolute`→`min:0`, `increment`→음수 허용. 커스텀 클로저로 조건부 검증. `adjustQuota()`에서 `max(0, newValue)` 보장. **⚠️ 응답 구조**: 평탄 구조(`{ data: { id, name, ..., total_calls, ... } }`), 중첩 아님.
 - **OAuth**: 라우트는 `routes/web.php`, callback은 `RedirectResponse`, provider_token DB 저장 금지
