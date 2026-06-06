@@ -121,8 +121,8 @@ class RecommendController extends Controller
             return RecommendResource::collection($query->paginate(perPage: $perPage, page: $page))->response();
         }
 
-        // 로그인 사용자 유사도 검색 quota 체크 (관리자 제외)
-        if ($user && ! $user->isAdmin()) {
+        // 로그인 사용자 유사도 검색 quota 체크
+        if ($user) {
             if (! $user->hasQuota()) {
                 return response()->json([
                     'code' => 'quota_exceeded',
@@ -144,8 +144,8 @@ class RecommendController extends Controller
             $searchLog, $targetLanguage, $perPage, $page, $scopeUserId, $keyword, $folder
         );
 
-        // 로그인 사용자 유사도 검색 quota 차감 (관리자 제외)
-        if ($user && ! $user->isAdmin()) {
+        // 로그인 사용자 유사도 검색 quota 차감
+        if ($user) {
             DB::table('users')
                 ->where('id', $user->id)
                 ->decrement('api_quota_remaining', 1);
