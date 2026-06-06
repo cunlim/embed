@@ -17,13 +17,41 @@
 * 구현 계획 수립, 코드 리뷰, TDD 등 구조적 접근이 필요한 작업은 `superpowers` plugin을 활성화하여 수행한다.
 * 버그 수정 후 동일 유형의 실수를 방지하려면 `compound-engineering` plugin으로 학습 문서를 갱신한다.
 
-## 작업 워크플로
+## 작업 워크플로 (5단계)
 
-- **이슈 사전 재현** — 수정 작업 전 Playwright로 실제 이슈가 존재하는지 먼저 확인한다.
+모든 작업은 아래 단계를 순서대로 따른다. 커스텀 명령어(`/new-feature`, `/fix-bug`, `/finalize`, `/check`)로 자동화 가능.
+
+### Phase 1: 계획 수립
+
+- **신규 기능** — `/superpowers:brainstorming`으로 시작. 요구사항 분석 → 설계 → 구현 계획 수립.
+- **버그 수정** — `/superpowers:systematic-debugging`으로 시작. 근본 원인 분석 → 수정 전략 수립.
+- **TDD 원칙** — 항상 테스트 먼저 작성(red → green → refactor). `superpowers` plugin의 TDD 워크플로를 따른다.
+- **Sub-agent 분해** — 작업을 독립 가능한 단위로 분해하여 Agent에 위임. 병렬 실행 가능 작업은 병렬 dispatch.
+
+### Phase 2: 구현
+
 - **Sub-agent driven** — 구현은 되도록 Agent(Sub-agent)를 활용한다.
+- **Playwright 이슈 재현** — 수정 작업 전 Playwright로 실제 이슈가 존재하는지 먼저 확인한다.
 - **Playwright 테스트 URL** — WSL2 호스트에서 `https://embed.cunlim.dev`로 접속 (Next.js 포트 미공개).
 - **Playwright 인증** — 쿠키 기반(`auth_token`). superadmin 토큰 발급은 `laravel/AGENTS.md` 참조. 쿠키 설정은 `context.clearCookies()` → `page.evaluate(t => document.cookie = \`auth_token=${t}; path=/; SameSite=Lax; max-age=86400\`, token)` 방식 사용 (`addCookies`는 API 요청에 미포함되는 경우 있음). `/api/auth/user` 200 확인 후 진행.
-- **작업 완료 전 검증** — `.claude/hooks/run-all-checks.sh` 실행하여 결과 확인. stdin이 터미널이면 상세 출력, 파이프면 한 줄 요약. `--terminal`로 강제 상세 출력 가능. test-results/*.txt 파일은 항상 기록. tsc, lint, test, pint 모두 EXIT=0 확인 후 마무리.
+- **Worktree 파일 동기화** — Sub-agent가 worktree에서 수정한 파일은 `cp <worktree-path> <main-path>`로 메인에 복사. 완료 후 `git status`로 누락 확인.
+
+### Phase 3: 검증
+
+- **전체 검증 실행** — `.claude/hooks/run-all-checks.sh --terminal`로 tsc, lint, test, pint 모두 확인.
+- **EXIT=0 확인** —任何一个 체크가 실패하면 즉시 수정 후 재실행. 모두 통과할 때까지 반복.
+- **Playwright 재검증** — 수정 후 이슈가 해결되었는지 Playwright로 최종 확인 (버그 수정 시).
+
+### Phase 4: 문서 갱신
+
+- **학습 문서 반영** — `AGENTS.md`, `docs/`, `.serena/memories/`, `nextjs/public/content/` 등을 검토.
+- **중복 제거·재배치** — 이번 세션에서 배운 것을 등록. 코드 스캔이나 명령어로 알 수 있는 정보는 최대한 축소.
+- **`/claude-md-management:revise-claude-md`** 실행하여 자동 정리 (컨펌 없이 바로 적용).
+
+### Phase 5: 커밋
+
+- **`/compound-engineering:ce-commit`** 실행. 변경 사항 분석 → 의미 있는 단위로 커밋 메시지 생성.
+- **worktree 정리** — 사용한 worktree가 있으면 정리 (`rm -rf .claude/worktrees/* && rm -rf .git/worktrees/* && git worktree prune`).
 
 ## 문서 우선순위
 
