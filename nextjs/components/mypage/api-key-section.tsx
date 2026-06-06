@@ -7,14 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApiKeys } from "@/hooks/useApiKeys";
+import type { ApiKeyItem } from "@/lib/api";
 import { ApiKeyCard } from "./api-key-card";
 import { ApiKeyCreateDialog } from "./api-key-create-dialog";
 
 interface ApiKeySectionProps {
   token: string | null;
+  initialApiKeys?: ApiKeyItem[];
 }
 
-export function ApiKeySection({ token }: ApiKeySectionProps) {
+export function ApiKeySection({ token, initialApiKeys }: ApiKeySectionProps) {
   const {
     apiKeys,
     isLoading,
@@ -22,7 +24,7 @@ export function ApiKeySection({ token }: ApiKeySectionProps) {
     toggleStatus,
     removeApiKey,
     renameApiKey,
-  } = useApiKeys(token);
+  } = useApiKeys(token, initialApiKeys);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleCreate = async (name: string) => {

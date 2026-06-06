@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useUsageStats } from "@/hooks/useUsageStats";
+import type { ChartDataPoint } from "@/lib/api";
 
 interface UsageChartProps {
-  token: string | null;
+  chart: ChartDataPoint[];
 }
 
-export function UsageChart({ token }: UsageChartProps) {
-  const { chart, isLoading } = useUsageStats(token);
+export function UsageChart({ chart }: UsageChartProps) {
   const [activeDate, setActiveDate] = useState<string | null>(null);
 
   const maxValue = chart.length > 0 ? Math.max(...chart.map((d) => d.total), 1) : 1;
@@ -33,13 +31,7 @@ export function UsageChart({ token }: UsageChartProps) {
         <CardTitle className="text-lg">기간별 추이</CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="flex items-end gap-1" style={{ height: 176 }}>
-            {Array.from({ length: 7 }).map((_, i) => (
-              <Skeleton key={i} className="flex-1" style={{ height: `${30 + ((i * 17 + 13) % 50)}%` }} />
-            ))}
-          </div>
-        ) : chart.length === 0 ? (
+        {chart.length === 0 ? (
           <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
             차트 데이터가 없습니다.
           </div>

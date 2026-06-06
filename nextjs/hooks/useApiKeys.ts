@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   getApiKeys,
   createApiKey,
@@ -20,8 +20,10 @@ interface UseApiKeysReturn {
   renameApiKey: (id: number, name: string) => Promise<void>;
 }
 
-export function useApiKeys(token?: string | null): UseApiKeysReturn {
-  const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([]);
+export function useApiKeys(token?: string | null, initialData?: ApiKeyItem[]): UseApiKeysReturn {
+  const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>(initialData ?? []);
+  // SSR에서 이미 데이터를 가져온 경우 최초 fetch 건너뜀
+  const skipInitialFetch = useRef(!!initialData?.length);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,6 +80,10 @@ export function useApiKeys(token?: string | null): UseApiKeysReturn {
   );
 
   useEffect(() => {
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false;
+      return;
+    }
     async function init() {
       await loadApiKeys();
     }

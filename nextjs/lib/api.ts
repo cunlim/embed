@@ -656,6 +656,32 @@ export function getUsageChart(
   return request(`/mypage/usage/chart${query}`, { token });
 }
 
+// --- 마이페이지 서버 전용 (SSR, cache: no-store) ---
+
+export function getApiKeysServer(token: string): Promise<{ data: ApiKeyItem[] }> {
+  return request("/mypage/api-keys", { token, cache: "no-store" });
+}
+
+export function getUsageStatsServer(token: string): Promise<{ data: UsageStats }> {
+  return request("/mypage/usage", { token, cache: "no-store" });
+}
+
+export function getUsageHistoryServer(
+  token: string,
+  limit?: number,
+): Promise<{ data: UsageHistoryItem[] }> {
+  const query = limit ? `?limit=${limit}` : "";
+  return request(`/mypage/usage/history${query}`, { token, cache: "no-store" });
+}
+
+export function getUsageChartServer(
+  token: string,
+  days?: number,
+): Promise<{ data: ChartDataPoint[] }> {
+  const query = days ? `?days=${days}` : "";
+  return request(`/mypage/usage/chart${query}`, { token, cache: "no-store" });
+}
+
 // === 관리자 회원 관리 API ===
 
 export interface AdminUserListItem {

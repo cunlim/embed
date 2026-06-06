@@ -1,12 +1,9 @@
-"use client";
-
 import { Activity, CalendarDays, BarChart3, Key } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useUsageStats } from "@/hooks/useUsageStats";
+import type { UsageStats } from "@/lib/api";
 
 interface UsageDashboardProps {
-  token: string | null;
+  stats: UsageStats | null;
 }
 
 const STATS = [
@@ -36,8 +33,7 @@ const STATS = [
   },
 ] as const;
 
-export function UsageDashboard({ token }: UsageDashboardProps) {
-  const { stats, isLoading } = useUsageStats(token);
+export function UsageDashboard({ stats }: UsageDashboardProps) {
 
   return (
     <Card>
@@ -51,21 +47,11 @@ export function UsageDashboard({ token }: UsageDashboardProps) {
               key={key}
               className="flex flex-col items-center gap-1 rounded-lg border p-4 text-center"
             >
-              {isLoading ? (
-                <>
-                  <Skeleton className="h-5 w-5 rounded" />
-                  <Skeleton className="h-6 w-16" />
-                  <Skeleton className="h-4 w-10" />
-                </>
-              ) : (
-                <>
-                  <Icon className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-2xl font-bold">
-                    {stats ? format(stats[key]) : "0"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{label}</span>
-                </>
-              )}
+              <Icon className="h-5 w-5 text-muted-foreground" />
+              <span className="text-2xl font-bold">
+                {stats ? format(stats[key]) : "0"}
+              </span>
+              <span className="text-xs text-muted-foreground">{label}</span>
             </div>
           ))}
         </div>

@@ -1,7 +1,4 @@
-"use client";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -11,14 +8,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useUsageStats } from "@/hooks/useUsageStats";
+import type { UsageHistoryItem } from "@/lib/api";
 
 interface UsageHistoryProps {
-  token: string | null;
+  history: UsageHistoryItem[];
 }
 
-export function UsageHistory({ token }: UsageHistoryProps) {
-  const { history, isLoading } = useUsageStats(token);
+/** 서버/클라이언트 동일 출력을 위한 포맷터 (locale 독립적) */
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}. ${pad(d.getMonth() + 1)}. ${pad(d.getDate())}. ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+export function UsageHistory({ history }: UsageHistoryProps) {
 
   const getStatusBadge = (status: number) => {
     if (status >= 200 && status < 300) {
@@ -42,13 +45,7 @@ export function UsageHistory({ token }: UsageHistoryProps) {
         <CardTitle className="text-lg">최근 호출 이력</CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
-        ) : history.length === 0 ? (
+        {history.length === 0 ? (
           <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
             호출 이력이 없습니다.
           </div>
@@ -67,7 +64,7 @@ export function UsageHistory({ token }: UsageHistoryProps) {
                 {history.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="text-sm">
-                      {new Date(item.created_at).toLocaleString("ko-KR")}
+                      {formatDate(item.created_at)}
                     </TableCell>
                     <TableCell className="text-sm">
                       {item.source === 'embed' ? (

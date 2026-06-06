@@ -3,13 +3,33 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, getToken } from "@/hooks/useAuth";
-import type { User } from "@/lib/api";
+import type {
+  User,
+  ApiKeyItem,
+  UsageStats,
+  UsageHistoryItem,
+  ChartDataPoint,
+} from "@/lib/api";
 import { ApiKeySection } from "@/components/mypage/api-key-section";
 import { UsageDashboard } from "@/components/mypage/usage-dashboard";
 import { UsageChart } from "@/components/mypage/usage-chart";
 import { UsageHistory } from "@/components/mypage/usage-history";
 
-export function MyPageContent({ serverUser }: { serverUser: User }) {
+interface MyPageContentProps {
+  serverUser: User;
+  serverApiKeys: ApiKeyItem[];
+  serverUsageStats: UsageStats | null;
+  serverUsageHistory: UsageHistoryItem[];
+  serverChartData: ChartDataPoint[];
+}
+
+export function MyPageContent({
+  serverUser,
+  serverApiKeys,
+  serverUsageStats,
+  serverUsageHistory,
+  serverChartData,
+}: MyPageContentProps) {
   const { user, isLoading: authLoading } = useAuth(serverUser);
   const router = useRouter();
 
@@ -33,10 +53,10 @@ export function MyPageContent({ serverUser }: { serverUser: User }) {
         </p>
       </div>
 
-      <ApiKeySection token={token} />
-      <UsageDashboard token={token} />
-      <UsageChart token={token} />
-      <UsageHistory token={token} />
+      <ApiKeySection token={token} initialApiKeys={serverApiKeys} />
+      <UsageDashboard stats={serverUsageStats} />
+      <UsageChart chart={serverChartData} />
+      <UsageHistory history={serverUsageHistory} />
     </>
   );
 }
