@@ -162,9 +162,9 @@ export function UserDetailModal({
                     </TableHeader>
                     <TableBody>
                       {detail.calls_by_key.map((k) => (
-                        <TableRow key={k.api_key_id}>
+                        <TableRow key={k.api_key_id ?? 'null'}>
                           <TableCell className="font-medium">
-                            {k.api_key?.name || `키 #${k.api_key_id}`}
+                            {k.api_key?.name ?? (k.api_key_id != null ? `키 #${k.api_key_id}` : '키 미지정')}
                           </TableCell>
                           <TableCell className="text-right">
                             {k.total.toLocaleString()}

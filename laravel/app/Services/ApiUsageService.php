@@ -64,13 +64,27 @@ class ApiUsageService
 
     /**
      * API 키별 호출 횟수를 그룹핑하여 반환한다.
+     * api_key 관계를 포함하여 키 이름을 함께 반환한다.
      */
     public function getCallsByKey(int $userId): Collection
     {
-        return ApiUsageLog::where('user_id', $userId)
+        $calls = ApiUsageLog::where('user_id', $userId)
             ->selectRaw('api_key_id, count(*) as total')
             ->groupBy('api_key_id')
             ->get();
+
+        // api_key_id가 있는 경우 ApiKey 관계를 조회하여 병합
+        $keyIds = $calls->pluck('api_key_id')->filter()->unique();
+        if ($keyIds->isNotEmpty()) {
+            $keys = ApiKey::whereIn('id', $keyIds)->get()->keyBy('id');
+            $calls = $calls->map(function ($call) use ($keys) {
+                $call->setRelation('apiKey', $keys->get($call->api_key_id));
+
+                return $call;
+            });
+        }
+
+        return $calls;
     }
 
     /**

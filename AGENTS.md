@@ -100,6 +100,7 @@
 - **`api_usage_logs` FK cascade 주의** — `api_key_id` FK가 `onDelete('cascade')`이면 키 삭제 시 사용 로그 전체 소실. `onDelete('set null')`로 변경 + 컬럼 nullable 마이그레이션 필요.
 - **`isLoading` + `!!token` hydration mismatch** — `useState(!!token)`으로 초기화하면 서버/클라이언트 불일치로 hydration 에러 발생. 초기값을 `false`로 고정, `useEffect` 내에서 `setIsLoading(true)` 후 fetch.
 - **내부/외부 API quota 차감 정책 일관성** — 외부 API(`ApiController::search`)는 모든 사용자(관리자 포함)에게 quota를 차감하지만, 내부 API(`RecommendController::recommend`)는 `isAdmin()` 체크로 관리자를 면제하면 정책 불일치 발생. quota 차감 로직 추가/수정 시 두 API 경로의 정책을 동일하게 유지해야 함.
+- **`getCallsByKey` eager loading 필수** — `ApiUsageService::getCallsByKey()`는 그룹핑 결과에 `apiKey` 관계를 수동으로 로드해야 함. `getRecentHistory()`와 달리 `groupBy` 쿼리에는 `with()`를 직접 사용할 수 없으므로, 별도로 `ApiKey::whereIn()`으로 조회 후 `setRelation()`로 병합. 미적용 시 프론트엔드에서 `api_key`가 `undefined` → "키 #null" 표시.
 
 ## 하위 디렉토리
 

@@ -682,7 +682,7 @@ export interface AdminUserDetail {
   today_calls: number;
   active_keys: number;
   calls_by_key: {
-    api_key_id: number;
+    api_key_id: number | null;
     total: number;
     api_key?: { id: number; name: string; key: string };
   }[];

@@ -112,8 +112,8 @@ test('getActiveKeyCount — 일시정지된 키는 포함되지 않는다', func
 });
 
 test('getCallsByKey — API 키별 호출 횟수를 그룹핑한다', function () {
-    $key1 = ApiKey::factory()->create(['user_id' => $this->user->id]);
-    $key2 = ApiKey::factory()->create(['user_id' => $this->user->id]);
+    $key1 = ApiKey::factory()->create(['user_id' => $this->user->id, 'name' => '키1']);
+    $key2 = ApiKey::factory()->create(['user_id' => $this->user->id, 'name' => '키2']);
 
     // key1: 3회, key2: 1회
     for ($i = 0; $i < 3; $i++) {
@@ -127,9 +127,14 @@ test('getCallsByKey — API 키별 호출 횟수를 그룹핑한다', function (
 
     $key1Data = $result->firstWhere('api_key_id', $key1->id);
     expect($key1Data->total)->toBe(3);
+    // apiKey 관계가 로드되어야 함
+    expect($key1Data->apiKey)->not->toBeNull();
+    expect($key1Data->apiKey->name)->toBe('키1');
 
     $key2Data = $result->firstWhere('api_key_id', $key2->id);
     expect($key2Data->total)->toBe(1);
+    expect($key2Data->apiKey)->not->toBeNull();
+    expect($key2Data->apiKey->name)->toBe('키2');
 });
 
 test('getCallsByKey — 로그가 없으면 빈 컬렉션을 반환한다', function () {
