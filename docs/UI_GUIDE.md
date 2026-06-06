@@ -24,7 +24,7 @@
 |------|--------|----------|
 | Display/H1 | text-4xl | text-6xl~7xl |
 | H2 | text-2xl | text-3xl |
-| H3 | text-base | text-sm |
+| H3 | text-base | text-xl |
 | Body | text-base | text-lg |
 | Meta | text-xs | text-xs |
 
@@ -118,7 +118,7 @@
 - **기간별 차트**: div 기반 bar chart(결정적 height 수식). no chart library.
 - **호출 이력**: Table(날짜·API key·상태배지·처리시간).
 
-### 6.5 공통 패턴
+### 6.6 공통 패턴
 
 - **아이콘**: lucide-react만 사용, 이모지 금지
 - **로딩**: Skeleton 또는 `animate-pulse`
