@@ -40,9 +40,8 @@ Authorization: Bearer YOUR_API_KEY
 | `per_page` | 아니오 | integer | `20` | 페이지당 결과 수 (최대 50) |
 | `keyword` | 아니오 | string | - | 키워드 필터 |
 | `folder` | 아니오 | string | - | 폴더 필터 |
-| `lang` | 아니오 | string | - | 분류선택 계층 언어 (`ko` / `en` / `zh`) |
 | `mode` | 아니오 | string | `search` | 검색 모드: `hierarchy`(접두사 검색), `search`(부분 검색) |
-| `slang` | 아니오 | string | - | 유사도 검색 언어 (`ko` / `en` / `zh`) |
+| `lang` | 아니오 | string | `ko` | 분류선택 계층 언어. `mode=hierarchy`일 때 접두사 검색할 컬럼 (`ko` / `en` / `zh`) |
 
 #### 요청 예시
 
@@ -63,7 +62,6 @@ curl -X POST https://embed.cunlim.dev/api/v1/search \
 
 ```json
 {
-  "success": true,
   "data": [
     {
       "category_code": "ENV001",
@@ -78,9 +76,9 @@ curl -X POST https://embed.cunlim.dev/api/v1/search \
   ],
   "meta": {
     "current_page": 1,
+    "last_page": 3,
     "per_page": 20,
-    "total": 45,
-    "last_page": 3
+    "total": 45
   }
 }
 ```

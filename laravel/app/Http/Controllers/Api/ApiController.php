@@ -11,6 +11,7 @@ use App\Services\EmbeddingCacheService;
 use App\Services\RecommendationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use OpenApi\Attributes as OA;
 
 class ApiController extends Controller
 {
@@ -21,9 +22,68 @@ class ApiController extends Controller
         private ApiKeyService $apiKey,
     ) {}
 
-    /**
-     * POST /api/v1/search — API 검색 엔드포인트
-     */
+    #[OA\Post(
+        path: '/api/v1/search',
+        summary: '외부 API 유사도 검색',
+        description: 'API 키 기반 카테고리 유사도 검색. Authorization: Bearer {api_key} 헤더로 인증하며, 호출 시 쿼터가 차감됩니다.',
+        tags: ['External API'],
+        security: [['ApiKeyAuth' => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['text'],
+                properties: [
+                    new OA\Property(property: 'folder', type: 'string', maxLength: 100, default: '', description: '폴더명 필터 (빈 문자열: 전체)'),
+                    new OA\Property(property: 'text', type: 'string', maxLength: 500, description: '검색 텍스트'),
+                    new OA\Property(property: 'target_language', type: 'string', enum: ['ko', 'zh', 'en'], default: 'ko', description: '유사도 검색 및 결과 표시 언어'),
+                    new OA\Property(property: 'mode', type: 'string', enum: ['search', 'hierarchy'], default: 'search', description: '검색 모드 (search: 일반, hierarchy: 분류선택)'),
+                    new OA\Property(property: 'keyword', type: 'string', maxLength: 500, default: '', description: '접두사 필터 키워드 (mode=hierarchy에서 유용)'),
+                    new OA\Property(property: 'lang', type: 'string', enum: ['ko', 'zh', 'en'], default: 'ko', description: 'mode=hierarchy일 때 접두사 검색 언어'),
+                    new OA\Property(property: 'page', type: 'integer', minimum: 1, default: 1),
+                    new OA\Property(property: 'per_page', type: 'integer', minimum: 1, maximum: 50, default: 20),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: '검색 결과',
+                headers: [
+                    new OA\Header(header: 'X-Processing-Time-Ms', description: '처리 시간(ms)', schema: new OA\Schema(type: 'integer')),
+                ],
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'data', type: 'array', items: new OA\Items(
+                            properties: [
+                                new OA\Property(property: 'category_code', type: 'string'),
+                                new OA\Property(property: 'category_name', type: 'string'),
+                                new OA\Property(property: 'similarity_score', type: 'number', example: 0.9876),
+                            ]
+                        )),
+                        new OA\Property(property: 'meta', type: 'object', properties: [
+                            new OA\Property(property: 'current_page', type: 'integer'),
+                            new OA\Property(property: 'last_page', type: 'integer'),
+                            new OA\Property(property: 'per_page', type: 'integer'),
+                            new OA\Property(property: 'total', type: 'integer'),
+                        ]),
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 401,
+                description: 'API 키 인증 실패',
+            ),
+            new OA\Response(
+                response: 422,
+                description: '입력값 검증 실패',
+            ),
+            new OA\Response(
+                response: 429,
+                description: '쿼터 초과',
+            ),
+        ]
+    )]
     public function search(ApiSearchRequest $request): JsonResponse
     {
         $startTime = microtime(true);
@@ -38,18 +98,12 @@ class ApiController extends Controller
         $folder = $validated['folder'] ?? null;
         $text = $validated['text'];
         $mode = $validated['mode'] ?? 'search';
-        $lang = $validated['lang'] ?? null;
-        $slang = $validated['slang'] ?? null;
+        $lang = $validated['lang'] ?? 'ko';
 
         // mode=search → searchLang=null, mode=hierarchy+lang → searchLang=lang
         $searchLang = null;
         if ($mode === 'hierarchy' && $lang) {
             $searchLang = $lang;
-        }
-
-        // slang → targetLanguage로 사용
-        if ($slang) {
-            $targetLanguage = $slang;
         }
 
         // API 키 인증 정보
@@ -94,8 +148,17 @@ class ApiController extends Controller
         // 마지막 사용 시간 갱신
         $this->apiKey->touchLastUsed($apiKeyId);
 
-        return ApiSearchResource::collection($results)
-            ->response()
-            ->header('X-Processing-Time-Ms', $processingTimeMs);
+        // 불필요한 필드(links, meta.links, meta.path 등) 제거
+        $data = ApiSearchResource::collection($results)->response()->getData(true);
+
+        return response()->json([
+            'data' => $data['data'],
+            'meta' => [
+                'current_page' => $data['meta']['current_page'],
+                'last_page' => $data['meta']['last_page'],
+                'per_page' => $data['meta']['per_page'],
+                'total' => $data['meta']['total'],
+            ],
+        ], 200)->header('X-Processing-Time-Ms', $processingTimeMs);
     }
 }

@@ -146,7 +146,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **`resetToDefault` hierarchyLang 초기화** — `resetToDefault()`에서 `setHierarchyLang("ko")`로 분류선택 언어도 초기화 필수. 미적용 시 기본 언어로 복원되지 않음.
 - **SSR page.tsx 파라미터 전파 누락** — `embed-page-inner.tsx` prop 추가 시 SSR `page.tsx`의 prefetch 호출에도 동일 파라미터 전달 필요.
 - **분류선택 언어 변경 `handleLangChange` 패턴** — `CategoryHierarchy`에서 언어 변경 시: ①`selectedPath`·`loadingStates`·`keywordText` 초기화 (**`levelOptions`는 유지** — 빈 배열로 설정하면 `hasOptions=false`가 되어 필터 섹션이 통째로 사라짐 → 깜빡임 유발), ②`onKeywordSearch("")`로 카테고리 목록 초기화, ③`onLangChange(lang, mode, catPath, keyword)`로 부모에 **언어+필터 상태를 한 번에 전달** (별도 `reportFilterChange` 호출 시 `updateURL`가 두 번 실행되어 두 번째 호출이 첫 번째의 `lang` 설정을 덮어씀), ④새 언어로 `fetchCategoryLevels({ lang })` 재조회. 부모(`EmbedPageInner`)에서는 `setHierarchyLang` + `updateURL({ hierarchyLang, mode, catPath, q })`로 상태·URL 단일 동기화.
-- **URL 파라미터 2개 언어 독립** — `lang`(분류선택 계층 언어)과 `slang`(유사도 검색 언어)은 독립적. `lang`은 `CategoryHierarchy`에서, `slang`은 유사도 검색 섹션에서 각각 관리. 둘 다 기본값 `ko`이고, `ko`일 때 URL에서 삭제.
+- **URL 파라미터 언어 독립** — `lang`(분류선택 계층 언어)은 `CategoryHierarchy`에서 관리. 기본값 `ko`이고, `ko`일 때 URL에서 삭제.
 - **SelectTrigger 기본 height**: `data-[size=default]:h-8` (32px). 인접 버튼 height 불일치 방지 위해 `h-8`로 통일 (`h-9` 사용 시 4px 차이).
 - **Flex 내 truncate는 `min-w-0` 필수** — flex 아이템 기본 `min-width: auto`가 `truncate` CSS를 무력화. `SelectTrigger` 등 flex 레이아웃 내 truncation 필요 시 부모 컨테이너에 `min-w-0` 추가.
 - **Playwright shadcn Select** — `browser_select_option`은 native `<select>` 전용. shadcn Select(role="combobox")는 `browser_run_code_unsafe` + `async (page) => {...}`로 조작. `window.fetch` monkey-patch로 API 호출 스택 추적 가능.

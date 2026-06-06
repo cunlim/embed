@@ -38,7 +38,6 @@ Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx
 | `folder` | 아니오 | string (max:100) | `null` | 폴더 필터. 지정된 폴더에 속한 카테고리로 검색 범위를 제한합니다. |
 | `mode` | 아니오 | string | `search` | 검색 모드. `search`(부분 검색 — 카테고리명에 키워드 포함), `hierarchy`(접두사 검색 — 카테고리명이 키워드로 시작). |
 | `lang` | 아니오 | string | - | 분류선택 계층 언어. `mode=hierarchy`일 때만 유효. `ko`, `en`, `zh` 중 선택. 계층 드롭다운 표시 언어를 결정합니다. |
-| `slang` | 아니오 | string | - | 유사도 검색 언어. 지정 시(`ko`, `en`, `zh`) 해당 언어로만 유사도 검색을 수행합니다. 미지정 시 모든 언어를 대상으로 검색합니다. |
 
 #### mode 파라미터 상세 설명
 
@@ -55,7 +54,6 @@ Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx
 
 ```json
 {
-  "success": true,
   "data": [
     {
       "category_code": "ENV001",
@@ -70,16 +68,15 @@ Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx
   ],
   "meta": {
     "current_page": 1,
+    "last_page": 3,
     "per_page": 20,
-    "total": 45,
-    "last_page": 3
+    "total": 45
   }
 }
 ```
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| `success` | boolean | 요청 성공 여부 |
 | `data[].category_code` | string | 카테고리 코드 |
 | `data[].category_name` | string | 카테고리명 (target_language 기준) |
 | `data[].similarity_score` | float | 유사도 점수 (0~1, 높을수록 유사) |
@@ -130,15 +127,14 @@ curl -X POST https://embed.cunlim.dev/api/v1/search \
   }'
 ```
 
-**특정 언어로만 유사도 검색:**
+**중국어 결과로 유사도 검색:**
 ```bash
 curl -X POST https://embed.cunlim.dev/api/v1/search \
   -H "Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "电子设备",
-    "target_language": "zh",
-    "slang": "zh"
+    "target_language": "zh"
   }'
 ```
 
@@ -240,9 +236,10 @@ curl -X POST https://embed.cunlim.dev/api/recommend \
 | Categories | `PUT /api/categories/{id}/update-text` | 텍스트 수정 |
 | Categories | `DELETE /api/categories/{id}` | 카테고리 삭제 |
 | Recommend | `POST /api/recommend` | 카테고리 추천 |
+| External API | `POST /api/v1/search` | 외부 API 유사도 검색 (API Key 인증) |
 | System | `GET /api/health` | 서버 상태 확인 |
 
-> **참고:** 폴더 관리, 마이페이지, 관리자 API, API v1 엔드포인트는 현재 Swagger 문서에 포함되어 있지 않습니다. 이 엔드포인트들은 본 문서의 파라미터 표를 참조해 주세요.
+> **참고:** 폴더 관리, 마이페이지, 관리자 API는 현재 Swagger 문서에 포함되어 있지 않습니다. 이 엔드포인트들은 본 문서의 파라미터 표를 참조해 주세요.
 
 ---
 

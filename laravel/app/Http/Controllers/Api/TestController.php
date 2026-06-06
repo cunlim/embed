@@ -31,6 +31,12 @@ use OpenApi\Attributes as OA;
     name: 'Authorization',
     description: 'Sanctum API Token. 형식: Bearer {token}'
 )]
+#[OA\SecurityScheme(
+    securityScheme: 'ApiKeyAuth',
+    type: 'http',
+    scheme: 'bearer',
+    description: '외부 API 키. 마이페이지 > API 키 관리에서 발급받은 키를 입력하세요. (cl_ 접두사 포함)'
+)]
 class TestController extends Controller
 {
     #[OA\Get(

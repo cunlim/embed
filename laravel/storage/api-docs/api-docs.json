@@ -17,6 +17,159 @@
         }
     ],
     "paths": {
+        "/api/v1/search": {
+            "post": {
+                "tags": [
+                    "External API"
+                ],
+                "summary": "외부 API 유사도 검색",
+                "description": "API 키 기반 카테고리 유사도 검색. Authorization: Bearer {api_key} 헤더로 인증하며, 호출 시 쿼터가 차감됩니다.",
+                "operationId": "17e50b5a7e3ddcf81ad0c5fc86d5e80a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "text"
+                                ],
+                                "properties": {
+                                    "folder": {
+                                        "description": "폴더명 필터 (빈 문자열: 전체)",
+                                        "type": "string",
+                                        "default": "",
+                                        "maxLength": 100
+                                    },
+                                    "text": {
+                                        "description": "검색 텍스트",
+                                        "type": "string",
+                                        "maxLength": 500
+                                    },
+                                    "target_language": {
+                                        "description": "유사도 검색 및 결과 표시 언어",
+                                        "type": "string",
+                                        "default": "ko",
+                                        "enum": [
+                                            "ko",
+                                            "zh",
+                                            "en"
+                                        ]
+                                    },
+                                    "mode": {
+                                        "description": "검색 모드 (search: 일반, hierarchy: 분류선택)",
+                                        "type": "string",
+                                        "default": "search",
+                                        "enum": [
+                                            "search",
+                                            "hierarchy"
+                                        ]
+                                    },
+                                    "keyword": {
+                                        "description": "접두사 필터 키워드 (mode=hierarchy에서 유용)",
+                                        "type": "string",
+                                        "default": "",
+                                        "maxLength": 500
+                                    },
+                                    "lang": {
+                                        "description": "mode=hierarchy일 때 접두사 검색 언어",
+                                        "type": "string",
+                                        "default": "ko",
+                                        "enum": [
+                                            "ko",
+                                            "zh",
+                                            "en"
+                                        ]
+                                    },
+                                    "page": {
+                                        "type": "integer",
+                                        "default": 1,
+                                        "minimum": 1
+                                    },
+                                    "per_page": {
+                                        "type": "integer",
+                                        "default": 20,
+                                        "maximum": 50,
+                                        "minimum": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "검색 결과",
+                        "headers": {
+                            "X-Processing-Time-Ms": {
+                                "description": "처리 시간(ms)",
+                                "schema": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "category_code": {
+                                                        "type": "string"
+                                                    },
+                                                    "category_name": {
+                                                        "type": "string"
+                                                    },
+                                                    "similarity_score": {
+                                                        "type": "number",
+                                                        "example": 0.9876
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "API 키 인증 실패"
+                    },
+                    "422": {
+                        "description": "입력값 검증 실패"
+                    },
+                    "429": {
+                        "description": "쿼터 초과"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
         "/api/auth/register": {
             "post": {
                 "tags": [
@@ -1140,10 +1293,19 @@
                 "description": "Enter token in format: Bearer {token}",
                 "name": "Authorization",
                 "in": "header"
+            },
+            "ApiKeyAuth": {
+                "type": "http",
+                "description": "외부 API 키. 마이페이지 > API 키 관리에서 발급받은 키를 입력하세요. (cl_ 접두사 포함)",
+                "scheme": "bearer"
             }
         }
     },
     "tags": [
+        {
+            "name": "External API",
+            "description": "External API"
+        },
         {
             "name": "Auth",
             "description": "Auth"
