@@ -71,7 +71,7 @@ export function UsageDashboard({ token }: UsageDashboardProps) {
         </div>
         {stats && stats.quota_limit > 0 && (
           <div className="mt-4 text-center text-xs text-muted-foreground">
-            일일 한도: {stats.quota_limit.toLocaleString()}회
+            전체 한도: {stats.quota_limit.toLocaleString()}회
           </div>
         )}
       </CardContent>
