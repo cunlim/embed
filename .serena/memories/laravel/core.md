@@ -1,6 +1,7 @@
 # Laravel Core — 백엔드 모듈
 
 > 상세 내용은 `laravel/AGENTS.md` 참조. 여기서는 핵심 invariant만 기록.
+> **단일 소스**: 모듈 간 공통 규칙은 `.serena/memories/core.md`에 기록. 이 파일은 백엔드 전용 invariant만 유지.
 
 ## 주요 패턴
 
@@ -14,7 +15,7 @@
 - **API 인증**: 세션 미들웨어 없음, `$request->user('sanctum')` 또는 `auth('sanctum')->user()` 사용
 - **외부 API key 인증**: `ApiKeyAuth` 미들웨어 — Bearer `cl_xxx` → `ApiKeyService::findByKey()` → status/pause/quota 체크 → request merge. `ApiRateLimit` — `RateLimiter::for()` 분당 제한(Redis). 미들웨어 체인: `api.rate_limit` → `api.key_auth`.
 - **`POST /api/v1/search`**: 외부 유사도 검색. `filter` 내부 `'my'` 고정. quota 감소 `DB::table()->decrement()`. `ApiKeyService::touchLastUsed()`. `RecommendService::recommendPaginated()`의 `searchLang` 파라미터로 언어별 접두사/부분 검색 분기.
-- **`POST /api/recommend` quota**: 로그인 사용자 + `text` 있을 때 `api_quota_remaining` 1 차감. 관리자 우회, 비로그인 체크 없음. quota 0 → 429. `text` 없이 목록 조회만 할 때는 차감 없음.
+- **`POST /api/recommend` quota**: 로그인 사용자 + `text` 있을 때 `api_quota_remaining` 1 차감. 관리자 우회, 비로그인 사용자는 recommend API 미지원(세션 불필요) — quota 차감 없음. quota 0 → 429. `text` 없이 목록 조회만 할 때는 차감 없음.
 - **관리자 설정 `api` 그룹**: `AdminSettingsController::GROUPS`에 `'api'` 포함. `api.free_quota`(기본 500, 영구 총량 — 일일 리셋 없음), `api.rate_limit_per_minute`(기본 60)을 admin 페이지에서 수정 가능.
 - **마이페이지 API**: `/api/mypage/` prefix, `auth:sanctum`. API key CRUD + 사용량 통계(총/오늘 호출, key별, 일별 차트). **API key 이름 중복 금지**: `Rule::unique('api_keys', 'name')->where('user_id', $userId)` (store), `->ignore($this->route('id'))` (update). DB `(user_id, name)` unique index로 방어.
 - **관리자 회원 관리**: `GET /api/admin/users/{id}`(상세+사용량), `PATCH /api/admin/users/{id}/quota`(absolute/increment). `QuotaAdjustRequest`에서 `isSuperAdmin()` 검증. **`value` 유효성**: `absolute`→`min:0`, `increment`→음수 허용. 커스텀 클로저로 조건부 검증. `adjustQuota()`에서 `max(0, newValue)` 보장. **⚠️ 응답 구조**: 평탄 구조(`{ data: { id, name, ..., total_calls, ... } }`), 중첩 아님.
@@ -24,7 +25,7 @@
 - **API 리소스**: `Resource::collection()`은 `{data: [...]}`, 단일은 `{data: {...}}` 래퍼 자동 적용. Resource collection 항목은 객체여야 함.
 - **`boolean` 유효성 검증**: `"true"`/`"false"` 문자열 불허 (true, false, 1, 0, "1", "0"만 허용). 쿼리 파라미터로 전달 시 `"1"`/`"0"` 사용.
 - **폴더는 `folders` 테이블로 독립 관리** — `user_id` + `name` unique. `categories.folder`는 문자열 참조로 유지. FolderController는 `Folder` 모델 사용.
-- **폴더 이동 중복 처리**: `moveFolder()`는 타겟 폴더의 **모든** `(category_code, user_id)`를 사전 조회(`whereNotIn` 사용 금지 — 이미 타겟에 있는 레코드 누락 시 unique constraint 위반). `$conflictKeys` 맵을 배치 처리 중에도 갱신하여 같은 `(category_code, user_id)`가 배치에 여러 개 있어도 첫 번째만 이동하고 나머지 스킵. 응답은 `{ moved, failed, message }` 통계 형식. **소유권 변경**: 관리자가 `target_user_id` 지정 시 `folder` + `user_id` 동시 업데이트. 중복 체크도 새 `user_id` 기준.
+- **폴더 이동 중복 처리**: `moveFolder()`는 타겟 폴더의 `(category_code, user_id)`를 사전 조회 후 이동 — `whereNotIn` 사용 시 타겟 레코드 누락으로 unique constraint 위반 발생 (P0 이슈). 응답은 `{ moved, failed, message }` 통계 형식. **소유권 변경**: 관리자가 `target_user_id` 지정 시 `folder` + `user_id` 동시 업데이트. 상세 알고리즘은 `FolderController::moveFolder()` 참조.
 - **폴더 삭제 중복 체크**: `destroy()`에서 `move_to_default=true`일 때 기본폴더(`folder IS NULL`)에 동일 `(category_code, user_id)`가 있는지 사전 확인. 중복 발견 시 409 + `{duplicate_count, duplicate_codes}` 반환으로 폴더 삭제 거부. `hasCategories()` API도 `duplicate_count`/`duplicate_codes` 필드를 반환하도록 확장되어 프론트 모달에서 선제 차단.
 - **`기본폴더` → NULL defense in depth**: `store()`·`moveFolder()`에서 `$request->input('folder') === '기본폴더'` → `null` 변환. 프론트엔드 누락 시에도 DB 일관성 보장.
 - **`CategoryController::index()` `steps` 필터**: `steps[]=embedding.ko` 쿼리 파라미터 지원. `batchStatus`의 `determineMissingSteps`와 동일 로직을 `whereDoesntHave` + OR 조건으로 SQL WHERE에 적용. `steps` 미전달 시 기존 동작. 프론트 `TaskExecution` 체크박스 토글 → `onStepsChange` → `loadCategories`로 호출.

@@ -3,6 +3,7 @@
 AI 기반 다국어 카테고리 추천 시스템. 벡터 검색(pgvector)으로 다국어 카테고리를 추천한다.
 
 > 기술 스택 상세는 `composer.json`, `package.json`, `docker-compose.yml` 참조.
+> **문서 역할**: 이 파일은 AI 에이전트용 압축된 invariant 요약. 모듈별 상세는 `nextjs/AGENTS.md`, `laravel/AGENTS.md` 참조. 중복 내용은 이 파일을 단일 소스로 간주하고, AGENTS.md에서는 참조만 기술.
 
 ## 핵심 컨벤션
 
@@ -14,13 +15,13 @@ AI 기반 다국어 카테고리 추천 시스템. 벡터 검색(pgvector)으로
 
 ## 카테고리 접근 제어
 
-- `user_id=1`(공개), 비로그인: 본인+공개, 로그인: 본인+공개, admin: 전체
+- `user_id=1`(공개 — 시스템 상수, DB 시드에서 보장), 비로그인: 본인+공개, 로그인: 본인+공개, admin: 전체
 - 모든 조회 API(`levels()`, `recommend()` 등)에 동일 적용 — 새 필터 파라미터 추가 시 `CategoryController`뿐 아니라 `RecommendController` 등 모든 조회 컨트롤러에 추가 필요. 하나만 수정하면 다른 API는 이전 동작 유지.
 
 ## 핵심 비즈니스 로직
 
-- 번역: Ollama `translategemma:4b`, 임베딩: Ollama `bge-m3:latest` (1024차원)
-- 동시성: Redis `Cache::lock("category-translate:{categoryId}")`
+- 번역: Ollama `translategemma:4b`, 임베딩: Ollama `bge-m3:latest` (1024차원). ⚠️ Ollama 불가용 시: 번역 캐시 hit 카테고리는 정상 동작, 미번역 카테고리는 원문 표시. OpenAI API 폴백은 ADR-003 참조.
+- 동시성: `TranslationCache::firstOrCreate`로 동일 카테고리 중복 번역 결과 방지 (DB 수준 낙관적 잠금)
 - 캐싱: 그룹 전체 하나의 캐시 키 (개별 `Cache::remember()` 금지)
 - 번역/임베딩은 동기 HTTP 컨트롤러에서 step 단위 처리
 - 외부 API: `POST /api/v1/search` — API key 인증(`cl_` 접두사) + quota(가입 시 500회, `api.free_quota` 설정, **영구 총량 — 일일 리셋 없음**) + rate limit(분당 60회)
@@ -28,7 +29,7 @@ AI 기반 다국어 카테고리 추천 시스템. 벡터 검색(pgvector)으로
 - 마이페이지: `/mypage` — API key CRUD, 사용량 대시보드, 차트, 이력
 - 관리자 회원 관리: `/admin` 사이드바 "회원 관리" — 회원 상세 모달, quota 절대값/증감 조절
 - Docs 페이지: `/docs?doc=SLUG` 단일 라우트, `lib/docs.ts` 문서 목록, `public/content/*.md` 마크다운 렌더링 (react-markdown+remark-gfm). 문서 목록: USER_GUIDE → API_V1 → SIMILARITY_SEARCH → RESUME.
-- Swagger/OpenAPI: l5-swagger, `GET /api/documentation` JSON 스펙 (Swagger UI HTML은 route 충돌로 미제공). Swagger Editor에서 URL import로 대체. OA 미문서 컨트롤러: FolderController·MyPageController·AdminSettingsController·ApiController.
+- Swagger/OpenAPI: l5-swagger, `GET /api/documentation` JSON 스펙 (Swagger UI HTML은 route 충돌로 미제공). Swagger Editor에서 URL import로 대체. OA 미문서 컨트롤러: FolderController·MyPageController·AdminSettingsController.
 
 ## 주요 주의사항
 

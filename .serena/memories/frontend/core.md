@@ -1,6 +1,7 @@
 # Frontend Core — 프론트엔드 모듈
 
 > 상세 내용은 `nextjs/AGENTS.md` 참조. 여기서는 핵심 invariant만 기록.
+> **단일 소스**: 모듈 간 공통 규칙은 `.serena/memories/core.md`에 기록. 이 파일은 프론트엔드 전용 invariant만 유지.
 
 ## 디자인 시스템
 
