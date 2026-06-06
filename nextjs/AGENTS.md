@@ -87,7 +87,15 @@ docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 - **`cookies().set()`은 서버 컴포넌트에서 불가** — "Cookies can only be modified in a Server Action or Route Handler" 에러. 쿠키 설정이 필요한 redirect는 **middleware** 사용.
 - **Middleware 쿠키+리다이렉트** — OAuth 콜백 등 URL 파라미터 토큰을 쿠키로 설정 후 리다이렉트: `middleware.ts`에서 `searchParams.get("token")` → `response.cookies.set("auth_token", token)` → `NextResponse.redirect(...)`. 페이지 렌더링 전 처리로 깜빡임 제로.
 
-## Docs·콘텐츠 페이지 SSR 패턴
+## Docs 페이지 시스템
+
+- **`/docs?doc=SLUG`** 단일 라우트, 서버 컴포넌트(`app/docs/page.tsx`) + 클라이언트 레이아웃(`app/docs/layout.tsx`)
+- **문서 등록**: `lib/docs.ts` → `docList` 배열에 `{ slug, title, description }` 추가
+- **콘텐츠**: `public/content/{SLUG}.md` — react-markdown + remark-gfm 렌더링
+- **사이드바**: `CollapsibleSidebar` + `<Suspense>` → `useSearchParams().get("doc")` 으로 active 표시
+- **문서 목록** (2026-06-06): USER_GUIDE, API_V1, SIMILARITY_SEARCH, RESUME
+
+### Docs·콘텐츠 페이지 SSR 패턴
 
 - **URL을 state의 source of truth로** — `useSearchParams()` + `<Link>`로 Context/useState 대체. 사이드바 selected와 문서 콘텐츠 모두 URL에서 파생.
 - **페이지 서버 컴포넌트 전환** — `"use client"` 제거, async 서버 컴포넌트 + `searchParams`(Promise)로 파라미터 수신. `fs.readFile`로 서버에서 콘텐츠 직접 로드.
