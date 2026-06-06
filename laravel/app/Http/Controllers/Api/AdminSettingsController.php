@@ -18,6 +18,7 @@ class AdminSettingsController extends Controller
     ) {}
 
     private const GROUPS = [
+        'api',
         'embed',
         'translate',
         'pagination',

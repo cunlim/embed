@@ -3,7 +3,11 @@
 use App\Http\Resources\RecommendResource;
 use App\Models\Category;
 use App\Models\SearchLog;
+use App\Models\User;
 use App\Services\EmbeddingCacheService;
+use App\Services\RecommendationService;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Laravel\Sanctum\Sanctum;
 
 beforeEach(function () {
     RecommendResource::setQueryEmbedding(null);
@@ -118,4 +122,126 @@ test('RecommendResource — category_embedding_raw가 pgvector 문자열일 때 
     $data = $resource->toArray(request()->merge(['target_language' => 'ko']));
 
     expect($data['category_embedding'])->toEqual([0.1, 0.2, 0.3]);
+});
+
+// ──────────────────────────────────────────────
+// 유사도 검색 quota 차감 테스트
+// ──────────────────────────────────────────────
+
+/**
+ * 유사도 검색 요청에 사용할 공통 Mock 설정 헬퍼.
+ * EmbeddingCacheService와 RecommendationService를 Mock하여
+ * DB/pgvector 의존 없이 컨트롤러 로직만 검증한다.
+ */
+function setupRecommendMocks(): void
+{
+    $searchLog = new SearchLog([
+        'search_keyword' => '검색어',
+        'normalized_keyword' => '검색어',
+        'embed_model_name' => 'bge-m3:latest',
+    ]);
+    $searchLog->embedding = array_fill(0, 1024, 0.05);
+
+    $mockCache = Mockery::mock(EmbeddingCacheService::class);
+    $mockCache->shouldReceive('getOrCreateEmbedding')->once()->andReturn($searchLog);
+    app()->instance(EmbeddingCacheService::class, $mockCache);
+
+    $paginator = new LengthAwarePaginator(
+        items: collect([]),
+        total: 0,
+        perPage: 20,
+        currentPage: 1,
+    );
+
+    $mockRecommend = Mockery::mock(RecommendationService::class);
+    $mockRecommend->shouldReceive('recommendPaginated')->once()->andReturn($paginator);
+    app()->instance(RecommendationService::class, $mockRecommend);
+}
+
+test('로그인 사용자 — 유사도 검색 시 api_quota_remaining이 1 차감된다', function () {
+    $user = User::factory()->create([
+        'api_quota_remaining' => 10,
+        'api_quota_limit' => 100,
+    ]);
+    Sanctum::actingAs($user);
+
+    setupRecommendMocks();
+
+    $response = $this->postJson('/api/recommend', [
+        'text' => '검색어',
+        'target_language' => 'ko',
+    ]);
+
+    $response->assertOk();
+
+    $user->refresh();
+    expect($user->api_quota_remaining)->toBe(9);
+});
+
+test('로그인 사용자 — quota가 0이면 유사도 검색 시 429를 반환한다', function () {
+    $user = User::factory()->create([
+        'api_quota_remaining' => 0,
+        'api_quota_limit' => 100,
+    ]);
+    Sanctum::actingAs($user);
+
+    // quota 부족 시 서비스 호출 전 차단되므로 Mock 불필요
+    $response = $this->postJson('/api/recommend', [
+        'text' => '검색어',
+        'target_language' => 'ko',
+    ]);
+
+    $response->assertStatus(429);
+    $response->assertJsonPath('code', 'quota_exceeded');
+});
+
+test('비로그인 사용자 — 유사도 검색 시 quota 체크 없이 200을 반환한다', function () {
+    setupRecommendMocks();
+
+    $response = $this->postJson('/api/recommend', [
+        'text' => '검색어',
+        'target_language' => 'ko',
+    ]);
+
+    $response->assertOk();
+});
+
+test('관리자 — quota가 0이어도 유사도 검색 시 quota 체크를 우회한다', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'api_quota_remaining' => 0,
+        'api_quota_limit' => 100,
+    ]);
+    Sanctum::actingAs($admin);
+
+    setupRecommendMocks();
+
+    $response = $this->postJson('/api/recommend', [
+        'text' => '검색어',
+        'target_language' => 'ko',
+    ]);
+
+    $response->assertOk();
+});
+
+test('로그인 사용자 — text가 없으면 quota 차감 없이 200을 반환한다', function () {
+    $category = Category::factory()->create([
+        'category_code' => '50000000',
+        'category_name_ko' => '패션의류',
+    ]);
+
+    $user = User::factory()->create([
+        'api_quota_remaining' => 10,
+        'api_quota_limit' => 100,
+    ]);
+    Sanctum::actingAs($user);
+
+    $response = $this->postJson('/api/recommend', [
+        'target_language' => 'ko',
+    ]);
+
+    $response->assertOk();
+
+    $user->refresh();
+    expect($user->api_quota_remaining)->toBe(10);
 });

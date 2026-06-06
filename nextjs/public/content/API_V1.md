@@ -1,25 +1,12 @@
 # API 연동 가이드
 
-CL Embed는 REST API를 통해 카테고리 유사도 검색 및 데이터 관리를 외부에서 호출할 수 있습니다.
+CL Embed는 REST API를 통해 카테고리 유사도 검색 및 데이터 관리를 수행할 수 있습니다.
 
 ## 인증 방식
 
-API는 두 가지 인증 방식을 제공합니다:
+### API Key
 
-### 1. Sanctum Bearer Token (내부 API)
-
-웹 인터페이스와 동일한 인증 방식입니다. [로그인](/login) 후 발급되는 Bearer 토큰을 사용합니다.
-
-```
-Authorization: Bearer {sanctum_token}
-```
-
-- 이메일/비밀번호 로그인 또는 OAuth(Google, GitHub, Naver)로 토큰 발급
-- 내부 API 호출 시 사용 (카테고리 CRUD, 추천 등)
-
-### 2. API Key (외부 API v1)
-
-외부 시스템 연동용 API Key입니다. [마이페이지](/mypage)에서 생성할 수 있습니다.
+시스템 연동용 API Key입니다. [마이페이지](/mypage)에서 생성할 수 있습니다.
 
 ```
 Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx
@@ -27,11 +14,11 @@ Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx
 
 - `cl_` 접두사로 시작하는 64자 문자열
 - 개별 key 단위로 활성/일시정지 관리 가능
-- 무료 호출 회수(기본 100회) 및 분당 Rate Limit 적용
+- 무료 호출 회수(기본 500회) 및 분당 Rate Limit 적용
 
 ---
 
-## 외부 API v1
+## API v1
 
 ### POST /api/v1/search
 
@@ -189,82 +176,9 @@ curl -X POST https://embed.cunlim.dev/api/v1/search \
 
 #### 무료 호출 회수
 
-- 회원가입 시 **100회** 무료 호출이 제공됩니다.
+- 회원가입 시 **500회** 무료 호출이 제공됩니다.
 - 회수는 총 사용량 기준이며, 마이페이지에서 잔여 회수를 확인할 수 있습니다.
 - 관리자가 회원별로 회수를 조절할 수 있습니다.
-
----
-
-## 내부 API
-
-내부 API는 Sanctum Bearer Token 인증을 사용합니다. 웹 인터페이스에서 로그인 후 획득한 토큰을 사용하세요.
-
-### 카테고리 추천
-
-```
-POST /api/recommend
-Authorization: Bearer {sanctum_token}
-Content-Type: application/json
-```
-
-| 파라미터 | 필수 | 타입 | 기본값 | 설명 |
-|----------|------|------|--------|------|
-| `text` | 아니오 | string (max:500) | `null` | 유사도 검색어 |
-| `target_language` | **예** | string | - | 대상 언어: `ko`, `en`, `zh` |
-| `page` | 아니오 | integer (min:1) | `1` | 페이지 번호 |
-| `per_page` | 아니오 | integer (min:1, max:100) | `20` | 페이지당 결과 수 |
-| `filter` | 아니오 | string | - | `my`(내 카테고리만), `all`(전체 공개). 로그인 시에만 `my` 유효 |
-| `keyword` | 아니오 | string (max:500) | `null` | 키워드 필터 |
-| `folder` | 아니오 | string (max:100) | `null` | 폴더 필터 |
-
-### 카테고리 목록 조회
-
-```
-GET /api/categories
-Authorization: Bearer {sanctum_token}
-```
-
-| 파라미터 | 타입 | 기본값 | 설명 |
-|----------|------|--------|------|
-| `per_page` | integer | `20` | 페이지당 결과 수 |
-| `page` | integer | `1` | 페이지 번호 |
-| `filter` | string | - | `my` / `all` |
-| `search` | string | - | 검색어 (카테고리명/코드 부분 검색) |
-| `search_lang` | string | - | 검색 언어 제한 (`ko`, `en`, `zh`) |
-| `folder` | string | - | 폴더 필터 |
-| `user_id` | integer | - | 특정 회원 카테고리 조회 (관리자 전용) |
-| `steps[]` | array | - | 누락된 step 필터 (`embedding.ko`, `translation.en` 등) — 하나라도 누락된 카테고리만 조회 |
-
-### 카테고리 계층 조회
-
-```
-GET /api/categories/levels
-Authorization: Bearer {sanctum_token}
-```
-
-| 파라미터 | 타입 | 기본값 | 설명 |
-|----------|------|--------|------|
-| `lang` | string | `ko` | 계층 표시 언어 (`ko`, `en`, `zh`) |
-| `cat1` ~ `cat20` | string | - | 상위 계층 카테고리 코드. `cat1`은 최상위, `cat20`은 20단계 |
-| `folder` | string | - | 폴더 필터 |
-| `user_id` | integer | - | 특정 회원 카테고리 조회 (관리자 전용) |
-
-### 카테고리 생성
-
-```
-POST /api/categories
-Authorization: Bearer {sanctum_token}
-Content-Type: application/json
-```
-
-| 파라미터 | 필수 | 타입 | 설명 |
-|----------|------|------|------|
-| `category_name_ko` | **예** | string (max:255) | 한국어 카테고리명 |
-| `category_code` | 아니오 | string (max:255) | 카테고리 코드 (미지정 시 자동 생성). 사용자+폴더 내 고유해야 함 |
-| `category_name_en` | 아니오 | string (max:255) | 영어 카테고리명 |
-| `category_name_zh` | 아니오 | string (max:255) | 중국어 카테고리명 |
-| `folder` | 아니오 | string (max:100) | 소속 폴더. 미지정 시 기본폴더(null) |
-| `user_id` | 아니오 | integer | 생성할 회원 ID (관리자 전용) |
 
 ---
 
@@ -328,7 +242,7 @@ curl -X POST https://embed.cunlim.dev/api/recommend \
 | Recommend | `POST /api/recommend` | 카테고리 추천 |
 | System | `GET /api/health` | 서버 상태 확인 |
 
-> **참고:** 폴더 관리, 마이페이지, 관리자 API, 외부 API v1 엔드포인트는 현재 Swagger 문서에 포함되어 있지 않습니다. 이 엔드포인트들은 본 문서의 파라미터 표를 참조해 주세요.
+> **참고:** 폴더 관리, 마이페이지, 관리자 API, API v1 엔드포인트는 현재 Swagger 문서에 포함되어 있지 않습니다. 이 엔드포인트들은 본 문서의 파라미터 표를 참조해 주세요.
 
 ---
 
@@ -346,6 +260,6 @@ curl -X POST https://embed.cunlim.dev/api/recommend \
 
 ## 무료 호출 회수
 
-- 회원가입 시 **100회** 무료 호출이 제공됩니다.
+- 회원가입 시 **500회** 무료 호출이 제공됩니다.
 - [마이페이지](/mypage)에서 잔여 회수를 확인하고 API Key를 관리할 수 있습니다.
 - 회수 소진 시 관리자에게 문의하여 증량 요청이 가능합니다.

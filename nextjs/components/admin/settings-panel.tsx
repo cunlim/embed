@@ -12,6 +12,7 @@ interface Props {
 }
 
 const GROUP_LABELS: Record<string, string> = {
+  api: "API",
   embed: "임베딩",
   translate: "번역",
   pagination: "페이지네이션",
@@ -24,6 +25,10 @@ const GROUP_LABELS: Record<string, string> = {
 };
 
 const FIELD_LABELS: Record<string, Record<string, string>> = {
+  api: {
+    free_quota: "무료 호출 회수",
+    rate_limit_per_minute: "분당 호출 제한",
+  },
   embed: {
     host: "API 서버 주소",
     api_key: "API 키",

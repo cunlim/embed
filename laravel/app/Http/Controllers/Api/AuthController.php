@@ -64,7 +64,7 @@ class AuthController extends Controller
     )]
     public function register(RegisterRequest $request): JsonResponse
     {
-        $freeQuota = app(SettingsService::class)->get('api', 'free_quota', 100);
+        $freeQuota = app(SettingsService::class)->get('api', 'free_quota', 500);
 
         $user = User::create([
             'name' => $request->name,

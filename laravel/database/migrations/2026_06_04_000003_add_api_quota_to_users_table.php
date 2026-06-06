@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->integer('api_quota_remaining')->default(100)->after('role');
-            $table->integer('api_quota_limit')->default(100)->after('api_quota_remaining');
+            $table->integer('api_quota_remaining')->default(500)->after('role');
+            $table->integer('api_quota_limit')->default(500)->after('api_quota_remaining');
         });
     }
 

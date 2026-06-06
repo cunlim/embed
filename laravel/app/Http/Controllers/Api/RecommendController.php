@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Services\EmbeddingCacheService;
 use App\Services\RecommendationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
 class RecommendController extends Controller
@@ -120,6 +121,16 @@ class RecommendController extends Controller
             return RecommendResource::collection($query->paginate(perPage: $perPage, page: $page))->response();
         }
 
+        // 로그인 사용자 유사도 검색 quota 체크 (관리자 제외)
+        if ($user && ! $user->isAdmin()) {
+            if (! $user->hasQuota()) {
+                return response()->json([
+                    'code' => 'quota_exceeded',
+                    'message' => '무료 호출 회수를 초과했습니다.',
+                ], 429);
+            }
+        }
+
         $userId = $user?->id;
         $modelName = config('services.embed.model', 'bge-m3:latest');
 
@@ -132,6 +143,13 @@ class RecommendController extends Controller
         $results = $this->recommendation->recommendPaginated(
             $searchLog, $targetLanguage, $perPage, $page, $scopeUserId, $keyword, $folder
         );
+
+        // 로그인 사용자 유사도 검색 quota 차감 (관리자 제외)
+        if ($user && ! $user->isAdmin()) {
+            DB::table('users')
+                ->where('id', $user->id)
+                ->decrement('api_quota_remaining', 1);
+        }
 
         return RecommendResource::collection($results)->response();
     }

@@ -11,7 +11,7 @@ class ApiSettingsSeeder extends Seeder
     {
         Setting::updateOrCreate(
             ['group' => 'api', 'key' => 'free_quota'],
-            ['value' => '100', 'type' => 'integer', 'description' => '신규 가입 시 무료 호출 회수']
+            ['value' => '500', 'type' => 'integer', 'description' => '신규 가입 시 무료 호출 회수']
         );
 
         Setting::updateOrCreate(
