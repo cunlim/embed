@@ -23,7 +23,7 @@
 - **Sub-agent driven** — 구현은 되도록 Agent(Sub-agent)를 활용한다.
 - **Playwright 테스트 URL** — WSL2 호스트에서 `https://embed.cunlim.dev`로 접속 (Next.js 포트 미공개).
 - **Playwright 인증** — 쿠키 기반(`auth_token`). superadmin 토큰 발급은 `laravel/AGENTS.md` 참조. 쿠키 설정은 `context.clearCookies()` → `page.evaluate(t => document.cookie = \`auth_token=${t}; path=/; SameSite=Lax; max-age=86400\`, token)` 방식 사용 (`addCookies`는 API 요청에 미포함되는 경우 있음). `/api/auth/user` 200 확인 후 진행.
-- **작업 완료 전 검증** — `.claude/hooks/run-all-checks.sh` 실행 후 `cat .claude/hooks/test-results/*.txt`로 결과 확인. tsc, lint, test, pint 모두 EXIT=0 확인 후 마무리.
+- **작업 완료 전 검증** — `.claude/hooks/run-all-checks.sh --terminal` 실행하여 결과를 터미널에서 직접 확인. 훅 모드(Stop hook)에서는 Windows 알림으로 전송. test-results/*.txt 파일은 항상 기록. tsc, lint, test, pint 모두 EXIT=0 확인 후 마무리.
 
 ## 문서 우선순위
 

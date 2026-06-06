@@ -8,7 +8,7 @@ AI 기반 다국어 카테고리 추천 시스템. 벡터 검색(pgvector)으로
 
 - 문서·주석은 한국어, 코드 식별자는 영어
 - UI·API 언어 순서: ko → en → zh
-- 작업 완료 전 `.claude/hooks/run-all-checks.sh` → 모든 EXIT=0 확인
+- 작업 완료 전 `.claude/hooks/run-all-checks.sh --terminal` → 터미널에서 결과 직접 확인 (훅 모드는 Windows 알림)
 - 이슈 수정 전 Playwright로 실제 재현 먼저 확인
 - Sub-agent driven 개발 권장
 
