@@ -861,7 +861,8 @@
                                         "enum": [
                                             "category_name_ko",
                                             "category_name_en",
-                                            "category_name_zh"
+                                            "category_name_zh",
+                                            "category_code"
                                         ]
                                     },
                                     "value": {
