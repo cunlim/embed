@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RecommendRequest;
 use App\Http\Resources\RecommendResource;
 use App\Models\Category;
+use App\Services\ApiUsageService;
 use App\Services\EmbeddingCacheService;
 use App\Services\RecommendationService;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +18,7 @@ class RecommendController extends Controller
     public function __construct(
         private EmbeddingCacheService $embeddingCache,
         private RecommendationService $recommendation,
+        private ApiUsageService $apiUsage,
     ) {}
 
     #[OA\Post(
@@ -144,11 +146,20 @@ class RecommendController extends Controller
             $searchLog, $targetLanguage, $perPage, $page, $scopeUserId, $keyword, $folder
         );
 
-        // 로그인 사용자 유사도 검색 quota 차감
+        // 로그인 사용자 유사도 검색 quota 차감 + 사용 로그 기록
         if ($user) {
             DB::table('users')
                 ->where('id', $user->id)
                 ->decrement('api_quota_remaining', 1);
+
+            $this->apiUsage->log(
+                null,           // 내부 API는 api_key_id 없음
+                $user->id,
+                '/api/recommend',
+                $request->validated(),
+                200,
+                0               // 처리 시간 측정 불필요
+            );
         }
 
         return RecommendResource::collection($results)->response();

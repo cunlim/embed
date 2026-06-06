@@ -13,7 +13,7 @@ class ApiUsageService
      * API 사용 로그를 기록한다.
      */
     public function log(
-        int $apiKeyId,
+        ?int $apiKeyId,
         int $userId,
         string $endpoint,
         ?array $parameters,
