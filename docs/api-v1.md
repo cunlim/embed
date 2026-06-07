@@ -123,3 +123,23 @@ curl -X POST https://embed.cunlim.dev/api/v1/search \
 - 가입 시 **500회** 무료 사용이 제공됩니다.
 - 관리자가 회수를 조절할 수 있습니다.
 - 마이페이지(`/mypage`)에서 잔여 회수를 확인할 수 있습니다.
+
+## 보안
+
+### API Key 관리
+
+- API Key는 생성 시에만 평문으로 표시됩니다. 이후에는 `key_preview`(`cl_152|t9qk...`)만 조회 가능합니다.
+- DB에는 SHA-256 해시로 저장되며, 원본 키는 복원 불가합니다.
+- 키 분실 시 기존 키를 삭제하고 새로 생성해야 합니다.
+
+### Rate Limit
+
+- 인증된 요청: Bearer 토큰 기준 분당 60회 제한.
+- 인증되지 않은 요청: IP 기준 분당 60회 제한 (401 응답도 카운트).
+- 랜덤 토큰 회전으로 rate limit을 우회하는 것은 불가합니다 — 각 요청은 IP 또는 유효한 토큰으로 제한됩니다.
+
+### Quota
+
+- Quota 차감은 원자적 SQL 연산(`WHERE api_quota_remaining > 0`)으로 수행됩니다.
+- 동시 요청으로 quota가 음수로 내려가는 TOCTOU 경쟁 조건을 방지합니다.
+- 내부 API(`/api/recommend`)와 외부 API(`/api/v1/search`) 모두 모든 사용자(관리자 포함)에게 quota를 차감합니다.

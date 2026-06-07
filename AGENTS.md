@@ -100,8 +100,13 @@
 - **`api_usage_logs` FK cascade 주의** — `api_key_id` FK가 `onDelete('cascade')`이면 키 삭제 시 사용 로그 전체 소실. `onDelete('set null')`로 변경 + 컬럼 nullable 마이그레이션 필요.
 - **`isLoading` + `!!token` hydration mismatch** — `useState(!!token)`으로 초기화하면 서버/클라이언트 불일치로 hydration 에러 발생. 초기값을 `false`로 고정, `useEffect` 내에서 `setIsLoading(true)` 후 fetch.
 - **`toLocaleString("ko-KR")` SSR 하이드레이션 불일치** — 서버(Node.js)와 클라이언트(브라우저)의 locale 구현 차이로 `toLocaleString("ko-KR")`이 "오후"/"PM" 등 서로 다른 문자열을 반환. 서버 컴포넌트에서 날짜 포맷 시 `new Date().toLocaleString("ko-KR")` 대신 deterministic 포맷터(`getFullYear()`, `getMonth()` 등) 사용.
-- **내부/외부 API quota 차감 정책 일관성** — 외부 API(`ApiController::search`)는 모든 사용자(관리자 포함)에게 quota를 차감하지만, 내부 API(`RecommendController::recommend`)는 `isAdmin()` 체크로 관리자를 면제하면 정책 불일치 발생. quota 차감 로직 추가/수정 시 두 API 경로의 정책을 동일하게 유지해야 함.
+- **내부/외부 API quota 차감 정책 일관성** — 외부 API(`ApiController::search`)와 내부 API(`RecommendController::recommend`) 모두 모든 사용자(관리자 포함)에게 quota를 차감. quota 차감 로직 추가/수정 시 두 API 경로의 정책을 동일하게 유지해야 함.
 - **`getCallsByKey` eager loading 필수** — `ApiUsageService::getCallsByKey()`는 그룹핑 결과에 `apiKey` 관계를 수동으로 로드해야 함. `getRecentHistory()`와 달리 `groupBy` 쿼리에는 `with()`를 직접 사용할 수 없으므로, 별도로 `ApiKey::whereIn()`으로 조회 후 `setRelation()`로 병합. 미적용 시 프론트엔드에서 `api_key`가 `undefined` → "키 #null" 표시.
+- **Quota TOCTOU 경쟁 조건** — `ApiKeyAuth` 미들웨어에서 `hasQuota()` 체크 후 컨트롤러에서 `DB::table()->decrement()`로 차감하면, 동시 요청이 모두 체크를 통과하여 quota가 음수로 내려갈 수 있음. `User::decrementQuota()`에도 동일 문제가 존재. 수정 시 `WHERE api_quota_remaining > 0` 조건을 포함한 원자적 감소 사용 필수.
+- **Rate limit 우회 (무토큰)** — `ApiRateLimit` 미들웨어가 bearer 토큰이 없을 때 `return $next($request)`로 즉시 통과. `ApiKeyAuth`보다 먼저 실행되므로, 무토큰 요청에 rate limit이 적용되지 않음. IP 기반 fallback 필요.
+- **API 키 평문 저장** — `ApiKey::generateKey()`가 해시 없이 평문 키를 생성하고 `api_keys.key` 컬럼에 저장. `findByKey()`도 평문 비교. DB 유출 시 모든 키가 즉시 사용 가능. SHA-256 해시 저장 + prefix 표시 패턴으로 전환 필요.
+- **`run-all-checks.sh` exit_code 버그** — `output=$("$@" 2>&1) || true; exit_code=$?`에서 `|| true` 이후 `$?`가 항상 0. 모든 체크 실패가 masked되어 항상 "All checks passed" 출력. 수정: `exit_code=0; output=$("$@" 2>&1) || exit_code=$?` 패턴 사용.
+- **`RecommendationService` 키워드 필터 동작 변경** — `recommendPaginated()`에서 `$searchLang=null`일 때(기본값) 한국어 접두사 매칭(`keyword%`)에서 다국어 부분 매칭(`%keyword%`)으로 변경됨. 성능: `%keyword%`는 인덱스를 사용 불가하여 대규모 데이터에서 풀 테이블 스캔 발생 가능.
 
 ## 하위 디렉토리
 
