@@ -1,48 +1,53 @@
-# 이력서 (Resume)
-
 ## [인적 사항]
-- **이름:** 장춘림 ZHANG CHUNLIN
-- **직무:** 풀스택 소프트웨어 엔지니어
-- **경력:** 중국 1년 + 한국 3년
-- **생년월일:** 1994년 3월 7일
-- **국적/민족:** 중국/조선족
-- **비자:** F-4-14 (비단순노동 취업비자)
-- **가능한 언어:** 한국어, 중국어, 영어
-- **연락처:** 010-7647-6376
-- **이메일:** zangcunlim@gmail.com
-- **현 거주지:** 인천 미추홀구 주안동
-
----
+| | |
+| --- | --- |
+| **이름** | 장춘림 ZHANG CHUNLIN |
+| **직무** | 풀스택 소프트웨어 엔지니어 |
+| **경력** | 중국 1년 + 한국 3년 |
+| **생년월일** | 1994년 3월 7일 |
+| **국적/민족** | 중국/조선족 |
+| **비자** | F-4-14 (비단순노동 취업비자) |
+| **가능한 언어** | 한국어, 중국어, 영어 |
+| **연락처** | 010-7647-6376 |
+| **이메일** | zangcunlim@gmail.com |
+| **현 거주지** | 인천 미추홀구 주안동 |
+| | |
 
 ## [소개]
 그누보드5 기반 레거시 환경에서 3년간 실무 경험. 개인 프로젝트에서 인프라 현대화, AI 개발, CI/CD 구축 등 업무 자동화를 진행했습니다.
 
 ---
 
-## [기술 스택 (Technical Skills)]
+## [기술 스택]
 
-### 인프라
-- **운영:**Linux(cloud server) + Docker + Github Actions CI/CD
-- **개발:** Linux(WSL2+cloudflare) + Docker + Sonarqube
+### 인프라 층
+| | |
+| --- | --- |
+| **운영** | Linux(cloud server) + Docker + Github Actions CI/CD |
+| **개발(신규)** | Linux(WSL2 + CloudFlare Tunnel) + Docker + Sonarqube, hermes, claude/codex, ollama |
+| **개발(레거시)** | mutagen + git(local) / VSCode Remote SSH |
+| | |
 
-### 업무
-- vanilla PHP + Mysql + JQuery/Vue.js(cdn)
-- php Laravel + Mysql/PostreSQL + Next.js/Vue.js(npm)
+### 프로젝트 층
+| | |
+| --- | --- |
+| **신규** | php Laravel + Mysql/PostreSQL + Next.js/Vue.js(npm) |
+| **레거시** | vanilla PHP + Mysql + JQuery/Vue.js(cdn) |
+| | |
 
 ### 라이브러리
-- **ai 이미지 처리:** rembg
-- **크롤링:** Puppeteer, Chrome Extension
-- **임베딩 검색:** pgvector
-
-### 오픈소스 2차개발
-- Gnuboard5
-
-### 개발 환경
-- hermes, claude/codex, ollama, VSCode Remote SSH
+| | |
+| --- | --- |
+| **크롤링** | Puppeteer(Node.js + Express), Chrome Extension |
+| **임베딩 검색** | pgvector(ollama bge-m3 벡터 결과값) |
+| **외부 api** | ohoo 이미지 편집, 1688 api sdk |
+| **ai 이미지 처리** | rembg(Docker + Python + AI) |
+| **pdf 병합** | PyPDF2(python) |
+| | |
 
 ---
 
-## [주요 경력 및 프로젝트 경험 (Experience & Projects)]
+## [주요 경력 및 프로젝트 경험]
 
 ### 1. 레거시 서비스 현대화 및 인프라 표준화 (실무 경험)
 - **기간:** 3년 실무 경력 내 진행
@@ -86,3 +91,4 @@
 - **연변대학교 (Yanbian University)** — 211 중점 대학
   - 건축학 학사
   - 2012.08 ~ 2016.06 졸업
+  - 모든 교육은 대학교까지의 중국에서 마침
