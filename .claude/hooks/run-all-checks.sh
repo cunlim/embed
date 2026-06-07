@@ -35,8 +35,8 @@ run_check() {
     printf "  ⏳ %-30s" "$label"
   fi
 
-  local output exit_code
-  output=$("$@" 2>&1) || true; exit_code=$?
+  local output exit_code=0
+  output=$("$@" 2>&1) || exit_code=$?
   printf '%s\nEXIT=%s\n' "$output" "$exit_code" > "$RESULT_DIR/$outfile"
 
   if [ "$TERMINAL_MODE" = true ]; then
