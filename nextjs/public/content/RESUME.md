@@ -1,43 +1,44 @@
 # 이력서 (Resume)
 
 ## [인적 사항]
-- **이름:** 장춘림
+- **이름:** 장춘림 ZHANG CHUNLIN
 - **직무:** 풀스택 소프트웨어 엔지니어
-- **경력:** 실무 3년 차
+- **경력:** 중국 1년 + 한국 3년 차
 - **생년월일:** 1994년 3월 7일
 - **국적/민족:** 중국/조선족
 - **비자:** F-4-14 (비단순노동 취업비자)
 - **이메일:** zangcunlim@gmail.com
 - **연락처:** 010-7647-6376
 - **거주지:** 인천 미추홀구 주안동
-- **보유 외국어:** 한국어, 중국어, 영어
+- **가능한 언어:** 한국어, 중국어, 영어
 
 ---
 
 ## [소개]
-그누보드5 기반 레거시 환경에서 3년간 실무 경험. 대규모 마이그레이션, 인프라 현대화, CI/CD 구축, 업무 자동화를 진행했습니다.
+그누보드5 기반 레거시 환경에서 3년간 실무 경험. 개인 프로젝트에서 인프라 현대화, AI 개발, CI/CD 구축 등 업무 자동화를 진행했습니다.
 
 ---
 
 ## [기술 스택 (Technical Skills)]
 
-### Backend & Core
-- **PHP:** Laravel, GNUBOARD5, PHP-FPM
-- **Node.js:** Puppeteer
-- **Python:** DeepFace
+### 인프라
+- **운영:**Linux(cloud server) + Docker + Github Actions CI/CD
+- **개발:** Linux(WSL2+cloudflare) + Docker + Sonarqube
 
-### Frontend
-- **Frameworks/Libraries:** Next.js, React, Vue.js, jQuery
-- **Web Basics:** HTML5, CSS3, JavaScript (ES6+)
+### 업무
+- vanilla PHP + Mysql + JQuery/Vue.js(cdn)
+- php Laravel + Mysql/PostreSQL + Next.js/Vue.js(npm)
 
-### Database & Infrastructure
-- **Database:** MySQL
-- **DevOps/Environment:** Docker, Nginx, WSL2
-- **CI/CD:** GitHub Actions
-- **Version Control:** Git, GitHub
+### 라이브러리
+- **ai 이미지 처리:** rembg
+- **크롤링:** Puppeteer, Chrome Extension
+- **임베딩 검색:** pgvector
 
-### AI Tools & Workflows
-- **Local AI & Ecosystem:** Ollama, MCP (Claude Code, Gemini CLI, OpenCode 등)
+### 오픈소스 2차개발
+- Gnuboard5
+
+### 개발 환경
+- hermes, claude/codex, ollama, VSCode Remote SSH
 
 ---
 
@@ -62,7 +63,7 @@
 ### 4. 데이터 크롤링 및 이미지 자동 분류 시스템 개발
 - **기간:** 2024.03 ~ 2025.08 (지속 고도화)
 - **역할 및 주요 내용:** 데이터 수집 및 이미지 관리 자동화
-- **사용 기술:** Node.js, Puppeteer, Python, DeepFace
+- **사용 기술:** Node.js, Puppeteer, Python
 - **주요 성과:**
   - **크롤링 자동화:** Puppeteer 기반 웹 데이터 수집 → 사내 DB 동기화.
   - 증분 파이프라인: 소스 폴더 갱신 시 기존 분류 구조 유지하면서 신규 이미지 자동 투입.
@@ -93,9 +94,3 @@
 - **연변대학교 (Yanbian University)** — 211 중점 대학
   - 건축학 학사
   - 2012.08 ~ 2016.06 졸업
-
----
-
-## [자기계발 및 업무 생산성 혁신]
-- Ollama + MCP 서버(Git, GitHub, Filesystem, Playwright, Web Search 등)로 로컬 AI 개발 환경 구성.
-- 건축학 전공의 구조 설계 능력을 소프트웨어 아키텍처에 적용.
