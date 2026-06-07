@@ -30,14 +30,17 @@ class MyPageController extends Controller
 
     /**
      * 새로운 API 키를 생성한다.
+     * 평문 키는 응답에 1회 포함되며, 이후 조회 시 prefix만 표시된다.
      */
     public function storeApiKey(ApiKeyStoreRequest $request): JsonResponse
     {
         $user = $request->user('sanctum');
-        $key = $this->apiKeyService->create($user->id, $request->validated('name'));
-        $key->makeVisible('key');
+        $apiKey = $this->apiKeyService->create($user->id, $request->validated('name'));
 
-        return response()->json(['data' => $key], 201);
+        return response()->json([
+            'data' => $apiKey,
+            'plain_key' => $apiKey->plain_key,
+        ], 201);
     }
 
     /**

@@ -206,7 +206,7 @@ test('비로그인 사용자 — 유사도 검색 시 quota 체크 없이 200을
     $response->assertOk();
 });
 
-test('관리자 — quota가 0이어도 유사도 검색 시 quota 체크를 우회한다', function () {
+test('관리자 — quota가 0이면 유사도 검색 시 429를 반환한다', function () {
     $admin = User::factory()->create([
         'role' => 'admin',
         'api_quota_remaining' => 0,
@@ -214,14 +214,13 @@ test('관리자 — quota가 0이어도 유사도 검색 시 quota 체크를 우
     ]);
     Sanctum::actingAs($admin);
 
-    setupRecommendMocks();
-
     $response = $this->postJson('/api/recommend', [
         'text' => '검색어',
         'target_language' => 'ko',
     ]);
 
-    $response->assertOk();
+    $response->assertStatus(429)
+        ->assertJsonPath('code', 'quota_exceeded');
 });
 
 test('로그인 사용자 — text가 없으면 quota 차감 없이 200을 반환한다', function () {

@@ -150,6 +150,7 @@ class RecommendController extends Controller
         if ($user) {
             DB::table('users')
                 ->where('id', $user->id)
+                ->where('api_quota_remaining', '>', 0)
                 ->decrement('api_quota_remaining', 1);
 
             $this->apiUsage->log(

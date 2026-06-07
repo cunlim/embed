@@ -140,9 +140,10 @@ class ApiController extends Controller
             $processingTimeMs
         );
 
-        // 쿼터 차감
+        // 쿼터 차감 (원자적 — 동시 요청으로 quota 음수 방지)
         DB::table('users')
             ->where('id', $userId)
+            ->where('api_quota_remaining', '>', 0)
             ->decrement('api_quota_remaining', 1);
 
         // 마지막 사용 시간 갱신

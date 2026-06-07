@@ -11,15 +11,25 @@ class ApiKeyService
 {
     /**
      * 새로운 API 키를 생성한다.
+     * 평문 키는 일회성 표시용으로만 사용되며, DB에는 해시로 저장된다.
      */
     public function create(int $userId, string $name): ApiKey
     {
-        return ApiKey::create([
+        $plainKey = ApiKey::generateKey();
+
+        $apiKey = ApiKey::create([
             'user_id' => $userId,
             'name' => $name,
-            'key' => ApiKey::generateKey(),
+            'key' => $plainKey,              // 호환성 — 추후 컬럼 삭제 예정
+            'key_hash' => ApiKey::hashKey($plainKey),
+            'key_prefix' => substr($plainKey, 0, 10),
             'status' => 'active',
         ]);
+
+        // 평문 키를 임시 속성으로 포함 (1회 표시용)
+        $apiKey->plain_key = $plainKey;
+
+        return $apiKey;
     }
 
     /**
@@ -33,11 +43,11 @@ class ApiKeyService
     }
 
     /**
-     * 키 문자열로 API 키를 조회한다.
+     * 키 문자열로 API 키를 조회한다. (해시 비교)
      */
     public function findByKey(string $key): ?ApiKey
     {
-        return ApiKey::where('key', $key)->first();
+        return ApiKey::where('key_hash', ApiKey::hashKey($key))->first();
     }
 
     /**

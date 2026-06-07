@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-#[Fillable(['user_id', 'name', 'key', 'status'])]
+#[Fillable(['user_id', 'name', 'key', 'key_hash', 'key_prefix', 'status'])]
 #[Hidden(['key'])]
 class ApiKey extends Model
 {
@@ -44,7 +44,7 @@ class ApiKey extends Model
     protected function keyPreview(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->key ? substr($this->key, 0, 10).'...' : null,
+            get: fn () => $this->key_prefix ? $this->key_prefix.'...' : null,
         );
     }
 
@@ -61,5 +61,10 @@ class ApiKey extends Model
     public static function generateKey(): string
     {
         return 'cl_'.Str::random(40);
+    }
+
+    public static function hashKey(string $key): string
+    {
+        return hash('sha256', $key);
     }
 }

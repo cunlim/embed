@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -56,11 +57,10 @@ class User extends Authenticatable
 
     public function decrementQuota(): bool
     {
-        if ($this->api_quota_remaining <= 0) {
-            return false;
-        }
-        $this->decrement('api_quota_remaining');
-
-        return true;
+        // 원자적 감소 — WHERE guard로 동시 요청 시 음수 방지
+        return DB::table('users')
+            ->where('id', $this->id)
+            ->where('api_quota_remaining', '>', 0)
+            ->decrement('api_quota_remaining') > 0;
     }
 }
