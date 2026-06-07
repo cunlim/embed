@@ -62,7 +62,7 @@
 ### 2. Docsoft(한국 스타트업) - 풀스택 개발자
 - **기간:** 2022.09 ~ 2025.08 (2년 10개월)
 - **역할:** 풀스택 개발자 (직원 3~5명 스타트업)
-- **사용 기술 및 인프라:** docker, nginx, git, certbot, PHP(composer, xdebug), python, express(node.js), MySQL, jQuery, vue(cdn), chrome extension
+- **사용 기술 및 인프라:** docker, nginx, git, certbot, PHP(composer, xdebug), python, express(node.js), MySQL, jQuery, vue(cdn), chrome extension, C# terminal app
 - **협업 도구:** FTP, Git, google spreadsheet
 - **주요 업무:**
   - 배대지, 드랍쉽핑, 쇼핑몰 개발
