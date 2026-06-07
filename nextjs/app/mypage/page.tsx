@@ -2,10 +2,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   getUser,
-  getApiKeysServer,
-  getUsageStatsServer,
-  getUsageHistoryServer,
-  getUsageChartServer,
+  getApiKeys,
+  getUsageStats,
+  getUsageHistory,
+  getUsageChart,
 } from "@/lib/api";
 import { MyPageContent } from "./page-content";
 
@@ -25,10 +25,10 @@ export default async function MyPage() {
   }
 
   const [apiKeysRes, statsRes, historyRes, chartRes] = await Promise.all([
-    getApiKeysServer(token).catch(() => ({ data: [] })),
-    getUsageStatsServer(token).catch(() => ({ data: null })),
-    getUsageHistoryServer(token).catch(() => ({ data: [] })),
-    getUsageChartServer(token).catch(() => ({ data: [] })),
+    getApiKeys(token, true).catch(() => ({ data: [] })),
+    getUsageStats(token, true).catch(() => ({ data: null })),
+    getUsageHistory(token, undefined, true).catch(() => ({ data: [] })),
+    getUsageChart(token, undefined, true).catch(() => ({ data: [] })),
   ]);
 
   return (

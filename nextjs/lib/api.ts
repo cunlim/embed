@@ -616,11 +616,11 @@ export interface ChartDataPoint {
   total: number;
 }
 
-export function getApiKeys(token: string): Promise<{ data: ApiKeyItem[] }> {
-  return request("/mypage/api-keys", { token });
+export function getApiKeys(token: string, server?: boolean): Promise<{ data: ApiKeyItem[] }> {
+  return request("/mypage/api-keys", { token, ...(server ? { cache: "no-store" } : {}) });
 }
 
-export function createApiKey(token: string, name: string): Promise<{ data: ApiKeyItem }> {
+export function createApiKey(token: string, name: string): Promise<{ data: ApiKeyItem; plain_key: string }> {
   return request("/mypage/api-keys", { method: "POST", body: { name }, token });
 }
 
@@ -636,50 +636,26 @@ export function deleteApiKey(token: string, id: number): Promise<void> {
   return request(`/mypage/api-keys/${id}`, { method: "DELETE", token });
 }
 
-export function getUsageStats(token: string): Promise<{ data: UsageStats }> {
-  return request("/mypage/usage", { token });
+export function getUsageStats(token: string, server?: boolean): Promise<{ data: UsageStats }> {
+  return request("/mypage/usage", { token, ...(server ? { cache: "no-store" } : {}) });
 }
 
 export function getUsageHistory(
   token: string,
   limit?: number,
+  server?: boolean,
 ): Promise<{ data: UsageHistoryItem[] }> {
   const query = limit ? `?limit=${limit}` : "";
-  return request(`/mypage/usage/history${query}`, { token });
+  return request(`/mypage/usage/history${query}`, { token, ...(server ? { cache: "no-store" } : {}) });
 }
 
 export function getUsageChart(
   token: string,
   days?: number,
+  server?: boolean,
 ): Promise<{ data: ChartDataPoint[] }> {
   const query = days ? `?days=${days}` : "";
-  return request(`/mypage/usage/chart${query}`, { token });
-}
-
-// --- 마이페이지 서버 전용 (SSR, cache: no-store) ---
-
-export function getApiKeysServer(token: string): Promise<{ data: ApiKeyItem[] }> {
-  return request("/mypage/api-keys", { token, cache: "no-store" });
-}
-
-export function getUsageStatsServer(token: string): Promise<{ data: UsageStats }> {
-  return request("/mypage/usage", { token, cache: "no-store" });
-}
-
-export function getUsageHistoryServer(
-  token: string,
-  limit?: number,
-): Promise<{ data: UsageHistoryItem[] }> {
-  const query = limit ? `?limit=${limit}` : "";
-  return request(`/mypage/usage/history${query}`, { token, cache: "no-store" });
-}
-
-export function getUsageChartServer(
-  token: string,
-  days?: number,
-): Promise<{ data: ChartDataPoint[] }> {
-  const query = days ? `?days=${days}` : "";
-  return request(`/mypage/usage/chart${query}`, { token, cache: "no-store" });
+  return request(`/mypage/usage/chart${query}`, { token, ...(server ? { cache: "no-store" } : {}) });
 }
 
 // === 관리자 회원 관리 API ===

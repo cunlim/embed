@@ -14,7 +14,7 @@ interface UseApiKeysReturn {
   isLoading: boolean;
   error: string | null;
   loadApiKeys: () => Promise<void>;
-  addApiKey: (name: string) => Promise<ApiKeyItem>;
+  addApiKey: (name: string) => Promise<{ key: ApiKeyItem; plainKey: string }>;
   toggleStatus: (id: number, currentStatus: string) => Promise<void>;
   removeApiKey: (id: number) => Promise<void>;
   renameApiKey: (id: number, name: string) => Promise<void>;
@@ -46,7 +46,7 @@ export function useApiKeys(token?: string | null, initialData?: ApiKeyItem[]): U
       if (!token) throw new Error("인증이 필요합니다.");
       const response = await createApiKey(token, name);
       setApiKeys((prev) => [response.data, ...prev]);
-      return response.data;
+      return { key: response.data, plainKey: response.plain_key };
     },
     [token],
   );
