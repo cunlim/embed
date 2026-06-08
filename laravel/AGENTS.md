@@ -53,6 +53,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **OA 변경 후 `l5-swagger:generate`로 검증**
 - **배포 후 stale 방지**: `php artisan l5-swagger:generate` 재실행
 - **미문서 컨트롤러** (OA 어노테이션 누락): `FolderController`(6), `MyPageController`(7), `AdminSettingsController`(5). 파라미터는 docs 페이지 `API_V1` 문서나 `nextjs/public/content/API_V1.md` 참조.
+- **PHP 속성에서 `env()` 호출 불가** — `#[OA\Server(url: env('APP_URL'))]` 등은 fatal error (`Constant expression contains invalid operations`). PHP 8 속성 인수는 컴파일 타임 상수만 허용. 프로덕션 URL은 `@OA\Server`를 제거하고 `l5-swagger.php`의 `L5_SWAGGER_CONST_HOST` config로 제어. `termsOfService`·`contact.url`은 정적 문자열(예: GitHub repo URL) 사용.
 
 ### 테스트 환경 (PostgreSQL + pgvector)
 

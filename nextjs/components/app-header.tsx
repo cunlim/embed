@@ -68,7 +68,7 @@ export function AppHeader({ serverUser }: { serverUser?: User | null }) {
             asChild
           >
             <a
-              href="https://github.com/cunlim"
+              href="https://github.com/cunlim/embed"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub 저장소"

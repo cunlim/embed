@@ -163,7 +163,7 @@ export default function Home() {
           </p>
           <div className="flex items-center gap-4">
             <a
-              href="https://github.com/cunlim"
+              href="https://github.com/cunlim/embed"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-muted-foreground transition-colors hover:text-foreground"

@@ -14,6 +14,8 @@ jobs:
     runs-on: self-hosted
     env:
       LIVE_ROOT: ${{ vars.LIVE_ROOT }}
+      DB_CONTAINER: ${{ vars.DB_CONTAINER || 'pgvector_03' }}
+      DB_USER: ${{ vars.DB_USER || 'dbeaver_lim' }}
     steps:
       # 배포 세마포어 — Stop 훅이 동시 실행되어도 체크를 건너뛰도록 함
       - name: Set Deploy Flag
@@ -63,8 +65,8 @@ jobs:
       # 3. 테스트 DB 준비 및 Laravel 테스트 실행
       - name: Prepare Test Database
         run: |
-          docker exec pgvector_03 psql -U dbeaver_lim -d postgres -c "CREATE DATABASE cl_embed_test;" 2>/dev/null || true
-          docker exec pgvector_03 psql -U dbeaver_lim -d cl_embed_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          docker exec $DB_CONTAINER psql -U $DB_USER -d postgres -c "CREATE DATABASE cl_embed_test;" 2>/dev/null || true
+          docker exec $DB_CONTAINER psql -U $DB_USER -d cl_embed_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
       - name: Run Laravel Tests
         run: docker exec cl_embed_laravel php artisan test --compact
 
@@ -72,7 +74,7 @@ jobs:
       - name: Run Database Migrations
         run: |
           # 현재 마지막 batch 번호를 기록 (없으면 0)
-          LAST_BATCH=$(docker exec pgvector_03 psql -U dbeaver_lim -d cl_embed -t -A -c "SELECT COALESCE(MAX(batch), 0) FROM migrations;" 2>/dev/null || echo 0)
+          LAST_BATCH=$(docker exec $DB_CONTAINER psql -U $DB_USER -d cl_embed -t -A -c "SELECT COALESCE(MAX(batch), 0) FROM migrations;" 2>/dev/null || echo 0)
           echo "Current last batch: $LAST_BATCH"
           docker exec cl_embed_laravel php artisan migrate --force || {
             echo "Migration failed. Rolling back batch $((LAST_BATCH + 1))..."

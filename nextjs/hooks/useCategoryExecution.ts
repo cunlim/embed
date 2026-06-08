@@ -77,7 +77,7 @@ export function useCategoryExecution(
 
       try {
         const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api";
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
         const res = await fetch(
           `${apiUrl}/categories/${catId}/run-step`,
           {
@@ -195,7 +195,7 @@ export function useCategoryExecution(
         const stepName = steps[i];
         try {
           const apiUrl =
-            process.env.NEXT_PUBLIC_API_URL || "https://embed.cunlim.dev/api";
+            process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
           const res = await fetch(
             `${apiUrl}/categories/${catId}/run-step`,
             {

@@ -5,7 +5,7 @@ const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 // 환경 변수 설정
-process.env.NEXT_PUBLIC_API_URL = "https://embed.cunlim.dev/api";
+process.env.NEXT_PUBLIC_API_URL = "http://localhost:8000/api";
 
 // 동적 import로 모킹된 fetch 사용
 const api = await import("@/lib/api");
@@ -30,7 +30,7 @@ describe("API 클라이언트", () => {
       await api.recommend("테스트", "ko");
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://embed.cunlim.dev/api/recommend",
+        "http://localhost:8000/api/recommend",
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ text: "테스트", target_language: "ko" }),
@@ -86,7 +86,7 @@ describe("API 클라이언트", () => {
       await api.getCategories();
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://embed.cunlim.dev/api/categories?per_page=20",
+        "http://localhost:8000/api/categories?per_page=20",
         expect.objectContaining({ method: "GET" })
       );
     });
@@ -100,7 +100,7 @@ describe("API 클라이언트", () => {
 
       expect(result).toEqual({ step: "translation.zh", status: "completed" });
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://embed.cunlim.dev/api/categories/1/run-step",
+        "http://localhost:8000/api/categories/1/run-step",
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ step: "translation.zh" }),
@@ -154,7 +154,7 @@ describe("API 클라이언트", () => {
       expect(result.user.name).toBe("New");
       expect(result.token).toBe("new-token");
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://embed.cunlim.dev/api/auth/register",
+        "http://localhost:8000/api/auth/register",
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({
@@ -187,7 +187,7 @@ describe("API 클라이언트", () => {
       await api.logout("test-token");
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://embed.cunlim.dev/api/auth/logout",
+        "http://localhost:8000/api/auth/logout",
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
@@ -207,7 +207,7 @@ describe("API 클라이언트", () => {
 
       expect(result).toEqual(user);
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://embed.cunlim.dev/api/auth/user",
+        "http://localhost:8000/api/auth/user",
         expect.objectContaining({
           method: "GET",
           headers: expect.objectContaining({
@@ -225,7 +225,7 @@ describe("API 클라이언트", () => {
       await api.deleteCategory(1, "test-token");
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://embed.cunlim.dev/api/categories/1",
+        "http://localhost:8000/api/categories/1",
         expect.objectContaining({
           method: "DELETE",
           headers: expect.objectContaining({
@@ -305,7 +305,7 @@ describe("API 클라이언트", () => {
 
       expect(result).toEqual(testResp);
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://embed.cunlim.dev/api/categories/1/update-text",
+        "http://localhost:8000/api/categories/1/update-text",
         expect.objectContaining({
           method: "PUT",
           body: JSON.stringify({ field: "category_name_en", value: "New Name" }),

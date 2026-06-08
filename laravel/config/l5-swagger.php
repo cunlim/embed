@@ -14,10 +14,10 @@ return [
                     .'적합한 카테고리를 한국어/중국어/영어로 추천합니다. '
                     .'pgvector 코사인 유사도 검색, Ollama 로컬 모델 번역/임베딩, '
                     .'Laravel Queue 기반 비동기 파이프라인을 갖추고 있습니다.',
-                'termsOfService' => 'https://embed.cunlim.dev',
+                'termsOfService' => env('APP_URL', 'http://localhost'),
                 'contact' => [
                     'name' => 'CL Embed',
-                    'url' => 'https://embed.cunlim.dev',
+                    'url' => env('APP_URL', 'http://localhost'),
                 ],
             ],
 
@@ -263,7 +263,7 @@ return [
          * Constants which can be used in annotations
          */
         'constants' => [
-            'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'https://embed.cunlim.dev'),
+            'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', env('APP_URL', 'http://localhost')),
         ],
     ],
 ];
