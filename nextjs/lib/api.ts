@@ -1,4 +1,8 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+// 서버(SSR)에서는 Docker 내부 네트워크로 직접 호출, 클라이언트에서는 외부 URL 사용
+const API_URL =
+  typeof window === "undefined"
+    ? process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 export class ApiError extends Error {
   status: number;
