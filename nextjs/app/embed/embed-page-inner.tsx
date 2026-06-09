@@ -223,12 +223,14 @@ export function EmbedPageInner({
 
   // URL에 초기 필터 파라미터가 있으면 첫 loadCategories를 건너뛴다 (CategoryHierarchy mount effect가 대신 처리)
   const skipInitialLoad = useRef(initialHierarchy.length > 0 || !!initialFilterKeyword);
-  // SSR 데이터가 있고 토큰도 있었으면 CSR 재요청 건너뜀 (마이그레이션 대응)
-  const hadServerCategories = useRef(serverCategories.length > 0 && serverHadToken);
+  // SSR 데이터가 있으면 CSR 재요청 건너뜀 (비로그인 사용자도 SSR에서 공개 카테고리 prefetch)
+  const hadServerCategories = useRef(serverCategories.length > 0);
   // resetToDefault() 직후 data-loading effect가 중복 호출되지 않도록 건너뜀
   const skipLoadEffectRef = useRef(false);
   // SSR에서 결정된 기본 필터 (내 카테고리 보유 시 "my", 미보유 시 null)
   const defaultFilterRef = useRef<"all" | "my" | null>(serverFilter === "my" ? "my" : serverFilter === "all" ? "all" : null);
+  // SSR 데이터 skip 후 의존성 변화 추적 — useAuth 등 비사용자 리렌더에서 중복 호출 방지
+  const prevDepsForSkipRef = useRef({ page, perPage, effectiveFilter });
 
   const isSearchMode = searchResults !== null && !keywordSearchActive;
   const displayCategories = isSearchMode ? searchResults : categories;
@@ -374,9 +376,18 @@ export function EmbedPageInner({
       return;
     }
     // SSR 데이터가 이미 있으면 reload 건너뜀
+    // 단, 의존성(page, perPage, effectiveFilter)이 실제로 변경된 경우에만 skip 해제
+    // → useAuth getUser() 등 비사용자 리렌더에서 중복 호출 방지
     if (hadServerCategories.current) {
+      const depsChanged =
+        prevDepsForSkipRef.current.page !== page ||
+        prevDepsForSkipRef.current.perPage !== perPage ||
+        prevDepsForSkipRef.current.effectiveFilter !== effectiveFilter;
+      prevDepsForSkipRef.current = { page, perPage, effectiveFilter };
+      if (!depsChanged) {
+        return;
+      }
       hadServerCategories.current = false;
-      return;
     }
     if (searchResultsRef.current !== null) {
       handleSearchRef.current(page);

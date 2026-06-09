@@ -79,6 +79,7 @@
 - **`기본폴더` 정의** — `"기본폴더"`는 폴더가 설정되지 않았음을 의미. DB에서 `folder = NULL`로 저장. 프론트엔드 `api.ts`에서 `"기본폴더"` 전송 시 folder 파라미터 미전송으로 변환. 백엔드에서도 `store()`·`moveFolder()`에서 `"기본폴더"` → `null` 변환 (defense in depth). 조회 시 `folder=기본폴더` → `WHERE folder IS NULL`로 처리. 카테고리 생성 시 `"기본폴더"`를 리터럴 문자열로 저장하면 안 됨.
 - **커스텀 이벤트 다중 리스너 레이스 컨디션** — 동일 `CustomEvent`에 여러 컴포넌트가 리스너를 등록하면 모든 핸들러가 동기 실행. 자식 컴포넌트의 이벤트 핸들러는 부모 콜백을 호출하지 말고 로컬 상태만 초기화. 부모가 유일한 데이터 재로드 주체여야 함.
 - **`useCategories` mutation reload 컨텍스트 완전성** — `addCategory()`·`deleteCategory()` 내부 reload는 `currentPage`·`currentPerPage`·`currentFilter`·`currentSearch`·`currentFolder` 모든 ref를 전달해야 함. 새 컨텍스트 파라미터 추가 시 ref 선언과 reload 호출 인자 양쪽 모두 업데이트.
+- **SSR prefetch 데이터 skip + 비사용자 리렌더 중복 호출** — `EmbedPageInner`의 data-loading effect에서 `hadServerCategories` ref가 첫 실행에서 `false`로 소비된 후, `useAuth getUser()` 등 비사용자 상태 업데이트로 인한 리렌더에서 effect가 재실행되어 불필요한 `/api/categories` 호출 발생. 수정: (1) `hadServerCategories = useRef(serverCategories.length > 0)`로 토큰 조건 제거, (2) 의존성 변화 추적 ref(`prevDepsForSkipRef`)로 SSR skip 후 동일 의존성 반복 실행 방지.
 - **async batch flushSync 패턴** — React 19 batching 우회를 위해 `flushSync`로 루프 내 `setProgress`를 감쌈. 상세: `nextjs/AGENTS.md`.
 - **`no_preview` 파라미터 패턴** — 동일 API 엔드포인트를 여러 소비자가 사용할 때 무거운 필드(임베딩 벡터 등)를 쿼리 파라미터로 제어.
 - **batch `onComplete`·`onCategoryComplete` 콜백 패턴** — `onComplete`는 `filterRef.current`로 현재 필터를 읽고 `loadCategories(1, ...)` + `updateURL({ page: 1 })`로 URL 동기화. `onCategoryComplete`는 루프 중 `loadCategories` 호출 금지.
