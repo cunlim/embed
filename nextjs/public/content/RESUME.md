@@ -3,7 +3,7 @@
 | --- | --- |
 | **이름** | 장춘림 ZHANG CHUNLIN |
 | **직무** | 풀스택 소프트웨어 엔지니어 |
-| **경력** | 중국 1년 + 한국 3년 |
+| **경력** | 중국 1년 + 한국 2년 10개월 |
 | **생년월일** | 1994년 3월 7일 (만 32세) |
 | **국적/민족** | 중국/조선족 |
 | **비자** | F-4-14 (비단순노동 취업비자) |
@@ -26,7 +26,7 @@
 | --- | --- |
 | **운영** | Linux(cloud server) + Docker + GitHub Actions CI/CD |
 | **개발(신규)** | Linux(WSL2 + CloudFlare Tunnel), Docker, SonarQube, Promethus+Grafana, Hermes, Claude/Codex, anythingllm, Ollama |
-| **개발(레거시)** | Mutagen + Git(local) / VSCode Remote SSH |
+| **개발(레거시)** | Mutagen + Git(local) + VSCode Remote SSH |
 | | |
 
 ### 프로젝트 층
