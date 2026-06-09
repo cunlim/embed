@@ -7,7 +7,7 @@ interface UseAuthReturn {
   user: User | null;
   isLoading: boolean;
   logout: () => Promise<void>;
-  loginWithOAuth: (provider: "google" | "github" | "naver") => void;
+  loginWithOAuth: (provider: "google" | "github" | "naver", redirect?: string) => void;
 }
 
 function getToken(): string | null {
@@ -73,8 +73,12 @@ export function useAuth(initialUser?: User | null): UseAuthReturn {
   }, []);
 
   const loginWithOAuth = useCallback(
-    (provider: "google" | "github" | "naver") => {
-      window.location.href = `/api/auth/${provider}/redirect`;
+    (provider: "google" | "github" | "naver", redirect?: string) => {
+      let url = `/api/auth/${provider}/redirect`;
+      if (redirect) {
+        url += `?redirect=${encodeURIComponent(redirect)}`;
+      }
+      window.location.href = url;
     },
     []
   );

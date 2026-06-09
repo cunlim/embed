@@ -27,5 +27,5 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     }
   }
 
-  return <LoginFormClient />;
+  return <LoginFormClient redirect={redirectTo} />;
 }

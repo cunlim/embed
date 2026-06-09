@@ -9,7 +9,8 @@ export function middleware(request: NextRequest) {
 
     if (token) {
       const redirectTo = searchParams.get("redirect") || "/embed";
-      const response = NextResponse.redirect(new URL(redirectTo, request.url));
+      const url = new URL(redirectTo, request.url);
+      const response = NextResponse.redirect(url);
       response.cookies.set("auth_token", token, {
         path: "/",
         maxAge: 30 * 86400, // 30일

@@ -69,9 +69,10 @@ const oauthProviders = [
 
 interface SocialLoginProps {
   className?: string;
+  redirect?: string;
 }
 
-export function SocialLogin({ className }: SocialLoginProps) {
+export function SocialLogin({ className, redirect }: SocialLoginProps) {
   const { loginWithOAuth, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
@@ -96,7 +97,7 @@ export function SocialLogin({ className }: SocialLoginProps) {
             disabled={isLoading}
             onClick={() => {
               setError(null);
-              loginWithOAuth(provider);
+              loginWithOAuth(provider, redirect);
             }}
           >
             {isLoading ? (

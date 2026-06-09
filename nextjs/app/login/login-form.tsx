@@ -3,7 +3,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { SocialLogin } from "@/components/social-login";
 
-export function LoginFormClient() {
+interface LoginFormClientProps {
+  redirect?: string;
+}
+
+export function LoginFormClient({ redirect }: LoginFormClientProps) {
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
       <div className="noise-overlay" />
@@ -20,7 +24,7 @@ export function LoginFormClient() {
               </h1>
             </div>
 
-            <SocialLogin />
+            <SocialLogin redirect={redirect} />
           </CardContent>
         </Card>
       </main>

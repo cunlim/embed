@@ -134,5 +134,22 @@ describe("useAuth", () => {
 
       expect(window.location.href).toBe("/api/auth/google/redirect");
     });
+
+    it("redirect 파라미터를 포함하여 리다이렉트한다", async () => {
+      mockGetUser.mockResolvedValue(null);
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      act(() => {
+        result.current.loginWithOAuth("google", "/admin/member?mode=hierarchy");
+      });
+
+      expect(window.location.href).toBe(
+        `/api/auth/google/redirect?redirect=${encodeURIComponent("/admin/member?mode=hierarchy")}`
+      );
+    });
   });
 });

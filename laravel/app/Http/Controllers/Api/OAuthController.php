@@ -30,6 +30,13 @@ class OAuthController extends Controller
                 description: 'OAuth 완료 후 리다이렉트될 클라이언트 유형',
                 schema: new OA\Schema(type: 'string', enum: ['web', 'app'], default: 'web')
             ),
+            new OA\Parameter(
+                name: 'redirect',
+                in: 'query',
+                required: false,
+                description: '로그인 성공 후 리다이렉트될 경로',
+                schema: new OA\Schema(type: 'string')
+            ),
         ],
         responses: [
             new OA\Response(
@@ -41,6 +48,7 @@ class OAuthController extends Controller
     public function redirect(string $provider): RedirectResponse
     {
         session()->put('oauth_client', request()->query('client', 'web'));
+        session()->put('oauth_redirect', request()->query('redirect'));
 
         return Socialite::driver($provider)->redirect();
     }
@@ -122,6 +130,13 @@ class OAuthController extends Controller
             default => config('services.frontend.login_url'),
         };
 
-        return redirect($redirectUrl.'?token='.$token);
+        $url = $redirectUrl.'?token='.$token;
+
+        $oauthRedirect = session()->pull('oauth_redirect');
+        if ($oauthRedirect) {
+            $url .= '&redirect='.urlencode($oauthRedirect);
+        }
+
+        return redirect($url);
     }
 }
