@@ -4,6 +4,11 @@ import { fetchCategoryLevels, getCategories, recommend, getUser, fetchFolders, f
 import { parseEmbedParams, type EmbedParamsReader } from "@/lib/embed-params";
 import { EmbedPageInner } from "./embed-page-inner";
 import type { Category, PaginationMeta, Recommendation, User } from "@/lib/api";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "카테고리 관리",
+};
 
 function serverParamsReader(
   sp: Awaited<EmbedPageParams["searchParams"]>

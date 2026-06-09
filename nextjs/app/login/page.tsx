@@ -2,6 +2,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/api";
 import { LoginFormClient } from "./login-form";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "로그인",
+};
 
 type LoginPageProps = {
   searchParams: Promise<{ redirect?: string }>;

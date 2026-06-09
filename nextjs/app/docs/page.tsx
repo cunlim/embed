@@ -15,7 +15,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const slug = doc || docList[0]?.slug || "";
   const entry = docList.find((d) => d.slug === slug);
   return {
-    title: entry ? `${entry.title} - CL Embed` : "문서 - CL Embed",
+    title: entry?.title || "API 문서",
     description: entry?.description || "CL Embed 문서",
   };
 }

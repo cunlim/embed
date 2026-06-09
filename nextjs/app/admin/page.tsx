@@ -2,6 +2,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/api";
 import { AdminPageContent } from "./page-content";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "시스템 설정",
+};
 
 export default async function AdminPage() {
   const cookieStore = await cookies();

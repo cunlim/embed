@@ -8,6 +8,11 @@ import {
   getUsageChart,
 } from "@/lib/api";
 import { MyPageContent } from "./page-content";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "마이페이지",
+};
 
 export default async function MyPage() {
   const cookieStore = await cookies();
