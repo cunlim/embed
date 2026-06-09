@@ -16,7 +16,7 @@ import { UsageChart } from "@/components/mypage/usage-chart";
 import { UsageHistory } from "@/components/mypage/usage-history";
 
 interface MyPageContentProps {
-  serverUser: User;
+  serverUser: User | null;
   serverApiKeys: ApiKeyItem[];
   serverUsageStats: UsageStats | null;
   serverUsageHistory: UsageHistoryItem[];
@@ -36,7 +36,8 @@ export function MyPageContent({
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.replace("/login?redirect=/mypage");
+      const fullPath = window.location.pathname + window.location.search + window.location.hash;
+      router.replace(`/login?redirect=${encodeURIComponent(fullPath)}`);
     }
   }, [authLoading, user, router]);
 

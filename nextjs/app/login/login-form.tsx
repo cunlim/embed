@@ -1,13 +1,28 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { SocialLogin } from "@/components/social-login";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LoginFormClientProps {
   redirect?: string;
 }
 
 export function LoginFormClient({ redirect }: LoginFormClientProps) {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (user) {
+      router.replace(redirect || "/embed");
+    }
+  }, [user, isLoading, redirect, router]);
+
+  if (isLoading || user) return null;
+
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
       <div className="noise-overlay" />

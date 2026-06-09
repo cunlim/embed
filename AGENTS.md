@@ -86,6 +86,7 @@
 - **progress step 기반 표시** — `BatchProgress` interface에 `initialTotalSteps` 필드 추가. progress 오른쪽 `[N/M]`은 카테고리 수가 아닌 step 수 기준.
 - **SSR API URL 분리** — `NEXT_PUBLIC_API_URL`(외부/Cloudflare 경유)과 `INTERNAL_API_URL`(Docker 내부 직접 호출)을 구분. `lib/api.ts`에서 `typeof window === "undefined"`로 서버/클라이언트 판별. 서버 전용 env var는 `NEXT_PUBLIC_` 접두사 없이 설정. 새 API 함수 추가 시 `lib/api.ts`의 `request()` 사용 필수 — 인라인 fetch로 우회하면 서버에서 내부 URL 미적용.
 - **OAuth 로그인 redirect 파라미터 전달 체인** — 로그인 페이지의 `redirect` 쿼리 파라미터가 OAuth 플로우에서 유실되어 로그인 성공 후 항상 `/embed`로 이동하는 문제. 수정: (1) `loginWithOAuth(provider, redirect?)`에서 redirect를 OAuth URL에 포함, (2) 백엔드 `OAuthController::redirect()`에서 `session()->put('oauth_redirect')`로 저장, (3) `callback()`에서 `urlencode($oauthRedirect)`를 콜백 URL에 포함, (4) 미들웨어에서 `searchParams.get("redirect")`로 읽어 리다이렉트. 새 파라미터를 OAuth 플로우에 추가할 때 이 체인(프론트 → 백엔드 세션 → 콜백 URL → 미들웨어) 전체를 업데이트해야 함.
+- **인증 리다이렉트 URL 전체 보존 패턴** — Server Component에서 `redirect("/login?redirect=/path")`로 리다이렉트하면 쿼리 파라미터와 해시가 누락됨. 수정: (1) Server Component에서 인증 실패 시 리다이렉트하지 않고 `serverUser={null}`을 Client Component에 위임, (2) Client Component에서 `window.location.pathname + search + hash`로 전체 URL을 구성하여 `encodeURIComponent` 후 `/login?redirect=`에 포함. `LoginFormClient`에 클라이언트 측 인증 체크(`useAuth` + `router.replace`)를 추가하여 로그인 상태에서 로그인 페이지 접근 시 리다이렉트. 보호된 페이지의 `page-content.tsx`에서 인증 체크 시 이 패턴을 따라야 함.
 
 ### Sub-agent / Docker
 

@@ -12,15 +12,17 @@ export default async function AdminMemberPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value;
 
+  // 토큰이 없으면 클라이언트에서 전체 URL(쿼리+해시) 포함하여 리다이렉트
   if (!token) {
-    redirect("/login?redirect=/admin/member");
+    return <AdminMemberContent serverUser={null} />;
   }
 
   let user;
   try {
     user = await getUser(token);
   } catch {
-    redirect("/login?redirect=/admin/member");
+    // 토큰이 만료되면 클라이언트에서 리다이렉트
+    return <AdminMemberContent serverUser={null} />;
   }
 
   if (user.role !== "superadmin") {
