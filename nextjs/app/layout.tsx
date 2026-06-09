@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { DM_Sans, Space_Grotesk } from "next/font/google";
+import { Noto_Sans_SC, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppHeader } from "@/components/app-header";
@@ -8,8 +8,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { getUser } from "@/lib/api";
 import type { User } from "@/lib/api";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const notoSansSC = Noto_Sans_SC({
+  variable: "--font-noto-sans-sc",
   subsets: ["latin"],
   weight: ["400", "500", "700"],
 });
@@ -58,7 +58,7 @@ export default async function RootLayout({
     <html
       lang="ko"
       suppressHydrationWarning
-      className={`${dmSans.variable} ${spaceGrotesk.variable} antialiased`}
+      className={`${notoSansSC.variable} ${spaceGrotesk.variable} antialiased`}
     >
       <body className="min-h-dvh flex flex-col">
         <ThemeProvider

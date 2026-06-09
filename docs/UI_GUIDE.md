@@ -13,8 +13,8 @@
 
 | 항목 | 값 |
 |------|-----|
-| Heading 폰트 | Archivo |
-| Body/Mono 폰트 | Space Grotesk, fallback: Geist Mono |
+| Heading 폰트 | Noto Sans SC (한/영/중 다국어 지원) |
+| Body/Mono 폰트 | Noto Sans SC (본문), Space Grotesk (코드 표시) |
 | Body 행간 | `leading-relaxed` (1.625) |
 | Heading 행간 | `leading-tight` (1.25) |
 
