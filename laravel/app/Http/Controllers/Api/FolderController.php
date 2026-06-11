@@ -58,6 +58,7 @@ class FolderController extends Controller
 
         if (! $result['success']) {
             $status = str_contains($result['message'], '입력해주세요') ? 422 : 422;
+
             return response()->json(['message' => $result['message']], $status);
         }
 
@@ -80,6 +81,7 @@ class FolderController extends Controller
 
         if (! $result['success']) {
             $status = str_contains($result['message'], '찾을 수 없습니다') ? 404 : 422;
+
             return response()->json(['message' => $result['message']], $status);
         }
 
@@ -110,6 +112,7 @@ class FolderController extends Controller
                 $response['duplicate_count'] = count($result['duplicate_codes']);
                 $response['duplicate_codes'] = $result['duplicate_codes'];
             }
+
             return response()->json($response, $status);
         }
 

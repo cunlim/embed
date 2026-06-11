@@ -4,14 +4,16 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\CategoryEmbedding;
-use App\Services\EmbeddingGenerator;
-use App\Services\Translator;
+use Illuminate\Support\Collection;
 
 class CategoryProcessingService
 {
     private const STEP_ORDER = ['embedding.ko', 'translation.en', 'embedding.en', 'translation.zh', 'embedding.zh'];
+
     private const MAX_RETRIES = 2;
+
     private const RETRY_DELAY_US = 1_000_000; // 1초 (마이크로초)
+
     private const STEP_DELAY_US = 2_000_000;  // 2초 (마이크로초)
 
     /**
@@ -127,8 +129,6 @@ class CategoryProcessingService
 
     /**
      * 카테고리 텍스트를 업데이트하고 해당 언어의 임베딩을 삭제합니다.
-     *
-     * @return bool
      */
     public function updateText(Category $category, string $field, ?string $value): bool
     {
@@ -152,8 +152,6 @@ class CategoryProcessingService
 
     /**
      * 카테고리와 관련 임베딩을 삭제합니다.
-     *
-     * @return bool
      */
     public function deleteWithEmbeddings(Category $category): bool
     {
@@ -166,7 +164,7 @@ class CategoryProcessingService
     /**
      * 배치 실행: 여러 카테고리의 누락 step을 순차 실행합니다.
      *
-     * @param  \Illuminate\Support\Collection  $categories
+     * @param  Collection  $categories
      * @param  string[]  $checkedSteps
      * @return array{
      *   total_categories: int,

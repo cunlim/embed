@@ -18,6 +18,11 @@ use App\Services\CategoryQueryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
+use OpenSpout\Common\Entity\Cell\StringCell;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Reader\XLSX\Reader;
+use OpenSpout\Writer\XLSX\Writer;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CategoryController extends Controller
 {
@@ -191,7 +196,7 @@ class CategoryController extends Controller
             if (! is_array($ids)) {
                 return response()->json(['message' => 'ids는 배열이어야 합니다.'], 422);
             }
-            $categories = \App\Models\Category::query()->whereIn('id', array_map('intval', $ids))->orderBy('id', 'desc')->get();
+            $categories = Category::query()->whereIn('id', array_map('intval', $ids))->orderBy('id', 'desc')->get();
 
             // 권한 필터: ids 모드에서 본인 소유 또는 admin만 허용
             if ($user) {
@@ -242,7 +247,7 @@ class CategoryController extends Controller
         ]);
 
         $file = $request->file('file');
-        $reader = new \OpenSpout\Reader\XLSX\Reader();
+        $reader = new Reader;
         $reader->open($file->getPathname());
 
         $results = [];
@@ -276,10 +281,10 @@ class CategoryController extends Controller
                         : $user->id;
 
                     $category = Category::create([
-                        'category_code' => !empty($categoryCode) ? $categoryCode : Category::generateCode($targetUserId),
+                        'category_code' => ! empty($categoryCode) ? $categoryCode : Category::generateCode($targetUserId),
                         'category_name_ko' => $categoryNameKo,
-                        'category_name_en' => !empty($categoryNameEn) ? $categoryNameEn : null,
-                        'category_name_zh' => !empty($categoryNameZh) ? $categoryNameZh : null,
+                        'category_name_en' => ! empty($categoryNameEn) ? $categoryNameEn : null,
+                        'category_name_zh' => ! empty($categoryNameZh) ? $categoryNameZh : null,
                         'user_id' => $targetUserId,
                         'folder' => $request->input('folder') === '기본폴더' ? null : $request->input('folder'),
                     ]);
@@ -327,7 +332,7 @@ class CategoryController extends Controller
      *
      * Returns: .xlsx file with columns: category_code, category_ko, category_en, category_zh
      */
-    public function bulkDownload(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function bulkDownload(Request $request): StreamedResponse
     {
         /** @var User|null $user */
         $user = auth('sanctum')->user();
@@ -336,34 +341,34 @@ class CategoryController extends Controller
         $query = CategoryQueryService::buildListQuery($user, $request);
         $categories = $query->orderBy('id', 'asc')->get();
 
-        $writer = new \OpenSpout\Writer\XLSX\Writer();
-        $filename = 'categories_' . date('Ymd_His') . '.xlsx';
+        $writer = new Writer;
+        $filename = 'categories_'.date('Ymd_His').'.xlsx';
 
         return response()->stream(function () use ($writer, $categories) {
             $writer->openToFile('php://output');
 
             // Header row
-            $writer->addRow(new \OpenSpout\Common\Entity\Row([
-                new \OpenSpout\Common\Entity\Cell\StringCell('category_code'),
-                new \OpenSpout\Common\Entity\Cell\StringCell('category_ko'),
-                new \OpenSpout\Common\Entity\Cell\StringCell('category_en'),
-                new \OpenSpout\Common\Entity\Cell\StringCell('category_zh'),
+            $writer->addRow(new Row([
+                new StringCell('category_code'),
+                new StringCell('category_ko'),
+                new StringCell('category_en'),
+                new StringCell('category_zh'),
             ]));
 
             // Data rows
             foreach ($categories as $cat) {
-                $writer->addRow(new \OpenSpout\Common\Entity\Row([
-                    new \OpenSpout\Common\Entity\Cell\StringCell($cat->category_code ?? ''),
-                    new \OpenSpout\Common\Entity\Cell\StringCell($cat->category_name_ko ?? ''),
-                    new \OpenSpout\Common\Entity\Cell\StringCell($cat->category_name_en ?? ''),
-                    new \OpenSpout\Common\Entity\Cell\StringCell($cat->category_name_zh ?? ''),
+                $writer->addRow(new Row([
+                    new StringCell($cat->category_code ?? ''),
+                    new StringCell($cat->category_name_ko ?? ''),
+                    new StringCell($cat->category_name_en ?? ''),
+                    new StringCell($cat->category_name_zh ?? ''),
                 ]));
             }
 
             $writer->close();
         }, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 

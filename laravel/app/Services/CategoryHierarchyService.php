@@ -12,10 +12,9 @@ class CategoryHierarchyService
     /**
      * 계층 네비게이션 응답을 생성합니다.
      *
-     * @param  string     $lang   ko, en, zh 중 하나
-     * @param  string[]   $prefixParts  선택된 cat1/cat2/... 값들
-     * @param  ?User      $user
-     * @param  Request    $request  user_id와 folder 파라미터용
+     * @param  string  $lang  ko, en, zh 중 하나
+     * @param  string[]  $prefixParts  선택된 cat1/cat2/... 값들
+     * @param  Request  $request  user_id와 folder 파라미터용
      * @return array{
      *   options: array,
      *   maxDepth: int,
