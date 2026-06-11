@@ -12,14 +12,20 @@ use App\Http\Resources\CategoryTranslationsResource;
 use App\Models\Category;
 use App\Models\CategoryEmbedding;
 use App\Models\User;
-use App\Services\EmbeddingGenerator;
-use App\Services\Translator;
+use App\Services\CategoryHierarchyService;
+use App\Services\CategoryProcessingService;
+use App\Services\CategoryQueryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
 class CategoryController extends Controller
 {
+    public function __construct(
+        private CategoryProcessingService $processingService,
+        private CategoryHierarchyService $hierarchyService,
+    ) {}
+
     #[OA\Get(
         path: '/api/categories',
         summary: '카테고리 목록 조회',
@@ -63,6 +69,7 @@ class CategoryController extends Controller
     )]
     public function index(Request $request): CategoryCollection
     {
+        /** @var User|null $user */
         $user = auth('sanctum')->user();
         $maxPerPage = $user ? PHP_INT_MAX : (int) config('services.pagination.max_per_page_guest', 100);
         $perPage = min(
@@ -70,133 +77,7 @@ class CategoryController extends Controller
             $maxPerPage
         );
 
-        $query = Category::query()->with('embeddings');
-
-        // 관리자가 명시적 user_id를 전달한 경우 해당 사용자로 필터 (filter=my 무시)
-        $hasExplicitUserId = $request->filled('user_id') && $user && $user->isAdmin();
-
-        if ($hasExplicitUserId) {
-            $query->where('user_id', (int) $request->input('user_id'));
-        } elseif ($request->input('filter') === 'my') {
-            if ($user) {
-                $query->where('user_id', $user->id);
-            } else {
-                $query->whereRaw('1 = 0');
-            }
-        } else {
-            if ($user && $user->isAdmin()) {
-                // admin/superadmin: no user_id restriction
-            } elseif ($user) {
-                $query->where(function ($q) use ($user) {
-                    $q->where('user_id', $user->id)
-                        ->orWhere('user_id', 1);
-                });
-            } else {
-                $query->where('user_id', 1);
-            }
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $searchLang = $request->input('search_lang');
-
-            // 분류선택 모드: 선택된 언어 컬럼에서만 접두사 검색 (예: "Food>%" 매칭)
-            if ($searchLang && in_array($searchLang, ['ko', 'en', 'zh'])) {
-                $langColumn = 'category_name_'.$searchLang;
-                $query->where($langColumn, 'LIKE', $search.'>%');
-            } else {
-                // 검색 모드: 모든 언어 컬럼에서 부분 검색
-                $query->where(function ($q) use ($search) {
-                    $q->where('category_name_ko', 'LIKE', '%'.$search.'%')
-                        ->orWhere('category_name_en', 'LIKE', '%'.$search.'%')
-                        ->orWhere('category_name_zh', 'LIKE', '%'.$search.'%')
-                        ->orWhere('category_code', 'LIKE', '%'.$search.'%');
-                });
-            }
-        }
-
-        // folder 필터
-        if ($request->filled('folder')) {
-            $folder = $request->input('folder');
-            if ($folder === '기본폴더') {
-                $query->whereNull('folder');
-            } else {
-                $query->where('folder', $folder);
-            }
-        }
-
-        // steps 필터: 체크된 step 중 하나라도 누락된 카테고리만 조회 (batchStatus와 동일 로직)
-        $validSteps = ['translation.en', 'translation.zh', 'embedding.ko', 'embedding.en', 'embedding.zh'];
-        $checkedSteps = $request->input('steps');
-        if (is_array($checkedSteps) && ! empty($checkedSteps)) {
-            $checkedSteps = array_values(array_intersect($checkedSteps, $validSteps));
-        } else {
-            $checkedSteps = [];
-        }
-
-        if (! empty($checkedSteps)) {
-            $embedModelName = config('services.embed.model');
-
-            $query->where(function ($q) use ($checkedSteps, $embedModelName) {
-                // embedding.ko: ko 임베딩이 없는 카테고리
-                if (in_array('embedding.ko', $checkedSteps)) {
-                    $q->orWhere(function ($q2) use ($embedModelName) {
-                        $q2->whereDoesntHave('embeddings', function ($q3) use ($embedModelName) {
-                            $q3->where('language', 'ko')
-                                ->where('embed_model_name', $embedModelName)
-                                ->whereNotNull('embedding');
-                        });
-                    });
-                }
-
-                // translation.en: en 번역 텍스트가 없는 카테고리
-                if (in_array('translation.en', $checkedSteps)) {
-                    $q->orWhere(function ($q2) {
-                        $q2->whereNull('category_name_en')
-                            ->orWhere('category_name_en', '');
-                    });
-                }
-
-                // embedding.en: en 임베딩이 없고 (en 번역 있음 OR translation.en도 checked)
-                if (in_array('embedding.en', $checkedSteps)) {
-                    $q->orWhere(function ($q2) use ($checkedSteps, $embedModelName) {
-                        $q2->whereDoesntHave('embeddings', function ($q3) use ($embedModelName) {
-                            $q3->where('language', 'en')
-                                ->where('embed_model_name', $embedModelName)
-                                ->whereNotNull('embedding');
-                        });
-                        // translation.en이 체크 안 됐으면 번역 텍스트가 있어야 embedding 실행 가능
-                        if (! in_array('translation.en', $checkedSteps)) {
-                            $q2->whereNotNull('category_name_en')
-                                ->where('category_name_en', '!=', '');
-                        }
-                    });
-                }
-
-                // translation.zh: zh 번역 텍스트가 없는 카테고리
-                if (in_array('translation.zh', $checkedSteps)) {
-                    $q->orWhere(function ($q2) {
-                        $q2->whereNull('category_name_zh')
-                            ->orWhere('category_name_zh', '');
-                    });
-                }
-
-                // embedding.zh: zh 임베딩이 없고 (zh 번역 있음 OR translation.zh도 checked)
-                if (in_array('embedding.zh', $checkedSteps)) {
-                    $q->orWhere(function ($q2) use ($checkedSteps, $embedModelName) {
-                        $q2->whereDoesntHave('embeddings', function ($q3) use ($embedModelName) {
-                            $q3->where('language', 'zh')
-                                ->where('embed_model_name', $embedModelName)
-                                ->whereNotNull('embedding');
-                        });
-                        if (! in_array('translation.zh', $checkedSteps)) {
-                            $q2->whereNotNull('category_name_zh')
-                                ->where('category_name_zh', '!=', '');
-                        }
-                    });
-                }
-            });
-        }
+        $query = CategoryQueryService::buildListQuery($user, $request, withEmbeddings: true);
 
         return new CategoryCollection(
             $query->orderBy('id', 'desc')->paginate($perPage)
@@ -213,68 +94,16 @@ class CategoryController extends Controller
         /** @var User|null $user */
         $user = auth('sanctum')->user();
 
-        $query = Category::query();
-
-        // ids 모드 vs 필터 모드
+        // ids 모드: 특정 ID 목록으로 조회
         if ($request->filled('ids')) {
             $ids = $request->input('ids');
             if (! is_array($ids)) {
                 return response()->json(['message' => 'ids는 배열이어야 합니다.'], 422);
             }
-            $query->whereIn('id', array_map('intval', $ids));
-        }
-
-        // 사용자 필터 (index()와 동일 로직)
-        $hasExplicitUserId = $request->filled('user_id') && $user && $user->isAdmin();
-
-        if ($hasExplicitUserId) {
-            $query->where('user_id', (int) $request->input('user_id'));
-        } elseif ($request->input('filter') === 'my') {
-            if ($user) {
-                $query->where('user_id', $user->id);
-            } else {
-                $query->whereRaw('1 = 0');
-            }
+            $query = Category::query()->whereIn('id', array_map('intval', $ids));
         } else {
-            if ($user && $user->isAdmin()) {
-                // admin: 전체 조회
-            } elseif ($user) {
-                $query->where(function ($q) use ($user) {
-                    $q->where('user_id', $user->id)->orWhere('user_id', 1);
-                });
-            } else {
-                $query->where('user_id', 1);
-            }
-        }
-
-        // 검색어 필터
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $searchLang = $request->input('search_lang');
-
-            // 분류선택 모드: 선택된 언어 컬럼에서만 접두사 검색
-            if ($searchLang && in_array($searchLang, ['ko', 'en', 'zh'])) {
-                $langColumn = 'category_name_'.$searchLang;
-                $query->where($langColumn, 'LIKE', $search.'>%');
-            } else {
-                // 검색 모드: 모든 언어 컬럼에서 부분 검색
-                $query->where(function ($q) use ($search) {
-                    $q->where('category_name_ko', 'LIKE', '%'.$search.'%')
-                        ->orWhere('category_name_en', 'LIKE', '%'.$search.'%')
-                        ->orWhere('category_name_zh', 'LIKE', '%'.$search.'%')
-                        ->orWhere('category_code', 'LIKE', '%'.$search.'%');
-                });
-            }
-        }
-
-        // 폴더 필터
-        if ($request->filled('folder')) {
-            $folder = $request->input('folder');
-            if ($folder === '기본폴더') {
-                $query->whereNull('folder');
-            } else {
-                $query->where('folder', $folder);
-            }
+            // 필터 모드: CategoryQueryService로 공통 필터 적용
+            $query = CategoryQueryService::buildListQuery($user, $request);
         }
 
         $categories = $query->orderBy('id', 'desc')->get();
@@ -311,7 +140,7 @@ class CategoryController extends Controller
         foreach ($categories as $cat) {
             /** @var Category $cat */
             $embeddedLangs = $embeddingExistsMap[$cat->id] ?? [];
-            $missing = $this->determineMissingSteps($cat, $checkedSteps, $embeddedLangs);
+            $missing = $this->processingService->determineMissingSteps($cat, $checkedSteps, $embeddedLangs);
             if (! empty($missing)) {
                 $result[] = [
                     'id' => $cat->id,
@@ -333,66 +162,221 @@ class CategoryController extends Controller
     }
 
     /**
-     * 카테고리의 누락 step을 계산합니다.
+     * 배치 실행: 여러 카테고리의 누락 step을 순차 실행합니다.
      *
-     * 로직:
-     * 1. checkedSteps에 포함된 step만 대상 (사용자 선택 필터)
-     * 2. 이미 완료된 step은 제외 (embedding 벡터 존재 = completed)
-     * 3. embedding은 해당 언어 번역 텍스트가 존재해야 실행 가능 (의존성)
-     *    - 번역 텍스트가 없고, translation step도 선택되지 않았으면 embedding 제외
-     *
-     * @param  string[]  $checkedSteps  프론트엔드에서 전달된 선택 step 목록
-     * @param  string[]  $embeddedLangs  이미 임베딩이 존재하는 언어 목록 (벡터 데이터 제외)
-     * @return string[] 처리가 필요한 step 이름 배열
+     * STEP_ORDER: embedding.ko → translation.en → embedding.en → translation.zh → embedding.zh
+     * 재시도: 최대 2회 (지수 백오프 1s, 2s)
+     * 카테고리 간 실패 격리: 한 카테고리 실패 시 다음 카테고리 계속 진행
      */
-    private function determineMissingSteps(Category $category, array $checkedSteps, array $embeddedLangs): array
+    public function batchRun(Request $request): JsonResponse
     {
-        $steps = [];
+        /** @var User|null $user */
+        $user = auth('sanctum')->user();
 
-        // en: 번역 + 임베딩
-        $enTranslated = (bool) $category->category_name_en;
-        $enEmbedded = in_array('en', $embeddedLangs);
+        $validSteps = ['translation.en', 'translation.zh', 'embedding.ko', 'embedding.en', 'embedding.zh'];
+        $checkedSteps = $request->input('steps');
 
-        if (! $enTranslated && in_array('translation.en', $checkedSteps)) {
-            $steps[] = 'translation.en';
-        }
-        // embedding은 번역 텍스트가 있어야 실행 가능 (의존성)
-        // 번역이 없고 translation step도 선택 안 됐으면 embedding 불가
-        if (! $enEmbedded && in_array('embedding.en', $checkedSteps) && ($enTranslated || in_array('translation.en', $checkedSteps))) {
-            $steps[] = 'embedding.en';
+        if (! is_array($checkedSteps) || empty($checkedSteps)) {
+            return response()->json(['message' => 'steps 배열을 하나 이상 선택해주세요.'], 422);
         }
 
-        // zh: 번역 + 임베딩
-        $zhTranslated = (bool) $category->category_name_zh;
-        $zhEmbedded = in_array('zh', $embeddedLangs);
-
-        if (! $zhTranslated && in_array('translation.zh', $checkedSteps)) {
-            $steps[] = 'translation.zh';
-        }
-        if (! $zhEmbedded && in_array('embedding.zh', $checkedSteps) && ($zhTranslated || in_array('translation.zh', $checkedSteps))) {
-            $steps[] = 'embedding.zh';
+        $checkedSteps = array_values(array_intersect($checkedSteps, $validSteps));
+        if (empty($checkedSteps)) {
+            return response()->json(['message' => '유효한 step이 없습니다.'], 422);
         }
 
-        // ko: 임베딩만 (원본 언어 — 번역 불필요)
-        $koEmbedded = in_array('ko', $embeddedLangs);
-        if (! $koEmbedded && in_array('embedding.ko', $checkedSteps)) {
-            $steps[] = 'embedding.ko';
+        // 카테고리 조회 (batchStatus와 동일 로직)
+        if ($request->filled('ids')) {
+            $ids = $request->input('ids');
+            if (! is_array($ids)) {
+                return response()->json(['message' => 'ids는 배열이어야 합니다.'], 422);
+            }
+            $categories = \App\Models\Category::query()->whereIn('id', array_map('intval', $ids))->orderBy('id', 'desc')->get();
+
+            // 권한 필터: ids 모드에서 본인 소유 또는 admin만 허용
+            if ($user) {
+                $categories = $categories->filter(function ($cat) use ($user) {
+                    return $user->isAdmin() || $cat->user_id === $user->id;
+                });
+            } else {
+                $categories = $categories->filter(fn ($cat) => $cat->user_id === 1);
+            }
+        } else {
+            $query = CategoryQueryService::buildListQuery($user, $request);
+            $categories = $query->orderBy('id', 'desc')->get();
         }
 
-        return $steps;
+        if ($categories->isEmpty()) {
+            return response()->json([
+                'data' => [
+                    'total_categories' => 0,
+                    'completed_categories' => 0,
+                    'failed_categories' => 0,
+                    'total_steps' => 0,
+                    'completed_steps' => 0,
+                    'failed_steps' => 0,
+                    'categories' => [],
+                ],
+            ]);
+        }
+
+        $result = $this->processingService->batchRun($categories, $checkedSteps);
+
+        return response()->json(['data' => $result]);
+    }
+
+    /**
+     * Excel 파일로 카테고리 일괄 등록
+     * POST /api/categories/bulk-upload
+     *
+     * Accepts: multipart/form-data with 'file' field (.xlsx)
+     * Columns: category_code (optional), category_ko (required), category_en (optional), category_zh (optional)
+     */
+    public function bulkUpload(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user('sanctum');
+
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls|max:10240',
+        ]);
+
+        $file = $request->file('file');
+        $reader = new \OpenSpout\Reader\XLSX\Reader();
+        $reader->open($file->getPathname());
+
+        $results = [];
+        $rowCount = 0;
+        $successCount = 0;
+        $failCount = 0;
+
+        foreach ($reader->getSheetIterator() as $sheet) {
+            foreach ($sheet->getRowIterator() as $rowIndex => $row) {
+                // Skip header row
+                if ($rowIndex === 1) {
+                    continue;
+                }
+
+                $cells = $row->getCells();
+                $categoryCode = isset($cells[0]) ? trim((string) $cells[0]) : null;
+                $categoryNameKo = isset($cells[1]) ? trim((string) $cells[1]) : null;
+                $categoryNameEn = isset($cells[2]) ? trim((string) $cells[2]) : null;
+                $categoryNameZh = isset($cells[3]) ? trim((string) $cells[3]) : null;
+
+                // Skip empty rows
+                if (empty($categoryNameKo)) {
+                    continue;
+                }
+
+                $rowCount++;
+
+                try {
+                    $targetUserId = $user->isAdmin() && $request->filled('user_id')
+                        ? (int) $request->input('user_id')
+                        : $user->id;
+
+                    $category = Category::create([
+                        'category_code' => !empty($categoryCode) ? $categoryCode : Category::generateCode($targetUserId),
+                        'category_name_ko' => $categoryNameKo,
+                        'category_name_en' => !empty($categoryNameEn) ? $categoryNameEn : null,
+                        'category_name_zh' => !empty($categoryNameZh) ? $categoryNameZh : null,
+                        'user_id' => $targetUserId,
+                        'folder' => $request->input('folder') === '기본폴더' ? null : $request->input('folder'),
+                    ]);
+
+                    $results[] = [
+                        'row' => $rowIndex,
+                        'success' => true,
+                        'category_code' => $category->category_code,
+                        'category_name_ko' => $category->category_name_ko,
+                    ];
+                    $successCount++;
+                } catch (\Throwable $e) {
+                    $results[] = [
+                        'row' => $rowIndex,
+                        'success' => false,
+                        'message' => $e->getMessage(),
+                        'category_code' => $categoryCode,
+                        'category_name_ko' => $categoryNameKo,
+                    ];
+                    $failCount++;
+                }
+            }
+
+            // Only process first sheet
+            break;
+        }
+
+        $reader->close();
+
+        return response()->json([
+            'data' => [
+                'results' => $results,
+                'summary' => [
+                    'total' => $rowCount,
+                    'success' => $successCount,
+                    'failed' => $failCount,
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * 카테고리 Excel 다운로드
+     * GET /api/categories/bulk-download
+     *
+     * Returns: .xlsx file with columns: category_code, category_ko, category_en, category_zh
+     */
+    public function bulkDownload(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        /** @var User|null $user */
+        $user = auth('sanctum')->user();
+
+        // Use same query logic as index()
+        $query = CategoryQueryService::buildListQuery($user, $request);
+        $categories = $query->orderBy('id', 'asc')->get();
+
+        $writer = new \OpenSpout\Writer\XLSX\Writer();
+        $filename = 'categories_' . date('Ymd_His') . '.xlsx';
+
+        return response()->stream(function () use ($writer, $categories) {
+            $writer->openToFile('php://output');
+
+            // Header row
+            $writer->addRow(new \OpenSpout\Common\Entity\Row([
+                new \OpenSpout\Common\Entity\Cell\StringCell('category_code'),
+                new \OpenSpout\Common\Entity\Cell\StringCell('category_ko'),
+                new \OpenSpout\Common\Entity\Cell\StringCell('category_en'),
+                new \OpenSpout\Common\Entity\Cell\StringCell('category_zh'),
+            ]));
+
+            // Data rows
+            foreach ($categories as $cat) {
+                $writer->addRow(new \OpenSpout\Common\Entity\Row([
+                    new \OpenSpout\Common\Entity\Cell\StringCell($cat->category_code ?? ''),
+                    new \OpenSpout\Common\Entity\Cell\StringCell($cat->category_name_ko ?? ''),
+                    new \OpenSpout\Common\Entity\Cell\StringCell($cat->category_name_en ?? ''),
+                    new \OpenSpout\Common\Entity\Cell\StringCell($cat->category_name_zh ?? ''),
+                ]));
+            }
+
+            $writer->close();
+        }, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
     public function levels(Request $request): JsonResponse
     {
+        /** @var User|null $user */
         $user = $request->user('sanctum');
-        $maxDepthSetting = (int) config('services.category.max_depth', 10);
 
         // 언어 파라미터 검증
         $lang = $request->query('lang', 'ko');
         if (! in_array($lang, ['ko', 'en', 'zh'], true)) {
             return response()->json(['message' => 'lang must be one of: ko, en, zh'], 400);
         }
-        $langColumn = 'category_name_'.$lang;
 
         // catN 파라미터 추출 (cat1, cat2, cat3, ...)
         $prefixParts = [];
@@ -418,143 +402,9 @@ class CategoryController extends Controller
             }
         }
 
-        $currentDepth = count($prefixParts); // 0 = 최상위
+        $result = $this->hierarchyService->buildHierarchy($lang, $prefixParts, $user, $request);
 
-        // 사용자 범위 쿼리 (기존 규칙과 동일)
-        $scopeQuery = Category::query();
-        if ($user && $user->isAdmin()) {
-            // admin/superadmin: 제한 없음
-        } elseif ($user) {
-            $scopeQuery->whereIn('user_id', [$user->id, 1]);
-        } else {
-            $scopeQuery->where('user_id', 1);
-        }
-
-        // user_id 필터 (관리자가 특정 회원의 폴더 선택 시)
-        if ($request->filled('user_id') && $user && $user->isAdmin()) {
-            $scopeQuery->where('user_id', (int) $request->input('user_id'));
-        }
-
-        // folder 필터
-        if ($request->filled('folder')) {
-            $folder = $request->input('folder');
-            if ($folder === '기본폴더') {
-                $scopeQuery->whereNull('folder');
-            } else {
-                $scopeQuery->where('folder', $folder);
-            }
-        }
-
-        // maxDepth = min(DB 실제 최대 깊이, 설정값)
-        $dbMaxDepth = (int) (clone $scopeQuery)->selectRaw('max(array_length(string_to_array('.$langColumn.', \'>\'), 1))')->value('max') ?? 1;
-        $maxDepth = min($dbMaxDepth, $maxDepthSetting);
-
-        // 접두사 필터링
-        $query = clone $scopeQuery;
-        if (! empty($prefixParts)) {
-            $prefix = implode('>', $prefixParts).'>';
-            $query->where($langColumn, 'like', $prefix.'%');
-        }
-
-        // max_depth 초과 시 잔여 세그먼트를 복합 옵션으로 포함
-        if ($currentDepth >= $maxDepthSetting - 1 && ! empty($prefixParts)) {
-            $categories = $query
-                ->select('id', 'category_code', $langColumn)
-                ->get();
-
-            $options = $categories
-                ->map(function ($c) use ($currentDepth, $langColumn) {
-                    $parts = explode('>', $c->{$langColumn});
-                    $remaining = array_slice($parts, $currentDepth);
-
-                    return [
-                        'label' => implode(' > ', array_map('trim', $remaining)),
-                        'categoryId' => $c->id,
-                        'categoryCode' => $c->category_code,
-                    ];
-                })
-                ->unique('label')
-                ->values()
-                ->toArray();
-
-            return response()->json([
-                'data' => [
-                    'options' => $options,
-                    'maxDepth' => $maxDepth,
-                    'isLeaf' => false,
-                    'leafCategoryId' => null,
-                    'categoryCount' => null,
-                ],
-            ]);
-        }
-
-        // 현재 깊이에서 고유 옵션 추출
-        $nextDepthIndex = $currentDepth; // 0-based 인덱스
-        $options = $query
-            ->select($langColumn)
-            ->get()
-            ->map(function ($c) use ($nextDepthIndex, $langColumn) {
-                $parts = explode('>', $c->{$langColumn});
-
-                return isset($parts[$nextDepthIndex]) ? trim($parts[$nextDepthIndex]) : null;
-            })
-            ->filter(fn ($s) => $s !== null && $s !== '')
-            ->unique()
-            ->values()
-            ->toArray();
-
-        // 리프 여부 확인
-        $isLeaf = empty($options);
-        $leafCategoryId = null;
-        $categoryCount = null;
-
-        if ($isLeaf && ! empty($prefixParts)) {
-            $leafPath = implode('>', $prefixParts);
-            $leafCategory = (clone $scopeQuery)->where($langColumn, $leafPath)->first();
-            $leafCategoryId = $leafCategory?->id;
-            // 리프 경로에 등록된 카테고리 수 카운트
-            $categoryCount = (clone $scopeQuery)->where($langColumn, $leafPath)->count();
-
-            // 깊이 초과 처리: 더 깊은 카테고리가 있으면 복합 옵션으로 포함
-            if ($leafCategoryId === null) {
-                $deeperQuery = clone $scopeQuery;
-                $deeperPrefix = implode('>', $prefixParts).'>';
-                $deeperCategories = $deeperQuery
-                    ->where($langColumn, 'like', $deeperPrefix.'%')
-                    ->select('id', 'category_code', $langColumn)
-                    ->get();
-
-                if ($deeperCategories->isNotEmpty()) {
-                    $options = $deeperCategories
-                        ->map(function ($c) use ($currentDepth, $langColumn) {
-                            $parts = explode('>', $c->{$langColumn});
-                            $remaining = array_slice($parts, $currentDepth);
-
-                            return [
-                                'label' => implode(' > ', array_map('trim', $remaining)),
-                                'categoryId' => $c->id,
-                                'categoryCode' => $c->category_code,
-                            ];
-                        })
-                        ->unique('label')
-                        ->values()
-                        ->toArray();
-
-                    $isLeaf = false;
-                    $categoryCount = $deeperCategories->count();
-                }
-            }
-        }
-
-        return response()->json([
-            'data' => [
-                'options' => $options,
-                'maxDepth' => $maxDepth,
-                'isLeaf' => $isLeaf,
-                'leafCategoryId' => $leafCategoryId,
-                'categoryCount' => $categoryCount,
-            ],
-        ]);
+        return response()->json(['data' => $result]);
     }
 
     #[OA\Post(
@@ -834,78 +684,25 @@ class CategoryController extends Controller
         }
 
         $step = $request->input('step');
-        $categoryNameKo = $category->category_name_ko;
-        $embedModelName = config('services.embed.model');
-        $translator = app(Translator::class);
-        $embedder = app(EmbeddingGenerator::class);
+        $result = $this->processingService->runStep($category, $step);
 
-        try {
-            [$type, $lang] = explode('.', $step);
-
-            if ($type === 'translation') {
-                $column = $lang === 'zh' ? 'category_name_zh' : 'category_name_en';
-                $translated = $translator->translate($categoryNameKo, $lang);
-                $category->{$column} = $translated;
-                $category->save();
-
-                $category = $category->fresh();
-                $translations = (new CategoryTranslationsResource($category))->resolve();
-
-                return response()->json([
-                    'step' => $step,
-                    'status' => 'completed',
-                    'result' => $translated,
-                    'translations' => $translations,
-                ]);
-            }
-
-            // embedding
-            $textForEmbedding = match ($lang) {
-                'ko' => $category->category_name_ko,
-                'zh' => $category->category_name_zh,
-                'en' => $category->category_name_en,
-            };
-
-            if ($textForEmbedding === null) {
-                return response()->json([
-                    'step' => $step,
-                    'status' => 'failed',
-                    'error' => "{$lang} 번역 텍스트가 없습니다. 먼저 번역을 실행해주세요.",
-                ], 422);
-            }
-
-            $vector = $embedder->generate($textForEmbedding);
-
-            CategoryEmbedding::updateOrCreate(
-                [
-                    'category_id' => $category->id,
-                    'language' => $lang,
-                    'embed_model_name' => $embedModelName,
-                ],
-                ['embedding' => $vector]
-            );
-
-            $category = $category->fresh();
-            $translations = (new CategoryTranslationsResource($category))->resolve();
-
-            return response()->json([
-                'step' => $step,
-                'status' => 'completed',
-                'result' => json_encode(array_slice($vector, 0, 10)),
-                'translations' => $translations,
-            ]);
-        } catch (\Throwable $e) {
-            $errorMsg = $e->getMessage();
-            if (str_contains($errorMsg, 'Ollama rate limit exceeded')) {
-                $errorMsg = 'Ollama rate limit exceeded';
-            }
-
+        if ($result['status'] === 'failed') {
             return response()->json([
                 'step' => $step,
                 'status' => 'failed',
-                'error' => $errorMsg,
-            ], 500);
+                'error' => $result['error'],
+            ], $result['http_code'] ?? 422);
         }
+
+        $category = $category->fresh();
+        $translations = (new CategoryTranslationsResource($category))->resolve();
+
+        return response()->json([
+            'step' => $step,
+            'status' => 'completed',
+            'result' => $result['result'],
+            'translations' => $translations,
+        ]);
     }
 
     #[OA\Put(
@@ -962,20 +759,7 @@ class CategoryController extends Controller
         $field = $request->input('field');
         $value = $request->input('value');
 
-        $category->update([$field => $value]);
-
-        $lang = match ($field) {
-            'category_name_ko' => 'ko',
-            'category_name_en' => 'en',
-            'category_name_zh' => 'zh',
-            'category_code' => null,
-        };
-
-        if ($lang !== null) {
-            CategoryEmbedding::where('category_id', $category->id)
-                ->where('language', $lang)
-                ->delete();
-        }
+        $this->processingService->updateText($category, $field, $value);
 
         $category = $category->fresh();
         $translations = (new CategoryTranslationsResource($category))->resolve();
@@ -1021,10 +805,10 @@ class CategoryController extends Controller
             return response()->json(['message' => '이 카테고리를 삭제할 권한이 없습니다.'], 403);
         }
 
-        CategoryEmbedding::where('category_id', $category->id)->delete();
-        $category->delete();
+        $categoryId = $category->id;
+        $this->processingService->deleteWithEmbeddings($category);
 
-        return response()->json(['message' => '카테고리가 삭제되었습니다.', 'id' => $category->id]);
+        return response()->json(['message' => '카테고리가 삭제되었습니다.', 'id' => $categoryId]);
     }
 
     private function canModify(User $user, Category $category): bool
