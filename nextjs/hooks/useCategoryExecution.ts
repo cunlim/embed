@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useCallback, useReducer } from "react";
-import type { StepName, CategoryTranslations } from "@/lib/api";
+import { runStep, type StepName, type CategoryTranslations } from "@/lib/api";
 
 export interface CatExecState {
   runningSteps: Set<StepName>;
@@ -76,26 +76,13 @@ export function useCategoryExecution(
       forceUpdate();
 
       try {
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-        const res = await fetch(
-          `${apiUrl}/categories/${catId}/run-step`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ step: stepName }),
-          },
-        );
-        const result = await res.json();
+        const result = await runStep(catId, stepName, token);
 
         if (result.status === "completed") {
           state.completedSteps = new Set(state.completedSteps).add(stepName);
           state.stepResults = new Map(state.stepResults).set(
             stepName,
-            result.result,
+            result.result ?? "",
           );
           state.copyableSteps = new Set(state.copyableSteps);
 
@@ -194,26 +181,13 @@ export function useCategoryExecution(
 
         const stepName = steps[i];
         try {
-          const apiUrl =
-            process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-          const res = await fetch(
-            `${apiUrl}/categories/${catId}/run-step`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ step: stepName }),
-            },
-          );
-          const result = await res.json();
+          const result = await runStep(catId, stepName, token);
 
           if (result.status === "completed") {
             state.completedSteps = new Set(state.completedSteps).add(stepName);
             state.stepResults = new Map(state.stepResults).set(
               stepName,
-              result.result,
+              result.result ?? "",
             );
             state.copyableSteps = new Set(state.copyableSteps);
 

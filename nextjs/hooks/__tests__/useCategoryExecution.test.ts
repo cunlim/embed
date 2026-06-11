@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useCategoryExecution } from "@/hooks/useCategoryExecution";
+import { runStep } from "@/lib/api";
 
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+vi.mock("@/lib/api", () => ({
+  runStep: vi.fn(),
+}));
+
+const mockRunStep = vi.mocked(runStep);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -39,8 +43,10 @@ describe("useCategoryExecution", () => {
   });
 
   it("handleSingleAction으로 step 완료 시 completedSteps에 추가된다", async () => {
-    mockFetch.mockResolvedValueOnce({
-      json: async () => ({ status: "completed", result: "번역 결과" }),
+    mockRunStep.mockResolvedValueOnce({
+      step: "translation.en",
+      status: "completed",
+      result: "번역 결과",
     });
 
     const { result } = renderHook(() => useCategoryExecution("token"));
@@ -56,7 +62,7 @@ describe("useCategoryExecution", () => {
   });
 
   it("handleSingleAction 실패 시 failedSteps에 추가된다", async () => {
-    mockFetch.mockRejectedValueOnce(new Error("Network error"));
+    mockRunStep.mockRejectedValueOnce(new Error("Network error"));
 
     const { result } = renderHook(() => useCategoryExecution("token"));
 
@@ -82,8 +88,10 @@ describe("useCategoryExecution", () => {
   it("clearStep으로 completedSteps/stepResults/copyableSteps에서 step이 제거된다", async () => {
     const { result } = renderHook(() => useCategoryExecution("token"));
 
-    mockFetch.mockResolvedValueOnce({
-      json: async () => ({ status: "completed", result: "some result" }),
+    mockRunStep.mockResolvedValueOnce({
+      step: "translation.en",
+      status: "completed",
+      result: "some result",
     });
 
     await act(async () => {
