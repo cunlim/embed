@@ -1,19 +1,17 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { flushSync } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Square } from "lucide-react";
 import { toast } from "sonner";
 import {
-  runStep,
+  batchRun,
   fetchBatchStatus,
 } from "@/lib/api";
-import type { Category, Recommendation, StepName, BatchStatusData } from "@/lib/api";
+import type { Category, Recommendation, StepName, BatchRunData } from "@/lib/api";
 
 interface TaskExecutionProps {
   token: string | null;
@@ -28,28 +26,6 @@ interface TaskExecutionProps {
   onStepsChange?: (steps: StepName[]) => void;
 }
 
-interface BatchProgress {
-  totalCategories: number;
-  completedCategories: number;
-  failedCategories: number;
-  totalSteps: number;
-  totalStepsInCategory: number;
-  completedSteps: number;
-  failedSteps: number;
-  currentCategory: string;
-  currentStep: string;
-  currentStepIndex: number;
-  queueEmpty: boolean;
-  phase: "process" | "done";
-  initialTotalSteps: number;
-}
-
-interface StepJob {
-  categoryId: number;
-  categoryName: string;
-  stepName: StepName;
-}
-
 export default function TaskExecution({
   token,
   selectedIds,
@@ -58,7 +34,6 @@ export default function TaskExecution({
   keyword,
   canModify,
   onComplete,
-  onCategoryComplete,
   folder,
   onStepsChange,
 }: TaskExecutionProps) {
@@ -78,16 +53,13 @@ export default function TaskExecution({
     "embedding.zh": "중국어 임베딩",
   };
 
-  const MAX_RETRIES = 2; // 총 3회 시도
-  const RETRY_DELAY_MS = 1000;
-  const STEP_DELAY_MS = 2000;
-  const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
   const [running, setRunning] = useState(false);
-  const [wasStopped, setWasStopped] = useState(false);
   const [checkedSteps, setCheckedSteps] = useState<Set<StepName>>(
     new Set<StepName>()
   );
+  const [result, setResult] = useState<BatchRunData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const toggleStep = (step: StepName) => {
     const next = new Set(checkedSteps);
@@ -97,217 +69,42 @@ export default function TaskExecution({
     onStepsChange?.(Array.from(next));
   };
 
-  const [stopping, setStopping] = useState(false);
-  const [progress, setProgress] = useState<BatchProgress | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const abortRef = useRef(false);
-  const targetIdsRef = useRef<number[]>([]);
-  const lastBatchRef = useRef<BatchStatusData | null>(null);
-  const retryParamsRef = useRef<{
-    type: "selected" | "full";
-    ids?: number[];
-    filter?: string;
-    keyword?: string;
-    folder?: string;
-    steps: StepName[];
-  } | null>(null);
+  const executeBatch = useCallback(
+    async (params: { ids?: number[]; filter?: string; keyword?: string; folder?: string; steps?: StepName[] }) => {
+      if (!token) return;
 
-  const executeQueue = useCallback(
-    async (batchData: BatchStatusData) => {
       setRunning(true);
-      setWasStopped(false);
-      setStopping(false);
+      setResult(null);
       setError(null);
-      abortRef.current = false;
 
-      // 벌크 API 응답으로 큐 구성 (서버에서 이미 checkedSteps + 의존성 필터링 완료)
-      const queue: StepJob[] = [];
-      for (const cat of batchData.categories) {
-        for (const step of cat.missing_steps) {
-          queue.push({
-            categoryId: cat.id,
-            categoryName: cat.category_name_ko,
-            stepName: step,
-          });
-        }
-      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
 
-      targetIdsRef.current = batchData.categories.map(c => c.id);
-      lastBatchRef.current = batchData;
+      try {
+        const res = await batchRun(token, params);
+        setResult(res.data);
 
-      if (queue.length === 0) {
-        flushSync(() => {
-          setProgress({
-            totalCategories: batchData.total_selected,
-            completedCategories: batchData.total_selected,
-            failedCategories: 0,
-            totalSteps: 0,
-            totalStepsInCategory: 0,
-            completedSteps: 0,
-            failedSteps: 0,
-            currentCategory: "",
-            currentStep: "",
-            currentStepIndex: 0,
-            queueEmpty: true,
-            phase: "done",
-            initialTotalSteps: 0,
-          });
-        });
-        setRunning(false);
-        toast("모든 카테고리가 이미 처리되었습니다");
-        onComplete(false);
-        return;
-      }
-
-      // 카테고리별로 step 그룹화 (순서 보존)
-      const orderedCategoryIds: number[] = [];
-      const stepsByCategory = new Map<number, StepJob[]>();
-      for (const job of queue) {
-        if (!stepsByCategory.has(job.categoryId)) {
-          orderedCategoryIds.push(job.categoryId);
-          stepsByCategory.set(job.categoryId, []);
-        }
-        stepsByCategory.get(job.categoryId)!.push(job);
-      }
-
-      // 처리 시작
-      flushSync(() => {
-        setProgress({
-          totalCategories: orderedCategoryIds.length,
-          completedCategories: 0,
-          failedCategories: 0,
-          totalSteps: queue.length,
-          totalStepsInCategory: 0,
-          completedSteps: 0,
-          failedSteps: 0,
-          currentCategory: "",
-          currentStep: "",
-          currentStepIndex: 0,
-          queueEmpty: false,
-          phase: "process",
-          initialTotalSteps: queue.length,
-        });
-      });
-
-      let completedCategories = 0;
-      let failedCategories = 0;
-
-      for (let ci = 0; ci < orderedCategoryIds.length; ci++) {
-        if (abortRef.current) break;
-
-        const catId = orderedCategoryIds[ci];
-        const catSteps = stepsByCategory.get(catId) || [];
-        let catFailed = false;
-
-        flushSync(() => {
-          setProgress((p) =>
-            p
-              ? {
-                  ...p,
-                  currentCategory: catSteps[0].categoryName,
-                  totalStepsInCategory: catSteps.length,
-                  currentStepIndex: 0,
-                  currentStep: "",
-                  completedCategories,
-                  failedCategories,
-                }
-              : p,
-          );
-        });
-
-        for (let si = 0; si < catSteps.length; si++) {
-          if (abortRef.current) break;
-
-          const job = catSteps[si];
-
-          flushSync(() => {
-            setProgress((p) =>
-              p
-                ? {
-                    ...p,
-                    currentStepIndex: si + 1,
-                    currentStep: job.stepName,
-                  }
-                : p,
-            );
-          });
-
-          let stepSucceeded = false;
-
-          for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-            try {
-              const result = await runStep(job.categoryId, job.stepName, token);
-              if (result.status === "completed") {
-                stepSucceeded = true;
-                break;
-              }
-              // status "failed" — 재시도 불가 (422 validation 등)
-              break;
-            } catch {
-              // 네트워크/500 에러 — 재시도
-            }
-
-            if (attempt < MAX_RETRIES && !abortRef.current) {
-              await delay(RETRY_DELAY_MS * Math.pow(2, attempt));
-            }
-          }
-
-          if (stepSucceeded) {
-            flushSync(() => {
-              setProgress((p) =>
-                p ? { ...p, completedSteps: p.completedSteps + 1 } : p,
-              );
-            });
-            // 단계 간 지연 (API 부하 방지)
-            if (si < catSteps.length - 1) {
-              await delay(STEP_DELAY_MS);
-            }
-          } else {
-            flushSync(() => {
-              setProgress((p) =>
-                p ? { ...p, failedSteps: p.failedSteps + 1 } : p,
-              );
-            });
-            catFailed = true;
-            break;
-          }
-        }
-
-        if (abortRef.current) break;
-
-        if (catFailed) {
-          failedCategories++;
+        if (res.data.failed_categories > 0) {
+          toast.warning(`처리 완료: ${res.data.completed_categories}개 성공, ${res.data.failed_categories}개 실패`);
         } else {
-          completedCategories++;
+          toast.success(`처리 완료: ${res.data.completed_categories}개 처리됨`);
         }
-
-        flushSync(() => {
-          setProgress((p) =>
-            p ? { ...p, completedCategories, failedCategories } : p,
-          );
-        });
-
-        onCategoryComplete?.();
-      }
-
-      if (abortRef.current) {
-        setStopping(false);
+        onComplete(false);
+      } catch (err) {
+        if (controller.signal.aborted) {
+          // 사용자가 중지
+          setRunning(false);
+          toast.warning("처리가 중지되었습니다");
+          onComplete(true);
+          return;
+        }
+        setError(err instanceof Error ? err.message : "배치 실행 실패");
+      } finally {
         setRunning(false);
-        setWasStopped(true);
-        toast.warning(`처리 중지: ${completedCategories}개 완료, ${failedCategories}개 실패`);
-        onComplete(true);
-        return;
+        abortControllerRef.current = null;
       }
-
-      setRunning(false);
-      if (failedCategories > 0) {
-        toast.warning(`처리 완료: ${completedCategories}개 성공, ${failedCategories}개 실패`);
-      } else {
-        toast.success(`처리 완료: ${completedCategories}개 처리됨`);
-      }
-      onComplete(false);
     },
-    [token, onComplete, onCategoryComplete],
+    [token, onComplete],
   );
 
   const handleSelectedProcess = useCallback(async () => {
@@ -325,19 +122,19 @@ export default function TaskExecution({
     }
     try {
       const steps = Array.from(checkedSteps);
-      const res = await fetchBatchStatus(token, { ids: targetIds, steps });
-      const d = res.data;
+      // 확인 다이얼로그를 위해 상태 조회
+      const statusRes = await fetchBatchStatus(token, { ids: targetIds, steps });
+      const d = statusRes.data;
       if (d.needs_processing === 0) {
         toast("모든 카테고리가 이미 처리되었습니다");
         return;
       }
       if (!window.confirm(`선택한 ${d.total_selected}개 카테고리 중 ${d.needs_processing}개에서 ${d.total_steps}개 step이 필요합니다. 처리하시겠습니까?`)) return;
-      retryParamsRef.current = { type: "selected", ids: targetIds, steps };
-      await executeQueue(d);
+      await executeBatch({ ids: targetIds, steps });
     } catch (err) {
       setError(err instanceof Error ? err.message : "상태 확인 실패");
     }
-  }, [token, selectedIds, categories, canModify, executeQueue, checkedSteps]);
+  }, [token, selectedIds, categories, canModify, executeBatch, checkedSteps]);
 
   const handleFullProcess = useCallback(async () => {
     if (!token) {
@@ -346,55 +143,34 @@ export default function TaskExecution({
     }
     try {
       const steps = Array.from(checkedSteps);
-      const res = await fetchBatchStatus(token, { filter, keyword, folder, steps });
-      const d = res.data;
+      // 확인 다이얼로그를 위해 상태 조회
+      const statusRes = await fetchBatchStatus(token, { filter, keyword, folder, steps });
+      const d = statusRes.data;
       if (d.needs_processing === 0) {
         toast("처리 가능한 카테고리가 없습니다");
         return;
       }
       if (!window.confirm(`현재 필터에 해당하는 ${d.total_selected}개 카테고리 중 ${d.needs_processing}개에서 ${d.total_steps}개 step이 필요합니다. 처리하시겠습니까?`)) return;
-      retryParamsRef.current = { type: "full", filter, keyword, folder, steps };
-      await executeQueue(d);
+      await executeBatch({ filter, keyword, folder, steps });
     } catch (err) {
       setError(err instanceof Error ? err.message : "상태 확인 실패");
     }
-  }, [token, filter, keyword, folder, executeQueue, checkedSteps]);
+  }, [token, filter, keyword, folder, executeBatch, checkedSteps]);
 
   const handleStop = useCallback(() => {
-    abortRef.current = true;
-    setStopping(true);
-    setWasStopped(true);
+    abortControllerRef.current?.abort();
   }, []);
 
   const handleRetry = useCallback(async () => {
-    if (!retryParamsRef.current || !token) return;
-    const params = retryParamsRef.current;
-    try {
-      const res = await fetchBatchStatus(token, {
-        ...(params.type === "selected"
-          ? { ids: params.ids }
-          : { filter: params.filter, keyword: params.keyword, folder: params.folder }),
-        steps: params.steps,
-      });
-      const d = res.data;
-      if (d.needs_processing === 0) {
-        toast("모든 카테고리가 이미 처리되었습니다");
-        return;
-      }
-      await executeQueue(d);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "재실행 실패");
-    }
-  }, [executeQueue, token]);
+    if (!token || !result) return;
+    // 이전 파라미터로 재실행 (서버에서 이미 완료된 step은 자동 건너뜀)
+    const steps = Array.from(checkedSteps);
+    await executeBatch({ filter, keyword, folder, steps });
+  }, [token, result, executeBatch, checkedSteps, filter, keyword, folder]);
 
-  const pct =
-    progress && progress.totalSteps > 0
-      ? Math.round(
-          ((progress.completedSteps + progress.failedSteps) /
-            progress.totalSteps) *
-            100,
-        )
-      : 0;
+  const pct = result && result.total_steps > 0
+    ? Math.round(((result.completed_steps + result.failed_steps) / result.total_steps) * 100)
+    : 0;
 
   return (
     <Card className="p-4">
@@ -435,69 +211,65 @@ export default function TaskExecution({
 
         {error && <p className="text-xs text-destructive">{error}</p>}
 
-        {progress && (
+        {running && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Progress
-                value={progress.queueEmpty ? 100 : pct}
-                className="flex-1"
-              />
-              {!progress.queueEmpty && progress.totalSteps > 0 && (
-                <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
-                  [{progress.completedSteps + progress.failedSteps}/
-                  {progress.totalSteps}]
-                </span>
-              )}
-              {progress.queueEmpty && progress.initialTotalSteps > 0 && (
-                <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
-                  [{progress.initialTotalSteps}/{progress.initialTotalSteps}]
-                </span>
-              )}
+              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-primary animate-pulse rounded-full" style={{ width: "100%" }} />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">서버에서 처리 중입니다...</p>
+            <Button
+              onClick={handleStop}
+              variant="destructive"
+              className="w-full"
+            >
+              중지
+            </Button>
+          </div>
+        )}
+
+        {result && !running && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Progress value={pct} className="flex-1" />
+              <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+                [{result.completed_steps + result.failed_steps}/{result.total_steps}]
+              </span>
             </div>
             <div className="text-xs text-muted-foreground space-y-0.5">
-              {(progress.phase === "process" || progress.phase === "done") && (
-                <p>
-                  전체 {progress.totalCategories}개 / 완료{" "}
-                  {progress.completedCategories}개 / 실패{" "}
-                  {progress.failedCategories}개
-                </p>
-              )}
-              {progress.queueEmpty && (
-                <p>모든 카테고리가 이미 처리되었습니다</p>
-              )}
-              {!progress.queueEmpty && progress.currentCategory && (
-                <>
-                  <p className="truncate">
-                    현재 카테고리: &ldquo;{progress.currentCategory}&rdquo;
-                  </p>
-                  {progress.currentStep && (
-                    <p className="truncate">
-                      현재: [{progress.currentStepIndex}/{progress.totalStepsInCategory}]{" "}
-                      {progress.currentStep}
-                    </p>
-                  )}
-                </>
+              <p>
+                전체 {result.total_categories}개 / 완료{" "}
+                {result.completed_categories}개 / 실패{" "}
+                {result.failed_categories}개
+              </p>
+              {result.categories.filter(c => c.status === "failed").length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <p className="font-medium">실패한 카테고리:</p>
+                  {result.categories
+                    .filter(c => c.status === "failed")
+                    .map(cat => (
+                      <div key={cat.id} className="ml-2">
+                        <p className="truncate">- {cat.category_name_ko}</p>
+                        {cat.steps
+                          .filter(s => s.status === "failed")
+                          .map(s => (
+                            <p key={s.step} className="ml-2 text-destructive truncate">
+                              {s.step}: {s.error}
+                            </p>
+                          ))}
+                      </div>
+                    ))}
+                </div>
               )}
             </div>
-
-            {running && (
-              <Button
-                onClick={handleStop}
-                disabled={stopping}
-                variant="destructive"
-                className="w-full"
-              >
-                <Square className="h-4 w-4" />
-                {stopping ? "중지 중..." : "실행중지"}
-              </Button>
-            )}
-            {wasStopped && !running && (
+            {result.failed_categories > 0 && (
               <Button
                 onClick={handleRetry}
                 variant="outline"
                 className="w-full"
               >
-                재실행
+                실패 항목 재실행
               </Button>
             )}
           </div>

@@ -125,6 +125,120 @@ export async function fetchBatchStatus(
   });
 }
 
+// --- 배치 실행 ---
+
+export interface BatchRunStepResult {
+  step: string;
+  status: "completed" | "failed" | "skipped";
+  result?: string | null;
+  error?: string | null;
+}
+
+export interface BatchRunCategoryResult {
+  id: number;
+  category_name_ko: string;
+  status: "completed" | "failed";
+  steps: BatchRunStepResult[];
+}
+
+export interface BatchRunData {
+  total_categories: number;
+  completed_categories: number;
+  failed_categories: number;
+  total_steps: number;
+  completed_steps: number;
+  failed_steps: number;
+  categories: BatchRunCategoryResult[];
+}
+
+export interface BatchRunResponse {
+  data: BatchRunData;
+}
+
+export async function batchRun(
+  token: string,
+  params: { ids?: number[]; filter?: string; keyword?: string; folder?: string; steps?: StepName[] }
+): Promise<BatchRunResponse> {
+  return request<BatchRunResponse>("/categories/batch-run", {
+    method: "POST",
+    body: params,
+    token,
+  });
+}
+
+// --- 벌크 업로드/다운로드 ---
+
+export interface BulkUploadRowResult {
+  row: number;
+  success: boolean;
+  message?: string;
+  category_code?: string;
+  category_name_ko?: string;
+}
+
+export interface BulkUploadSummary {
+  total: number;
+  success: number;
+  failed: number;
+}
+
+export interface BulkUploadResponse {
+  data: {
+    results: BulkUploadRowResult[];
+    summary: BulkUploadSummary;
+  };
+}
+
+export async function bulkUpload(
+  file: File,
+  token?: string | null,
+  folder?: string,
+): Promise<BulkUploadResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (folder) formData.append("folder", folder);
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+  const res = await fetch(`${API_URL}/categories/bulk-upload`, {
+    method: "POST",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.message || `업로드 실패 (${res.status})`);
+  }
+
+  return res.json();
+}
+
+export async function bulkDownload(
+  token?: string | null,
+  params?: { filter?: string; search?: string; folder?: string; user_id?: number },
+): Promise<Blob> {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+  const query = new URLSearchParams();
+  if (params?.filter) query.set("filter", params.filter);
+  if (params?.search) query.set("search", params.search);
+  if (params?.folder) query.set("folder", params.folder);
+  if (params?.user_id) query.set("user_id", String(params.user_id));
+
+  const res = await fetch(`${API_URL}/categories/bulk-download?${query}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`다운로드 실패 (${res.status})`);
+  }
+
+  return res.blob();
+}
+
 // --- 추천 ---
 
 export interface LanguageScore {
