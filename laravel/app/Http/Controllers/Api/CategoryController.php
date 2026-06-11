@@ -10,7 +10,6 @@ use App\Http\Resources\CategoryCollection;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\CategoryTranslationsResource;
 use App\Models\Category;
-use App\Models\CategoryEmbedding;
 use App\Models\User;
 use App\Services\CategoryHierarchyService;
 use App\Services\CategoryProcessingService;
@@ -18,10 +17,6 @@ use App\Services\CategoryQueryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
-use OpenSpout\Common\Entity\Cell\StringCell;
-use OpenSpout\Common\Entity\Row;
-use OpenSpout\Reader\XLSX\Reader;
-use OpenSpout\Writer\XLSX\Writer;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CategoryController extends Controller
@@ -123,21 +118,8 @@ class CategoryController extends Controller
         }
 
         // 누락 step 계산 (선택된 step 필터 + embedding 의존성 적용)
-        $embedModelName = config('services.embed.model');
-
-        // 임베딩 존재 여부를 경량 쿼리로 조회 (벡터 데이터 제외)
         $categoryIds = $categories->pluck('id')->toArray();
-        $embeddingExistsMap = [];
-        if (! empty($categoryIds)) {
-            $embeddingRows = CategoryEmbedding::whereIn('category_id', $categoryIds)
-                ->where('embed_model_name', $embedModelName)
-                ->whereNotNull('embedding')
-                ->select('category_id', 'language')
-                ->get();
-            foreach ($embeddingRows as $row) {
-                $embeddingExistsMap[$row->category_id][] = $row->language;
-            }
-        }
+        $embeddingExistsMap = CategoryProcessingService::getEmbeddingExistsMap($categoryIds);
 
         $result = [];
         $totalSteps = 0;
@@ -247,83 +229,14 @@ class CategoryController extends Controller
         ]);
 
         $file = $request->file('file');
-        $reader = new Reader;
-        $reader->open($file->getPathname());
+        $targetUserId = $user->isAdmin() && $request->filled('user_id')
+            ? (int) $request->input('user_id')
+            : $user->id;
+        $folder = $request->input('folder');
 
-        $results = [];
-        $rowCount = 0;
-        $successCount = 0;
-        $failCount = 0;
+        $result = $this->processingService->bulkUpload($file->getPathname(), $targetUserId, $folder);
 
-        foreach ($reader->getSheetIterator() as $sheet) {
-            foreach ($sheet->getRowIterator() as $rowIndex => $row) {
-                // Skip header row
-                if ($rowIndex === 1) {
-                    continue;
-                }
-
-                $cells = $row->getCells();
-                $categoryCode = isset($cells[0]) ? trim((string) $cells[0]) : null;
-                $categoryNameKo = isset($cells[1]) ? trim((string) $cells[1]) : null;
-                $categoryNameEn = isset($cells[2]) ? trim((string) $cells[2]) : null;
-                $categoryNameZh = isset($cells[3]) ? trim((string) $cells[3]) : null;
-
-                // Skip empty rows
-                if (empty($categoryNameKo)) {
-                    continue;
-                }
-
-                $rowCount++;
-
-                try {
-                    $targetUserId = $user->isAdmin() && $request->filled('user_id')
-                        ? (int) $request->input('user_id')
-                        : $user->id;
-
-                    $category = Category::create([
-                        'category_code' => ! empty($categoryCode) ? $categoryCode : Category::generateCode($targetUserId),
-                        'category_name_ko' => $categoryNameKo,
-                        'category_name_en' => ! empty($categoryNameEn) ? $categoryNameEn : null,
-                        'category_name_zh' => ! empty($categoryNameZh) ? $categoryNameZh : null,
-                        'user_id' => $targetUserId,
-                        'folder' => $request->input('folder') === '기본폴더' ? null : $request->input('folder'),
-                    ]);
-
-                    $results[] = [
-                        'row' => $rowIndex,
-                        'success' => true,
-                        'category_code' => $category->category_code,
-                        'category_name_ko' => $category->category_name_ko,
-                    ];
-                    $successCount++;
-                } catch (\Throwable $e) {
-                    $results[] = [
-                        'row' => $rowIndex,
-                        'success' => false,
-                        'message' => $e->getMessage(),
-                        'category_code' => $categoryCode,
-                        'category_name_ko' => $categoryNameKo,
-                    ];
-                    $failCount++;
-                }
-            }
-
-            // Only process first sheet
-            break;
-        }
-
-        $reader->close();
-
-        return response()->json([
-            'data' => [
-                'results' => $results,
-                'summary' => [
-                    'total' => $rowCount,
-                    'success' => $successCount,
-                    'failed' => $failCount,
-                ],
-            ],
-        ]);
+        return response()->json(['data' => $result]);
     }
 
     /**
@@ -341,35 +254,7 @@ class CategoryController extends Controller
         $query = CategoryQueryService::buildListQuery($user, $request);
         $categories = $query->orderBy('id', 'asc')->get();
 
-        $writer = new Writer;
-        $filename = 'categories_'.date('Ymd_His').'.xlsx';
-
-        return response()->stream(function () use ($writer, $categories) {
-            $writer->openToFile('php://output');
-
-            // Header row
-            $writer->addRow(new Row([
-                new StringCell('category_code'),
-                new StringCell('category_ko'),
-                new StringCell('category_en'),
-                new StringCell('category_zh'),
-            ]));
-
-            // Data rows
-            foreach ($categories as $cat) {
-                $writer->addRow(new Row([
-                    new StringCell($cat->category_code ?? ''),
-                    new StringCell($cat->category_name_ko ?? ''),
-                    new StringCell($cat->category_name_en ?? ''),
-                    new StringCell($cat->category_name_zh ?? ''),
-                ]));
-            }
-
-            $writer->close();
-        }, 200, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-        ]);
+        return $this->processingService->bulkDownload($categories);
     }
 
     public function levels(Request $request): JsonResponse
@@ -461,17 +346,14 @@ class CategoryController extends Controller
             ? (int) $request->input('user_id')
             : $user->id;
 
-        $category = Category::create([
-            'category_code' => $request->filled('category_code')
-                ? $request->category_code
-                : Category::generateCode($targetUserId),
-            'category_name_ko' => $request->category_name_ko,
-            'category_name_en' => $request->input('category_name_en'),
-            'category_name_zh' => $request->input('category_name_zh'),
-            'user_id' => $targetUserId,
-            // "기본폴더"는 폴더 미지정을 의미하므로 NULL로 저장
-            'folder' => $request->input('folder') === '기본폴더' ? null : $request->input('folder'),
-        ]);
+        $category = $this->processingService->create(
+            userId: $targetUserId,
+            categoryNameKo: $request->category_name_ko,
+            categoryCode: $request->filled('category_code') ? $request->category_code : null,
+            categoryNameEn: $request->input('category_name_en'),
+            categoryNameZh: $request->input('category_name_zh'),
+            folder: $request->input('folder'),
+        );
 
         return new CategoryResource($category);
     }

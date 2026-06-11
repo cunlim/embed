@@ -114,34 +114,14 @@ class CategoryHierarchyService
 
     /**
      * 사용자 범위 쿼리를 생성합니다.
+     * CategoryQueryService의 applyUserScope()와 applyFolderFilter()를 재사용합니다.
      */
     private function buildScopeQuery(?User $user, Request $request): Builder
     {
         $query = Category::query();
 
-        // 사용자 범위 필터
-        if ($user && $user->isAdmin()) {
-            // admin/superadmin: 제한 없음
-        } elseif ($user) {
-            $query->whereIn('user_id', [$user->id, 1]);
-        } else {
-            $query->where('user_id', 1);
-        }
-
-        // user_id 필터 (관리자가 특정 회원의 폴더 선택 시)
-        if ($request->filled('user_id') && $user && $user->isAdmin()) {
-            $query->where('user_id', (int) $request->input('user_id'));
-        }
-
-        // folder 필터
-        if ($request->filled('folder')) {
-            $folder = $request->input('folder');
-            if ($folder === '기본폴더') {
-                $query->whereNull('folder');
-            } else {
-                $query->where('folder', $folder);
-            }
-        }
+        CategoryQueryService::applyUserScope($query, $user, $request);
+        CategoryQueryService::applyFolderFilter($query, $request);
 
         return $query;
     }

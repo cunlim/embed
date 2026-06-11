@@ -5,6 +5,11 @@ namespace App\Services;
 use App\Models\Category;
 use App\Models\CategoryEmbedding;
 use Illuminate\Support\Collection;
+use OpenSpout\Common\Entity\Cell\StringCell;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Reader\XLSX\Reader;
+use OpenSpout\Writer\XLSX\Writer;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CategoryProcessingService
 {
@@ -15,6 +20,35 @@ class CategoryProcessingService
     private const RETRY_DELAY_US = 1_000_000; // 1초 (마이크로초)
 
     private const STEP_DELAY_US = 2_000_000;  // 2초 (마이크로초)
+
+    /**
+     * 카테고리 ID 목록에 대해 임베딩 존재 여부를 경량 쿼리로 조회합니다.
+     * 벡터 데이터는 제외하고 (category_id, language) 맵만 반환합니다.
+     *
+     * @param  int[]  $categoryIds
+     * @return array<int, string[]> category_id → ['ko', 'en', ...] 맵
+     */
+    public static function getEmbeddingExistsMap(array $categoryIds): array
+    {
+        if (empty($categoryIds)) {
+            return [];
+        }
+
+        $embedModelName = config('services.embed.model');
+        $embeddingExistsMap = [];
+
+        $embeddingRows = CategoryEmbedding::whereIn('category_id', $categoryIds)
+            ->where('embed_model_name', $embedModelName)
+            ->whereNotNull('embedding')
+            ->select('category_id', 'language')
+            ->get();
+
+        foreach ($embeddingRows as $row) {
+            $embeddingExistsMap[$row->category_id][] = $row->language;
+        }
+
+        return $embeddingExistsMap;
+    }
 
     /**
      * 카테고리의 누락 step을 계산합니다.
@@ -162,6 +196,156 @@ class CategoryProcessingService
     }
 
     /**
+     * 카테고리를 생성합니다.
+     *
+     * @param  int  $userId  소유자 ID
+     * @param  string  $categoryNameKo  한국어 카테고리명 (필수)
+     * @param  string  $categoryCode  카테고리 코드 (없으면 자동 생성)
+     * @param  ?string  $categoryNameEn  영어 카테고리명
+     * @param  ?string  $categoryNameZh  중국어 카테고리명
+     * @param  ?string  $folder  폴더명 ("기본폴더"는 NULL로 변환)
+     */
+    public function create(
+        int $userId,
+        string $categoryNameKo,
+        ?string $categoryCode = null,
+        ?string $categoryNameEn = null,
+        ?string $categoryNameZh = null,
+        ?string $folder = null,
+    ): Category {
+        return Category::create([
+            'category_code' => $categoryCode ?: Category::generateCode($userId),
+            'category_name_ko' => $categoryNameKo,
+            'category_name_en' => $categoryNameEn,
+            'category_name_zh' => $categoryNameZh,
+            'user_id' => $userId,
+            // "기본폴더"는 폴더 미지정을 의미하므로 NULL로 저장
+            'folder' => $folder === '기본폴더' ? null : $folder,
+        ]);
+    }
+
+    /**
+     * Excel 파일로 카테고리 일괄 등록합니다.
+     *
+     * @param  string  $filePath  업로드된 파일 경로
+     * @param  int  $userId  소유자 ID
+     * @param  ?string  $folder  폴더명
+     * @return array{results: array, summary: array{total: int, success: int, failed: int}}
+     */
+    public function bulkUpload(string $filePath, int $userId, ?string $folder = null): array
+    {
+        $reader = new Reader;
+        $reader->open($filePath);
+
+        $results = [];
+        $rowCount = 0;
+        $successCount = 0;
+        $failCount = 0;
+
+        foreach ($reader->getSheetIterator() as $sheet) {
+            foreach ($sheet->getRowIterator() as $rowIndex => $row) {
+                // Skip header row
+                if ($rowIndex === 1) {
+                    continue;
+                }
+
+                $cells = $row->getCells();
+                $categoryCode = isset($cells[0]) ? trim((string) $cells[0]) : null;
+                $categoryNameKo = isset($cells[1]) ? trim((string) $cells[1]) : null;
+                $categoryNameEn = isset($cells[2]) ? trim((string) $cells[2]) : null;
+                $categoryNameZh = isset($cells[3]) ? trim((string) $cells[3]) : null;
+
+                // Skip empty rows
+                if (empty($categoryNameKo)) {
+                    continue;
+                }
+
+                $rowCount++;
+
+                try {
+                    $category = $this->create(
+                        userId: $userId,
+                        categoryNameKo: $categoryNameKo,
+                        categoryCode: ! empty($categoryCode) ? $categoryCode : null,
+                        categoryNameEn: ! empty($categoryNameEn) ? $categoryNameEn : null,
+                        categoryNameZh: ! empty($categoryNameZh) ? $categoryNameZh : null,
+                        folder: $folder,
+                    );
+
+                    $results[] = [
+                        'row' => $rowIndex,
+                        'success' => true,
+                        'category_code' => $category->category_code,
+                        'category_name_ko' => $category->category_name_ko,
+                    ];
+                    $successCount++;
+                } catch (\Throwable $e) {
+                    $results[] = [
+                        'row' => $rowIndex,
+                        'success' => false,
+                        'message' => $e->getMessage(),
+                        'category_code' => $categoryCode,
+                        'category_name_ko' => $categoryNameKo,
+                    ];
+                    $failCount++;
+                }
+            }
+
+            // Only process first sheet
+            break;
+        }
+
+        $reader->close();
+
+        return [
+            'results' => $results,
+            'summary' => [
+                'total' => $rowCount,
+                'success' => $successCount,
+                'failed' => $failCount,
+            ],
+        ];
+    }
+
+    /**
+     * 카테고리를 Excel 파일로 다운로드합니다.
+     *
+     * @param  Collection  $categories
+     */
+    public function bulkDownload($categories): StreamedResponse
+    {
+        $writer = new Writer;
+        $filename = 'categories_'.date('Ymd_His').'.xlsx';
+
+        return response()->stream(function () use ($writer, $categories) {
+            $writer->openToFile('php://output');
+
+            // Header row
+            $writer->addRow(new Row([
+                new StringCell('category_code'),
+                new StringCell('category_ko'),
+                new StringCell('category_en'),
+                new StringCell('category_zh'),
+            ]));
+
+            // Data rows
+            foreach ($categories as $cat) {
+                $writer->addRow(new Row([
+                    new StringCell($cat->category_code ?? ''),
+                    new StringCell($cat->category_name_ko ?? ''),
+                    new StringCell($cat->category_name_en ?? ''),
+                    new StringCell($cat->category_name_zh ?? ''),
+                ]));
+            }
+
+            $writer->close();
+        }, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    /**
      * 배치 실행: 여러 카테고리의 누락 step을 순차 실행합니다.
      *
      * @param  Collection  $categories
@@ -188,21 +372,9 @@ class CategoryProcessingService
             'categories' => [],
         ];
 
-        $embedModelName = config('services.embed.model');
-
         // 임베딩 존재 여부를 경량 쿼리로 조회
         $categoryIds = $categories->pluck('id')->toArray();
-        $embeddingExistsMap = [];
-        if (! empty($categoryIds)) {
-            $embeddingRows = CategoryEmbedding::whereIn('category_id', $categoryIds)
-                ->where('embed_model_name', $embedModelName)
-                ->whereNotNull('embedding')
-                ->select('category_id', 'language')
-                ->get();
-            foreach ($embeddingRows as $row) {
-                $embeddingExistsMap[$row->category_id][] = $row->language;
-            }
-        }
+        $embeddingExistsMap = static::getEmbeddingExistsMap($categoryIds);
 
         foreach ($categories as $cat) {
             $embeddedLangs = $embeddingExistsMap[$cat->id] ?? [];
