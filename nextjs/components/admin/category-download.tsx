@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { bulkDownload } from "@/lib/api";
+import { getCategories } from "@/lib/api";
 import type { Category, Recommendation } from "@/lib/api";
 
 interface CategoryDownloadProps {
@@ -23,62 +23,57 @@ export default function CategoryDownload({
   keyword,
   folder,
 }: CategoryDownloadProps) {
-  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /** 선택다운로드: 클라이언트에서 이미 로드된 데이터로 엑셀 생성 */
+  /** 엑셀 다운로드 공통 함수 */
+  const downloadExcel = useCallback(
+    async (data: (Category | Recommendation)[], filename: string) => {
+      const XLSX = await import("xlsx");
+      const rows = data.map((cat) => ({
+        category_code: cat.category_code ?? "",
+        category_ko: cat.category_name_ko ?? "",
+        category_en: cat.category_name_en ?? "",
+        category_zh: cat.category_name_zh ?? "",
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows, {
+        header: ["category_code", "category_ko", "category_en", "category_zh"],
+      });
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "카테고리");
+      XLSX.writeFile(wb, filename);
+    },
+    [],
+  );
+
+  /** 선택다운로드: 체크박스 선택된 카테고리만 엑셀 다운로드 */
   const handleSelectedDownload = useCallback(async () => {
     if (selectedIds.size === 0) {
       alert("선택된 카테고리가 없습니다");
       return;
     }
-    const XLSX = await import("xlsx");
     const selected = categories.filter((c) => selectedIds.has(c.id));
-    const rows = selected.map((cat) => ({
-      category_code: cat.category_code ?? "",
-      category_ko: cat.category_name_ko ?? "",
-      category_en: cat.category_name_en ?? "",
-      category_zh: cat.category_name_zh ?? "",
-    }));
-    const ws = XLSX.utils.json_to_sheet(rows, {
-      header: ["category_code", "category_ko", "category_en", "category_zh"],
-    });
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "카테고리");
-    XLSX.writeFile(wb, "카테고리_선택다운로드.xlsx");
-  }, [selectedIds, categories]);
+    await downloadExcel(selected, "카테고리_선택다운로드.xlsx");
+  }, [selectedIds, categories, downloadExcel]);
 
-  /** 전체다운로드: 서버에서 xlsx 파일을 스트리밍 다운로드 */
+  /** 전체다운로드: 현재 필터 조건에 맞는 전체 카테고리 엑셀 다운로드 */
   const handleFullDownload = useCallback(async () => {
     if (!token) {
       alert("로그인이 필요합니다");
       return;
     }
-    setDownloading(true);
-    setError(null);
     try {
-      const blob = await bulkDownload(token, { filter, search: keyword, folder });
-      if (blob.size === 0) {
+      const res = await getCategories(token, 1, 100000, filter, keyword, folder);
+      if (res.data.length === 0) {
         alert("다운로드할 카테고리가 없습니다");
         return;
       }
-      // Blob을 파일로 다운로드
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `categories_${new Date().toISOString().slice(0, 19).replace(/[T:]/g, "")}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await downloadExcel(res.data, "카테고리_전체다운로드.xlsx");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "다운로드 실패",
+        err instanceof Error ? err.message : "카테고리 목록 조회 실패",
       );
-    } finally {
-      setDownloading(false);
     }
-  }, [token, filter, keyword, folder]);
+  }, [token, filter, keyword, folder, downloadExcel]);
 
   return (
     <Card className="p-4">
@@ -94,10 +89,9 @@ export default function CategoryDownload({
           </Button>
           <Button
             onClick={handleFullDownload}
-            disabled={downloading}
             className="flex-1"
           >
-            {downloading ? "다운로드 중..." : "전체다운로드"}
+            전체다운로드
           </Button>
         </div>
         {error && <p className="text-xs text-destructive">{error}</p>}

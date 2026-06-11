@@ -21,16 +21,12 @@ Route::get('auth/user', [AuthController::class, 'user'])->middleware('auth:sanct
 // 카테고리
 Route::get('categories', [CategoryController::class, 'index']);
 Route::get('categories/levels', [CategoryController::class, 'levels']);
-Route::get('categories/bulk-download', [CategoryController::class, 'bulkDownload'])->middleware('auth:sanctum');
 Route::post('categories', [CategoryController::class, 'store'])->middleware('auth:sanctum');
-Route::post('categories/bulk-upload', [CategoryController::class, 'bulkUpload'])->middleware('auth:sanctum');
 Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->middleware('auth:sanctum');
 Route::get('categories/{category}', [CategoryController::class, 'show']);
 
 // 일괄 번역/임베딩
 Route::post('categories/batch-status', [CategoryController::class, 'batchStatus'])->middleware('auth:sanctum');
-Route::post('categories/batch-run', [CategoryController::class, 'batchRun'])->middleware('auth:sanctum');
-Route::post('categories/batch-run-stream', [CategoryController::class, 'batchRunStream'])->middleware('auth:sanctum');
 Route::post('categories/{category}/run-step', [CategoryController::class, 'runStep'])->middleware('auth:sanctum');
 Route::put('categories/{category}/update-text', [CategoryController::class, 'updateText'])->middleware('auth:sanctum');
 

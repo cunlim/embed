@@ -3,9 +3,8 @@
 import { useState, useCallback, type DragEvent } from "react";
 import { Upload, Download, FileSpreadsheet, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { bulkUpload } from "@/lib/api";
-import type { BulkUploadRowResult } from "@/lib/api";
 
 interface BulkUploadProps {
   token?: string | null;
@@ -13,15 +12,24 @@ interface BulkUploadProps {
   folder?: string;
 }
 
+interface RowResult {
+  row: number;
+  success: boolean;
+  message?: string;
+  categoryCode?: string;
+  categoryNameKo?: string;
+}
+
 export default function BulkUpload({ token, onSuccess, folder }: BulkUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [results, setResults] = useState<BulkUploadRowResult[] | null>(null);
-  const [summary, setSummary] = useState<{ total: number; success: number; failed: number } | null>(null);
+  const [currentRow, setCurrentRow] = useState(0);
+  const [totalRows, setTotalRows] = useState(0);
+  const [results, setResults] = useState<RowResult[] | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const successCount = summary?.success ?? 0;
-  const failCount = summary?.failed ?? 0;
+  const successCount = results?.filter((r) => r.success).length ?? 0;
+  const failCount = results?.filter((r) => !r.success).length ?? 0;
 
   /** 파일 상태 초기화 후 선택된 파일 설정 (xlsx/xls 검증 포함) */
   const applyFile = useCallback((selected: File) => {
@@ -29,7 +37,8 @@ export default function BulkUpload({ token, onSuccess, folder }: BulkUploadProps
     if (ext !== "xlsx" && ext !== "xls") return;
     setFile(selected);
     setResults(null);
-    setSummary(null);
+    setCurrentRow(0);
+    setTotalRows(0);
   }, []);
 
   const handleFileChange = useCallback(
@@ -65,32 +74,90 @@ export default function BulkUpload({ token, onSuccess, folder }: BulkUploadProps
 
     setIsProcessing(true);
     setResults(null);
-    setSummary(null);
 
-    try {
-      const res = await bulkUpload(file, token, folder);
-      setResults(res.data.results);
-      setSummary(res.data.summary);
+    const XLSX = await import("xlsx");
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows: (string | number | null | undefined)[][] = XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      defval: null,
+    });
 
-      if (res.data.summary.success > 0) {
-        onSuccess();
-      }
-    } catch (err) {
+    // 헤더 검증 (A1: category_code, B1: category_ko)
+    const header = rows[0];
+    const h1 = header?.[0] ? String(header[0]).trim().toLowerCase() : "";
+    const h2 = header?.[1] ? String(header[1]).trim().toLowerCase() : "";
+    if (h1 !== "category_code" || h2 !== "category_ko") {
       setResults([{
-        row: 0,
+        row: 1,
         success: false,
-        message: err instanceof Error ? err.message : "업로드 실패",
+        message: "엑셀 헤더가 올바르지 않습니다. 샘플엑셀 격식에 맞게 입력해주세요",
       }]);
-      setSummary({ total: 0, success: 0, failed: 1 });
-    } finally {
       setIsProcessing(false);
+      return;
+    }
+
+    // 2행부터 데이터 (index 1부터)
+    const dataRows = rows.slice(1).filter((row) => row.some((cell) => cell !== null && cell !== ""));
+    setTotalRows(dataRows.length);
+
+    const rowResults: RowResult[] = [];
+    const { createCategory } = await import("@/lib/api");
+
+    for (let i = 0; i < dataRows.length; i++) {
+      const row = dataRows[i];
+      const rowNum = i + 2; // 엑셀 행 번호 (1-based, 헤더 포함)
+      setCurrentRow(i + 1);
+
+      const code = row[0] ? String(row[0]).trim() : undefined;
+      const nameKo = row[1] ? String(row[1]).trim() : "";
+      const nameEn = row[2] ? String(row[2]).trim() : undefined;
+      const nameZh = row[3] ? String(row[3]).trim() : undefined;
+
+      // B열(한국어) 필수 검증
+      if (!nameKo) {
+        rowResults.push({
+          row: rowNum,
+          success: false,
+          message: "한국어 카테고리명(B열)이 비어있습니다",
+        });
+        setResults([...rowResults]);
+        continue;
+      }
+
+      try {
+        await createCategory(nameKo, token, code, nameEn, nameZh, folder);
+        rowResults.push({
+          row: rowNum,
+          success: true,
+          categoryCode: code,
+          categoryNameKo: nameKo,
+        });
+      } catch (err) {
+        rowResults.push({
+          row: rowNum,
+          success: false,
+          message: err instanceof Error ? err.message : "알 수 없는 오류",
+          categoryCode: code,
+          categoryNameKo: nameKo,
+        });
+      }
+
+      setResults([...rowResults]);
+    }
+
+    setIsProcessing(false);
+    if (rowResults.some((r) => r.success)) {
+      onSuccess();
     }
   }, [file, token, folder, onSuccess]);
 
   const handleReset = useCallback(() => {
     setFile(null);
     setResults(null);
-    setSummary(null);
+    setCurrentRow(0);
+    setTotalRows(0);
   }, []);
 
   return (
@@ -138,7 +205,7 @@ export default function BulkUpload({ token, onSuccess, folder }: BulkUploadProps
             {isProcessing ? (
               <>
                 <RefreshCw className="h-4 w-4 animate-spin" />
-                서버에서 처리 중...
+                처리 중... ({currentRow}/{totalRows})
               </>
             ) : (
               <>
@@ -150,8 +217,16 @@ export default function BulkUpload({ token, onSuccess, folder }: BulkUploadProps
         </>
       )}
 
+      {/* 진행률 */}
+      {isProcessing && totalRows > 0 && (
+        <Progress value={(currentRow / totalRows) * 100}>
+          <ProgressLabel>진행률</ProgressLabel>
+          <ProgressValue />
+        </Progress>
+      )}
+
       {/* 결과 통계 */}
-      {results && summary && (
+      {results && (
         <div className="space-y-3">
           <div className="flex items-center gap-4 text-sm">
             <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
@@ -172,8 +247,8 @@ export default function BulkUpload({ token, onSuccess, folder }: BulkUploadProps
                 .filter((r) => !r.success)
                 .map((r) => (
                   <p key={r.row} className="text-xs text-muted-foreground">
-                    {r.row > 0 ? `${r.row}행: ` : ""}{r.message}
-                    {r.category_name_ko && ` (${r.category_name_ko})`}
+                    {r.row}행: {r.message}
+                    {r.categoryNameKo && ` (${r.categoryNameKo})`}
                   </p>
                 ))}
             </div>

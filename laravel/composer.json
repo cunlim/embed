@@ -15,7 +15,6 @@
         "laravel/sanctum": "^4.3",
         "laravel/socialite": "^5.27",
         "laravel/tinker": "^3.0",
-        "openspout/openspout": "^5.7",
         "pgvector/pgvector": "^0.2.2",
         "socialiteproviders/naver": "^4.1"
     },
