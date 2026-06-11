@@ -87,6 +87,9 @@
 - **SSR API URL 분리** — `NEXT_PUBLIC_API_URL`(외부/Cloudflare 경유)과 `INTERNAL_API_URL`(Docker 내부 직접 호출)을 구분. `lib/api.ts`에서 `typeof window === "undefined"`로 서버/클라이언트 판별. 서버 전용 env var는 `NEXT_PUBLIC_` 접두사 없이 설정. 새 API 함수 추가 시 `lib/api.ts`의 `request()` 사용 필수 — 인라인 fetch로 우회하면 서버에서 내부 URL 미적용.
 - **OAuth 로그인 redirect 파라미터 전달 체인** — 로그인 페이지의 `redirect` 쿼리 파라미터가 OAuth 플로우에서 유실되어 로그인 성공 후 항상 `/embed`로 이동하는 문제. 수정: (1) `loginWithOAuth(provider, redirect?)`에서 redirect를 OAuth URL에 포함, (2) 백엔드 `OAuthController::redirect()`에서 `session()->put('oauth_redirect')`로 저장, (3) `callback()`에서 `urlencode($oauthRedirect)`를 콜백 URL에 포함, (4) 미들웨어에서 `searchParams.get("redirect")`로 읽어 리다이렉트. 새 파라미터를 OAuth 플로우에 추가할 때 이 체인(프론트 → 백엔드 세션 → 콜백 URL → 미들웨어) 전체를 업데이트해야 함.
 - **인증 리다이렉트 URL 보존 패턴** — 보호된 페이지의 Server Component에서 `searchParams`로 쿼리 파라미터를 읽어 `redirect(`/login?redirect=${encodeURIComponent(path + qs)}`)`로 리다이렉트. Client Component에 위임하면 SSR 렌더링 후 클라이언트에서야 리다이렉트되어 header/nav 플래시가 발생하므로 서버 측에서 처리. 해시(`#abc`)는 HTTP 요청에서 서버로 전송되지 않으므로 보존 불가. `page-content.tsx`에는 인증 리다이렉트 로직을 두지 않음 — 서버가 이미 처리. `LoginFormClient`의 클라이언트 측 인증 체크는 로그인 상태에서 로그인 페이지 접근 시 리다이렉트용으로 유지.
+- **배치 실행 클라이언트→서버 이전** — `task-execution.tsx`의 클라이언트 측 step별 반복 호출(N×M HTTP 요청)을 `POST /api/categories/batch-run` 1회 호출로 대체. 서버에서 재시도(최대 2회, 지수 백오프), step 간 딜레이(2s), 카테고리 간 실패 격리 처리. 프론트엔드는 로딩 상태 + 최종 결과 표시로 단순화.
+- **벌크 업로드/다운로드 클라이언트→서버 이전** — `bulk-upload.tsx`의 클라이언트 xlsx 파싱 + 행별 API 호출을 `POST /api/categories/bulk-upload`(multipart/form-data) 1회 호출로 대체. `category-download.tsx`의 클라이언트 xlsx 생성을 `GET /api/categories/bulk-download`(스트리밍 응답)으로 대체. 서버에서 OpenSpout 사용.
+- **`api.ts` 파일 업로드 패턴** — `bulkUpload()`는 `FormData` 사용으로 `request()` 헬퍼 우회. 직접 `fetch()` 호출 + `Authorization` 헤더 수동 설정. `NEXT_PUBLIC_API_URL` 사용 (클라이언트 전용).
 
 ### Sub-agent / Docker
 
