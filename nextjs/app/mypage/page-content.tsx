@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth, getToken } from "@/hooks/useAuth";
 import type {
   User,
@@ -16,7 +14,7 @@ import { UsageChart } from "@/components/mypage/usage-chart";
 import { UsageHistory } from "@/components/mypage/usage-history";
 
 interface MyPageContentProps {
-  serverUser: User | null;
+  serverUser: User;
   serverApiKeys: ApiKeyItem[];
   serverUsageStats: UsageStats | null;
   serverUsageHistory: UsageHistoryItem[];
@@ -31,15 +29,6 @@ export function MyPageContent({
   serverChartData,
 }: MyPageContentProps) {
   const { user, isLoading: authLoading } = useAuth(serverUser);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      const fullPath = window.location.pathname + window.location.search + window.location.hash;
-      router.replace(`/login?redirect=${encodeURIComponent(fullPath)}`);
-    }
-  }, [authLoading, user, router]);
 
   if (authLoading || !user) return null;
 

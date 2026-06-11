@@ -7,10 +7,6 @@ vi.mock("@/hooks/useAuth", () => ({
   getToken: vi.fn(() => "test-token"),
 }));
 
-vi.mock("next/navigation", () => ({
-  useRouter: vi.fn(() => ({ replace: vi.fn(), back: vi.fn(), push: vi.fn() })),
-}));
-
 vi.mock("@/components/admin/settings-panel", () => ({
   SettingsPanel: ({ token }: { token: string }) => (
     <div data-testid="settings-panel">SettingsPanel: {token}</div>
