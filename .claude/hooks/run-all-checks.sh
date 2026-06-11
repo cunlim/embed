@@ -57,7 +57,7 @@ fi
 
 run_check "Next.js Lint"       "nextjs-lint.txt"  docker exec cl_embed_nextjs npm run lint
 run_check "Next.js Type Check" "nextjs-tsc.txt"   docker exec cl_embed_nextjs npx tsc --noEmit
-run_check "Next.js Tests"      "nextjs-test.txt"  docker exec cl_embed_nextjs sh -c "cd /app && node node_modules/vitest/vitest.mjs run --run"
+run_check "Next.js Tests"      "nextjs-test.txt"  docker exec cl_embed_nextjs npm run test
 run_check "Laravel Pint"       "laravel-pint.txt" docker exec cl_embed_laravel vendor/bin/pint --format agent
 
 # 운영DB 오염 방지
