@@ -30,6 +30,7 @@ Route::get('categories/{category}', [CategoryController::class, 'show']);
 // 일괄 번역/임베딩
 Route::post('categories/batch-status', [CategoryController::class, 'batchStatus'])->middleware('auth:sanctum');
 Route::post('categories/batch-run', [CategoryController::class, 'batchRun'])->middleware('auth:sanctum');
+Route::post('categories/batch-run-stream', [CategoryController::class, 'batchRunStream'])->middleware('auth:sanctum');
 Route::post('categories/{category}/run-step', [CategoryController::class, 'runStep'])->middleware('auth:sanctum');
 Route::put('categories/{category}/update-text', [CategoryController::class, 'updateText'])->middleware('auth:sanctum');
 

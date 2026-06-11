@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Square } from "lucide-react";
 import { toast } from "sonner";
 import {
-  batchRun,
+  batchRunStream,
   fetchBatchStatus,
 } from "@/lib/api";
-import type { Category, Recommendation, StepName, BatchRunData } from "@/lib/api";
+import type { Category, Recommendation, StepName, BatchRunData, BatchProgress } from "@/lib/api";
 
 interface TaskExecutionProps {
   token: string | null;
@@ -58,8 +59,18 @@ export default function TaskExecution({
     new Set<StepName>()
   );
   const [result, setResult] = useState<BatchRunData | null>(null);
+  const [progress, setProgress] = useState<BatchProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // 페이지 새로고침/이탈 시 SSE 연결 종료
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      abortControllerRef.current?.abort();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   const toggleStep = (step: StepName) => {
     const next = new Set(checkedSteps);
@@ -75,25 +86,32 @@ export default function TaskExecution({
 
       setRunning(true);
       setResult(null);
+      setProgress(null);
       setError(null);
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
       try {
-        const res = await batchRun(token, params);
-        setResult(res.data);
+        await batchRunStream(token, params, {
+          onProgress: (p) => setProgress(p),
+          onComplete: (data) => {
+            setResult(data);
+            setProgress(null);
 
-        if (res.data.failed_categories > 0) {
-          toast.warning(`처리 완료: ${res.data.completed_categories}개 성공, ${res.data.failed_categories}개 실패`);
-        } else {
-          toast.success(`처리 완료: ${res.data.completed_categories}개 처리됨`);
-        }
-        onComplete(false);
+            if (data.failed_categories > 0) {
+              toast.warning(`처리 완료: ${data.completed_categories}개 성공, ${data.failed_categories}개 실패`);
+            } else {
+              toast.success(`처리 완료: ${data.completed_categories}개 처리됨`);
+            }
+            onComplete(false);
+          },
+        }, controller.signal);
       } catch (err) {
         if (controller.signal.aborted) {
           // 사용자가 중지
           setRunning(false);
+          setProgress(null);
           toast.warning("처리가 중지되었습니다");
           onComplete(true);
           return;
@@ -213,18 +231,53 @@ export default function TaskExecution({
 
         {running && (
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-primary animate-pulse rounded-full" style={{ width: "100%" }} />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">서버에서 처리 중입니다...</p>
+            {progress ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Progress
+                    value={progress.totalSteps > 0
+                      ? Math.round(((progress.completedSteps + progress.failedSteps) / progress.totalSteps) * 100)
+                      : 0
+                    }
+                    className="flex-1"
+                  />
+                  <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+                    [{progress.completedSteps + progress.failedSteps}/{progress.totalSteps}]
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground space-y-0.5">
+                  {progress.currentCategory && (
+                    <p>
+                      <span className="font-medium">"{progress.currentCategory}"</span>
+                      {progress.currentStep && (
+                        <span className="ml-1">
+                          [{progress.currentStepIndex}/{progress.totalStepsInCategory}] {STEP_LABELS[progress.currentStep as StepName] || progress.currentStep}
+                        </span>
+                      )}
+                    </p>
+                  )}
+                  <p>
+                    전체 {progress.totalCategories}개 / 완료 {progress.completedCategories}개 / 실패 {progress.failedCategories}개
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-primary animate-pulse rounded-full" style={{ width: "100%" }} />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">서버에 연결 중...</p>
+              </>
+            )}
             <Button
               onClick={handleStop}
               variant="destructive"
               className="w-full"
             >
-              중지
+              <Square className="mr-1 h-3 w-3" />
+              실행중지
             </Button>
           </div>
         )}

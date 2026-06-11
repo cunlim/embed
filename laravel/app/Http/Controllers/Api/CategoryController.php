@@ -213,6 +213,97 @@ class CategoryController extends Controller
     }
 
     /**
+     * 배치 실행 (SSE 스트리밍 응답).
+     * POST /api/categories/batch-run-stream
+     *
+     * batch-run과 동일한 파라미터를 받지만, 결과를 SSE(Server-Sent Events)로 스트리밍합니다.
+     * 진행 상황을 실시간으로 클라이언트에 전달합니다.
+     */
+    public function batchRunStream(Request $request): StreamedResponse
+    {
+        /** @var User|null $user */
+        $user = auth('sanctum')->user();
+
+        $validSteps = ['translation.en', 'translation.zh', 'embedding.ko', 'embedding.en', 'embedding.zh'];
+        $checkedSteps = $request->input('steps');
+
+        if (! is_array($checkedSteps) || empty($checkedSteps)) {
+            return response()->json(['message' => 'steps 배열을 하나 이상 선택해주세요.'], 422);
+        }
+
+        $checkedSteps = array_values(array_intersect($checkedSteps, $validSteps));
+        if (empty($checkedSteps)) {
+            return response()->json(['message' => '유효한 step이 없습니다.'], 422);
+        }
+
+        // 카테고리 조회 (batchRun과 동일 로직)
+        if ($request->filled('ids')) {
+            $ids = $request->input('ids');
+            if (! is_array($ids)) {
+                return response()->json(['message' => 'ids는 배열이어야 합니다.'], 422);
+            }
+            $categories = Category::query()->whereIn('id', array_map('intval', $ids))->orderBy('id', 'desc')->get();
+
+            if ($user) {
+                $categories = $categories->filter(function ($cat) use ($user) {
+                    return $user->isAdmin() || $cat->user_id === $user->id;
+                });
+            } else {
+                $categories = $categories->filter(fn ($cat) => $cat->user_id === 1);
+            }
+        } else {
+            $query = CategoryQueryService::buildListQuery($user, $request);
+            $categories = $query->orderBy('id', 'desc')->get();
+        }
+
+        if ($categories->isEmpty()) {
+            return response()->json([
+                'data' => [
+                    'total_categories' => 0,
+                    'completed_categories' => 0,
+                    'failed_categories' => 0,
+                    'total_steps' => 0,
+                    'completed_steps' => 0,
+                    'failed_steps' => 0,
+                    'categories' => [],
+                ],
+            ]);
+        }
+
+        $checkedStepsFinal = $checkedSteps;
+
+        return new StreamedResponse(function () use ($categories, $checkedStepsFinal) {
+            // SSE 헤더 전송
+            header('Content-Type: text/event-stream');
+            header('Cache-Control: no-cache');
+            header('Connection: keep-alive');
+            header('X-Accel-Buffering: no'); // nginx 버퍼링 비활성화
+
+            $onProgress = function (string $eventType, array $data) {
+                echo "event: {$eventType}\ndata: ".json_encode($data, JSON_UNESCAPED_UNICODE)."\n\n";
+                if (ob_get_level() > 0) {
+                    ob_flush();
+                }
+                flush();
+            };
+
+            $result = $this->processingService->batchRun($categories, $checkedStepsFinal, $onProgress);
+
+            // 최종 완료 이벤트
+            echo "event: complete\ndata: ".json_encode($result, JSON_UNESCAPED_UNICODE)."\n\n";
+            if (ob_get_level() > 0) {
+                ob_flush();
+            }
+            flush();
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    /**
      * Excel 파일로 카테고리 일괄 등록
      * POST /api/categories/bulk-upload
      *

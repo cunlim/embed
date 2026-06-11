@@ -360,8 +360,15 @@ class CategoryProcessingService
      *   categories: array
      * }
      */
-    public function batchRun($categories, array $checkedSteps): array
+    /**
+     * 배치 실행 (진행 상황 콜백 지원).
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection  $categories
+     * @param  callable|null  $onProgress  진행 상황 콜백 fn(string $eventType, array $data): void
+     */
+    public function batchRun($categories, array $checkedSteps, ?callable $onProgress = null): array
     {
+        $catIndex = 0;
         $result = [
             'total_categories' => $categories->count(),
             'completed_categories' => 0,
@@ -393,6 +400,24 @@ class CategoryProcessingService
             $result['total_steps'] += count($orderedSteps);
 
             foreach ($orderedSteps as $stepIndex => $step) {
+                // step 시작 진행 상황 콜백
+                if ($onProgress) {
+                    $onProgress('progress', [
+                        'type' => 'step',
+                        'category_index' => $catIndex,
+                        'total_categories' => $result['total_categories'],
+                        'total_steps' => $result['total_steps'],
+                        'category_name' => $cat->category_name_ko,
+                        'step' => $step,
+                        'step_index' => $stepIndex,
+                        'total_steps_in_category' => count($orderedSteps),
+                        'completed_steps' => $result['completed_steps'],
+                        'failed_steps' => $result['failed_steps'],
+                        'completed_categories' => $result['completed_categories'],
+                        'failed_categories' => $result['failed_categories'],
+                    ]);
+                }
+
                 // 재시도 로직
                 $stepResult = null;
                 $lastError = null;
@@ -414,9 +439,12 @@ class CategoryProcessingService
                             $lastError = 'Ollama rate limit exceeded';
                         }
 
-                        // 마지막 시도가 아니면 지수 백오프 대기
+                        // 마지막 시도가 아니면 지수 백오프 대기 + 연결 종료 확인
                         if ($attempt < self::MAX_RETRIES) {
                             usleep(self::RETRY_DELAY_US * (2 ** $attempt));
+                            if (connection_aborted()) {
+                                break 2; // 재시도 + step 루프 탈출
+                            }
                         }
                     }
                 }
@@ -452,9 +480,12 @@ class CategoryProcessingService
                     break;
                 }
 
-                // 카테고리 내 step 간 딜레이
+                // 카테고리 내 step 간 딜레이 + 연결 종료 확인
                 if ($stepIndex < count($orderedSteps) - 1) {
                     usleep(self::STEP_DELAY_US);
+                    if (connection_aborted()) {
+                        break 2; // step + category 루프 모두 탈출
+                    }
                 }
             }
 
@@ -465,6 +496,23 @@ class CategoryProcessingService
             }
 
             $result['categories'][] = $catResult;
+
+            // 카테고리 완료 진행 상황 콜백
+            if ($onProgress) {
+                $onProgress('category_complete', [
+                    'category_index' => $catIndex,
+                    'total_categories' => $result['total_categories'],
+                    'category_name' => $cat->category_name_ko,
+                    'category_status' => $catResult['status'],
+                    'completed_categories' => $result['completed_categories'],
+                    'failed_categories' => $result['failed_categories'],
+                    'completed_steps' => $result['completed_steps'],
+                    'failed_steps' => $result['failed_steps'],
+                    'total_steps' => $result['total_steps'],
+                ]);
+            }
+
+            $catIndex++;
 
             // 클라이언트 연결 종료 확인
             if (connection_aborted()) {

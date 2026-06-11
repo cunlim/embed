@@ -166,6 +166,120 @@ export async function batchRun(
   });
 }
 
+// --- 배치 실행 (SSE 스트리밍) ---
+
+export interface BatchProgress {
+  totalCategories: number;
+  completedCategories: number;
+  failedCategories: number;
+  totalSteps: number;
+  completedSteps: number;
+  failedSteps: number;
+  currentCategory: string;
+  currentStep: string;
+  currentStepIndex: number;
+  totalStepsInCategory: number;
+}
+
+export interface BatchProgressCallbacks {
+  onProgress?: (progress: BatchProgress) => void;
+  onComplete?: (result: BatchRunData) => void;
+  onError?: (error: string) => void;
+}
+
+/**
+ * SSE 스트리밍 배치 실행.
+ * 서버에서 실시간으로 진행 상황을 수신합니다.
+ */
+export async function batchRunStream(
+  token: string,
+  params: { ids?: number[]; filter?: string; keyword?: string; folder?: string; steps?: StepName[] },
+  callbacks: BatchProgressCallbacks,
+  signal?: AbortSignal,
+): Promise<void> {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+
+  const res = await fetch(`${API_URL}/categories/batch-run-stream`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(params),
+    signal,
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.message || `배치 실행 실패 (${res.status})`);
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error("응답 스트림을 읽을 수 없습니다");
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      let eventType = "";
+      for (const line of lines) {
+        if (line.startsWith("event: ")) {
+          eventType = line.slice(7).trim();
+        } else if (line.startsWith("data: ")) {
+          const jsonStr = line.slice(6);
+          try {
+            const data = JSON.parse(jsonStr);
+
+            if (eventType === "progress" && callbacks.onProgress) {
+              callbacks.onProgress({
+                totalCategories: data.total_categories,
+                completedCategories: data.completed_categories,
+                failedCategories: data.failed_categories,
+                totalSteps: data.total_steps ?? 0,
+                completedSteps: data.completed_steps,
+                failedSteps: data.failed_steps,
+                currentCategory: data.category_name || "",
+                currentStep: data.step || "",
+                currentStepIndex: data.step_index ?? 0,
+                totalStepsInCategory: data.total_steps_in_category ?? 0,
+              });
+            } else if (eventType === "category_complete" && callbacks.onProgress) {
+              callbacks.onProgress({
+                totalCategories: data.total_categories,
+                completedCategories: data.completed_categories,
+                failedCategories: data.failed_categories,
+                totalSteps: data.total_steps,
+                completedSteps: data.completed_steps,
+                failedSteps: data.failed_steps,
+                currentCategory: data.category_name || "",
+                currentStep: "",
+                currentStepIndex: 0,
+                totalStepsInCategory: 0,
+              });
+            } else if (eventType === "complete" && callbacks.onComplete) {
+              callbacks.onComplete(data as BatchRunData);
+            }
+          } catch {
+            // JSON 파싱 실패 무시
+          }
+          eventType = "";
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 // --- 벌크 업로드/다운로드 ---
 
 export interface BulkUploadRowResult {
