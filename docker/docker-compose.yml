@@ -37,10 +37,13 @@ services:
       context: ./laravel
       dockerfile: dockerfile
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ../laravel:/var/www/html
       - ./laravel/supervisord.conf:/etc/supervisor/supervisord.conf
-      # - ./laravel/volume/log:/var/log/php
+      - ./laravel/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug-custom.ini:ro
+      - ./laravel/volume/log:/var/log/php
     environment:
       TZ: ${TZ}
     expose:
