@@ -33,7 +33,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: "Noto Sans SC", "Apple SD Gothic Neo", "Malgun Gothic", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Noto Sans KR", "Noto Sans SC", "Apple SD Gothic Neo", "Malgun Gothic", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Space Grotesk", "Noto Sans SC", "Geist Mono", ui-monospace, monospace;
 }
 

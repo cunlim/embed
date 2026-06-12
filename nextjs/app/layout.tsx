@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { Noto_Sans_SC, Space_Grotesk } from "next/font/google";
+import { Noto_Sans_KR, Noto_Sans_SC, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppHeader } from "@/components/app-header";
 import { Toaster } from "@/components/ui/sonner";
 import { getUser } from "@/lib/api";
 import type { User } from "@/lib/api";
+
+const notoSansKR = Noto_Sans_KR({
+  variable: "--font-noto-sans-kr",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+});
 
 const notoSansSC = Noto_Sans_SC({
   variable: "--font-noto-sans-sc",
@@ -58,7 +64,7 @@ export default async function RootLayout({
     <html
       lang="ko"
       suppressHydrationWarning
-      className={`${notoSansSC.variable} ${spaceGrotesk.variable} antialiased`}
+      className={`${notoSansKR.variable} ${notoSansSC.variable} ${spaceGrotesk.variable} antialiased`}
     >
       <body className="min-h-dvh flex flex-col">
         <ThemeProvider
