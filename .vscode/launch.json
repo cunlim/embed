@@ -7,7 +7,14 @@
       "request": "attach",
       "port": 9229,
       "skipFiles": ["<node_internals>/**"],
-      "restart": true
+      "restart": true,
+      "localRoot": "${workspaceFolder}/nextjs",
+      "remoteRoot": "/app",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack://_next/*": "${workspaceFolder}/nextjs/*",
+        "webpack:///*": "${workspaceFolder}/nextjs/*"
+      }
     },
     {
       "name": "Next.js: 클라이언트 사이드 디버깅",

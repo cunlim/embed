@@ -92,6 +92,7 @@
 
 - **Sub-agent 동일 파일 수정** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합. interface 필드 추가 시 agent가 이전 블록 미삭제 가능하므로 수정 후 `grep`으로 중복 키 확인.
 - **Docker 바인드 마운트 불일치** — 호스트·컨테이너 간 파일 변경 즉시 반영 안 될 수 있음. 수정 후 `wc -l`로 양쪽 확인. 신규 디렉토리는 양쪽 `mkdir -p`. Pint는 `/tmp/` 경유.
+- **Docker Node.js 디버깅 breakpoint 매핑** — `--inspect=0.0.0.0:9229`로 컨테이너 디버깅 시 `launch.json`에 `localRoot`(Host 소스 경로)와 `remoteRoot`(`/app`)를 반드시 지정. 미설정 시 inspector가 컨테이너 경로를 리포트하여 Host VS Code의 breakpoint가 매핑되지 않음. 소스맵도 `sourceMaps: true` + `sourceMapPathOverrides` 필요.
 
 ### 프레임워크 / 라이브러리
 
