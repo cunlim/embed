@@ -1102,6 +1102,15 @@
                                 "app"
                             ]
                         }
+                    },
+                    {
+                        "name": "redirect",
+                        "in": "query",
+                        "description": "로그인 성공 후 리다이렉트될 경로",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
