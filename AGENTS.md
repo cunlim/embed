@@ -92,7 +92,7 @@
 
 - **Sub-agent 동일 파일 수정** — 여러 Task가 같은 파일을 수정하면 하나의 Agent에 통합. interface 필드 추가 시 agent가 이전 블록 미삭제 가능하므로 수정 후 `grep`으로 중복 키 확인.
 - **Docker 바인드 마운트 불일치** — 호스트·컨테이너 간 파일 변경 즉시 반영 안 될 수 있음. 수정 후 `wc -l`로 양쪽 확인. 신규 디렉토리는 양쪽 `mkdir -p`. Pint는 `/tmp/` 경유.
-- **Docker Node.js 디버깅 breakpoint 매핑** — `--inspect=0.0.0.0:9229`로 컨테이너 디버깅 시 `launch.json`에 `localRoot`(Host 소스 경로)와 `remoteRoot`(`/app`)를 반드시 지정. 미설정 시 inspector가 컨테이너 경로를 리포트하여 Host VS Code의 breakpoint가 매핑되지 않음. 소스맵도 `sourceMaps: true` + `sourceMapPathOverrides` 필요.
+- **Docker Node.js 디버깅 breakpoint 매핑** — `--inspect=0.0.0.0:9229`로 컨테이너 디버깅 시 `launch.json`에 `localRoot`(Host 소스 경로)와 `remoteRoot`(`/app`)를 반드시 지정. 미설정 시 inspector가 컨테이너 경로를 리포트하여 Host VS Code의 breakpoint가 매핑되지 않음. 소스맵도 `sourceMaps: true` + `sourceMapPathOverrides` 필요. **Next.js 16 Turbopack**: middleware는 `turbopack:///[project]/*` 경로를 사용하므로 `sourceMapPathOverrides`에 해당 패턴 추가 필수.
 - **Docker Xdebug 3 디버깅 설정** — `xdebug.ini`에서 (1) `start_with_request=yes` 필수 — `default`일 때 `XDEBUG_SESSION` 쿼리 파라미터만으로는 트리거 안 됨, (2) `discover_client_host=Off` + `client_host=host.docker.internal`로 호스트指向 고정 — `On`이면 nginx/Cloudflare 프록시의 `HTTP_X_FORWARDED_FOR` 헤더(외부 IP)를 먼저 시도하여 실패, (3) `launch.json`의 `pathMappings`에서 컨테이너 경로(`/var/www/html`)를 `${workspaceFolder}/laravel`로 매핑.
 - **Docker Desktop WSL2 bind mount stale** — `docker compose restart` 시 bind mount 원본 파일을 찾지 못하는 경우(`no such file or directory`). `docker compose up -d --force-recreate`로 컨테이너 재생성 필요. `xdebug.ini` 등 설정 파일 수정 후 반드시 재생성 확인.
 

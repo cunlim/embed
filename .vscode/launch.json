@@ -22,7 +22,8 @@
       "sourceMaps": true,
       "sourceMapPathOverrides": {
         "webpack://_next/*": "${workspaceFolder}/nextjs/*",
-        "webpack:///*": "${workspaceFolder}/nextjs/*"
+        "webpack:///*": "${workspaceFolder}/nextjs/*",
+        "turbopack:///[project]/*": "${workspaceFolder}/nextjs/*"
       }
     },
     {
