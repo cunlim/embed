@@ -21,7 +21,7 @@
 
 ## [기술 스택]
 
-### 인프라 층
+### Infrastructure & DevOps
 | | |
 | --- | --- |
 | **운영** | Linux(cloud server) + Docker + GitHub Actions CI/CD |
@@ -29,14 +29,14 @@
 | **개발(레거시)** | Mutagen + Git(local) + VSCode Remote SSH |
 | | |
 
-### 프로젝트 층
+### Backend & Frontend & Database
 | | |
 | --- | --- |
-| **신규** | PHP Laravel + MySQL/PostgreSQL + Next.js/Vue.js(npm) |
-| **레거시** | vanilla PHP + MySQL + jQuery/Vue.js(cdn) |
+| **신규** | PHP Laravel + Next.js/Vue.js(npm) + MySQL/PostgreSQL |
+| **레거시** | vanilla PHP + jQuery/Vue.js(cdn) + MySQL |
 | | |
 
-### 라이브러리
+### Library Support
 | | |
 | --- | --- |
 | **크롤링** | Puppeteer(Node.js + Express), Chrome Extension |
@@ -70,12 +70,11 @@
 - **사용 기술 및 인프라:** Docker, Nginx, Git, Certbot, PHP(Composer, Xdebug), Python, Express(Node.js), MySQL, jQuery, Vue(CDN), Chrome Extension, C# terminal app
 - **협업 도구:** FTP, Git, Google Spreadsheet
 - **주요 업무:**
-  - 배대지, 드랍쉽핑, 쇼핑몰 개발
+  - 배송대행 서비스, 3pl 드랍쉽핑 서비스, 쇼핑몰 유지보수, 리뉴얼, 신규 기능 개발
   - 그누보드5 기반 레거시 서비스 개발, 인프라 현대화
   - 기존 프로젝트 서버 이전, 신규 프로젝트 호스팅
 - **주요 성과:**
-  - **유지보수, 리뉴얼, 신규 기능 개발:** 배송대행 서비스, 3pl 드랍쉽핑 서비스, 쇼핑몰
-  - **아키텍처 개편 및 인프라 구축:** Docker, Certbot, Composer, Xdebug 도입
+  - **아키텍처 개편 및 인프라 구축:** Git, Docker, Certbot, Composer, Xdebug 도입
   - **업무요청에 맞게 신규 기술 도입:** PyPDF2(Python), Express(Node.js), Vue(CDN) 도입
   - **협업 인프라 구축:** Git, [VSCode + Remote SSH + saveBackup extension + 저장로그 통계 서비스 개발], 신규 기술 문서화
   - **DB 백업 및 로그:** DB 매일 백업, DB 구조 변경 history 매시간 감지
