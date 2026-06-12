@@ -32,7 +32,7 @@
 
 - **Sub-agent driven** — 구현은 되도록 Agent(Sub-agent)를 활용한다.
 - **Playwright 이슈 재현** — 수정 작업 전 Playwright로 실제 이슈가 존재하는지 먼저 확인한다.
-- **Playwright 테스트 URL** — WSL2 호스트에서 `https://embed.cunlim.dev`로 접속 (Next.js 포트 미공개).
+- **Playwright 테스트 URL** — WSL2 호스트에서 `https://embed.cunlim.dev` 또는 `http://localhost:3000`로 접속 가능.
 - **Playwright 인증** — 쿠키 기반(`auth_token`). superadmin 토큰 발급은 `laravel/AGENTS.md` 참조. 쿠키 설정은 `context.clearCookies()` → `page.evaluate(t => document.cookie = \`auth_token=${t}; path=/; SameSite=Lax; max-age=86400\`, token)` 방식 사용 (`addCookies`는 API 요청에 미포함되는 경우 있음). `/api/auth/user` 200 확인 후 진행.
 - **Worktree 파일 동기화** — Sub-agent가 worktree에서 수정한 파일은 `cp <worktree-path> <main-path>`로 메인에 복사. 완료 후 `git status`로 누락 확인.
 

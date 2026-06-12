@@ -5,6 +5,8 @@
 AI 기반 다국어 카테고리 추천 시스템의 프론트엔드.
 Next.js 16 (App Router), React 19, TypeScript 5, Tailwind CSS v4, shadcn/ui (`base-nova` 스타일).
 
+- **접근 URL**: `https://embed.cunlim.dev` (Cloudflare tunnel) / `http://localhost:3000` (Docker 포트 바인딩)
+
 ## 명령어
 
 **모든 명령어는 Docker 컨테이너에서 실행** — host에는 TypeScript 등 의존성이 설치되어 있지 않음.

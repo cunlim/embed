@@ -5,7 +5,7 @@
 Docker 컨테이너: 프로젝트 전용 3개 (Next.js, Laravel, Swagger UI) + 공유 인프라 2개 (PostgreSQL 15+pgvector, Redis).
 
 - **Nginx 라우팅**: `/` → Next.js, `/api/` → Laravel FPM, `/swagger/` → Swagger UI, `/app/` → Reverb WebSocket (현재 미사용, 인프라만 유지)
-- **도메인**: `https://embed.cunlim.dev` (cloudflared tunnel)
+- **도메인**: `https://embed.cunlim.dev` (cloudflared tunnel) / `http://localhost:3000` (Docker 포트 바인딩)
 - **동시성 제어**: `TranslationCache::firstOrCreate`로 동일 카테고리 중복 번역 결과 방지 (현재 분산 락 미구현)
 
 ## 철학
