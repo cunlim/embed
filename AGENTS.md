@@ -100,6 +100,7 @@
 
 - **`next-themes` + React 19 `<script>` 경고** — `next-themes` 0.4.6가 React 컴포넌트 내부에서 `<script>` 태그를 렌더링하여 React 19에서 경고 발생. 라이브러리 업데이트 전까지 개발 모드 경고로 유지.
 - **Admin URL 기반 라우팅** — `admin/layout.tsx`에서 `Link` + `usePathname()`으로 URL 기반 네비게이션 사용. `/admin`(시스템 설정), `/admin/member`(회원 관리).
+- **`next/font/google` 폰트 캐싱** — `next.config.ts`의 `headers()`에서 `/_next/static/:path*`에 `no-cache`를 설정하면 폰트 파일(woff2)이 매번 재검증되어 FOUT(Flash of Unstyled Text) 발생. Next.js의 정적 자산은 모두 콘텐츠 해시 파일명이므로 `public, max-age=31536000, immutable`로 변경해야 함. 언어 토글 시 폰트 실시간 로딩 문제도 동일 원인.
 
 ### 보안 / 인증
 
