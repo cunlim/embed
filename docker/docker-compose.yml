@@ -17,8 +17,9 @@ services:
       WATCHPACK_POLLING: true  # 파일 변경 즉시 감지 (HMR)
       PORT: 3000
       TZ: Asia/Seoul
-    # ports:
-    #   - "3000:3000"
+    ports:
+      - "3000:3000"
+      - "9229:9229"
     expose:
       - "3000"
     volumes:

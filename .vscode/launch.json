@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Next.js: 서버 사이드 디버깅",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "skipFiles": ["<node_internals>/**"],
+      "restart": true
+    },
+    {
+      "name": "Next.js: 클라이언트 사이드 디버깅",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/nextjs",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack://_next/*": "${webRoot}/*"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Next.js: 풀스택 디버깅",
+      "configurations": [
+        "Next.js: 서버 사이드 디버깅",
+        "Next.js: 클라이언트 사이드 디버깅"
+      ]
+    }
+  ]
+}
