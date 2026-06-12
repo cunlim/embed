@@ -2,6 +2,15 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Laravel: Xdebug (Docker)",
+      "type": "php",
+      "request": "launch",
+      "port": 9003,
+      "pathMappings": {
+        "/var/www/html": "${workspaceFolder}/laravel"
+      }
+    },
+    {
       "name": "Next.js: 서버 사이드 디버깅",
       "type": "node",
       "request": "attach",
