@@ -68,7 +68,7 @@
 - **기간:** 2022.09 ~ 2025.08 (2년 10개월)
 - **역할:** 풀스택 개발자 (직원 3~5명 스타트업)
 - **사용 기술 및 인프라:** Docker, Nginx, Git, Certbot, PHP(Composer, Xdebug), Python, Express(Node.js), MySQL, jQuery, Vue(CDN), Chrome Extension, C# terminal app
-- **협업 도구:** FTP, Git, Google Spreadsheet
+- **협업 도구:** Remote SSH, Git, Google Spreadsheet, FTP
 - **주요 업무:**
   - 배송대행 서비스, 3pl 드랍쉽핑 서비스, 쇼핑몰 유지보수, 리뉴얼, 신규 기능 개발
   - 그누보드5 기반 레거시 서비스 개발, 인프라 현대화

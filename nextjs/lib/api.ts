@@ -23,10 +23,15 @@ interface RequestOptions {
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, token, cache } = options;
 
+  const isFormData = body instanceof FormData;
+
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     Accept: "application/json",
   };
+
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
@@ -35,7 +40,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const res = await fetch(`${API_URL}${path}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? (isFormData ? (body as FormData) : JSON.stringify(body)) : undefined,
     ...(cache !== undefined ? { cache } : {}),
   });
 
