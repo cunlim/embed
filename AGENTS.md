@@ -84,6 +84,7 @@
 
 - **API 필터 파라미터 전파 체인** — 새 파라미터 추가 시 frontend(api.ts → hooks → embed-page-inner.tsx → page.tsx → category-hierarchy.tsx), backend(모든 조회 컨트롤러), test mock 모두 수정 필요. `TaskExecution`의 `onStepsChange` → `loadCategories`도 동일 체인. 생성 API(`createCategory`)도 동일 — `api.ts` → `useCategories.addCategory()` → `embed-page-inner.tsx` 핸들러 체인 + 백엔드 `store()`·`CategoryStoreRequest`까지 전파. hook interface 타입(`UseCategoriesReturn`)도 갱신 필수. 한 곳만 수정하면 나머지는 이전 동작 유지.
 - **SSR 조건부 렌더링** — `getToken()`은 SSR 시 `null`. 인증 기반 분기는 `serverHadToken` prop 사용.
+- **SSR·localStorage 상태 동기화 (cookie 브릿지)** — `localStorage`는 서버에서 읽을 수 없어 SSR/CSR 불일치 발생. `CollapsibleSidebar` 사례: toggle 시 localStorage + cookie 양쪽에 저장, Server Component에서 `cookies()`로 초기값 읽어 `initialCollapsed` prop 전달, `getServerSnapshot`이 `initialCollapsed` 반환 → SSR이 올바른 상태로 렌더링. 첫 마운트 시 transition 억제로 sync 중 애니메이션 깜빡임 방지. **일반화**: 클라이언트 전용 상태를 SSR과 동기화해야 하는 모든 경우에 적용 가능한 패턴. 상세: `nextjs/AGENTS.md`.
 - **`onFolderChange` URL 파라미터 보존** — 폴더 변경 시 `onFolderChange` 핸들러에서 URL을 수동 생성하면 기존 파라미터(`filter` 등)가 소실됨. `updateURL({ folder, userId, page: 1 })`을 사용하여 기존 파라미터를 보존해야 함.
 - **admin `user_id` 우선 규칙** — 조회·생성 모두 적용. 관리자가 URL에 `user_id`를 명시하면 `filter=my`가 있어도 `user_id`를 우선 적용. 생성 시에도 `selectedUserId` → `addCategory(userId)` → API까지 전파.
 - **`기본폴더` 정의** — `"기본폴더"`는 폴더가 설정되지 않았음을 의미. DB에서 `folder = NULL`로 저장. 프론트엔드 `api.ts`에서 `"기본폴더"` 전송 시 folder 파라미터 미전송으로 변환. 백엔드에서도 `store()`·`moveFolder()`에서 `"기본폴더"` → `null` 변환 (defense in depth). 조회 시 `folder=기본폴더` → `WHERE folder IS NULL`로 처리. 카테고리 생성 시 `"기본폴더"`를 리터럴 문자열로 저장하면 안 됨.
