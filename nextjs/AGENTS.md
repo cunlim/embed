@@ -21,6 +21,14 @@ docker exec cl_embed_nextjs npx eslint <files> --max-warnings=0
 docker exec cl_embed_nextjs npx shadcn@latest add <component> -y
 ```
 
+## Vercel Next Dev Tools MCP
+
+Next.js 16 전용 MCP 서버. 런타임 진단, 라우트 정보, 캐시 관리, 브라우저 기반 페이지 검증 제공.
+
+- **세션 시작 시 `init` 호출 필수** — MCP 컨텍스트 초기화.
+- **페이지 검증은 `browser_eval` 사용** — curl 대신 브라우저 자동화로 JS 실행·hydration·콘솔 에러 포착.
+- **에러 진단**: `nextjs_index` → `nextjs_call(get_errors)` → `browser_eval(console_messages)`.
+
 ## 디자인 시스템
 
 디자인 컨벤션은 [`docs/UI_GUIDE.md`](../docs/UI_GUIDE.md) 참조. 구현 변경 시 문서가 stale일 수 있으므로 실제 코드 상태를 우선한다.

@@ -17,6 +17,16 @@
 * 구현 계획 수립, 코드 리뷰, TDD 등 구조적 접근이 필요한 작업은 `superpowers` plugin을 활성화하여 수행한다.
 * 버그 수정 후 동일 유형의 실수를 방지하려면 `compound-engineering` plugin으로 학습 문서를 갱신한다.
 
+### MCP 서버
+
+| MCP | 용도 | 핵심 도구 |
+|-----|------|-----------|
+| **Context7** | 라이브러리 최신 문서 검색 (training data 부족·API 확인) | `resolve-library-id` → `query-docs` |
+| **Tavily** | 웹 최신 정보 검색, URL 콘텐츠 추출, 사이트 구조 분석 | `tavily_search`, `tavily_extract`, `tavily_research` |
+| **Playwright** | UI 이슈 재현·검증, 브라우저 기반 E2E 동작 확인 | `browser_snapshot`, `browser_click`, `browser_take_screenshot` |
+| **Serena** | 심볼 탐색·이름 변경·구조적 편집, 프로젝트 지식 관리 | `get_symbols_overview`, `find_symbol`, `rename_symbol`, `replace_symbol_body` |
+| **Vercel Next Dev Tools** | Next.js 16 전용 ([`nextjs/AGENTS.md`](nextjs/AGENTS.md) 참조) | `init`, `nextjs_index`, `nextjs_call`, `browser_eval` |
+
 ## 작업 워크플로 (5단계)
 
 모든 작업은 아래 단계를 순서대로 따른다. 커스텀 명령어(`/new-feature`, `/fix-bug`, `/finalize`, `/check`)로 자동화 가능.
