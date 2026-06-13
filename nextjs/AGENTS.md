@@ -134,6 +134,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **Laravel API 응답 형식 불일치** — `Resource::collection()`은 `{data: [...]}`, 단일은 `{data: {...}}`. 인터페이스 정의 시 Network 탭으로 확인.
 - **`.claude/settings.json` Stop hook에 `npm run build` 금지** — BUILD_ID 생성으로 dev 모드 이탈.
 - **JS 청크 캐싱 (Cloudflare)** — `_next/static/*`이 `max-age=14400`. 개발 환경은 Cache Rule 바이패스.
+- **HTML 페이지 캐시 (Cache-Control)** — `next.config.ts`의 `headers()`에서 `/:path*`에 `no-cache` 설정. 미설정 시 브라우저가 SSR HTML을 캐시하여 cookie 기반 UI 변경이 F5에 반영 안 됨 (Ctrl+F5 필요). `no-cache`는 브라우저가 매번 서버에 재검증(`If-None-Match`)하도록 강제 — 304 응답 가능하므로 성능 영향 최소화.
 - **OAuth 콜백 `?token=`** — middleware에서 `response.cookies.set("auth_token", token)` + `NextResponse.redirect`로 서버사이드 처리. 페이지 렌더링 전 완료되어 깜빡임 없음.
 - **`--no-bin-links`** — Docker 볼륨 마운트 환경에서 npm 심볼릭 링크 생성 불가.
 - **outline 버튼 light 모드 hover** — `hover:bg-muted hover:text-foreground`로 덮어쓸 것.
