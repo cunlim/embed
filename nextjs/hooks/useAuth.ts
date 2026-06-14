@@ -14,12 +14,6 @@ function getToken(): string | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(/(?:^|;\s*)auth_token=([^;]*)/);
   if (match) return decodeURIComponent(match[1]);
-  const legacyToken = localStorage.getItem("auth_token");
-  if (legacyToken) {
-    // localStorage → cookie 자동 마이그레이션
-    setToken(legacyToken);
-    return legacyToken;
-  }
   return null;
 }
 
@@ -27,13 +21,11 @@ function setToken(token: string) {
   if (typeof document === "undefined") return;
   const expires = new Date(Date.now() + 30 * 864e5).toUTCString();
   document.cookie = `auth_token=${encodeURIComponent(token)}; path=/; expires=${expires}; SameSite=Lax`;
-  try { localStorage.removeItem("auth_token"); } catch {}
 }
 
 function removeToken() {
   if (typeof document === "undefined") return;
   document.cookie = "auth_token=; path=/; max-age=0; SameSite=Lax";
-  try { localStorage.removeItem("auth_token"); } catch {}
 }
 
 export function useAuth(initialUser?: User | null): UseAuthReturn {

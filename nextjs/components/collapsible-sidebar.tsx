@@ -30,7 +30,6 @@ interface CollapsibleSidebarProps {
  * cookie:
  * - toggle 시 cookie에만 저장 (SameSite=Lax, 1년 유효)
  * - localStorage 미사용 — cookie가 단일 진실 공급원
- * - 기존 localStorage 사용자를 위한 1회 마이그레이션 포함
  */
 function useCollapsedState(storageKey: string, initialCollapsed: boolean) {
   const collapsed = useSyncExternalStore(
@@ -48,15 +47,6 @@ function useCollapsedState(storageKey: string, initialCollapsed: boolean) {
     // getServerSnapshot: Server Component에서 전달된 cookie 기반 값
     () => initialCollapsed,
   );
-
-  // 기존 localStorage 사용자의 cookie 마이그레이션 (1회)
-  useEffect(() => {
-    const legacyValue = localStorage.getItem(storageKey);
-    if (legacyValue) {
-      document.cookie = `${storageKey}=${legacyValue}; path=/; SameSite=Lax; max-age=${60 * 60 * 24 * 365}`;
-      localStorage.removeItem(storageKey);
-    }
-  }, [storageKey]);
 
   const toggle = useCallback(() => {
     const next = !collapsed;
