@@ -6,8 +6,11 @@ use App\Services\Contracts\EmbeddingProviderInterface;
 use App\Services\Contracts\TranslationProviderInterface;
 use App\Services\ProviderFactory;
 use App\Services\SettingsService;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use SocialiteProviders\Manager\SocialiteWasCalled;
+use SocialiteProviders\Naver\NaverExtendSocialite;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,6 +33,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Event::listen(
+            SocialiteWasCalled::class,
+            NaverExtendSocialite::class
+        );
+
         if (app()->environment('testing') && config('database.connections.pgsql.database') !== 'cl_embed_test') {
             config(['database.connections.pgsql.database' => 'cl_embed_test']);
         }
