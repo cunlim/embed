@@ -1072,7 +1072,7 @@
                     "Auth"
                 ],
                 "summary": "OAuth 로그인 리다이렉트",
-                "description": "지정된 제공자의 OAuth 로그인 페이지로 리다이렉트합니다.",
+                "description": "지정된 제공자의 OAuth 로그인 페이지로 리다이렉트합니다. 만약 JSON 요청(Accept: application/json)인 경우 302 리다이렉트 대신 리다이렉트 URL을 JSON 응답으로 반환합니다.",
                 "operationId": "4646f9fe1c2d8e70d188b43ef57c07f7",
                 "parameters": [
                     {
@@ -1116,6 +1116,22 @@
                 "responses": {
                     "302": {
                         "description": "OAuth 제공자 로그인 페이지로 리다이렉트"
+                    },
+                    "200": {
+                        "description": "JSON 요청 시 OAuth 제공자 로그인 URL 반환",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "url": {
+                                            "description": "OAuth 로그인 URL",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }

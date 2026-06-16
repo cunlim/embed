@@ -43,6 +43,20 @@ test('GET /api/auth/{provider}/redirect - handles github provider', function () 
     $response->assertRedirect();
 });
 
+test('GET /api/auth/{provider}/redirect - returns JSON response with url when wants JSON', function () {
+    $provider = Mockery::mock();
+    $provider->shouldReceive('redirect')->andReturn(redirect('https://accounts.google.com/o/oauth2/auth'));
+
+    Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+    $response = $this->getJson('/api/auth/google/redirect');
+
+    $response->assertOk();
+    $response->assertJson([
+        'url' => 'https://accounts.google.com/o/oauth2/auth',
+    ]);
+});
+
 test('GET /api/auth/{provider}/redirect - stores oauth_client in session', function () {
     $provider = Mockery::mock();
     $provider->shouldReceive('redirect')->andReturn(redirect('https://accounts.google.com/o/oauth2/auth'));

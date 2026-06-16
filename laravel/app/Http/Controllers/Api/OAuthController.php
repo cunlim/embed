@@ -7,13 +7,14 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Laravel\Socialite\Facades\Socialite;
 use OpenApi\Attributes as OA;
+use Symfony\Component\HttpFoundation\Response;
 
 class OAuthController extends Controller
 {
     #[OA\Get(
         path: '/api/auth/{provider}/redirect',
         summary: 'OAuth 로그인 리다이렉트',
-        description: '지정된 제공자의 OAuth 로그인 페이지로 리다이렉트합니다.',
+        description: '지정된 제공자의 OAuth 로그인 페이지로 리다이렉트합니다. 만약 JSON 요청(Accept: application/json)인 경우 302 리다이렉트 대신 리다이렉트 URL을 JSON 응답으로 반환합니다.',
         tags: ['Auth'],
         parameters: [
             new OA\Parameter(
@@ -43,14 +44,32 @@ class OAuthController extends Controller
                 response: 302,
                 description: 'OAuth 제공자 로그인 페이지로 리다이렉트',
             ),
+            new OA\Response(
+                response: 200,
+                description: 'JSON 요청 시 OAuth 제공자 로그인 URL 반환',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'url', type: 'string', description: 'OAuth 로그인 URL'),
+                    ]
+                )
+            ),
         ]
     )]
-    public function redirect(string $provider): RedirectResponse
+    public function redirect(string $provider): Response
     {
         session()->put('oauth_client', request()->query('client', 'web'));
         session()->put('oauth_redirect', request()->query('redirect'));
 
-        return Socialite::driver($provider)->redirect();
+        /** @var \Symfony\Component\HttpFoundation\RedirectResponse $response */
+        $response = Socialite::driver($provider)->redirect();
+
+        if (request()->wantsJson()) {
+            return response()->json([
+                'url' => $response->getTargetUrl(),
+            ]);
+        }
+
+        return $response;
     }
 
     #[OA\Get(
