@@ -99,7 +99,7 @@ class RecommendController extends Controller
 
         // text가 없거나 빈 문자열이면 일반 카테고리 목록 반환
         if (empty(trim((string) $text))) {
-            $query = Category::where('category_name_ko', '!=', '__folder_placeholder__')
+            $query = Category::query()
                 ->orderBy("category_name_{$targetLanguage}");
 
             if (is_array($scopeUserId)) {
