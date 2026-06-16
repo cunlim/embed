@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { setupAuth } from "./helpers/auth";
 
 test.describe("대량 카테고리 업로드", () => {
   test.beforeEach(async ({ page }) => {
-    const token = process.env.E2E_TOKEN || "";
-    await page.goto(`/login?token=${token}`);
+    await setupAuth(page);
     await page.goto("/embed");
   });
 
@@ -38,7 +38,7 @@ test.describe("대량 카테고리 업로드", () => {
     // 파일 업로드
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(
-      "nextjs/public/samples/카테고리대량등록_v1.xlsx"
+      "public/samples/카테고리대량등록_v1.xlsx"
     );
 
     // 업로드 버튼 클릭

@@ -1,16 +1,16 @@
 import { test, expect } from "@playwright/test";
+import { setupAuth } from "./helpers/auth";
 
-test.describe("Embed 페이지 - 일괄 번역", () => {
-  test("전체 번역 실행 버튼이 표시된다", async ({ page }) => {
-    const token = process.env.E2E_TOKEN || "";
-    await page.goto(`/login?token=${token}`);
+test.describe("Embed 페이지 - 작업 실행", () => {
+  test("전체 처리 버튼이 표시된다", async ({ page }) => {
+    await setupAuth(page);
     await page.goto("/embed");
 
-    // 일괄 번역 섹션 확인
-    await expect(page.locator("text=일괄 번역")).toBeVisible();
+    // 작업 실행 섹션 확인
+    await expect(page.locator("text=작업 실행")).toBeVisible();
 
-    // 전체 번역 실행 버튼 확인
-    const batchButton = page.locator("button:has-text('전체 번역 실행')");
+    // 전체 처리 버튼 확인
+    const batchButton = page.getByRole("button", { name: "전체 처리" });
     await expect(batchButton).toBeVisible();
   });
 });

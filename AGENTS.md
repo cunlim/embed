@@ -44,11 +44,13 @@
 - **Playwright 이슈 재현** — 수정 작업 전 Playwright로 실제 이슈가 존재하는지 먼저 확인한다.
 - **Playwright 테스트 URL** — WSL2 호스트에서 `https://embed.cunlim.dev` 또는 `http://localhost:3000`로 접속 가능.
 - **Playwright 인증** — 쿠키 기반(`auth_token`). superadmin 토큰 발급은 `laravel/AGENTS.md` 참조. 쿠키 설정은 `context.clearCookies()` → `page.evaluate(t => document.cookie = \`auth_token=${t}; path=/; SameSite=Lax; max-age=86400\`, token)` 방식 사용 (`addCookies`는 API 요청에 미포함되는 경우 있음). `/api/auth/user` 200 확인 후 진행.
+- **Playwright E2E 실행** — `nextjs/`에서 `npx playwright test`로 실행. headed 모드(`headless: false`), `.env.local`에서 `E2E_BASE_URL`·`E2E_TOKEN` 자동 로드(dotenv). 대상 URL은 `.env.local`에서 관리, 커밋 코드에 하드코딩 금지.
+- **Playwright `addCookies` domain** — `addCookies`는 `domain` 파라미터 필수. localhost 고정 시 원격 URL에서 실패. `new URL(baseURL).hostname`로 동적 추출하여 사용. `e2e/helpers/auth.ts`의 `setupAuth()` 패턴 참조.
 - **Worktree 파일 동기화** — Sub-agent가 worktree에서 수정한 파일은 `cp <worktree-path> <main-path>`로 메인에 복사. 완료 후 `git status`로 누락 확인.
 
 ### Phase 3: 검증
 
-- **전체 검증 실행** — `.claude/hooks/run-all-checks.sh --terminal`로 tsc, lint, test, pint 모두 확인.
+- **전체 검증 실행** — `.claude/hooks/run-all-checks.sh --terminal`로 tsc, lint, test, pint 모두 확인. **경로 주의**: 스크립트는 저장소 루트 기준이므로 `nextjs/` 등 하위 디렉토리에서 작업 중일 때는 `../.claude/hooks/run-all-checks.sh --terminal`로 호출하거나 `cd`로 루트로 이동 후 실행해야 함.
 - **EXIT=0 확인** —任何一个 체크가 실패하면 즉시 수정 후 재실행. 모두 통과할 때까지 반복.
 - **Playwright 재검증** — 수정 후 이슈가 해결되었는지 Playwright로 최종 확인 (버그 수정 시).
 

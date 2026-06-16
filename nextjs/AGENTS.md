@@ -173,6 +173,7 @@ Vitest + React Testing Library + jsdom 구성. 테스트 디렉토리:
 - **SelectTrigger 기본 height**: `data-[size=default]:h-8` (32px). 인접 버튼 height 불일치 방지 위해 `h-8`로 통일 (`h-9` 사용 시 4px 차이).
 - **Flex 내 truncate는 `min-w-0` 필수** — flex 아이템 기본 `min-width: auto`가 `truncate` CSS를 무력화. `SelectTrigger` 등 flex 레이아웃 내 truncation 필요 시 부모 컨테이너에 `min-w-0` 추가.
 - **Playwright shadcn Select** — `browser_select_option`은 native `<select>` 전용. shadcn Select(role="combobox")는 `browser_run_code_unsafe` + `async (page) => {...}`로 조작. `window.fetch` monkey-patch로 API 호출 스택 추적 가능.
+- **E2E 테스트 설정** — `playwright.config.ts`에서 `dotenv`로 `.env.local` 자동 로드. `E2E_BASE_URL`(대상 URL), `E2E_TOKEN`(superadmin 토큰)은 `.env.local`에 설정, `.env.example`에 문서화. 실행: `npx playwright test`. 인증: `e2e/helpers/auth.ts`의 `setupAuth()` 사용.
 - **ESLint `react-hooks/set-state-in-effect` 데이터 fetch 패턴** — useEffect에서 `loadApiKeys()` 등 비동기 함수를 직접 호출하면 함수 내부의 setState가 동기적으로 트리거되어 에러. **해결**: `async function init() { await loadApiKeys(); }`로 래핑하여 effect body를 비동기로 처리. `useApiKeys`·`useUsageStats` 등 모든 데이터 fetch 훅에 적용.
 - **`Math.random()` render 중 호출 금지** — React pure component 규칙 위반. skeleton loading 등에서 랜덤 height 필요 시 `(i * 17 + 13) % 50` 등 결정적 수식 사용.
 - **Hook에서 직접 `fetch()` 호출 금지** — `api.ts`에 중앙화된 함수(`runStep` 등)를 사용. 직접 `fetch()`하면 API URL 구성·인증 헤더·에러 처리 로직이 이중 관리됨. 테스트도 `global.fetch` mocking 대신 `vi.mock("@/lib/api")` + `vi.mocked(fn)` 패턴 사용.
