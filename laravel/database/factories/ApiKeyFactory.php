@@ -10,18 +10,33 @@ class ApiKeyFactory extends Factory
 {
     protected $model = ApiKey::class;
 
+    private ?string $lastGeneratedKey = null;
+
     public function definition(): array
     {
         $key = ApiKey::generateKey();
+        $this->lastGeneratedKey = $key;
 
         return [
             'user_id' => User::factory(),
             'name' => fake()->word().' key',
-            'key' => $key,
             'key_hash' => ApiKey::hashKey($key),
             'key_prefix' => substr($key, 0, 10),
             'status' => 'active',
         ];
+    }
+
+    public function configure(): static
+    {
+        return $this->afterMaking(function (ApiKey $apiKey) {
+            if ($this->lastGeneratedKey) {
+                $apiKey->plain_key = $this->lastGeneratedKey;
+            }
+        })->afterCreating(function (ApiKey $apiKey) {
+            if ($this->lastGeneratedKey) {
+                $apiKey->plain_key = $this->lastGeneratedKey;
+            }
+        });
     }
 
     public function paused(): static

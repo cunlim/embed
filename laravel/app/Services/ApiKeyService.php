@@ -20,7 +20,6 @@ class ApiKeyService
         $apiKey = ApiKey::create([
             'user_id' => $userId,
             'name' => $name,
-            'key' => $plainKey,              // 호환성 — 추후 컬럼 삭제 예정
             'key_hash' => ApiKey::hashKey($plainKey),
             'key_prefix' => substr($plainKey, 0, 10),
             'status' => 'active',

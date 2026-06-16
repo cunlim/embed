@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,12 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-#[Fillable(['user_id', 'name', 'key', 'key_hash', 'key_prefix', 'status'])]
-#[Hidden(['key'])]
+#[Fillable(['user_id', 'name', 'key_hash', 'key_prefix', 'status'])]
 class ApiKey extends Model
 {
     /** @use HasFactory<ApiKeyFactory> */
     use HasFactory;
+
+    public ?string $plain_key = null;
 
     /** JSON 직렬화에 포함할 추가 속성 */
     protected $appends = ['key_preview'];

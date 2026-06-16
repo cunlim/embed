@@ -20,8 +20,8 @@ test('create — 새로운 API 키를 생성한다', function () {
     expect($apiKey)->toBeInstanceOf(ApiKey::class);
     expect($apiKey->user_id)->toBe($this->user->id);
     expect($apiKey->name)->toBe('테스트 키');
-    expect($apiKey->key)->toStartWith('cl_');
-    expect($apiKey->key)->toHaveLength(43); // 'cl_'(3) + Str::random(40)
+    expect($apiKey->plain_key)->toStartWith('cl_');
+    expect($apiKey->plain_key)->toHaveLength(43); // 'cl_'(3) + Str::random(40)
     expect($apiKey->status)->toBe('active');
     expect($apiKey->last_used_at)->toBeNull();
 });
@@ -52,7 +52,7 @@ test('listByUser — 다른 사용자의 키는 포함되지 않는다', functio
 test('findByKey — 키 문자열로 API 키를 조회한다', function () {
     $apiKey = $this->service->create($this->user->id, '조회용 키');
 
-    $found = $this->service->findByKey($apiKey->key);
+    $found = $this->service->findByKey($apiKey->plain_key);
 
     expect($found)->not->toBeNull();
     expect($found->id)->toBe($apiKey->id);

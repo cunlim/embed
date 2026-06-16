@@ -715,7 +715,7 @@ export function EmbedPageInner({
                   // page=1, folder + user_id URL 반영 (기존 filter 등 파라미터 보존)
                   updateURL({ folder: folder ?? null, userId: userId ?? null, page: 1 });
                   // 폴더 범위로 카테고리 재로드 (기존 필터 유지)
-                  loadCategories(1, perPage, effectiveFilter, keywordRef.current, folder ?? undefined, userId ?? undefined, stepsRef.current);
+                  loadCategories(1, perPage, effectiveFilter, keywordRef.current, folder ?? undefined, userId ?? undefined, stepsRef.current, hierarchyLangRef.current);
                 }}
                 onFolderActionComplete={() => {
                   // 폴더 이동 후 선택 해제
@@ -831,7 +831,7 @@ export function EmbedPageInner({
                     token={token}
                     folder={selectedFolder ?? undefined}
                     onSuccess={() => {
-                      loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current);
+                      loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current, hierarchyLangRef.current);
                       setHierarchyRefreshKey((prev) => prev + 1);
                     }}
                   />
@@ -1266,12 +1266,12 @@ export function EmbedPageInner({
         execState={modalCategoryId ? getState(modalCategoryId) : null}
         onSingleAction={async (stepName) => {
           if (modalCategoryId !== null) {
-            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined, undefined, stepsRef.current), setData);
+            await handleSingleAction(modalCategoryId, stepName, () => loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current, hierarchyLangRef.current), setData);
           }
         }}
         onRunAll={async () => {
           if (modalCategoryId !== null && detailData) {
-            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined, undefined, stepsRef.current), setData);
+            await handleRunAll(modalCategoryId, detailData, () => loadCategories(page, perPage, effectiveFilter, undefined, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current, hierarchyLangRef.current), setData);
           }
         }}
         onCancelPending={() => {

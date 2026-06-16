@@ -27,7 +27,7 @@ class ApiRateLimit
                 $retryAfter = RateLimiter::availableIn($key);
 
                 return response()->json([
-                    'code' => 'rate_limited',
+                    'code' => 'rate_limit_exceeded',
                     'message' => 'API 호출 한도를 초과했습니다.',
                 ], 429)->withHeaders([
                     'Retry-After' => $retryAfter,
@@ -47,7 +47,7 @@ class ApiRateLimit
             $retryAfter = RateLimiter::availableIn($key);
 
             return response()->json([
-                'code' => 'rate_limited',
+                'code' => 'rate_limit_exceeded',
                 'message' => 'API 호출 한도를 초과했습니다.',
             ], 429)->withHeaders([
                 'Retry-After' => $retryAfter,

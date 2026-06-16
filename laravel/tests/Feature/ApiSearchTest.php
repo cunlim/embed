@@ -1,9 +1,9 @@
 <?php
 
-use App\Models\ApiKey;
 use App\Models\Category;
 use App\Models\SearchLog;
 use App\Models\User;
+use App\Services\ApiKeyService;
 use App\Services\ApiUsageService;
 use App\Services\EmbeddingCacheService;
 use App\Services\RecommendationService;
@@ -14,10 +14,7 @@ beforeEach(function () {
         'api_quota_remaining' => 10,
         'api_quota_limit' => 10,
     ]);
-    $this->apiKey = ApiKey::factory()->create([
-        'user_id' => $this->user->id,
-        'status' => 'active',
-    ]);
+    $this->apiKey = app(ApiKeyService::class)->create($this->user->id, '테스트 키');
 });
 
 /**
@@ -70,7 +67,7 @@ function setupMocks($test, $paginator = null): void
 test('POST /api/v1/search — 유효한 검색은 결과를 반환한다', function () {
     setupMocks($this);
 
-    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->key}")
+    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
             'text' => '청바지',
         ]);
@@ -86,7 +83,7 @@ test('POST /api/v1/search — 유효한 검색은 결과를 반환한다', funct
 test('POST /api/v1/search — 검색 후 사용 로그가 기록된다', function () {
     setupMocks($this);
 
-    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->key}")
+    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
             'text' => '청바지',
         ]);
@@ -97,7 +94,7 @@ test('POST /api/v1/search — 검색 후 사용 로그가 기록된다', functio
 test('POST /api/v1/search — 검색 후 쿼터가 차감된다', function () {
     setupMocks($this);
 
-    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->key}")
+    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
             'text' => '청바지',
         ]);
@@ -158,7 +155,7 @@ test('POST /api/v1/search — 기본 target_language는 ko이다', function () {
     $mockUsage->shouldReceive('log')->once();
     app()->instance(ApiUsageService::class, $mockUsage);
 
-    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->key}")
+    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
             'text' => '청바지',
         ]);
@@ -216,7 +213,7 @@ test('POST /api/v1/search — mode=hierarchy+lang은 searchLang을 전달한다'
     $mockUsage->shouldReceive('log')->once();
     app()->instance(ApiUsageService::class, $mockUsage);
 
-    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->key}")
+    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
             'text' => '청바지',
             'mode' => 'hierarchy',
@@ -227,7 +224,7 @@ test('POST /api/v1/search — mode=hierarchy+lang은 searchLang을 전달한다'
 });
 
 test('POST /api/v1/search — text 없으면 검증 실패', function () {
-    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->key}")
+    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', []);
 
     $response->assertUnprocessable()
@@ -235,7 +232,7 @@ test('POST /api/v1/search — text 없으면 검증 실패', function () {
 });
 
 test('POST /api/v1/search — 유효하지 않은 mode는 검증 실패', function () {
-    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->key}")
+    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
             'text' => '청바지',
             'mode' => 'invalid',
@@ -246,7 +243,7 @@ test('POST /api/v1/search — 유효하지 않은 mode는 검증 실패', functi
 });
 
 test('POST /api/v1/search — 유효하지 않은 target_language는 검증 실패', function () {
-    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->key}")
+    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
             'text' => '청바지',
             'target_language' => 'ja',
@@ -267,7 +264,7 @@ test('POST /api/v1/search — API 키 없으면 401 반환', function () {
 test('POST /api/v1/search — X-Processing-Time-Ms 헤더를 포함한다', function () {
     setupMocks($this);
 
-    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->key}")
+    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
             'text' => '청바지',
         ]);
@@ -281,7 +278,7 @@ test('POST /api/v1/search — 마지막 사용 시간이 갱신된다', function
 
     setupMocks($this);
 
-    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->key}")
+    $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
             'text' => '청바지',
         ]);
