@@ -82,10 +82,10 @@
     - **Certbot:** 원스톱으로 SSL 인증 신청, 매일 새벽 자동 갱신하는 인프라를 구축하여 꼭 필요하지 않은 작은 프로젝트에도 쉽고 안전하게 https 적용
     - **Composer:** 바닐라 PHP 에 라이브러리를 수동으로 업로드 하여 path 불일치 등 이슈를 튜닝하던 불편함으로부터 의존성을 체계적으로 관리
     - **Xdebug:** if is_admin 안에 print 하는 디버깅을 위한 코드가 덕지덕지 하고 웹페이지에 화면이 깨지는것을 감안하여 출력해보던 불편함으로부터 실행 타임라인과 실행된 모든 변수의 값을 추적할수 있고 실행 시간까지 알수 있는 편리함을 얻을수 있었습니다.
-  * **업무요청에 맞게 신규 기술 도입:** PyPDF2(Python), Express(Node.js), Chrome Extension,, Vue(CDN) C# terminal app 도입
-    - **PyPDF2:** api 로 받아온 PDF 들을 주문별로 합병하여 출력하는데에 편리함을 30% 더함.
+  * **업무요청에 맞게 신규 기술 도입:** PyPDF2(Python), Express(Node.js), Chrome Extension, Vue(CDN) C# terminal app 도입
+    - **PyPDF2:** api 로 받아온 PDF 들을 주문별로 합병하여 출력하는데에 편리함 30% 향상.
     - **Express, Chrome Extension:** 크롤링 수요에 맞춰 Puppeteer 을 선택했고 Express 로 서버를 구축했지만 다양한 사이트의 캡챠를 뚫어야 하는 비효율을 극복하기 위해 Chrome Extension 으로 전환, 크롤링 결과를 parsing 하는 Node.js 코드는 90% 재활용.
-    - **Vue(CDN):** jQuery 만으로 DOM 컨트롤 하는 프로젝트에 데이터와 UI 의 복잡도가 큰 페이지 작업요청을 작업속도와 유지보수성을 고려하여 MVVM 을 지원하는 React 와 Vue 중 하나를 도입하려고 생각했고 PHP 에 익숙한 동료분들을 고려하여 CLI 방식의 Vue 를 도입함.
+    - **Vue(CDN):** jQuery 만으로 DOM 컨트롤 하는 프로젝트에 데이터와 UI 의 복잡도가 큰 페이지 작업요청을 작업속도와 유지보수성을 고려하여 MVVM 을 지원하는 React 와 Vue 중 하나를 도입하려고 생각했고 PHP 에 익숙한 동료분들을 고려하여 CDN 방식의 Vue 를 도입.
     - **C# terminal app:** 자체 서비스 웹페이지에서 버튼을 클릭하여 외부개발자가 개발한 C# 프로그램을 부팅하는 동시에 데이터를 전달하는 기능 프로토타입을 작업하여 해당 기능 실현 가능성을 제시하여 외부개발자한테 전달.
   * **협업 인프라 구축:** Git, [VSCode + Remote SSH + saveBackup extension + 저장로그 통계 서비스 개발], 신규 기술 문서화
     - **VSCode + Remote SSH:** FTP로 서버의 파일을 직접 수정하며 협업하면서 파일 동기화 등 이슈를 해결하기 위해 UltraEdit 혹은 EditPlus 를 사용하던것을 전 회사 개발자한테 VSCode + Remote SSH 로 통일하여 협업 인프라 업그레이드.
