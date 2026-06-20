@@ -58,8 +58,8 @@
 - **사용 기술 및 인프라:** Linux(WSL2 + CloudFlare Tunnel), Docker, GitHub Actions 자동화배포, Laravel, Next.js, Shadcn, PostgreSQL(pgvector), Ollama
 - **목적:** AI 개발 적극 도입, 모던 기술스택 적극 차용, 전 회사에서 미처 해결하지 못했던 기능 시도
 - **주요 성과:**
-  - 임베딩 검색 결과가 실제 유사도 검색결과 체감과 어느정도 일치하는지 검증
-  - AI 개발과정 컨트롤 능력 향상 (MCP, Skills, Harness)
+  - 임베딩 검색 결과가 실제 유사도 체감과 어느정도 일치하는지 검증
+  - AI 개발과정 컨트롤 능력 향상 (Claude Code, MCP, Skills, Harness)
   - 모던한 기술스택 도메인 지식 확장
 
 ---
@@ -84,7 +84,7 @@
     - **Xdebug:** if is_admin 안에 print 하는 디버깅을 위한 코드가 덕지덕지 하고 웹페이지에 화면이 깨지는것을 감안하여 출력해보던 불편함으로부터 실행 타임라인과 실행된 모든 변수의 값을 추적할수 있고 실행 시간까지 알수 있는 편리함을 얻을수 있었습니다.
   * **업무요청에 맞게 신규 기술 도입:** PyPDF2(Python), Express(Node.js), Chrome Extension, Vue(CDN) C# terminal app 도입
     - **PyPDF2:** api 로 받아온 PDF 들을 주문별로 합병하여 출력하는데에 편리함 30% 향상.
-    - **Express, Chrome Extension:** 크롤링 수요에 맞춰 Puppeteer 을 선택했고 Express 로 서버를 구축했지만 다양한 사이트의 캡챠를 뚫어야 하는 비효율을 극복하기 위해 Chrome Extension 으로 전환, 크롤링 결과를 parsing 하는 Node.js 코드는 90% 재활용.
+    - **Express, Chrome Extension:** 크롤링 수요에 맞춰 Express + Puppeteer 로 서버를 구축했지만 다양한 사이트의 캡챠를 뚫어야 하는 비효율을 극복하기 위해 Chrome Extension 으로 전환, 크롤링 결과를 parsing 하는 JavaScript 코드는 90% 재활용.
     - **Vue(CDN):** jQuery 만으로 DOM 컨트롤 하는 프로젝트에 데이터와 UI 의 복잡도가 큰 페이지 작업요청을 작업속도와 유지보수성을 고려하여 MVVM 을 지원하는 React 와 Vue 중 하나를 도입하려고 생각했고 PHP 에 익숙한 동료분들을 고려하여 CDN 방식의 Vue 를 도입.
     - **C# terminal app:** 자체 서비스 웹페이지에서 버튼을 클릭하여 외부개발자가 개발한 C# 프로그램을 부팅하는 동시에 데이터를 전달하는 기능 프로토타입을 작업하여 해당 기능 실현 가능성을 제시하여 외부개발자한테 전달.
   * **협업 인프라 구축:** Git, [VSCode + Remote SSH + saveBackup extension + 저장로그 통계 서비스 개발], 신규 기술 문서화
