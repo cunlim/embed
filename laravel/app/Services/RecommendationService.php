@@ -64,10 +64,6 @@ class RecommendationService
             ->selectRaw('ce_ko.embedding <=> ?::vector as distance_ko', [$vectorLiteral])
             ->selectRaw('ce_en.embedding <=> ?::vector as distance_en', [$vectorLiteral])
             ->selectRaw('ce_zh.embedding <=> ?::vector as distance_zh', [$vectorLiteral])
-            ->selectRaw("ce_{$targetLanguage}.embedding::text as category_embedding_raw")
-            ->selectRaw('ce_ko.embedding::text as category_embedding_raw_ko')
-            ->selectRaw('ce_en.embedding::text as category_embedding_raw_en')
-            ->selectRaw('ce_zh.embedding::text as category_embedding_raw_zh')
             ->leftJoin('category_embeddings as ce_ko', function ($join) {
                 $join->on('ce_ko.category_id', '=', 'categories.id')
                     ->where('ce_ko.language', '=', 'ko');

@@ -120,7 +120,9 @@ class RecommendController extends Controller
                 }
             }
 
-            return RecommendResource::collection($query->paginate(perPage: $perPage, page: $page))->response();
+            return RecommendResource::collection($query->paginate(perPage: $perPage, page: $page))
+                ->additional(['query_embedding' => null])
+                ->response();
         }
 
         // 로그인 사용자 유사도 검색 quota 체크
@@ -140,7 +142,7 @@ class RecommendController extends Controller
             $text, $modelName, $userId
         );
 
-        RecommendResource::setQueryEmbedding($searchLog->embedding->toArray());
+        $queryEmbedding = $searchLog->embedding->toArray();
 
         $results = $this->recommendation->recommendPaginated(
             $searchLog, $targetLanguage, $perPage, $page, $scopeUserId, $keyword, $folder
@@ -165,6 +167,8 @@ class RecommendController extends Controller
             );
         }
 
-        return RecommendResource::collection($results)->response();
+        return RecommendResource::collection($results)
+            ->additional(['query_embedding' => $queryEmbedding])
+            ->response();
     }
 }

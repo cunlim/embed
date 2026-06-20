@@ -107,11 +107,13 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   // 유사도 검색 prefetch
   let serverSearchResults: Recommendation[] | null = null;
   let serverSearchMeta: PaginationMeta | null = null;
+  let serverQueryEmbedding: number[] | null = null;
   if (searchText) {
     try {
       const searchRes = await recommend(searchText, searchLang, token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined, urlUserIdNum);
       serverSearchResults = searchRes.data;
       serverSearchMeta = searchRes.meta;
+      serverQueryEmbedding = searchRes.query_embedding ?? null;
     } catch {}
   }
 
@@ -147,6 +149,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
         serverUser={serverUser}
         serverSearchResults={serverSearchResults}
         serverSearchMeta={serverSearchMeta}
+        serverQueryEmbedding={serverQueryEmbedding}
         serverSearchText={searchText}
         serverSearchLang={searchLang}
         serverHierarchyLang={hierarchyLang}

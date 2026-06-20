@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Copy, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -13,12 +13,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { fetchCategoryTranslations } from "@/lib/api";
 import type { Recommendation } from "@/lib/api";
 
 interface CosineDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   result: Recommendation | null;
+  /** 목록 API 응답 최상위의 query_embedding (검색어 임베딩) */
+  queryEmbedding?: number[] | null;
   searchKeyword?: string;
   targetLanguage?: string;
 }
@@ -153,19 +156,51 @@ export default function CosineDetailDialog({
   open,
   onOpenChange,
   result,
+  queryEmbedding,
   searchKeyword,
   targetLanguage = "ko",
 }: CosineDetailDialogProps) {
   const [selectedLanguage, setSelectedLanguage] = useState<"ko" | "en" | "zh">(targetLanguage as "ko" | "en" | "zh");
   const prevOpenRef = useRef(open);
 
-  // 모달이 열릴 때 targetLanguage로 초기화
+  // 카테고리 임베딩 on-demand 로딩 상태
+  const [categoryEmbeddings, setCategoryEmbeddings] = useState<Record<string, number[] | null>>({});
+  const [embeddingLoading, setEmbeddingLoading] = useState(false);
+
+  // 모달이 열릴 때 targetLanguage로 초기화 + 임베딩 상태 리셋
   // eslint-disable-next-line react-hooks/refs -- 모달 open 시점에만 상태 초기화 필요
   if (open && !prevOpenRef.current) {
     setSelectedLanguage(targetLanguage as "ko" | "en" | "zh");
+    setCategoryEmbeddings({});
+    setEmbeddingLoading(true);
   }
   // eslint-disable-next-line react-hooks/refs
   prevOpenRef.current = open;
+
+  // 다이얼로그 열릴 때 카테고리 임베딩 로딩
+  useEffect(() => {
+    if (!open || !result?.id) return;
+
+    let cancelled = false;
+
+    fetchCategoryTranslations(result.id)
+      .then((res) => {
+        if (cancelled) return;
+        const embeddings: Record<string, number[] | null> = {};
+        for (const lang of ["ko", "en", "zh"] as const) {
+          embeddings[lang] = res.data.languages[lang].embedding.preview ?? null;
+        }
+        setCategoryEmbeddings(embeddings);
+      })
+      .catch(() => {
+        // 임베딩 로딩 실패 시 빈 상태 유지 (점수는 그대로 표시)
+      })
+      .finally(() => {
+        if (!cancelled) setEmbeddingLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [open, result?.id]);
 
   if (!result) return null;
 
@@ -175,9 +210,8 @@ export default function CosineDetailDialog({
   const clampedScore = Math.min(1, Math.max(-1, score));
   const scorePercent = (score * 100).toFixed(1);
   const thetaDeg = ((Math.acos(clampedScore) * 180) / Math.PI).toFixed(1);
-  const aEmb = result.query_embedding;
-  // 선택된 언어의 카테고리 임베딩 사용, 없으면 기본값
-  const bEmb = selectedScores?.category_embedding ?? result.category_embedding;
+  const aEmb = queryEmbedding ?? null;
+  const bEmb = categoryEmbeddings[selectedLanguage] ?? null;
   const normA = aEmb ? Math.sqrt(aEmb.reduce((s, v) => s + v * v, 0)) : 1;
   const normB = bEmb ? Math.sqrt(bEmb.reduce((s, v) => s + v * v, 0)) : 1;
 
@@ -221,7 +255,7 @@ export default function CosineDetailDialog({
             </p>
             <div className="min-w-0 flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
               <span className="min-w-0 flex-1 truncate font-mono text-xs text-[#3b82f6]">
-                {formatEmbeddingPreview(aEmb)}
+                {aEmb ? formatEmbeddingPreview(aEmb) : "—"}
               </span>
               {aEmb && aEmb.length > 0 && (
                 <Button
@@ -244,7 +278,7 @@ export default function CosineDetailDialog({
             </p>
             <div className="min-w-0 flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
               <span className="min-w-0 flex-1 truncate font-mono text-xs text-[#ef4444]">
-                {formatEmbeddingPreview(bEmb)}
+                {embeddingLoading ? "로딩 중..." : bEmb ? formatEmbeddingPreview(bEmb) : "—"}
               </span>
               {bEmb && bEmb.length > 0 && (
                 <Button

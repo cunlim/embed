@@ -22,6 +22,7 @@ export interface UseEmbedStateProps {
   serverUser?: User | null;
   serverSearchResults: Recommendation[] | null;
   serverSearchMeta: PaginationMeta | null;
+  serverQueryEmbedding?: number[] | null;
   serverSearchText: string | null;
   serverSearchLang: string;
   serverHierarchyLang?: string;
@@ -105,6 +106,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
   const [searchLanguage, setSearchLanguage] = useState(props.serverSearchLang ?? embedParams.searchLang);
   const [hierarchyLang, setHierarchyLang] = useState(props.serverHierarchyLang ?? embedParams.hierarchyLang ?? "ko");
   const [searchResults, setSearchResults] = useState<Recommendation[] | null>(props.serverSearchResults ?? null);
+  const [queryEmbedding, setQueryEmbedding] = useState<number[] | null>(props.serverQueryEmbedding ?? null);
 
   // useRef로 searchResults 참조 — useEffect 의존성 배열에 추가하지 않고 최신값 읽기
   const searchResultsRef = useRef(searchResults);
@@ -284,6 +286,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
       );
       setSearchResults(data.data);
       setSearchMeta(data.meta);
+      setQueryEmbedding(data.query_embedding ?? null);
     } catch (err) {
       setSearchError(err instanceof Error ? err.message : "검색에 실패했습니다");
       setSearchResults([]);
@@ -609,6 +612,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
     searchResults,
     setSearchResults,
     searchMeta,
+    queryEmbedding,
     isSearching,
     searchError,
     cosineDialogOpen,

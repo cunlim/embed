@@ -135,7 +135,6 @@ export async function fetchBatchStatus(
 export interface LanguageScore {
   similarity_score: number | null;
   rank: number | null;
-  category_embedding: number[] | null;
 }
 
 export interface PerLanguageScores {
@@ -153,14 +152,13 @@ export interface Recommendation {
   category_name: string;
   translation_status: "completed" | "partial" | "pending";
   similarity_score: number | null;
-  query_embedding: number[] | null;
-  category_embedding: number[] | null;
   per_language_scores: PerLanguageScores | null;
 }
 
 export interface RecommendResponse {
   data: Recommendation[];
   meta: PaginationMeta;
+  query_embedding: number[] | null;
 }
 
 export function recommend(

@@ -89,6 +89,7 @@ export function EmbedPageInner({
   serverUser,
   serverSearchResults,
   serverSearchMeta,
+  serverQueryEmbedding,
   serverSearchText,
   serverSearchLang,
   serverHierarchyLang,
@@ -107,6 +108,7 @@ export function EmbedPageInner({
   serverUser?: import("@/lib/api").User | null;
   serverSearchResults: Recommendation[] | null;
   serverSearchMeta: PaginationMeta | null;
+  serverQueryEmbedding?: number[] | null;
   serverSearchText: string | null;
   serverSearchLang: string;
   serverHierarchyLang?: string;
@@ -126,6 +128,7 @@ export function EmbedPageInner({
     serverUser,
     serverSearchResults,
     serverSearchMeta,
+    serverQueryEmbedding,
     serverSearchText,
     serverSearchLang,
     serverHierarchyLang,
@@ -170,6 +173,7 @@ export function EmbedPageInner({
     setHierarchyLang,
     isSearching,
     searchError,
+    queryEmbedding,
     cosineDialogOpen,
     setCosineDialogOpen,
     activeResult,
@@ -867,6 +871,7 @@ export function EmbedPageInner({
         open={cosineDialogOpen}
         onOpenChange={setCosineDialogOpen}
         result={activeResult}
+        queryEmbedding={queryEmbedding}
         searchKeyword={searchText}
         targetLanguage={searchLanguage}
       />

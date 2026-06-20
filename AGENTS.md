@@ -93,6 +93,7 @@
 - **커스텀 이벤트 다중 리스너 레이스 컨디션** — 동일 `CustomEvent`에 여러 컴포넌트가 리스너를 등록하면 모든 핸들러가 동기 실행. 자식 컴포넌트의 이벤트 핸들러는 부모 콜백을 호출하지 말고 로컬 상태만 초기화. 부모가 유일한 데이터 재로드 주체여야 함.
 - **`useCategories` mutation reload 컨텍스트 완전성** — `addCategory()`·`deleteCategory()` 내부 reload는 `currentPage`·`currentPerPage`·`currentFilter`·`currentSearch`·`currentFolder` 모든 ref를 전달해야 함. 새 컨텍스트 파라미터 추가 시 ref 선언과 reload 호출 인자 양쪽 모두 업데이트.
 - **SSR prefetch 데이터 skip + 비사용자 리렌더 중복 호출** — `EmbedPageInner`의 data-loading effect에서 `hadServerCategories` ref가 첫 실행에서 `false`로 소비된 후, `useAuth getUser()` 등 비사용자 상태 업데이트로 인한 리렌더에서 effect가 재실행되어 불필요한 `/api/categories` 호출 발생. 수정: (1) `hadServerCategories = useRef(serverCategories.length > 0)`로 토큰 조건 제거, (2) 의존성 변화 추적 ref(`prevDepsForSkipRef`)로 SSR skip 후 동일 의존성 반복 실행 방지.
+- **`/api/recommend` 임베딩 벡터 제거 + on-demand 로딩** — recommend 응답에서 `query_embedding`, `category_embedding`, `per_language_scores[].category_embedding`을 항상 제거하여 응답 크기를 ~99% 감소. `query_embedding`은 응답 최상위 `query_embedding` 키에 1회만 포함. 카테고리 임베딩은 `CosineDetailDialog` 열 때 `/api/categories/{id}/translations`로 on-demand 로딩. 새 API 추가 없이 기존 translations API 재사용. 유사도 점수·순위는 목록 응답 항목에 그대로 유지.
 - **async batch flushSync 패턴** — React 19 batching 우회를 위해 `flushSync`로 루프 내 `setProgress`를 감쌈. 상세: `nextjs/AGENTS.md`.
 - **`no_preview` 파라미터 패턴** — 동일 API 엔드포인트를 여러 소비자가 사용할 때 무거운 필드(임베딩 벡터 등)를 쿼리 파라미터로 제어.
 - **batch `onComplete`·`onCategoryComplete` 콜백 패턴** — `onComplete`는 `filterRef.current`로 현재 필터를 읽고 `loadCategories(1, ...)` + `updateURL({ page: 1 })`로 URL 동기화. `onCategoryComplete`는 루프 중 `loadCategories` 호출 금지.

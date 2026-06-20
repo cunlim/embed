@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('RecommendResource includes per_language_scores', function () {
+test('RecommendResource includes per_language_scores without embedding vectors', function () {
     $user = User::factory()->create();
     $category = Category::factory()->create(['user_id' => $user->id]);
 
@@ -29,8 +29,6 @@ test('RecommendResource includes per_language_scores', function () {
         'embedding' => $embedding,
     ]);
 
-    RecommendResource::setQueryEmbedding($embedding);
-
     $category->similarity_score = 0.9876;
     $category->similarity_score_ko = 0.9876;
     $category->similarity_score_en = 0.8210;
@@ -41,6 +39,10 @@ test('RecommendResource includes per_language_scores', function () {
 
     $resource = new RecommendResource($category);
     $data = $resource->resolve(request()->merge(['target_language' => 'ko']));
+
+    // 임베딩 벡터 필드가 포함되지 않음
+    expect($data)->not->toHaveKey('query_embedding');
+    expect($data)->not->toHaveKey('category_embedding');
 
     expect($data)->toHaveKey('per_language_scores');
     expect($data['per_language_scores'])->toBeArray();
@@ -56,4 +58,6 @@ test('RecommendResource includes per_language_scores', function () {
         'similarity_score' => 0.7950,
         'rank' => 3,
     ]);
+    // per_language_scores에서도 category_embedding이 없음
+    expect($data['per_language_scores']['ko'])->not->toHaveKey('category_embedding');
 });
