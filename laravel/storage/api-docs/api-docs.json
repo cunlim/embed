@@ -1188,90 +1188,6 @@
                 }
             }
         },
-        "/api/recommend": {
-            "post": {
-                "tags": [
-                    "Recommend"
-                ],
-                "summary": "카테고리 추천",
-                "description": "입력 텍스트를 분석하여 pgvector 코사인 유사도 기반으로 카테고리를 추천합니다. text가 비어있으면 일반 카테고리 목록을 페이지네이션으로 반환합니다.",
-                "operationId": "c0c2c2f06d5fd5be7082cb942cf348e4",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "target_language"
-                                ],
-                                "properties": {
-                                    "text": {
-                                        "type": "string",
-                                        "nullable": true,
-                                        "maxLength": 500
-                                    },
-                                    "target_language": {
-                                        "type": "string",
-                                        "enum": [
-                                            "ko",
-                                            "zh",
-                                            "en"
-                                        ]
-                                    },
-                                    "page": {
-                                        "type": "integer",
-                                        "default": 1,
-                                        "minimum": 1
-                                    },
-                                    "per_page": {
-                                        "type": "integer",
-                                        "default": 20,
-                                        "maximum": 100,
-                                        "minimum": 1
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "추천 결과",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "properties": {
-                                                    "category_code": {
-                                                        "type": "string"
-                                                    },
-                                                    "category_name": {
-                                                        "type": "string"
-                                                    },
-                                                    "similarity_score": {
-                                                        "type": "number",
-                                                        "example": 0.9876
-                                                    }
-                                                },
-                                                "type": "object"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "입력값 검증 실패"
-                    }
-                }
-            }
-        },
         "/api/health": {
             "get": {
                 "tags": [
@@ -1332,10 +1248,6 @@
         {
             "name": "Categories",
             "description": "Categories"
-        },
-        {
-            "name": "Recommend",
-            "description": "Recommend"
         },
         {
             "name": "System",
