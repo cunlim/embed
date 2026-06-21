@@ -130,7 +130,7 @@ export async function fetchBatchStatus(
   });
 }
 
-// --- 추천 ---
+// --- 카테고리 (통합: 기존 /api/recommend 포함) ---
 
 export interface LanguageScore {
   similarity_score: number | null;
@@ -143,51 +143,6 @@ export interface PerLanguageScores {
   zh: LanguageScore;
 }
 
-export interface Recommendation {
-  id: number;
-  category_code: string;
-  category_name_ko: string;
-  category_name_zh: string | null;
-  category_name_en: string | null;
-  category_name: string;
-  translation_status: "completed" | "partial" | "pending";
-  similarity_score: number | null;
-  per_language_scores: PerLanguageScores | null;
-}
-
-export interface RecommendResponse {
-  data: Recommendation[];
-  meta: PaginationMeta;
-  query_embedding: number[] | null;
-}
-
-export function recommend(
-  text: string,
-  targetLanguage: string,
-  token?: string | null,
-  page?: number,
-  perPage?: number,
-  filter?: string,
-  keyword?: string,
-  folder?: string,
-  userId?: number | null,
-): Promise<RecommendResponse> {
-  const body: Record<string, string | number> = { text, target_language: targetLanguage };
-  if (page) body.page = page;
-  if (perPage) body.per_page = perPage;
-  if (filter) body.filter = filter;
-  if (keyword) body.keyword = keyword;
-  if (folder) body.folder = folder;
-  if (userId) body.user_id = userId;
-  return request<RecommendResponse>("/recommend", {
-    method: "POST",
-    body,
-    token,
-  });
-}
-
-// --- 카테고리 ---
-
 export interface Category {
   id: number;
   user_id: number;
@@ -197,8 +152,13 @@ export interface Category {
   category_name_en: string | null;
   category_name?: string;
   translation_status: "completed" | "partial" | "pending";
+  // 유사도 필드 (text 검색 시에만 존재)
   similarity_score?: number | null;
+  per_language_scores?: PerLanguageScores | null;
 }
+
+/** @deprecated Category로 통합됨 */
+export type Recommendation = Category;
 
 export interface PaginationMeta {
   current_page: number;
@@ -218,7 +178,11 @@ export interface CategoryListResponse {
     prev: string | null;
     next: string | null;
   };
+  query_embedding?: number[] | null;
 }
+
+/** @deprecated CategoryListResponse로 통합됨 */
+export type RecommendResponse = CategoryListResponse;
 
 export function getCategories(
   token?: string | null,
@@ -230,6 +194,8 @@ export function getCategories(
   userId?: number | null,
   steps?: StepName[],
   searchLang?: string,
+  text?: string,
+  targetLanguage?: string,
 ): Promise<CategoryListResponse> {
   const params = new URLSearchParams();
   if (page && page > 1) params.set("page", String(page));
@@ -242,8 +208,28 @@ export function getCategories(
   if (steps && steps.length > 0) {
     steps.forEach((step) => params.append("steps[]", step));
   }
+  // 유사도 검색 파라미터
+  if (text) params.set("text", text);
+  if (targetLanguage) params.set("target_language", targetLanguage);
+
   const qs = params.toString();
   return request<CategoryListResponse>(`/categories?${qs}`, { token });
+}
+
+/** @deprecated getCategories() 사용 */
+export function recommend(
+  text: string,
+  targetLanguage: string,
+  token?: string | null,
+  page?: number,
+  perPage?: number,
+  filter?: string,
+  keyword?: string,
+  folder?: string,
+  userId?: number | null,
+): Promise<CategoryListResponse> {
+  return getCategories(token, page, perPage, filter, keyword, folder,
+    userId, undefined, undefined, text, targetLanguage);
 }
 
 /** cat1~catN 동적 파라미터. max_depth 설정에 따라 확장 가능. */

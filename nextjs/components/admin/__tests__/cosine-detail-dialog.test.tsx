@@ -1,7 +1,7 @@
 import { afterEach, describe, it, expect } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
-import type { Recommendation } from "@/lib/api";
+import type { Category } from "@/lib/api";
 import {
   formatEmbeddingPreview,
   dotProductExpression,
@@ -91,8 +91,9 @@ describe("firstDotTerm", () => {
   });
 });
 
-const mockResult: Recommendation = {
+const mockResult: Category = {
   id: 1,
+  user_id: 1,
   category_code: "TEST",
   category_name_ko: "테스트",
   category_name_zh: "测试",

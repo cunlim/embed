@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import { fetchCategoryLevels, getCategories, recommend, getUser, fetchFolders, fetchUsers } from "@/lib/api";
+import { fetchCategoryLevels, getCategories, getUser, fetchFolders, fetchUsers } from "@/lib/api";
 import { parseEmbedParams, type EmbedParamsReader } from "@/lib/embed-params";
 import { EmbedPageInner } from "./embed-page-inner";
-import type { Category, PaginationMeta, Recommendation, User } from "@/lib/api";
+import type { Category, PaginationMeta, User } from "@/lib/api";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -104,13 +104,13 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
     serverMeta = categoriesRes.meta;
   } catch {}
 
-  // 유사도 검색 prefetch
-  let serverSearchResults: Recommendation[] | null = null;
+  // 유사도 검색 prefetch (통합 API: getCategories에 text 파라미터 전달)
+  let serverSearchResults: Category[] | null = null;
   let serverSearchMeta: PaginationMeta | null = null;
   let serverQueryEmbedding: number[] | null = null;
   if (searchText) {
     try {
-      const searchRes = await recommend(searchText, searchLang, token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined, urlUserIdNum);
+      const searchRes = await getCategories(token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined, urlUserIdNum, undefined, searchLang, searchText, searchLang);
       serverSearchResults = searchRes.data;
       serverSearchMeta = searchRes.meta;
       serverQueryEmbedding = searchRes.query_embedding ?? null;

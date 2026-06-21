@@ -10,15 +10,15 @@ import {
   getCategories,
   deleteCategory,
 } from "@/lib/api";
-import type { Category, Recommendation } from "@/lib/api";
+import type { Category } from "@/lib/api";
 
 interface CategoryDeleteProps {
   token: string | null;
   selectedIds: Set<number>;
-  categories: (Category | Recommendation)[];
+  categories: Category[];
   filter: string | undefined;
   keyword?: string;
-  canModify: (cat: Category | Recommendation) => boolean;
+  canModify: (cat: Category) => boolean;
   onComplete: () => void;
   onCategoryComplete?: () => void;
   folder?: string;

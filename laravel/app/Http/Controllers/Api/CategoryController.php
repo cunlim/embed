@@ -11,11 +11,15 @@ use App\Http\Resources\CategoryResource;
 use App\Http\Resources\CategoryTranslationsResource;
 use App\Models\Category;
 use App\Models\User;
+use App\Services\ApiUsageService;
 use App\Services\CategoryHierarchyService;
 use App\Services\CategoryProcessingService;
 use App\Services\CategoryQueryService;
+use App\Services\EmbeddingCacheService;
+use App\Services\RecommendationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 
 class CategoryController extends Controller
@@ -23,6 +27,9 @@ class CategoryController extends Controller
     public function __construct(
         private CategoryProcessingService $processingService,
         private CategoryHierarchyService $hierarchyService,
+        private EmbeddingCacheService $embeddingCache,
+        private RecommendationService $recommendation,
+        private ApiUsageService $apiUsage,
     ) {}
 
     #[OA\Get(
@@ -66,7 +73,7 @@ class CategoryController extends Controller
             ),
         ]
     )]
-    public function index(Request $request): CategoryCollection
+    public function index(Request $request): CategoryCollection|JsonResponse
     {
         /** @var User|null $user */
         $user = auth('sanctum')->user();
@@ -76,11 +83,113 @@ class CategoryController extends Controller
             $maxPerPage
         );
 
+        $text = $request->input('text');
+        $targetLanguage = $request->input('target_language', 'ko');
+
+        // text가 있고 비어있지 않으면 → 유사도 검색 (기존 /api/recommend 로직)
+        if (! empty($text) && trim($text) !== '') {
+            return $this->recommendSearch($request, $user, $text, $targetLanguage, $perPage);
+        }
+
+        // text가 없으면 → 기존 일반 목록
         $query = CategoryQueryService::buildListQuery($user, $request, withEmbeddings: true);
 
         return new CategoryCollection(
             $query->orderBy('id', 'desc')->paginate($perPage)
         );
+    }
+
+    /**
+     * 유사도 검색 분기 (기존 RecommendController::recommend() 로직 이식).
+     * text 파라미터가 있을 때 pgvector 코사인 유사도 기반으로 카테고리를 추천합니다.
+     */
+    private function recommendSearch(Request $request, ?User $user, string $text, string $targetLanguage, int $perPage): JsonResponse
+    {
+        // target_language 검증
+        if (! in_array($targetLanguage, ['ko', 'zh', 'en'], true)) {
+            $targetLanguage = 'ko';
+        }
+
+        // text 길이 검증
+        if (mb_strlen($text) > 500) {
+            return response()->json(['message' => 'text는 500자를 초과할 수 없습니다.'], 422);
+        }
+
+        $page = (int) $request->input('page', 1);
+        $keyword = $request->input('keyword');
+        $folder = $request->input('folder');
+
+        // 사용자 범위 해석
+        $scopeUserId = $this->resolveScopeUserId($user, $request);
+
+        // 비로그인 + filter=my → 빈 결과
+        if ($request->input('filter') === 'my' && ! $user) {
+            return response()->json([
+                'data' => [],
+                'meta' => ['current_page' => 1, 'last_page' => 1, 'total' => 0, 'per_page' => $perPage],
+                'query_embedding' => null,
+            ]);
+        }
+
+        // quota 체크
+        if ($user && ! $user->hasQuota()) {
+            return response()->json([
+                'code' => 'quota_exceeded',
+                'message' => '무료 호출 회수를 초과했습니다.',
+            ], 429);
+        }
+
+        $userId = $user?->id;
+        $modelName = config('services.embed.model', 'bge-m3:latest');
+
+        $searchLog = $this->embeddingCache->getOrCreateEmbedding($text, $modelName, $userId);
+        $queryEmbedding = $searchLog->embedding->toArray();
+
+        $results = $this->recommendation->recommendPaginated(
+            $searchLog, $targetLanguage, $perPage, $page, $scopeUserId, $keyword, $folder
+        );
+
+        // quota 차감 + 로그
+        if ($user) {
+            DB::table('users')
+                ->where('id', $user->id)
+                ->where('api_quota_remaining', '>', 0)
+                ->decrement('api_quota_remaining', 1);
+
+            $this->apiUsage->log(
+                null, $user->id, '/api/categories',
+                $request->all(),
+                200, 0, 'embed', 'Embed 유사도 검색'
+            );
+        }
+
+        return CategoryResource::collection($results)
+            ->additional(['query_embedding' => $queryEmbedding])
+            ->response();
+    }
+
+    /**
+     * 사용자 범위 해석 (기존 RecommendController 76~98번 줄 로직 추출).
+     *
+     * @return int|array<int>|null 단일 사용자 ID, 배열, 또는 null(제한 없음)
+     */
+    private function resolveScopeUserId(?User $user, Request $request): int|array|null
+    {
+        $filter = $request->input('filter');
+
+        if ($filter === 'my') {
+            return $user?->id ?? 0;
+        }
+
+        if ($request->filled('user_id') && $user && $user->isAdmin()) {
+            return (int) $request->input('user_id');
+        }
+
+        if ($user && $user->isAdmin()) {
+            return null;
+        }
+
+        return $user ? [$user->id, 1] : [1];
     }
 
     /**

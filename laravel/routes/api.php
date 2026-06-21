@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\FolderController;
 use App\Http\Controllers\Api\MyPageController;
-use App\Http\Controllers\Api\RecommendController;
 use App\Http\Controllers\Api\TestController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,9 +31,6 @@ Route::put('categories/{category}/update-text', [CategoryController::class, 'upd
 
 // 개별 카테고리 번역/임베딩 조회
 Route::get('categories/{category}/translations', [CategoryController::class, 'translations']);
-
-// 추천
-Route::post('recommend', [RecommendController::class, 'recommend']);
 
 // 폴더 (인증 필요)
 Route::middleware('auth:sanctum')->group(function () {

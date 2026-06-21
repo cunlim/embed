@@ -78,7 +78,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 - **OllamaClient `retryCall()`** — HTTP 429/5xx, 연결 타임아웃 발생 시 지수 백오프(1s→2s→4s) + 지터(0~500ms)로 최대 `http_max_attempts`(기본 3)회 자동 재시도. 400/401/403/404/422는 재시도 제외. `chat()`·`embed()` 모두 적용. `checkRateLimit()`은 재시도 래퍼 밖에서 실행.
 - **OllamaTranslator 환각 재시도** — `translateSingle()`에서 `isValidTranslation()` 실패 시 최대 `translation_max_attempts`(기본 3)회 재시도, 각 시도 간 500ms `usleep` 지연.
 - `category_code`: `(category_code, user_id, folder)` 복합 unique. `CategoryStoreRequest`·`CategoryUpdateTextRequest` 모두 folder scope 포함 필수. `filled()`로 체크 (`??`는 빈 문자열 통과)
-- `RecommendRequest` filter: `in:my,all` — `"all"`도 허용 (프론트 "전체" 선택 + 유사도검색 시 `filter=all` 전송)
+- 카테고리 목록 filter: `in:my,all` — `"all"`도 허용 (프론트 "전체" 선택 + 유사도검색 시 `filter=all` 전송)
 
 ### Service Layer 패턴
 
@@ -98,7 +98,7 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 ### 카테고리 검색 API
 
 - `GET /api/categories?search=...` 파라미터는 `category_name_ko`·`category_name_en`·`category_name_zh`·`category_code` 네 필드를 LIKE(`%검색어%`) 부분 검색 (검색 모드). `search_lang=ko|en|zh` 추가 시 해당 언어 컬럼에서만 **접두사 검색**(`검색어>%`) 수행 (분류선택 모드). `batchStatus()`도 동일 로직 적용. **⚠️ 검색 모드에서는 `search_lang`을 전송하지 않아야 함** — 프론트엔드 `handleKeywordSearch`에서 8번째 인자 생략 필요.
-- **`RecommendService::recommendPaginated()` `searchLang` 파라미터** — keyword 필터 분기. `$searchLang=ko` → `category_name_ko LIKE 'keyword%'` (접두사), `$searchLang=null` → 다국어 부분 검색 `category_name_ko/en/zh/code LIKE '%keyword%'`. 외부 API에서 `mode=hierarchy`+`lang` 조합 시 사용. 내부 API(`RecommendController`)에서는 미전달(기존 동작 유지). 기본값 `null`.
+- **`RecommendationService::recommendPaginated()` `searchLang` 파라미터** — keyword 필터 분기. `$searchLang=ko` → `category_name_ko LIKE 'keyword%'` (접두사), `$searchLang=null` → 다국어 부분 검색 `category_name_ko/en/zh/code LIKE '%keyword%'`. 외부 API에서 `mode=hierarchy`+`lang` 조합 시 사용. 내부 API(`CategoryController`)에서는 미전달(기존 동작 유지). 기본값 `null`.
 - 엑셀 다운로드 포맷: `category_code | category_ko | category_en | category_zh` (업로드 양식과 일치)
 
 ### 카테고리 계층 API
@@ -148,11 +148,11 @@ docker exec cl_embed_laravel php artisan l5-swagger:generate
 ### API 인증
 
 - API 라우트에는 세션 미들웨어 없음. `$request->user('sanctum')` 또는 `auth('sanctum')->user()` 사용.
-- `RecommendResource`에 `user_id` 필수 — `canModify` 판별용.
+- `CategoryResource`에 `user_id` 필수 — `canModify` 판별용.
 - **관리자 전용 엔드포인트** — `routes/api.php`의 `auth:sanctum` 미들웨어 그룹에 추가. 컨트롤러에서 `$user->isAdmin()`으로 추가 권한 검증.
 - **외부 API key 인증** — `ApiKeyAuth` 미들웨어가 `Authorization: Bearer cl_xxx` 헤더에서 API key 추출 → `ApiKeyService::findByKey()`로 검증 → status/pause/quota 체크 → `_api_key_id`·`_api_user_id`를 request에 merge. `ApiRateLimit` 미들웨어가 `RateLimiter::for()`로 분당 제한(Redis 기반). 미들웨어 체인: `api.rate_limit` → `api.key_auth` → 컨트롤러. Swagger SecurityScheme: `ApiKeyAuth`(`type: http`, `scheme: bearer`) — `TestController`에 정의.
 - **`POST /api/v1/search`** — 외부 유사도 검색 전용. Swagger에 `External API` 태그로 문서화됨. 파라미터 순서: `folder`·`text`·`target_language`·`mode`·`keyword`·`lang`·`page`·`per_page`. `filter`는 내부에서 항상 `'my'`(사용자 본인 카테고리) 고정, 외부에 노출 안 함. quota 감소는 `DB::table('users')->where('id', $userId)->decrement('api_quota_remaining', 1)`로 직접 처리. `ApiKeyService::touchLastUsed()`로 last_used_at 갱신. 응답은 불필요한 필드 제거 — `data[]`·`meta{current_page,last_page,per_page,total}`만 반환.
-- **`POST /api/recommend` quota 차감** — 로그인 사용자가 `text` 포함 유사도 검색 시 `api_quota_remaining` 1 차감 (`DB::table()->decrement()`). 관리자(`isAdmin()`)도 차감 (동일 차감 적용). 비로그인은 체크 없음. quota 소진 시 429 + `code: 'quota_exceeded'` 반환. `text` 없이 카테고리 목록 조회만 할 때는 차감 없음.
+- **`GET /api/categories` text 검색 quota 차감** — 로그인 사용자가 `text` 포함 유사도 검색 시 `api_quota_remaining` 1 차감 (`DB::table()->decrement()`). 관리자(`isAdmin()`)도 차감 (동일 차감 적용). 비로그인은 체크 없음. quota 소진 시 429 + `code: 'quota_exceeded'` 반환. `text` 없이 카테고리 목록 조회만 할 때는 차감 없음.
 - **마이페이지 API** — `auth:sanctum` + `/api/mypage/` prefix. API key CRUD(`apiKeys`·`storeApiKey`·`updateApiKey`·`destroyApiKey`), 사용량 통계(`usage`·`usageHistory`·`usageChart`). 소유권 검증: `apiKey->user_id !== $request->user()->id` → 404.
 - **관리자 회원 관리** — `GET /api/admin/users/{id}`(상세+사용량), `PATCH /api/admin/users/{id}/quota`(쿼타 조절: `type=absolute|increment`). `QuotaAdjustRequest`에서 `authorize()`로 `isSuperAdmin()` 검증. **`value` 유효성**: `absolute` 모드는 `min:0`(절대값은 음수 불허), `increment` 모드는 음수 허용(감소). 커스텀 클로저로 조건부 검증. 백엔드 `adjustQuota()`에서 `max(0, newValue)`로 최소값 보장. **⚠️ 응답 구조**: `userDetail`과 `adjustQuota` 모두 `data` 아래에 사용자 필드와 사용량을 **평탄 구조**로 반환 (`{ data: { id, name, ..., total_calls, ... } }`). 중첩된 `{ data: { user: {...} } }`가 아님. 프론트엔드 `AdminUserDetail` 타입과 일치해야 함.
 - **관리자 설정 (`api` 그룹)** — `AdminSettingsController::GROUPS`에 `'api'` 포함. `settings` 테이블의 `api.free_quota`(가입 시 무료 회수, 기본 500 — **영구 총량, 일일 리셋 없음**), `api.rate_limit_per_minute`(분당 제한, 기본 60)을 `/admin` 페이지에서 수정 가능. `AuthController::register()`가 `SettingsService::get('api', 'free_quota', 500)`으로 읽어 새 회원 quota 설정.

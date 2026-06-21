@@ -13,6 +13,21 @@ class CategoryResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $lang = $request->input('target_language', 'ko');
+
+        // 유사도 필드 (text 검색 시 RecommendationService가 설정한 동적 프로퍼티)
+        $perLanguageScores = null;
+        if (isset($this->similarity_score)) {
+            $perLanguageScores = [];
+            foreach (['ko', 'en', 'zh'] as $l) {
+                $score = $this->{"similarity_score_{$l}"} ?? null;
+                $perLanguageScores[$l] = [
+                    'similarity_score' => $score,
+                    'rank' => $this->{"rank_{$l}"} ?? null,
+                ];
+            }
+        }
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -20,7 +35,11 @@ class CategoryResource extends JsonResource
             'category_name_ko' => $this->category_name_ko,
             'category_name_zh' => $this->category_name_zh,
             'category_name_en' => $this->category_name_en,
+            'category_name' => $this->{"category_name_{$lang}"},
             'translation_status' => $this->translationStatus(),
+            // 유사도 필드 (text 검색 시에만 존재)
+            'similarity_score' => $this->similarity_score ?? null,
+            'per_language_scores' => $perLanguageScores,
         ];
     }
 

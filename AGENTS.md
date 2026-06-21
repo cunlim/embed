@@ -78,7 +78,7 @@
 
 ## 카테고리 접근 제어
 
-- **user scope 규칙** — `user_id=1`(공개), 비로그인: 본인+공개, 로그인: 본인+공개, admin: 전체. 모든 카테고리 조회 API(`levels()`, `recommend()` 등)에 동일 적용.
+- **user scope 규칙** — `user_id=1`(공개), 비로그인: 본인+공개, 로그인: 본인+공개, admin: 전체. 모든 카테고리 조회 API(`levels()`, `index()` 등)에 동일 적용.
 
 ## 알려진 이슈
 
@@ -93,7 +93,7 @@
 - **커스텀 이벤트 다중 리스너 레이스 컨디션** — 동일 `CustomEvent`에 여러 컴포넌트가 리스너를 등록하면 모든 핸들러가 동기 실행. 자식 컴포넌트의 이벤트 핸들러는 부모 콜백을 호출하지 말고 로컬 상태만 초기화. 부모가 유일한 데이터 재로드 주체여야 함.
 - **`useCategories` mutation reload 컨텍스트 완전성** — `addCategory()`·`deleteCategory()` 내부 reload는 `currentPage`·`currentPerPage`·`currentFilter`·`currentSearch`·`currentFolder` 모든 ref를 전달해야 함. 새 컨텍스트 파라미터 추가 시 ref 선언과 reload 호출 인자 양쪽 모두 업데이트.
 - **SSR prefetch 데이터 skip + 비사용자 리렌더 중복 호출** — `EmbedPageInner`의 data-loading effect에서 `hadServerCategories` ref가 첫 실행에서 `false`로 소비된 후, `useAuth getUser()` 등 비사용자 상태 업데이트로 인한 리렌더에서 effect가 재실행되어 불필요한 `/api/categories` 호출 발생. 수정: (1) `hadServerCategories = useRef(serverCategories.length > 0)`로 토큰 조건 제거, (2) 의존성 변화 추적 ref(`prevDepsForSkipRef`)로 SSR skip 후 동일 의존성 반복 실행 방지.
-- **`/api/recommend` 임베딩 벡터 제거 + on-demand 로딩** — recommend 응답에서 `query_embedding`, `category_embedding`, `per_language_scores[].category_embedding`을 항상 제거하여 응답 크기를 ~99% 감소. `query_embedding`은 응답 최상위 `query_embedding` 키에 1회만 포함. 카테고리 임베딩은 `CosineDetailDialog` 열 때 `/api/categories/{id}/translations`로 on-demand 로딩. 새 API 추가 없이 기존 translations API 재사용. 유사도 점수·순위는 목록 응답 항목에 그대로 유지.
+- **`/api/categories` 통합 (구 `/api/recommend`)** — `GET /api/categories`에 `text`, `target_language` 선택 파라미터를 추가하여 유사도 검색과 일반 목록을 단일 엔드포인트로 통합. `text` 유무로 분기: 있으면 `EmbeddingCacheService` → `RecommendationService::recommendPaginated()` + quota 차감, 없으면 `CategoryQueryService::buildListQuery()` + `id desc` 정렬. `CategoryResource`가 유사도 필드(`similarity_score`, `per_language_scores`, `category_name`)를 conditional로 포함. 프론트엔드 `Recommendation` 타입은 `Category`로 통합(deprecated alias 유지). `RecommendController`, `RecommendResource`, `RecommendRequest` 삭제. `RecommendationService`는 `ApiController`(`/api/v1/search`)에서 계속 사용하므로 유지.
 - **async batch flushSync 패턴** — React 19 batching 우회를 위해 `flushSync`로 루프 내 `setProgress`를 감쌈. 상세: `nextjs/AGENTS.md`.
 - **`no_preview` 파라미터 패턴** — 동일 API 엔드포인트를 여러 소비자가 사용할 때 무거운 필드(임베딩 벡터 등)를 쿼리 파라미터로 제어.
 - **batch `onComplete`·`onCategoryComplete` 콜백 패턴** — `onComplete`는 `filterRef.current`로 현재 필터를 읽고 `loadCategories(1, ...)` + `updateURL({ page: 1 })`로 URL 동기화. `onCategoryComplete`는 루프 중 `loadCategories` 호출 금지.
@@ -122,7 +122,7 @@
 - **`api_usage_logs` FK cascade 주의** — `api_key_id` FK가 `onDelete('cascade')`이면 키 삭제 시 사용 로그 전체 소실. `onDelete('set null')`로 변경 + 컬럼 nullable 마이그레이션 필요.
 - **`isLoading` + `!!token` hydration mismatch** — `useState(!!token)`으로 초기화하면 서버/클라이언트 불일치로 hydration 에러 발생. 초기값을 `false`로 고정, `useEffect` 내에서 `setIsLoading(true)` 후 fetch.
 - **`toLocaleString("ko-KR")` SSR 하이드레이션 불일치** — 서버(Node.js)와 클라이언트(브라우저)의 locale 구현 차이로 `toLocaleString("ko-KR")`이 "오후"/"PM" 등 서로 다른 문자열을 반환. 서버 컴포넌트에서 날짜 포맷 시 `new Date().toLocaleString("ko-KR")` 대신 deterministic 포맷터(`getFullYear()`, `getMonth()` 등) 사용.
-- **내부/외부 API quota 차감 정책 일관성** — 외부 API(`ApiController::search`)와 내부 API(`RecommendController::recommend`) 모두 모든 사용자(관리자 포함)에게 quota를 차감. quota 차감 로직 추가/수정 시 두 API 경로의 정책을 동일하게 유지해야 함.
+- **내부/외부 API quota 차감 정책 일관성** — 외부 API(`ApiController::search`)와 내부 API(`CategoryController::index()` text 분기) 모두 모든 사용자(관리자 포함)에게 quota를 차감. quota 차감 로직 추가/수정 시 두 API 경로의 정책을 동일하게 유지해야 함.
 - **`getCallsByKey` eager loading 필수** — `ApiUsageService::getCallsByKey()`는 그룹핑 결과에 `apiKey` 관계를 수동으로 로드해야 함. `getRecentHistory()`와 달리 `groupBy` 쿼리에는 `with()`를 직접 사용할 수 없으므로, 별도로 `ApiKey::whereIn()`으로 조회 후 `setRelation()`로 병합. 미적용 시 프론트엔드에서 `api_key`가 `undefined` → "키 #null" 표시.
 - **Quota TOCTOU 경쟁 조건** — `ApiKeyAuth` 미들웨어에서 `hasQuota()` 체크 후 컨트롤러에서 `DB::table()->decrement()`로 차감하면, 동시 요청이 모두 체크를 통과하여 quota가 음수로 내려갈 수 있음. `User::decrementQuota()`에도 동일 문제가 존재. 수정 시 `WHERE api_quota_remaining > 0` 조건을 포함한 원자적 감소 사용 필수.
 - **Rate limit 우회 (무토큰)** — `ApiRateLimit` 미들웨어가 bearer 토큰이 없을 때 `return $next($request)`로 즉시 통과. `ApiKeyAuth`보다 먼저 실행되므로, 무토큰 요청에 rate limit이 적용되지 않음. IP 기반 fallback 필요.

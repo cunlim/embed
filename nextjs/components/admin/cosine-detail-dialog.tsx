@@ -14,12 +14,12 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { fetchCategoryTranslations } from "@/lib/api";
-import type { Recommendation } from "@/lib/api";
+import type { Category } from "@/lib/api";
 
 interface CosineDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  result: Recommendation | null;
+  result: Category | null;
   /** 목록 API 응답 최상위의 query_embedding (검색어 임베딩) */
   queryEmbedding?: number[] | null;
   searchKeyword?: string;

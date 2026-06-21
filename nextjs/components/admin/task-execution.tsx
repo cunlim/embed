@@ -13,15 +13,15 @@ import {
   runStep,
   fetchBatchStatus,
 } from "@/lib/api";
-import type { Category, Recommendation, StepName, BatchStatusData } from "@/lib/api";
+import type { Category, StepName, BatchStatusData } from "@/lib/api";
 
 interface TaskExecutionProps {
   token: string | null;
   selectedIds: Set<number>;
-  categories: (Category | Recommendation)[];
+  categories: Category[];
   filter: string | undefined;
   keyword?: string;
-  canModify: (cat: Category | Recommendation) => boolean;
+  canModify: (cat: Category) => boolean;
   onComplete: (wasStopped: boolean) => void;
   onCategoryComplete?: () => void;
   folder?: string;

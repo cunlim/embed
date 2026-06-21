@@ -47,7 +47,7 @@ import CosineDetailDialog from "@/components/admin/cosine-detail-dialog";
 import BulkUpload from "@/components/bulk-upload";
 import { useEmbedState } from "@/hooks/useEmbedState";
 import { cn } from "@/lib/utils";
-import type { Category, Recommendation, PaginationMeta } from "@/lib/api";
+import type { Category, PaginationMeta } from "@/lib/api";
 
 function getPageRange(current: number, last: number): (number | "...")[] {
   if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1);
@@ -106,7 +106,7 @@ export function EmbedPageInner({
   serverHadToken: boolean;
   serverFilter: string | null;
   serverUser?: import("@/lib/api").User | null;
-  serverSearchResults: Recommendation[] | null;
+  serverSearchResults: Category[] | null;
   serverSearchMeta: PaginationMeta | null;
   serverQueryEmbedding?: number[] | null;
   serverSearchText: string | null;
@@ -644,7 +644,7 @@ export function EmbedPageInner({
                                     type="button"
                                     className="cursor-pointer hover:underline"
                                     onClick={() => {
-                                      setActiveResult(cat as Recommendation);
+                                      setActiveResult(cat as Category);
                                       setCosineDialogOpen(true);
                                     }}
                                   >
@@ -723,7 +723,7 @@ export function EmbedPageInner({
                                   className="mt-1 w-fit cursor-pointer font-mono text-xs text-accent hover:underline"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setActiveResult(cat as Recommendation);
+                                    setActiveResult(cat as Category);
                                     setCosineDialogOpen(true);
                                   }}
                                 >

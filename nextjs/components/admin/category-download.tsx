@@ -4,12 +4,12 @@ import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getCategories } from "@/lib/api";
-import type { Category, Recommendation } from "@/lib/api";
+import type { Category } from "@/lib/api";
 
 interface CategoryDownloadProps {
   token: string | null;
   selectedIds: Set<number>;
-  categories: (Category | Recommendation)[];
+  categories: Category[];
   filter: string | undefined;
   keyword?: string;
   folder?: string;
@@ -27,7 +27,7 @@ export default function CategoryDownload({
 
   /** 엑셀 다운로드 공통 함수 */
   const downloadExcel = useCallback(
-    async (data: (Category | Recommendation)[], filename: string) => {
+    async (data: Category[], filename: string) => {
       const XLSX = await import("xlsx");
       const rows = data.map((cat) => ({
         category_code: cat.category_code ?? "",

@@ -23,62 +23,6 @@ describe("API 클라이언트", () => {
     mockFetch.mockReset();
   });
 
-  describe("recommend", () => {
-    it("추천 API를 POST로 호출한다", async () => {
-      mockResponse({ data: [] });
-
-      await api.recommend("테스트", "ko");
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        "http://localhost:8000/api/recommend",
-        expect.objectContaining({
-          method: "POST",
-          body: JSON.stringify({ text: "테스트", target_language: "ko" }),
-        })
-      );
-    });
-
-    it("추천 결과를 반환한다", async () => {
-      const expected = {
-        data: [
-          {
-            category_code: "50000001",
-            category_name: "패션의류 > 여성의류 > 원피스",
-            similarity_score: 0.95,
-          },
-        ],
-      };
-      mockResponse(expected);
-
-      const result = await api.recommend("원피스", "ko");
-
-      expect(result).toEqual(expected);
-    });
-
-    it("인증 토큰을 전달한다", async () => {
-      mockResponse({ data: [] });
-
-      await api.recommend("테스트", "ko", "test-token");
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            Authorization: "Bearer test-token",
-          }),
-        })
-      );
-    });
-
-    it("API 오류 시 예외를 throw한다", async () => {
-      mockResponse({ message: "서버 오류" }, false, 500);
-
-      await expect(api.recommend("테스트", "ko")).rejects.toThrow(
-        "서버 오류"
-      );
-    });
-  });
-
   describe("getCategories", () => {
     it("카테고리 목록을 GET으로 조회한다", async () => {
       mockResponse({ data: [] });
@@ -88,6 +32,36 @@ describe("API 클라이언트", () => {
       expect(mockFetch).toHaveBeenCalledWith(
         "http://localhost:8000/api/categories?per_page=20",
         expect.objectContaining({ method: "GET" })
+      );
+    });
+
+    it("text 파라미터로 유사도 검색을 호출한다", async () => {
+      mockResponse({ data: [], query_embedding: [0.1, 0.2] });
+
+      await api.getCategories(undefined, 1, 20, undefined, undefined, undefined, undefined, undefined, undefined, "원피스", "ko");
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("text=%EC%9B%90%ED%94%BC%EC%8A%A4"),
+        expect.objectContaining({ method: "GET" })
+      );
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("target_language=ko"),
+        expect.objectContaining({ method: "GET" })
+      );
+    });
+
+    it("recommend() 래퍼가 getCategories()를 호출한다", async () => {
+      mockResponse({ data: [] });
+
+      await api.recommend("테스트", "ko", "test-token");
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/categories?"),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: "Bearer test-token",
+          }),
+        })
       );
     });
   });

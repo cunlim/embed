@@ -2,7 +2,11 @@
 
 use App\Models\Category;
 use App\Models\CategoryEmbedding;
+use App\Models\SearchLog;
 use App\Models\User;
+use App\Services\EmbeddingCacheService;
+use App\Services\RecommendationService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Laravel\Sanctum\Sanctum;
 
 beforeEach(function () {
@@ -283,5 +287,115 @@ describe('search', function () {
 
         $response->assertOk();
         expect($response->json('data'))->not->toBeEmpty();
+    });
+});
+
+describe('유사도 검색 (text 파라미터)', function () {
+    test('text 없이 호출하면 일반 카테고리 목록을 반환한다', function () {
+        Category::factory()->create(['user_id' => 1, 'category_name_ko' => '테스트']);
+
+        $response = $this->getJson('/api/categories');
+
+        $response->assertOk();
+        expect($response->json('data'))->toHaveCount(1);
+        // 유사도 필드는 null 또는 포함되지 않음
+        $firstItem = $response->json('data.0');
+        expect($firstItem)->toHaveKey('similarity_score');
+    });
+
+    test('text가 비어있으면 일반 카테고리 목록을 반환한다', function () {
+        Category::factory()->create(['user_id' => 1, 'category_name_ko' => '테스트']);
+
+        $response = $this->getJson('/api/categories?text=');
+
+        $response->assertOk();
+        expect($response->json('data'))->toHaveCount(1);
+    });
+
+    test('text 500자 초과 시 422를 반환한다', function () {
+        $longText = str_repeat('a', 501);
+
+        $response = $this->getJson("/api/categories?text={$longText}&target_language=ko");
+
+        $response->assertStatus(422);
+    });
+
+    test('text가 있으면 EmbeddingCacheService를 호출한다', function () {
+        $mockCache = Mockery::mock(EmbeddingCacheService::class);
+        $searchLog = new SearchLog;
+        $searchLog->embedding = SearchLog::factory()->make()->embedding;
+        $mockCache->shouldReceive('getOrCreateEmbedding')->once()->andReturn($searchLog);
+
+        $this->app->instance(EmbeddingCacheService::class, $mockCache);
+
+        $mockRecommendation = Mockery::mock(RecommendationService::class);
+        $mockRecommendation->shouldReceive('recommendPaginated')->once()->andReturn(
+            new LengthAwarePaginator([], 0, 20)
+        );
+        $this->app->instance(RecommendationService::class, $mockRecommendation);
+
+        $response = $this->getJson('/api/categories?text=테스트&target_language=ko');
+
+        $response->assertOk();
+    });
+
+    test('로그인 사용자: text 검색 시 quota가 차감된다', function () {
+        $user = User::factory()->create(['role' => 'member', 'api_quota_remaining' => 10]);
+        Sanctum::actingAs($user);
+
+        $mockCache = Mockery::mock(EmbeddingCacheService::class);
+        $searchLog = new SearchLog;
+        $searchLog->embedding = SearchLog::factory()->make()->embedding;
+        $mockCache->shouldReceive('getOrCreateEmbedding')->andReturn($searchLog);
+        $this->app->instance(EmbeddingCacheService::class, $mockCache);
+
+        $mockRecommendation = Mockery::mock(RecommendationService::class);
+        $mockRecommendation->shouldReceive('recommendPaginated')->andReturn(
+            new LengthAwarePaginator([], 0, 20)
+        );
+        $this->app->instance(RecommendationService::class, $mockRecommendation);
+
+        $this->getJson('/api/categories?text=테스트&target_language=ko');
+
+        expect($user->fresh()->api_quota_remaining)->toBe(9);
+    });
+
+    test('로그인 사용자: quota=0이면 429를 반환한다', function () {
+        $user = User::factory()->create(['role' => 'member', 'api_quota_remaining' => 0]);
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson('/api/categories?text=테스트&target_language=ko');
+
+        $response->assertStatus(429);
+        $response->assertJsonPath('code', 'quota_exceeded');
+    });
+
+    test('비로그인 사용자: quota 체크 없이 200을 반환한다', function () {
+        $mockCache = Mockery::mock(EmbeddingCacheService::class);
+        $searchLog = new SearchLog;
+        $searchLog->embedding = SearchLog::factory()->make()->embedding;
+        $mockCache->shouldReceive('getOrCreateEmbedding')->andReturn($searchLog);
+        $this->app->instance(EmbeddingCacheService::class, $mockCache);
+
+        $mockRecommendation = Mockery::mock(RecommendationService::class);
+        $mockRecommendation->shouldReceive('recommendPaginated')->andReturn(
+            new LengthAwarePaginator([], 0, 20)
+        );
+        $this->app->instance(RecommendationService::class, $mockRecommendation);
+
+        $response = $this->getJson('/api/categories?text=테스트&target_language=ko');
+
+        $response->assertOk();
+    });
+
+    test('text 없이는 quota가 차감되지 않는다', function () {
+        $user = User::factory()->create(['role' => 'member', 'api_quota_remaining' => 10]);
+        Sanctum::actingAs($user);
+
+        Category::factory()->create(['user_id' => $user->id]);
+
+        $this->getJson('/api/categories');
+
+        expect($user->fresh()->api_quota_remaining)->toBe(10);
     });
 });

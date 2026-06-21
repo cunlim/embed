@@ -6,11 +6,11 @@ import { useAuth, getToken } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
 import { useCategoryDetail } from "@/hooks/useCategoryDetail";
 import { useCategoryExecution } from "@/hooks/useCategoryExecution";
-import { recommend } from "@/lib/api";
+import { getCategories } from "@/lib/api";
 import { parseEmbedParams } from "@/lib/embed-params";
 import { isAdmin } from "@/lib/utils";
 import type { HierarchyFilterState } from "@/components/admin/category-hierarchy";
-import type { Category, Recommendation, PaginationMeta, User, StepName, FolderGroup } from "@/lib/api";
+import type { Category, PaginationMeta, User, StepName, FolderGroup } from "@/lib/api";
 
 export interface UseEmbedStateProps {
   serverLevelOptions: string[][];
@@ -20,7 +20,7 @@ export interface UseEmbedStateProps {
   serverHadToken: boolean;
   serverFilter: string | null;
   serverUser?: User | null;
-  serverSearchResults: Recommendation[] | null;
+  serverSearchResults: Category[] | null;
   serverSearchMeta: PaginationMeta | null;
   serverQueryEmbedding?: number[] | null;
   serverSearchText: string | null;
@@ -105,7 +105,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
   const [searchText, setSearchText] = useState(props.serverSearchText ?? embedParams.searchText ?? "");
   const [searchLanguage, setSearchLanguage] = useState(props.serverSearchLang ?? embedParams.searchLang);
   const [hierarchyLang, setHierarchyLang] = useState(props.serverHierarchyLang ?? embedParams.hierarchyLang ?? "ko");
-  const [searchResults, setSearchResults] = useState<Recommendation[] | null>(props.serverSearchResults ?? null);
+  const [searchResults, setSearchResults] = useState<Category[] | null>(props.serverSearchResults ?? null);
   const [queryEmbedding, setQueryEmbedding] = useState<number[] | null>(props.serverQueryEmbedding ?? null);
 
   // useRef로 searchResults 참조 — useEffect 의존성 배열에 추가하지 않고 최신값 읽기
@@ -122,7 +122,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [cosineDialogOpen, setCosineDialogOpen] = useState(false);
-  const [activeResult, setActiveResult] = useState<Recommendation | null>(null);
+  const [activeResult, setActiveResult] = useState<Category | null>(null);
   const searchPageRef = useRef(1);
   const perPageRef = useRef(perPage);
   useEffect(() => { perPageRef.current = perPage; });
@@ -273,16 +273,18 @@ export function useEmbedState(props: UseEmbedStateProps) {
     setKeywordSearchActive(false);
     updateURL({ searchText, searchLanguage: searchLangRef.current });
     try {
-      const data = await recommend(
-        searchText,
-        searchLangRef.current,
+      const data = await getCategories(
         token,
         currentPage,
         perPageRef.current,
         filterRef.current ?? undefined,
         keyword ?? (keywordRef.current || undefined),
         selectedFolderRef.current ?? undefined,
-        selectedUserIdRef.current
+        selectedUserIdRef.current,
+        undefined, // steps
+        undefined, // searchLang
+        searchText,           // text (유사도 검색)
+        searchLangRef.current // targetLanguage
       );
       setSearchResults(data.data);
       setSearchMeta(data.meta);
@@ -420,7 +422,18 @@ export function useEmbedState(props: UseEmbedStateProps) {
     setSearchMeta(null);
     setSearchError(null);
     updateURL({ searchText: "", searchLanguage: "ko" });
-  }, [updateURL]);
+    // API에서 최신 카테고리 목록 로드 (캐시 대신)
+    loadCategories(
+      page,
+      perPageRef.current,
+      filterRef.current ?? undefined,
+      keywordRef.current || undefined,
+      selectedFolderRef.current ?? undefined,
+      selectedUserIdRef.current ?? undefined,
+      stepsRef.current,
+      hierarchyLangRef.current,
+    );
+  }, [updateURL, page, loadCategories]);
 
   // 전체 상태 초기화 (기능시연, 브라우저 뒤로가기 등에서 사용)
   const resetToDefault = useCallback(() => {
@@ -532,7 +545,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
 
   // SSR에서 prefetch된 사용자 정보를 CSR user가 로드되기 전까지 fallback으로 사용
   const effectiveUser = user ?? props.serverUser;
-  const canModify = useCallback((category: Category | Recommendation) => {
+  const canModify = useCallback((category: Category | Category) => {
     if (!effectiveUser) return false;
     return isAdmin(effectiveUser) || ("user_id" in category && category.user_id === effectiveUser.id);
   }, [effectiveUser]);
@@ -556,7 +569,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
     });
   }, []);
 
-  const handleDelete = useCallback(async (cat: Category | Recommendation) => {
+  const handleDelete = useCallback(async (cat: Category | Category) => {
     if (!window.confirm(`"${cat.category_name_ko}" 카테고리를 삭제하시겠습니까?`)) return;
     await deleteCategory(cat.id);
     setHierarchyRefreshKey(prev => prev + 1);
