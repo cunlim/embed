@@ -43,7 +43,7 @@
 | --- | --- |
 | **크롤링** | Puppeteer(Node.js + Express), Chrome Extension |
 | **임베딩 검색** | [pgvector](https://hub.docker.com/r/pgvector/pgvector)([Ollama bge-m3](https://ollama.com/library/bge-m3) 벡터 결과값) |
-| **외부 API** | [Ohoo 이미지 편집](https://studio.ohoolabs.com/), [1688 API SDK](https://open.1688.com/support/doc/index), CJ대한통운 송장정보 API |
+| **외부 API** | [1688 API SDK](https://open.1688.com/support/doc/index), CJ대한통운 송장정보 API |
 | **AI 이미지 처리** | [rembg](https://github.com/danielgatis/rembg)(Docker + Python + AI) |
 | **PDF 병합** | PyPDF2(Python) |
 | | |
@@ -72,12 +72,15 @@
 - **협업 도구:** Remote SSH, Git, Google Spreadsheet, FTP
 - **주요 업무:**
   * 배송대행 서비스, 3pl 드랍쉽핑 서비스, 쇼핑몰 유지보수, 리뉴얼, 신규 기능 개발
+    - 배송대행 서비스: 송장 API(신규 개발), 메인 페이지 퍼블리싱(리뉴얼), 환률 버그 수정(유지보수), 드랍쉽핑 서비스 주문 양방향 동기화(신규 기능), 5개국어 번역 작업(유지보수), 1688 SDK 기반 주문/물류/결제 API 개발(신규 기능)
+    - 3pl 드랍쉽핑 서비스: 상품 API 개발(신규 개발), Puppeteer 크롤링 개발(신규 기능), Chrome Extension 개발(신규 기능), 다운로드 진행도(신규 개발), 국내 3대 마켓 주문 관련 API 통합(신규 기능), 가맹사 분기(유지보수)
+    - 쇼핑몰: 사이트 전체 디자인 리뉴얼, 1대1문의 시스템 개발(리뉴얼), 관리코드 중복 이슈 수정
   * 그누보드5 기반 레거시 서비스 개발, 인프라 현대화
   * 기존 프로젝트 서버 이전, 신규 프로젝트 호스팅
 - **주요 성과:**
   * **아키텍처 개편 및 인프라 구축:** Git, Docker, Certbot, Composer, Xdebug 도입
     - **Git:** 변경이력을 추적하여 책임을 분명하게 하고, 이슈 발생 시 작업 history 추적하는 정밀도와 속도가 90% 이상 향상, 큰 작업량의 코드를 배포환경에 적용하는 안전도와 속도 50% 향상.
-    - **Docker:** 여러대의 서버 환경을 안전하게 격리하여 관리가 쉽게 하고 외부 개발자한테 volume 을 통하여 안전하게 코드를 노출할수 있게 함.
+    - **Docker:** 각 실행 환경을 안전하게 격리하여 관리를 쉽게 하고, 외부 개발자한테 volume 을 통하여 안전하게 코드를 노출할수 있게 함.
     - **Certbot:** 원스톱으로 SSL 인증 신청, 매일 새벽 자동 갱신하는 인프라를 구축하여 꼭 필요하지 않은 작은 프로젝트에도 쉽고 안전하게 https 적용
     - **Composer:** 바닐라 PHP 에 라이브러리를 수동으로 업로드 하여 path 불일치 등 이슈를 튜닝하던 불편함으로부터 의존성을 체계적으로 관리
     - **Xdebug:** if is_admin 안에 print 하는 디버깅을 위한 코드가 덕지덕지 하고 웹페이지에 화면이 깨지는것을 감안하여 출력해보던 불편함으로부터 실행 타임라인과 실행된 모든 변수의 값을 추적할수 있고 실행 시간까지 알수 있는 편리함을 얻을수 있었습니다.
