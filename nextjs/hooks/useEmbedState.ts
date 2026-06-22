@@ -77,8 +77,9 @@ export function useEmbedState(props: UseEmbedStateProps) {
   const initialFilterKeyword = embedParams.keyword ?? "";
 
   const [perPage, setPerPage] = useState(initialPerPage);
-  const [filterSelection, setFilterSelection] = useState<"all" | "my" | null>(
-    props.serverFilter === "my" ? "my" : props.serverFilter === "all" ? "all" : null
+  // 비로그인 또는 카테고리 미보유 시 "all"로 기본값 설정 (null 방지 — UI에서 둘 다 비활성 상태 방지)
+  const [filterSelection, setFilterSelection] = useState<"all" | "my">(
+    props.serverFilter === "my" ? "my" : "all"
   );
   const [keywordSearchActive, setKeywordSearchActive] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -141,9 +142,9 @@ export function useEmbedState(props: UseEmbedStateProps) {
   const hadServerCategories = useRef(props.serverCategories.length > 0);
   // resetToDefault() 직후 data-loading effect가 중복 호출되지 않도록 건너뜀
   const skipLoadEffectRef = useRef(false);
-  // SSR에서 결정된 기본 필터 (내 카테고리 보유 시 "my", 미보유 시 null)
-  const defaultFilterRef = useRef<"all" | "my" | null>(
-    props.serverFilter === "my" ? "my" : props.serverFilter === "all" ? "all" : null
+  // SSR에서 결정된 기본 필터 (내 카테고리 보유 시 "my", 미보유 시 "all")
+  const defaultFilterRef = useRef<"all" | "my">(
+    props.serverFilter === "my" ? "my" : "all"
   );
   // SSR 데이터 skip 후 의존성 변화 추적 — useAuth 등 비사용자 리렌더에서 중복 호출 방지
   const prevDepsForSkipRef = useRef({ page, perPage, effectiveFilter });

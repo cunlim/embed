@@ -76,6 +76,7 @@ Next.js 16 전용 MCP 서버. 런타임 진단, 라우트 정보, 캐시 관리,
 ## 초기 마운트 시 reset effect 함정
 
 - **`resetDoneRef` 효과의 잔여 상태 오판 판정** — `filterRef`는 `filterSelection`에서 초기화되므로, SSR에서 `filterSelection="my"`이면 `filterRef.current="my"`. URL이 비어있는 초기 마운트에서 `hasResidual = filterRef.current !== null`이 `true`가 되어 불필요한 리셋 트리거 → `loadCategories(1, 20, undefined, "")` 호출로 필터 없는 전체 목록이 "내 카테고리"를 덮어씀. **해결**: `initialMountDoneRef`로 첫 마운트 시 reset effect를 건너뜀.
+- **`filterSelection` nullable 기본값 → radio 버튼 미선택** — `useState<"all" | "my" | null>`에서 `serverFilter`가 `null`이면 초기값 `null`. 비로그인 시 `"all"`과 `"my"` 모두 `aria-pressed=false`가 되어 어떤 버튼도 선택되지 않음. **해결**: 타입에서 `null` 제거, 기본값을 `"all"`로 설정 (`props.serverFilter === "my" ? "my" : "all"`). `defaultFilterRef`도 동일하게 수정.
 - **`hadServerCategories` 소비 타이밍** — `effectiveFilter`가 `undefined`인 첫 렌더에서 `hadServerCategories.current=false`가 되면, 이후 `effectiveFilter="my"`로 변경되어도 SSR 데이터 보호가 불가. reset effect 수정 시 `hadServerCategories` 소비 조건에 `effectiveFilter` 확정 여부를 함께 체크할 것.
 
 ## SSR/CSR 일관성
