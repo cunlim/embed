@@ -103,7 +103,7 @@
 
 ---
 
-## [경력기술서 (Project)]
+## [경력기술서 (Work Experience & Project)]
 
 1. 인프라
 

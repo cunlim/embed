@@ -116,41 +116,6 @@ cd nextjs && npx playwright test
 .claude/hooks/run-all-checks.sh --terminal
 ```
 
-## 프로젝트 구조
-
-```
-cl_embed/
-├── laravel/           # 백엔드 (Laravel 13)
-│   ├── app/
-│   │   ├── Http/Controllers/Api/   # API 컨트롤러
-│   │   ├── Models/                 # Eloquent 모델
-│   │   ├── Services/               # 비즈니스 로직
-│   │   │   ├── Contracts/          # 프로바이더 인터페이스
-│   │   │   └── Providers/          # Ollama, OpenAI 구현체
-│   │   └── Repositories/           # 데이터 액세스 계층
-│   ├── database/migrations/        # 마이그레이션 (30개)
-│   ├── routes/api.php              # API 라우트
-│   └── tests/                      # Pest 테스트
-├── nextjs/           # 프론트엔드 (Next.js 16)
-│   ├── app/
-│   │   ├── embed/      # 메인 기능 (카테고리 CRUD, 검색, 배치 처리)
-│   │   ├── admin/      # 관리자 패널
-│   │   ├── mypage/     # 마이페이지
-│   │   └── docs/       # API 문서 페이지
-│   ├── components/     # 공유 UI 컴포넌트
-│   ├── hooks/          # 커스텀 훅
-│   ├── lib/            # 유틸리티, API 클라이언트
-│   └── e2e/            # Playwright E2E 테스트
-├── docker/           # Docker 설정
-│   ├── docker-compose.yml
-│   └── nginx/         # Nginx 리버스 프록시 설정
-├── docs/             # 프로젝트 문서
-│   ├── PRD.md         # 제품 요구사항
-│   ├── ADR.md         # 아키텍처 결정 기록
-│   └── UI_GUIDE.md    # UI 설계 가이드
-└── .github/workflows/ # CI/CD 파이프라인
-```
-
 ## 역할 기반 접근 제어
 
 | 역할 | 카테고리 조회 | CRUD | 번역·임베딩 | 폴더 관리 | 관리자 |
