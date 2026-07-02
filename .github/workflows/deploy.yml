@@ -126,5 +126,6 @@ jobs:
               set +e
               [ -d /ws/laravel/vendor ] && chown -R 1000:1000 /ws/laravel/vendor 2>/dev/null
               [ -f /ws/laravel/.env ] && chown 1000:1000 /ws/laravel/.env 2>/dev/null
+              [ -d /ws/docker/laravel/volume ] && chown -R 1000:1000 /ws/docker/laravel/volume 2>/dev/null
               exit 0
             "
