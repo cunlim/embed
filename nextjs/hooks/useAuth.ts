@@ -66,11 +66,14 @@ export function useAuth(initialUser?: User | null): UseAuthReturn {
 
   const loginWithOAuth = useCallback(
     (provider: "google" | "github" | "naver", redirect?: string) => {
-      let url = `/api/auth/${provider}/redirect`;
       if (redirect) {
-        url += `?redirect=${encodeURIComponent(redirect)}`;
+        let finalRedirect = redirect;
+        if (typeof window !== "undefined" && window.location.hash && !finalRedirect.includes("#")) {
+          finalRedirect += window.location.hash;
+        }
+        document.cookie = `oauth_redirect=${encodeURIComponent(finalRedirect)}; path=/; max-age=600; SameSite=Lax`;
       }
-      window.location.href = url;
+      window.location.href = `/api/auth/${provider}/redirect`;
     },
     []
   );

@@ -68,17 +68,6 @@ test('GET /api/auth/{provider}/redirect - stores oauth_client in session', funct
     expect(session('oauth_client'))->toBe('app');
 });
 
-test('GET /api/auth/{provider}/redirect - stores oauth_redirect in session', function () {
-    $provider = Mockery::mock();
-    $provider->shouldReceive('redirect')->andReturn(redirect('https://accounts.google.com/o/oauth2/auth'));
-
-    Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
-
-    $this->get('/api/auth/google/redirect?redirect=/admin/member?mode=hierarchy');
-
-    expect(session('oauth_redirect'))->toBe('/admin/member?mode=hierarchy');
-});
-
 // ---- callback ----
 
 test('GET /api/auth/{provider}/callback - creates user and redirects with token for new OAuth user', function () {
@@ -156,22 +145,6 @@ test('GET /api/auth/{provider}/callback - redirects to app url when client is ap
 
     $response->assertRedirect();
     expect($response->getTargetUrl())->toContain('myapp://oauth?token=');
-});
-
-test('GET /api/auth/{provider}/callback - includes redirect param in callback url', function () {
-    [$abstractUser, $provider] = mockSocialiteUser();
-
-    Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
-
-    $response = $this->withSession([
-        'oauth_client' => 'web',
-        'oauth_redirect' => '/admin/member?mode=hierarchy',
-    ])->get('/api/auth/google/callback');
-
-    $response->assertRedirect();
-    $targetUrl = $response->getTargetUrl();
-    expect($targetUrl)->toContain('/login?token=');
-    expect($targetUrl)->toContain('redirect='.urlencode('/admin/member?mode=hierarchy'));
 });
 
 test('GET /api/auth/{provider}/callback - omits redirect param when not set', function () {

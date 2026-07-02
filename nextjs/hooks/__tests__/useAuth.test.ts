@@ -32,6 +32,7 @@ describe("useAuth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clearAuthCookie();
+    document.cookie = "oauth_redirect=; path=/; max-age=0";
     Object.defineProperty(window, "location", {
       value: { href: "" },
       writable: true,
@@ -147,9 +148,33 @@ describe("useAuth", () => {
         result.current.loginWithOAuth("google", "/admin/member?mode=hierarchy");
       });
 
-      expect(window.location.href).toBe(
-        `/api/auth/google/redirect?redirect=${encodeURIComponent("/admin/member?mode=hierarchy")}`
-      );
+      expect(window.location.href).toBe("/api/auth/google/redirect");
+      
+      const match = document.cookie.match(/(?:^|;\s*)oauth_redirect=([^;]*)/);
+      const oauthRedirect = match ? decodeURIComponent(match[1]) : null;
+      expect(oauthRedirect).toBe("/admin/member?mode=hierarchy");
+    });
+
+    it("redirect 파라미터와 window.location.hash를 결합하여 리다이렉트한다", async () => {
+      mockGetUser.mockResolvedValue(null);
+      const { result } = renderHook(() => useAuth());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      Object.defineProperty(window, "location", {
+        value: { href: "", hash: "#abc" },
+        writable: true,
+      });
+
+      act(() => {
+        result.current.loginWithOAuth("google", "/admin/member?mode=hierarchy");
+      });
+
+      const match = document.cookie.match(/(?:^|;\s*)oauth_redirect=([^;]*)/);
+      const oauthRedirect = match ? decodeURIComponent(match[1]) : null;
+      expect(oauthRedirect).toBe("/admin/member?mode=hierarchy#abc");
     });
   });
 });

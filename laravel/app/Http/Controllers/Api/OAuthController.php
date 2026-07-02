@@ -58,7 +58,6 @@ class OAuthController extends Controller
     public function redirect(string $provider): Response
     {
         session()->put('oauth_client', request()->query('client', 'web'));
-        session()->put('oauth_redirect', request()->query('redirect'));
 
         /** @var \Symfony\Component\HttpFoundation\RedirectResponse $response */
         $response = Socialite::driver($provider)->redirect();
@@ -150,11 +149,6 @@ class OAuthController extends Controller
         };
 
         $url = $redirectUrl.'?token='.$token;
-
-        $oauthRedirect = session()->pull('oauth_redirect');
-        if ($oauthRedirect) {
-            $url .= '&redirect='.urlencode($oauthRedirect);
-        }
 
         return redirect($url);
     }
