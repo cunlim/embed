@@ -346,7 +346,7 @@ export default function TaskExecution({
     }
     try {
       const steps = Array.from(checkedSteps);
-      const res = await fetchBatchStatus(token, { filter, keyword, folder, steps });
+      const res = await fetchBatchStatus(token, { owner_scope: filter, like_query: keyword, folder, steps });
       const d = res.data;
       if (d.needs_processing === 0) {
         toast("처리 가능한 카테고리가 없습니다");
@@ -373,7 +373,7 @@ export default function TaskExecution({
       const res = await fetchBatchStatus(token, {
         ...(params.type === "selected"
           ? { ids: params.ids }
-          : { filter: params.filter, keyword: params.keyword, folder: params.folder }),
+          : { owner_scope: params.filter, like_query: params.keyword, folder: params.folder }),
         steps: params.steps,
       });
       const d = res.data;

@@ -55,7 +55,8 @@ class CategoryQueryService
         }
 
         $search = $request->input('like_query');
-        $searchLang = $request->input('hierarchy_lang');
+        // 하위 호환: hierarchy_lang 우선, 없으면 search_lang 폴백
+        $searchLang = $request->input('hierarchy_lang', $request->input('search_lang'));
 
         if ($searchLang && in_array($searchLang, ['ko', 'en', 'zh'])) {
             $langColumn = 'category_name_'.$searchLang;

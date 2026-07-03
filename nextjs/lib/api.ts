@@ -121,7 +121,7 @@ export interface BatchStatusResponse {
 
 export async function fetchBatchStatus(
   token: string,
-  params: { ids?: number[]; filter?: string; keyword?: string; folder?: string; steps?: StepName[] }
+  params: { ids?: number[]; owner_scope?: string; like_query?: string; folder?: string; steps?: StepName[] }
 ): Promise<BatchStatusResponse> {
   return request<BatchStatusResponse>("/categories/batch-status", {
     method: "POST",

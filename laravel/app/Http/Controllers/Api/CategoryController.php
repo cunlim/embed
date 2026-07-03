@@ -256,10 +256,10 @@ class CategoryController extends Controller
         /** @var User|null $user */
         $user = $request->user('sanctum');
 
-        // 언어 파라미터 검증
-        $lang = $request->query('hierarchy_lang', 'ko');
+        // 언어 파라미터 검증 (하위 호환: hierarchy_lang 우선, 없으면 lang 폴백)
+        $lang = $request->query('hierarchy_lang', $request->query('lang', 'ko'));
         if (! in_array($lang, ['ko', 'en', 'zh'], true)) {
-            return response()->json(['message' => 'lang must be one of: ko, en, zh'], 400);
+            return response()->json(['message' => 'hierarchy_lang must be one of: ko, en, zh'], 400);
         }
 
         // catN 파라미터 추출 (cat1, cat2, cat3, ...)

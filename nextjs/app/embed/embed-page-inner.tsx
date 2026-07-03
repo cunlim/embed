@@ -839,8 +839,8 @@ export function EmbedPageInner({
                                 } else {
                                   setPage(1);
                                   const params = new URLSearchParams(window.location.search);
-                                  params.set("page", "1");
-                                  params.set("per_page", String(newPerPage));
+                                  params.set("page_number", "1");
+                                  params.set("page_size", String(newPerPage));
                                   window.history.pushState(null, "", `/embed?${params.toString()}`);
                                 }
                               }}

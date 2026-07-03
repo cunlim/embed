@@ -582,8 +582,8 @@ export function useEmbedState(props: UseEmbedStateProps) {
     } else {
       setPage(newPage);
       const params = new URLSearchParams(window.location.search);
-      params.set("page", String(newPage));
-      params.set("per_page", String(perPage));
+      params.set("page_number", String(newPage));
+      params.set("page_size", String(perPage));
       window.history.pushState(null, "", `/embed?${params.toString()}`);
     }
   }, [isSearchMode, handleSearch, perPage]);

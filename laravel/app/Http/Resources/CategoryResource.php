@@ -13,7 +13,7 @@ class CategoryResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $lang = $request->input('target_language', 'ko');
+        $lang = $request->input('translation_lang', 'ko');
 
         // 유사도 필드 (text 검색 시 RecommendationService가 설정한 동적 프로퍼티)
         $perLanguageScores = null;
