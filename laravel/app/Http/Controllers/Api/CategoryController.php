@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CategoryIndexRequest;
 use App\Http\Requests\CategoryStoreRequest;
 use App\Http\Requests\CategoryUpdateTextRequest;
 use App\Http\Requests\RunStepRequest;
@@ -73,7 +74,7 @@ class CategoryController extends Controller
             ),
         ]
     )]
-    public function index(Request $request): CategoryCollection|JsonResponse
+    public function index(CategoryIndexRequest $request): CategoryCollection|JsonResponse
     {
         /** @var User|null $user */
         $user = auth('sanctum')->user();
@@ -84,7 +85,7 @@ class CategoryController extends Controller
         );
 
         $text = $request->input('text');
-        $targetLanguage = $request->input('target_language', 'ko');
+        $targetLanguage = $request->getTargetLanguage();
 
         // text가 있고 비어있지 않으면 → 유사도 검색 (기존 /api/recommend 로직)
         if (! empty($text) && trim($text) !== '') {
@@ -103,18 +104,8 @@ class CategoryController extends Controller
      * 유사도 검색 분기 (기존 RecommendController::recommend() 로직 이식).
      * text 파라미터가 있을 때 pgvector 코사인 유사도 기반으로 카테고리를 추천합니다.
      */
-    private function recommendSearch(Request $request, ?User $user, string $text, string $targetLanguage, int $perPage): JsonResponse
+    private function recommendSearch(CategoryIndexRequest $request, ?User $user, string $text, string $targetLanguage, int $perPage): JsonResponse
     {
-        // target_language 검증
-        if (! in_array($targetLanguage, ['ko', 'zh', 'en'], true)) {
-            $targetLanguage = 'ko';
-        }
-
-        // text 길이 검증
-        if (mb_strlen($text) > 500) {
-            return response()->json(['message' => 'text는 500자를 초과할 수 없습니다.'], 422);
-        }
-
         $page = (int) $request->input('page', 1);
         $keyword = $request->input('keyword');
         $folder = $request->input('folder');
