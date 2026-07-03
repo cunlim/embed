@@ -1,16 +1,15 @@
 {
   "stop-checks": {
+    "PreInvocation": null,
+    "PostInvocation": null,
     "Stop": [
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "scripts/run-all-checks.sh",
-            "timeout": 360,
-            "statusMessage": "테스트 및 린트 검사 중..."
-          }
-        ]
+        "type": "command",
+        "command": "/var/app/www/cl_embed/scripts/run-all-checks.sh",
+        "timeout": 360
       }
-    ]
+    ],
+    "PreToolUse": null,
+    "PostToolUse": null
   }
 }
