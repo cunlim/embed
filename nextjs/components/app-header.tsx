@@ -36,7 +36,7 @@ export function AppHeader({ serverUser }: { serverUser?: User | null }) {
             variant="ghost"
             size="sm"
             asChild
-            className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
+            className="h-7 w-7 justify-center rounded-full px-0 md:h-8 md:w-auto md:px-3"
           >
             <Link
               href="/embed"
@@ -46,18 +46,18 @@ export function AppHeader({ serverUser }: { serverUser?: User | null }) {
               }}
             >
               <Play className="h-4 w-4" />
-              <span className="hidden sm:inline ml-0.5">기능시연</span>
+              <span className="hidden md:inline ml-0.5">기능시연</span>
             </Link>
           </Button>
           <Button
             variant="ghost"
             size="sm"
             asChild
-            className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
+            className="h-7 w-7 justify-center rounded-full px-0 md:h-8 md:w-auto md:px-3"
           >
             <Link href="/docs">
               <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline ml-0.5">문서</span>
+              <span className="hidden md:inline ml-0.5">문서</span>
             </Link>
           </Button>
 
@@ -65,18 +65,18 @@ export function AppHeader({ serverUser }: { serverUser?: User | null }) {
             variant="ghost"
             size="sm"
             asChild
-            className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
+            className="h-7 w-7 justify-center rounded-full px-0 md:h-8 md:w-auto md:px-3"
           >
             <a href="/swagger/" target="_blank" rel="noopener noreferrer">
               <FileCode2 className="h-4 w-4" />
-              <span className="hidden sm:inline ml-0.5">API 명세</span>
+              <span className="hidden md:inline ml-0.5">API 명세</span>
             </a>
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 rounded-full sm:h-8 sm:w-8"
+            className="h-7 w-7 rounded-full md:h-8 md:w-8"
             asChild
           >
             <a

@@ -19,7 +19,7 @@ export function AuthButtons({ serverUser }: { serverUser?: User | null }) {
       {user && (
         <Link
           href="/mypage"
-          className="hidden text-sm font-medium text-foreground hover:underline sm:inline"
+          className="hidden text-sm font-medium text-foreground hover:underline md:inline"
         >
           {user.name}
         </Link>
@@ -30,11 +30,11 @@ export function AuthButtons({ serverUser }: { serverUser?: User | null }) {
           variant="ghost"
           size="sm"
           asChild
-          className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
+          className="h-7 w-7 justify-center rounded-full px-0 md:h-8 md:w-auto md:px-3"
         >
           <Link href="/admin" aria-label="관리자">
             <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline ml-0.5">관리자</span>
+            <span className="hidden md:inline ml-0.5">관리자</span>
           </Link>
         </Button>
       )}
@@ -43,7 +43,7 @@ export function AuthButtons({ serverUser }: { serverUser?: User | null }) {
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
+          className="h-7 w-7 justify-center rounded-full px-0 md:h-8 md:w-auto md:px-3"
           aria-label="로그아웃"
           onClick={async () => {
             await logout();
@@ -51,18 +51,18 @@ export function AuthButtons({ serverUser }: { serverUser?: User | null }) {
           }}
         >
           <LogOut className="h-4 w-4" />
-          <span className="hidden sm:inline ml-0.5">로그아웃</span>
+          <span className="hidden md:inline ml-0.5">로그아웃</span>
         </Button>
       ) : (
         <Button
           variant="ghost"
           size="sm"
           asChild
-          className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
+          className="h-7 w-7 justify-center rounded-full px-0 md:h-8 md:w-auto md:px-3"
         >
           <Link href="/login" aria-label="로그인">
             <LogIn className="h-4 w-4" />
-            <span className="hidden sm:inline ml-0.5">로그인</span>
+            <span className="hidden md:inline ml-0.5">로그인</span>
           </Link>
         </Button>
       )}

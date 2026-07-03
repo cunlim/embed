@@ -30,7 +30,7 @@ export function SiteHeader({ badge, children, leftChildren }: SiteHeaderProps) {
           )}
         </Link>
         {leftChildren && (
-          <div className="hidden sm:block mx-1 h-5 w-px bg-border" />
+          <div className="hidden md:block mx-1 h-5 w-px bg-border" />
         )}
         {leftChildren}
       </div>
