@@ -1,3 +1,7 @@
+---
+name: check
+description: Run all validation checks (lint, tsc, test, pint)
+---
 전체 검사를 실행합니다.
 
 `.claude/hooks/run-all-checks.sh --terminal`을 실행하고 결과를 확인합니다.

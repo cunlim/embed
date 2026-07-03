@@ -1,3 +1,7 @@
+---
+name: new-feature
+description: 신규 기능 구현을 수행합니다
+---
 신규 기능을 작업합니다: $ARGUMENTS
 
 ## 워크플로 (AGENTS.md Phase 1~5 준수)

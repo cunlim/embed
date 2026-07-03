@@ -1,3 +1,7 @@
+---
+name: fix-bug
+description: 버그 수정 및 플레이라이트 재현 검증을 수행합니다
+---
 버그를 수정합니다: $ARGUMENTS
 
 ## 워크플로 (AGENTS.md Phase 1~5 준수)
