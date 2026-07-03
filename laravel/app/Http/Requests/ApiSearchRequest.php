@@ -19,10 +19,10 @@ class ApiSearchRequest extends FormRequest
         return [
             'folder' => ['nullable', 'string', 'max:100'],
             'text' => ['required', 'string', 'max:500'],
-            'target_language' => ['nullable', 'string', 'in:ko,zh,en'],
+            'target_language' => ['nullable', 'string', 'in:ko,en,zh'],
             'mode' => ['nullable', 'string', 'in:hierarchy,search'],
             'keyword' => ['nullable', 'string', 'max:500'],
-            'lang' => ['nullable', 'string', 'in:ko,zh,en'],
+            'lang' => ['nullable', 'string', 'in:ko,en,zh'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ];

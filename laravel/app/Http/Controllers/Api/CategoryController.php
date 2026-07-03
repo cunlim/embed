@@ -110,6 +110,10 @@ class CategoryController extends Controller
         $keyword = $request->input('keyword');
         $folder = $request->input('folder');
 
+        $mode = $request->input('mode', 'search');
+        $lang = $request->input('lang', 'ko');
+        $searchLang = ($mode === 'hierarchy' && $lang) ? $lang : null;
+
         // 사용자 범위 해석
         $scopeUserId = $this->resolveScopeUserId($user, $request);
 
@@ -137,7 +141,7 @@ class CategoryController extends Controller
         $queryEmbedding = $searchLog->embedding->toArray();
 
         $results = $this->recommendation->recommendPaginated(
-            $searchLog, $targetLanguage, $perPage, $page, $scopeUserId, $keyword, $folder
+            $searchLog, $targetLanguage, $perPage, $page, $scopeUserId, $keyword, $folder, $searchLang
         );
 
         // quota 차감 + 로그

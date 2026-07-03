@@ -25,12 +25,14 @@ class CategoryIndexRequest extends FormRequest
         return [
             'text' => ['nullable', 'string', 'max:500'],
             'target_language' => ['nullable', 'string', 'in:ko,en,zh'],
+            'lang' => ['nullable', 'string', 'in:ko,en,zh'],
             'per_page' => ['nullable', 'integer', 'min:1'],
             'page' => ['nullable', 'integer', 'min:1'],
-            'keyword' => ['nullable', 'string', 'max:100'],
-            'folder' => ['nullable', 'string'],
+            'keyword' => ['nullable', 'string', 'max:500'],
+            'folder' => ['nullable', 'string', 'max:100'],
             'filter' => ['nullable', 'string', 'in:my,all'],
             'user_id' => ['nullable', 'integer'],
+            'mode' => ['nullable', 'string', 'in:hierarchy,search'],
         ];
     }
 
