@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Play } from "lucide-react";
+import { BookOpen, Play, FileCode2 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { AuthButtons } from "@/components/auth-buttons";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,18 @@ export function AppHeader({ serverUser }: { serverUser?: User | null }) {
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline ml-0.5">문서</span>
             </Link>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="h-7 w-7 justify-center rounded-full px-0 sm:h-8 sm:w-auto sm:px-3"
+          >
+            <a href="/swagger/" target="_blank" rel="noopener noreferrer">
+              <FileCode2 className="h-4 w-4" />
+              <span className="hidden sm:inline ml-0.5">API 명세</span>
+            </a>
           </Button>
 
           <Button
