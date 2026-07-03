@@ -18,21 +18,33 @@ class CategoryIndexRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
+     * [Front-end URL Query Params Mapping]
+     * - 'folder'          <= 'folder'
+     * - 'text'            <= 'stext' (Similarity search input text)
+     * - 'target_language' <= 'slang' (Similarity search translation target language)
+     * - 'mode'            <= 'mode' (hierarchy or search)
+     * - 'keyword'         <= 'q' or 'cat1>cat2>...'
+     * - 'lang'            <= 'lang'  (Hierarchy select lang: ko, en, zh)
+     * - 'page'            <= 'page'
+     * - 'per_page'        <= 'per_page'
+     * - 'filter'          <= 'filter'
+     * - 'user_id'         <= 'user_id'
+     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
+            'folder' => ['nullable', 'string', 'max:100'],
             'text' => ['nullable', 'string', 'max:500'],
             'target_language' => ['nullable', 'string', 'in:ko,en,zh'],
-            'lang' => ['nullable', 'string', 'in:ko,en,zh'],
-            'per_page' => ['nullable', 'integer', 'min:1'],
-            'page' => ['nullable', 'integer', 'min:1'],
+            'mode' => ['nullable', 'string', 'in:hierarchy,search'],
             'keyword' => ['nullable', 'string', 'max:500'],
-            'folder' => ['nullable', 'string', 'max:100'],
+            'lang' => ['nullable', 'string', 'in:ko,en,zh'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
             'filter' => ['nullable', 'string', 'in:my,all'],
             'user_id' => ['nullable', 'integer'],
-            'mode' => ['nullable', 'string', 'in:hierarchy,search'],
         ];
     }
 
