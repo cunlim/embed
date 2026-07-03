@@ -381,9 +381,9 @@ export function EmbedPageInner({
                 setHierarchyLang(lang);
                 updateURL({
                   hierarchyLang: lang,
-                  ...(mode !== undefined && { mode }),
+                  ...(mode !== undefined && { searchMode: mode }),
                   ...(catPath !== undefined && { catPath }),
-                  ...(keyword !== undefined && { keyword: keyword || undefined }),
+                  ...(keyword !== undefined && { likeQuery: keyword || undefined }),
                 });
               }}
             />
