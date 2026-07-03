@@ -249,7 +249,7 @@ export function EmbedPageInner({
                     size="sm"
                     variant="outline"
                     className={getPillButtonClass(searchLanguage === "ko")}
-                    onClick={() => { setSearchLanguage("ko"); updateURL({ searchLanguage: "ko" }); }}
+                    onClick={() => { setSearchLanguage("ko"); updateURL({ translationLang: "ko" }); }}
                     aria-pressed={searchLanguage === "ko"}
                   >
                     한국어
@@ -258,7 +258,7 @@ export function EmbedPageInner({
                     size="sm"
                     variant="outline"
                     className={getPillButtonClass(searchLanguage === "en")}
-                    onClick={() => { setSearchLanguage("en"); updateURL({ searchLanguage: "en" }); }}
+                    onClick={() => { setSearchLanguage("en"); updateURL({ translationLang: "en" }); }}
                     aria-pressed={searchLanguage === "en"}
                   >
                     영어
@@ -267,7 +267,7 @@ export function EmbedPageInner({
                     size="sm"
                     variant="outline"
                     className={getPillButtonClass(searchLanguage === "zh")}
-                    onClick={() => { setSearchLanguage("zh"); updateURL({ searchLanguage: "zh" }); }}
+                    onClick={() => { setSearchLanguage("zh"); updateURL({ translationLang: "zh" }); }}
                     aria-pressed={searchLanguage === "zh"}
                   >
                     중국어
@@ -341,8 +341,8 @@ export function EmbedPageInner({
                   setHierarchyKeyword("");
                   keywordRef.current = "";
                   setHierarchyResetKey(prev => prev + 1);
-                  // page=1, folder + user_id URL 반영 (기존 filter 등 파라미터 보존)
-                  updateURL({ folder: folder ?? null, userId: userId ?? null, page: 1 });
+                  // pageNumber=1, folder + user_id URL 반영 (기존 ownerScope 등 파라미터 보존)
+                  updateURL({ folder: folder ?? null, userId: userId ?? null, pageNumber: 1 });
                   // 폴더 범위로 카테고리 재로드 (기존 필터 유지)
                   loadCategories(1, perPage, effectiveFilter, keywordRef.current, folder ?? undefined, userId ?? undefined, stepsRef.current, hierarchyLangRef.current);
                 }}
@@ -383,7 +383,7 @@ export function EmbedPageInner({
                   hierarchyLang: lang,
                   ...(mode !== undefined && { mode }),
                   ...(catPath !== undefined && { catPath }),
-                  ...(keyword !== undefined && { q: keyword || undefined }),
+                  ...(keyword !== undefined && { keyword: keyword || undefined }),
                 });
               }}
             />
@@ -489,11 +489,11 @@ export function EmbedPageInner({
                 const kw = keywordRef.current;
                 const ef = filterRef.current === "my" ? "my" : undefined;
                 loadCategories(1, perPage, ef, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current, hierarchyLangRef.current);
-                updateURL({ page: 1 });
+                updateURL({ pageNumber: 1 });
               }}
               onCategoryComplete={() => {
                 // 배치 루프 중에는 목록을 새로고침하지 않음
-                // (page 불일치 방지 — onComplete에서 최종 새로고침)
+                // (pageNumber 불일치 방지 — onComplete에서 최종 새로고침)
               }}
             />
 
@@ -524,12 +524,12 @@ export function EmbedPageInner({
                 const kw = keywordRef.current;
                 const ef = filterRef.current === "my" ? "my" : undefined;
                 loadCategories(1, perPage, ef, kw, selectedFolder ?? undefined, selectedUserId ?? undefined, stepsRef.current, hierarchyLangRef.current);
-                updateURL({ page: 1 });
+                updateURL({ pageNumber: 1 });
                 setHierarchyRefreshKey((prev) => prev + 1);
               }}
               onCategoryComplete={() => {
                 // 배치 루프 중에는 목록을 새로고침하지 않음
-                // (page 불일치 방지 — onComplete에서 최종 새로고침)
+                // (pageNumber 불일치 방지 — onComplete에서 최종 새로고침)
               }}
             />
             )}
@@ -546,7 +546,7 @@ export function EmbedPageInner({
                   className={getPillButtonClass(activeFilterSelection === "all")}
                   onClick={() => {
                     setFilterSelection("all");
-                    updateURL({ filter: "all" });
+                    updateURL({ ownerScope: "all" });
                   }}
                   aria-pressed={activeFilterSelection === "all"}
                 >
@@ -559,7 +559,7 @@ export function EmbedPageInner({
                   onClick={() => {
                     if (!user) { alert("로그인이 필요합니다"); return; }
                     setFilterSelection("my");
-                    updateURL({ filter: "my" });
+                    updateURL({ ownerScope: "my" });
                   }}
                   aria-pressed={activeFilterSelection === "my"}
                 >

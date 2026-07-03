@@ -90,7 +90,7 @@ export default function CategoryHierarchy({
     hadInitialOptions.current = false;
     if (token && (refreshKey > 0 || (tokenChanged && !skipInitial))) {
       const params: Record<string, string> = {};
-      if (lang !== "ko") params["lang"] = lang;
+      if (lang !== "ko") params["hierarchy_lang"] = lang;
       if (folder) params["folder"] = folder;
       if (userId) params["user_id"] = String(userId);
       fetchCategoryLevels(Object.keys(params).length > 0 ? params : undefined, token, userId ?? undefined).then((res) => {
@@ -115,7 +115,7 @@ export default function CategoryHierarchy({
     // 최상위 옵션 다시 조회
     if (token) {
       const params: Record<string, string> = {};
-      if (lang !== "ko") params["lang"] = lang;
+      if (lang !== "ko") params["hierarchy_lang"] = lang;
       if (folder) params["folder"] = folder;
       if (userId) params["user_id"] = String(userId);
       fetchCategoryLevels(Object.keys(params).length > 0 ? params : undefined, token, userId ?? undefined).then((res) => {
@@ -136,7 +136,7 @@ export default function CategoryHierarchy({
       // 각 depth에 대해 다음 옵션 로드
       for (let i = 0; i < path.length; i++) {
         const catParams: Record<string, string> = {};
-        if (lang !== "ko") catParams["lang"] = lang;
+        if (lang !== "ko") catParams["hierarchy_lang"] = lang;
         for (let j = 0; j <= i; j++) {
           catParams[`cat${j + 1}`] = path[j];
         }
@@ -197,7 +197,7 @@ export default function CategoryHierarchy({
       // 다음 depth 옵션 로드
       try {
         const catParams: Record<string, string> = {};
-        if (lang !== "ko") catParams["lang"] = lang;
+        if (lang !== "ko") catParams["hierarchy_lang"] = lang;
         const nonNullPath = newPath.filter((v): v is string => v !== null);
         for (let i = 0; i < nonNullPath.length; i++) {
           catParams[`cat${i + 1}`] = nonNullPath[i];
@@ -279,7 +279,7 @@ export default function CategoryHierarchy({
       onLangChange?.(newLang, "hierarchy", [], "");
       // 새 언어로 최상위 옵션 재조회
       const params: Record<string, string> = {};
-      if (newLang !== "ko") params["lang"] = newLang;
+      if (newLang !== "ko") params["hierarchy_lang"] = newLang;
       if (folder) params["folder"] = folder;
       if (userId) params["user_id"] = String(userId);
       try {

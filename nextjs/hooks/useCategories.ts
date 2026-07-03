@@ -16,7 +16,7 @@ interface UseCategoriesReturn {
   isLoading: boolean;
   isLoaded: boolean;
   error: string | null;
-  loadCategories: (page?: number, perPage?: number, filter?: string, search?: string, folder?: string, userId?: number | null, steps?: StepName[], searchLang?: string) => Promise<void>;
+  loadCategories: (pageNumber?: number, pageSize?: number, ownerScope?: string, likeQuery?: string, folder?: string, userId?: number | null, steps?: StepName[], hierarchyLang?: string) => Promise<void>;
   addCategory: (categoryNameKo: string, categoryCode?: string, categoryNameEn?: string, categoryNameZh?: string, folder?: string, userId?: number) => Promise<void>;
   updateCategoryStatus: (id: number, updates: Partial<Category>) => void;
   deleteCategory: (id: number) => Promise<void>;
@@ -34,24 +34,34 @@ export function useCategories(
   const [error, setError] = useState<string | null>(null);
   const hadInitialData = useRef(!!initialCategories?.length);
   const loadedToken = useRef<string | null | undefined>(undefined);
-  const currentPage = useRef<number>(1);
-  const currentPerPage = useRef<number>(20);
-  const currentFilter = useRef<string | undefined>(undefined);
-  const currentSearch = useRef<string | undefined>(undefined);
+  const currentPageNumber = useRef<number>(1);
+  const currentPageSize = useRef<number>(20);
+  const currentOwnerScope = useRef<string | undefined>(undefined);
+  const currentLikeQuery = useRef<string | undefined>(undefined);
   const currentFolder = useRef<string | undefined>(undefined);
   const currentSteps = useRef<StepName[] | undefined>(undefined);
 
-  const loadCategories = useCallback(async (page?: number, perPage?: number, filter?: string, search?: string, folder?: string, userId?: number | null, steps?: StepName[], searchLang?: string) => {
+  const loadCategories = useCallback(async (pageNumber?: number, pageSize?: number, ownerScope?: string, likeQuery?: string, folder?: string, userId?: number | null, steps?: StepName[], hierarchyLang?: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getCategories(token, page ?? currentPage.current, perPage ?? currentPerPage.current, filter, search ?? currentSearch.current, folder, userId, steps, searchLang);
+      const data = await getCategories(
+        token,
+        pageNumber ?? currentPageNumber.current,
+        pageSize ?? currentPageSize.current,
+        ownerScope ?? currentOwnerScope.current,
+        likeQuery ?? currentLikeQuery.current,
+        folder,
+        userId,
+        steps,
+        hierarchyLang
+      );
       setCategories(data.data);
       setMeta(data.meta);
-      currentPage.current = data.meta.current_page;
-      currentPerPage.current = data.meta.per_page;
-      currentFilter.current = filter;
-      currentSearch.current = search !== undefined ? search : currentSearch.current;
+      currentPageNumber.current = data.meta.current_page;
+      currentPageSize.current = data.meta.per_page;
+      currentOwnerScope.current = ownerScope;
+      currentLikeQuery.current = likeQuery !== undefined ? likeQuery : currentLikeQuery.current;
       currentFolder.current = folder;
       currentSteps.current = steps;
       setIsLoaded(true);
@@ -82,7 +92,16 @@ export function useCategories(
       setError(null);
       try {
         await createCategory(categoryNameKo, token, categoryCode, categoryNameEn, categoryNameZh, folder, userId);
-        const data = await getCategories(token, currentPage.current, currentPerPage.current, currentFilter.current, currentSearch.current, currentFolder.current, undefined, currentSteps.current);
+        const data = await getCategories(
+          token,
+          currentPageNumber.current,
+          currentPageSize.current,
+          currentOwnerScope.current,
+          currentLikeQuery.current,
+          currentFolder.current,
+          undefined,
+          currentSteps.current
+        );
         setCategories(data.data);
         setMeta(data.meta);
       } catch (err) {
@@ -112,7 +131,16 @@ export function useCategories(
       setError(null);
       try {
         await deleteCategoryApi(id, token);
-        const data = await getCategories(token, currentPage.current, currentPerPage.current, currentFilter.current, currentSearch.current, currentFolder.current, undefined, currentSteps.current);
+        const data = await getCategories(
+          token,
+          currentPageNumber.current,
+          currentPageSize.current,
+          currentOwnerScope.current,
+          currentLikeQuery.current,
+          currentFolder.current,
+          undefined,
+          currentSteps.current
+        );
         setCategories(data.data);
         setMeta(data.meta);
       } catch (err) {

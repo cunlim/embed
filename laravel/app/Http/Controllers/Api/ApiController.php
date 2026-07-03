@@ -31,16 +31,16 @@ class ApiController extends Controller
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['text'],
+                required: ['similarity_query'],
                 properties: [
                     new OA\Property(property: 'folder', type: 'string', maxLength: 100, default: '', description: '폴더명 필터 (빈 문자열: 전체)'),
-                    new OA\Property(property: 'text', type: 'string', maxLength: 500, description: '검색 텍스트'),
-                    new OA\Property(property: 'target_language', type: 'string', enum: ['ko', 'zh', 'en'], default: 'ko', description: '유사도 검색 및 결과 표시 언어'),
-                    new OA\Property(property: 'mode', type: 'string', enum: ['search', 'hierarchy'], default: 'search', description: '검색 모드 (search: 일반, hierarchy: 분류선택)'),
-                    new OA\Property(property: 'keyword', type: 'string', maxLength: 500, default: '', description: '접두사 필터 키워드 (mode=hierarchy에서 유용)'),
-                    new OA\Property(property: 'lang', type: 'string', enum: ['ko', 'zh', 'en'], default: 'ko', description: 'mode=hierarchy일 때 접두사 검색 언어'),
-                    new OA\Property(property: 'page', type: 'integer', minimum: 1, default: 1),
-                    new OA\Property(property: 'per_page', type: 'integer', minimum: 1, maximum: 50, default: 20),
+                    new OA\Property(property: 'similarity_query', type: 'string', maxLength: 500, description: '유사도 검색 텍스트'),
+                    new OA\Property(property: 'translation_lang', type: 'string', enum: ['ko', 'en', 'zh'], default: 'ko', description: '유사도 검색 및 결과 표시 언어'),
+                    new OA\Property(property: 'search_mode', type: 'string', enum: ['search', 'hierarchy'], default: 'search', description: '검색 모드 (search: 일반, hierarchy: 분류선택)'),
+                    new OA\Property(property: 'like_query', type: 'string', maxLength: 500, default: '', description: '접두사 필터 키워드 (search_mode=hierarchy에서 유용)'),
+                    new OA\Property(property: 'hierarchy_lang', type: 'string', enum: ['ko', 'en', 'zh'], default: 'ko', description: 'search_mode=hierarchy일 때 접두사 검색 언어'),
+                    new OA\Property(property: 'page_number', type: 'integer', minimum: 1, default: 1),
+                    new OA\Property(property: 'page_size', type: 'integer', minimum: 1, maximum: 50, default: 20),
                 ]
             )
         ),
@@ -91,16 +91,16 @@ class ApiController extends Controller
         $validated = $request->validated();
 
         // 기본값 설정
-        $targetLanguage = $validated['target_language'] ?? 'ko';
-        $page = (int) ($validated['page'] ?? 1);
-        $perPage = (int) ($validated['per_page'] ?? 20);
-        $keyword = $validated['keyword'] ?? null;
+        $targetLanguage = $validated['translation_lang'] ?? 'ko';
+        $page = (int) ($validated['page_number'] ?? 1);
+        $perPage = (int) ($validated['page_size'] ?? 20);
+        $keyword = $validated['like_query'] ?? null;
         $folder = $validated['folder'] ?? null;
-        $text = $validated['text'];
-        $mode = $validated['mode'] ?? 'search';
-        $lang = $validated['lang'] ?? 'ko';
+        $text = $validated['similarity_query'];
+        $mode = $validated['search_mode'] ?? 'search';
+        $lang = $validated['hierarchy_lang'] ?? 'ko';
 
-        // mode=search → searchLang=null, mode=hierarchy+lang → searchLang=lang
+        // search_mode=search → searchLang=null, search_mode=hierarchy+hierarchy_lang → searchLang=hierarchy_lang
         $searchLang = null;
         if ($mode === 'hierarchy' && $lang) {
             $searchLang = $lang;

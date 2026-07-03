@@ -130,8 +130,8 @@ describe('GET /api/categories/levels', function () {
         expect($data['isLeaf'])->toBe(false);
     });
 
-    test('lang=en이면 영어 카테고리명으로 계층을 반환한다', function () {
-        $response = $this->getJson('/api/categories/levels?'.http_build_query(['lang' => 'en']));
+    test('hierarchy_lang=en이면 영어 카테고리명으로 계층을 반환한다', function () {
+        $response = $this->getJson('/api/categories/levels?'.http_build_query(['hierarchy_lang' => 'en']));
 
         $response->assertOk();
         $data = $response->json('data');
@@ -140,8 +140,8 @@ describe('GET /api/categories/levels', function () {
         expect($data['options'])->toContain('Food');
     });
 
-    test('lang=en이고 대 파라미터가 있으면 영어 중분류를 반환한다', function () {
-        $response = $this->getJson('/api/categories/levels?'.http_build_query(['lang' => 'en', 'cat1' => 'Fashion']));
+    test('hierarchy_lang=en이고 대 파라미터가 있으면 영어 중분류를 반환한다', function () {
+        $response = $this->getJson('/api/categories/levels?'.http_build_query(['hierarchy_lang' => 'en', 'cat1' => 'Fashion']));
 
         $response->assertOk();
         $data = $response->json('data');
@@ -150,8 +150,8 @@ describe('GET /api/categories/levels', function () {
         expect($data['options'])->not->toContain('여성의류');
     });
 
-    test('lang=zh이면 중국어 카테고리명으로 계층을 반환한다', function () {
-        $response = $this->getJson('/api/categories/levels?'.http_build_query(['lang' => 'zh']));
+    test('hierarchy_lang=zh이면 중국어 카테고리명으로 계층을 반환한다', function () {
+        $response = $this->getJson('/api/categories/levels?'.http_build_query(['hierarchy_lang' => 'zh']));
 
         $response->assertOk();
         $data = $response->json('data');
@@ -159,7 +159,7 @@ describe('GET /api/categories/levels', function () {
         expect($data['options'])->toContain('食品');
     });
 
-    test('lang 파라미터가 없으면 기본값 ko로 동작한다', function () {
+    test('hierarchy_lang 파라미터가 없으면 기본값 ko로 동작한다', function () {
         $response = $this->getJson('/api/categories/levels');
 
         $response->assertOk();
@@ -167,8 +167,8 @@ describe('GET /api/categories/levels', function () {
         expect($data['options'])->toContain('패션의류');
     });
 
-    test('잘못된 lang 값이면 400을 반환한다', function () {
-        $response = $this->getJson('/api/categories/levels?'.http_build_query(['lang' => 'jp']));
+    test('잘못된 hierarchy_lang 값이면 400을 반환한다', function () {
+        $response = $this->getJson('/api/categories/levels?'.http_build_query(['hierarchy_lang' => 'jp']));
 
         $response->assertStatus(400);
     });

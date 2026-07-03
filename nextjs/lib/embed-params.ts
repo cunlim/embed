@@ -9,15 +9,15 @@ export interface EmbedParamsReader {
 }
 
 export interface EmbedParams {
-  mode: "hierarchy" | "search";
-  /** hierarchy 키워드 ("A>B>C") 또는 검색 키워드 (q) */
-  keyword: string | null;
+  searchMode: "hierarchy" | "search";
+  /** hierarchy 키워드 ("A>B>C") 또는 검색 키워드 (like_query) */
+  likeQuery: string | null;
   /** 전체/내카테고리 필터 */
-  filter: string | undefined;
+  ownerScope: string | undefined;
   /** 유사도 검색어 */
-  searchText: string | null;
+  similarityQuery: string | null;
   /** 유사도 검색 언어 (기본 ko) */
-  searchLang: string;
+  translationLang: string;
   /** 분류선택 계층 언어 (기본 ko) */
   hierarchyLang: string;
   /** URL에서 파싱된 계층 경로 배열 */
@@ -29,8 +29,8 @@ export interface EmbedParams {
 }
 
 export function parseEmbedParams(params: EmbedParamsReader): EmbedParams {
-  const modeParam = params.get("mode");
-  const mode = modeParam === "hierarchy" || modeParam === "search" ? modeParam : "hierarchy";
+  const modeParam = params.get("search_mode");
+  const searchMode = modeParam === "hierarchy" || modeParam === "search" ? modeParam : "hierarchy";
 
   // catN 파라미터 동적 파싱
   const catPath: string[] = [];
@@ -43,32 +43,32 @@ export function parseEmbedParams(params: EmbedParamsReader): EmbedParams {
     }
   }
 
-  let keyword: string | null = null;
+  let likeQuery: string | null = null;
   if (catPath.length > 0) {
-    keyword = catPath.join(">");
+    likeQuery = catPath.join(">");
   } else {
-    keyword = params.get("q") || null;
+    likeQuery = params.get("like_query") || null;
   }
 
-  const filterParam = params.get("filter");
-  const filter = filterParam === "my" ? "my" : filterParam === "all" ? "all" : undefined;
+  const scopeParam = params.get("owner_scope");
+  const ownerScope = scopeParam === "my" ? "my" : scopeParam === "all" ? "all" : undefined;
 
-  const searchText = params.get("stext") || null;
-  const slang = params.get("slang");
-  const searchLang = slang === "en" || slang === "zh" ? slang : "ko";
+  const similarityQuery = params.get("similarity_query") || null;
+  const translationLangParam = params.get("translation_lang");
+  const translationLang = translationLangParam === "en" || translationLangParam === "zh" ? translationLangParam : "ko";
 
-  const langParam = params.get("lang");
+  const langParam = params.get("hierarchy_lang");
   const hierarchyLang = langParam === "en" || langParam === "zh" ? langParam : "ko";
 
   const folder = params.get("folder") || null;
   const userId = params.get("user_id") || null;
 
-  return { mode, keyword, filter, searchText, searchLang, hierarchyLang, catPath, folder, userId };
+  return { searchMode, likeQuery, ownerScope, similarityQuery, translationLang, hierarchyLang, catPath, folder, userId };
 }
 
 /**
- * @deprecated parseEmbedParams().keyword를 대신 사용하세요.
+ * @deprecated parseEmbedParams().likeQuery를 대신 사용하세요.
  */
 export function parseEmbedKeyword(params: EmbedParamsReader): string | null {
-  return parseEmbedParams(params).keyword;
+  return parseEmbedParams(params).likeQuery;
 }

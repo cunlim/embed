@@ -18,13 +18,13 @@ class ApiSearchRequest extends FormRequest
     {
         return [
             'folder' => ['nullable', 'string', 'max:100'],
-            'text' => ['required', 'string', 'max:500'],
-            'target_language' => ['nullable', 'string', 'in:ko,en,zh'],
-            'mode' => ['nullable', 'string', 'in:hierarchy,search'],
-            'keyword' => ['nullable', 'string', 'max:500'],
-            'lang' => ['nullable', 'string', 'in:ko,en,zh'],
-            'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'similarity_query' => ['required', 'string', 'max:500'],
+            'translation_lang' => ['nullable', 'string', 'in:ko,en,zh'],
+            'search_mode' => ['nullable', 'string', 'in:hierarchy,search'],
+            'like_query' => ['nullable', 'string', 'max:500'],
+            'hierarchy_lang' => ['nullable', 'string', 'in:ko,en,zh'],
+            'page_number' => ['nullable', 'integer', 'min:1'],
+            'page_size' => ['nullable', 'integer', 'min:1', 'max:50'],
         ];
     }
 }

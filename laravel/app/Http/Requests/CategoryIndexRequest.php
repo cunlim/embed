@@ -18,41 +18,29 @@ class CategoryIndexRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * [Front-end URL Query Params Mapping]
-     * - 'folder'          <= 'folder'
-     * - 'text'            <= 'stext' (Similarity search input text)
-     * - 'target_language' <= 'slang' (Similarity search translation target language)
-     * - 'mode'            <= 'mode' (hierarchy or search)
-     * - 'keyword'         <= 'q' or 'cat1>cat2>...'
-     * - 'lang'            <= 'lang'  (Hierarchy select lang: ko, en, zh)
-     * - 'page'            <= 'page'
-     * - 'per_page'        <= 'per_page'
-     * - 'filter'          <= 'filter'
-     * - 'user_id'         <= 'user_id'
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
             'folder' => ['nullable', 'string', 'max:100'],
-            'text' => ['nullable', 'string', 'max:500'],
-            'target_language' => ['nullable', 'string', 'in:ko,en,zh'],
-            'mode' => ['nullable', 'string', 'in:hierarchy,search'],
-            'keyword' => ['nullable', 'string', 'max:500'],
-            'lang' => ['nullable', 'string', 'in:ko,en,zh'],
-            'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
-            'filter' => ['nullable', 'string', 'in:my,all'],
+            'similarity_query' => ['nullable', 'string', 'max:500'],
+            'translation_lang' => ['nullable', 'string', 'in:ko,en,zh'],
+            'search_mode' => ['nullable', 'string', 'in:hierarchy,search'],
+            'like_query' => ['nullable', 'string', 'max:500'],
+            'hierarchy_lang' => ['nullable', 'string', 'in:ko,en,zh'],
+            'page_number' => ['nullable', 'integer', 'min:1'],
+            'page_size' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'owner_scope' => ['nullable', 'string', 'in:my,all'],
             'user_id' => ['nullable', 'integer'],
         ];
     }
 
     /**
-     * Get the target language with a fallback to 'ko'.
+     * Get the translation target language with a fallback to 'ko'.
      */
-    public function getTargetLanguage(): string
+    public function getTranslationLang(): string
     {
-        return $this->input('target_language') ?: 'ko';
+        return $this->input('translation_lang') ?: 'ko';
     }
 }

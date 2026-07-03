@@ -21,7 +21,7 @@ class CategoryQueryService
 
         if ($hasExplicitUserId) {
             $query->where('user_id', (int) $request->input('user_id'));
-        } elseif ($request->input('filter') === 'my') {
+        } elseif ($request->input('owner_scope') === 'my') {
             if ($user) {
                 $query->where('user_id', $user->id);
             } else {
@@ -50,12 +50,12 @@ class CategoryQueryService
      */
     public static function applySearch(Builder $query, Request $request): Builder
     {
-        if (! $request->filled('search')) {
+        if (! $request->filled('like_query')) {
             return $query;
         }
 
-        $search = $request->input('search');
-        $searchLang = $request->input('search_lang');
+        $search = $request->input('like_query');
+        $searchLang = $request->input('hierarchy_lang');
 
         if ($searchLang && in_array($searchLang, ['ko', 'en', 'zh'])) {
             $langColumn = 'category_name_'.$searchLang;

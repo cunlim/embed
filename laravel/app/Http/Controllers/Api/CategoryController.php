@@ -80,19 +80,19 @@ class CategoryController extends Controller
         $user = auth('sanctum')->user();
         $maxPerPage = $user ? PHP_INT_MAX : (int) config('services.pagination.max_per_page_guest', 100);
         $perPage = min(
-            (int) $request->input('per_page', config('services.pagination.default_per_page', 20)),
+            (int) $request->input('page_size', config('services.pagination.default_per_page', 20)),
             $maxPerPage
         );
 
-        $text = $request->input('text');
-        $targetLanguage = $request->getTargetLanguage();
+        $text = $request->input('similarity_query');
+        $targetLanguage = $request->getTranslationLang();
 
-        // text가 있고 비어있지 않으면 → 유사도 검색 (기존 /api/recommend 로직)
+        // similarity_query가 있고 비어있지 않으면 → 유사도 검색 (기존 /api/recommend 로직)
         if (! empty($text) && trim($text) !== '') {
             return $this->recommendSearch($request, $user, $text, $targetLanguage, $perPage);
         }
 
-        // text가 없으면 → 기존 일반 목록
+        // similarity_query가 없으면 → 기존 일반 목록
         $query = CategoryQueryService::buildListQuery($user, $request, withEmbeddings: true);
 
         return new CategoryCollection(
@@ -106,19 +106,19 @@ class CategoryController extends Controller
      */
     private function recommendSearch(CategoryIndexRequest $request, ?User $user, string $text, string $targetLanguage, int $perPage): JsonResponse
     {
-        $page = (int) $request->input('page', 1);
-        $keyword = $request->input('keyword');
+        $page = (int) $request->input('page_number', 1);
+        $keyword = $request->input('like_query');
         $folder = $request->input('folder');
 
-        $mode = $request->input('mode', 'search');
-        $lang = $request->input('lang', 'ko');
+        $mode = $request->input('search_mode', 'search');
+        $lang = $request->input('hierarchy_lang', 'ko');
         $searchLang = ($mode === 'hierarchy' && $lang) ? $lang : null;
 
         // 사용자 범위 해석
         $scopeUserId = $this->resolveScopeUserId($user, $request);
 
-        // 비로그인 + filter=my → 빈 결과
-        if ($request->input('filter') === 'my' && ! $user) {
+        // 비로그인 + owner_scope=my → 빈 결과
+        if ($request->input('owner_scope') === 'my' && ! $user) {
             return response()->json([
                 'data' => [],
                 'meta' => ['current_page' => 1, 'last_page' => 1, 'total' => 0, 'per_page' => $perPage],
@@ -170,7 +170,7 @@ class CategoryController extends Controller
      */
     private function resolveScopeUserId(?User $user, Request $request): int|array|null
     {
-        $filter = $request->input('filter');
+        $filter = $request->input('owner_scope');
 
         if ($filter === 'my') {
             return $user?->id ?? 0;
@@ -257,7 +257,7 @@ class CategoryController extends Controller
         $user = $request->user('sanctum');
 
         // 언어 파라미터 검증
-        $lang = $request->query('lang', 'ko');
+        $lang = $request->query('hierarchy_lang', 'ko');
         if (! in_array($lang, ['ko', 'en', 'zh'], true)) {
             return response()->json(['message' => 'lang must be one of: ko, en, zh'], 400);
         }

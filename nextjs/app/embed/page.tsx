@@ -28,7 +28,7 @@ type EmbedPageParams = {
 export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   const sp = await searchParams;
   const reader = serverParamsReader(sp);
-  const { keyword, searchText, searchLang, hierarchyLang, filter: urlFilter, folder: urlFolder, userId: urlUserId } = parseEmbedParams(reader);
+  const { likeQuery, similarityQuery, translationLang, hierarchyLang, ownerScope: urlFilter, folder: urlFolder, userId: urlUserId } = parseEmbedParams(reader);
 
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value ?? null;
@@ -53,9 +53,9 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
     } catch {}
   }
 
-  const urlPage = parseInt(reader.get("page") ?? "1", 10);
+  const urlPage = parseInt(reader.get("page_number") ?? "1", 10);
   const page = Number.isNaN(urlPage) || urlPage < 1 ? 1 : urlPage;
-  const urlPerPage = parseInt(reader.get("per_page") ?? "20", 10);
+  const urlPerPage = parseInt(reader.get("page_size") ?? "20", 10);
   const perPage = [10, 20, 50].includes(urlPerPage) ? urlPerPage : 20;
 
   // 계층별 옵션 prefetch (동적 깊이)
@@ -66,7 +66,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   try {
     // 최상위 옵션 조회
     const topParams: Record<string, string> = {};
-    if (hierarchyLang !== "ko") topParams["lang"] = hierarchyLang;
+    if (hierarchyLang !== "ko") topParams["hierarchy_lang"] = hierarchyLang;
     if (urlFolder) topParams["folder"] = urlFolder;
     const topRes = await fetchCategoryLevels(Object.keys(topParams).length > 0 ? topParams : undefined, token, urlUserIdNum);
     levelOptions.push(topRes.data.options as string[]);
@@ -85,7 +85,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
 
     for (let i = 0; i < catPath.length && i < maxDepth - 1; i++) {
       const catParams: Record<string, string> = {};
-      if (hierarchyLang !== "ko") catParams["lang"] = hierarchyLang;
+      if (hierarchyLang !== "ko") catParams["hierarchy_lang"] = hierarchyLang;
       for (let j = 0; j <= i; j++) {
         catParams[`cat${j + 1}`] = catPath[j];
       }
@@ -99,7 +99,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   let serverCategories: Category[] = [];
   let serverMeta: PaginationMeta | null = null;
   try {
-    const categoriesRes = await getCategories(token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined, urlUserIdNum, undefined, hierarchyLang !== "ko" ? hierarchyLang : undefined);
+    const categoriesRes = await getCategories(token, page, perPage, serverDefaultFilter ?? undefined, likeQuery ?? undefined, urlFolder ?? undefined, urlUserIdNum, undefined, hierarchyLang !== "ko" ? hierarchyLang : undefined);
     serverCategories = categoriesRes.data;
     serverMeta = categoriesRes.meta;
   } catch {}
@@ -108,9 +108,9 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
   let serverSearchResults: Category[] | null = null;
   let serverSearchMeta: PaginationMeta | null = null;
   let serverQueryEmbedding: number[] | null = null;
-  if (searchText) {
+  if (similarityQuery) {
     try {
-      const searchRes = await getCategories(token, page, perPage, serverDefaultFilter ?? undefined, keyword ?? undefined, urlFolder ?? undefined, urlUserIdNum, undefined, searchLang, searchText, searchLang);
+      const searchRes = await getCategories(token, page, perPage, serverDefaultFilter ?? undefined, likeQuery ?? undefined, urlFolder ?? undefined, urlUserIdNum, undefined, undefined, similarityQuery, translationLang);
       serverSearchResults = searchRes.data;
       serverSearchMeta = searchRes.meta;
       serverQueryEmbedding = searchRes.query_embedding ?? null;
@@ -150,8 +150,8 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
         serverSearchResults={serverSearchResults}
         serverSearchMeta={serverSearchMeta}
         serverQueryEmbedding={serverQueryEmbedding}
-        serverSearchText={searchText}
-        serverSearchLang={searchLang}
+        serverSearchText={similarityQuery}
+        serverSearchLang={translationLang}
         serverHierarchyLang={hierarchyLang}
         serverFolder={urlFolder}
         serverFolders={serverFolders}

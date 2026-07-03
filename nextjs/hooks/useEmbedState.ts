@@ -44,12 +44,12 @@ export function useEmbedState(props: UseEmbedStateProps) {
 
   // Parse page and per_page from URL
   const [page, setPage] = useState(() => {
-    const pageParam = searchParams.get("page");
+    const pageParam = searchParams.get("page_number");
     const urlPage = parseInt(pageParam ?? "1", 10);
     return Number.isNaN(urlPage) || urlPage < 1 ? 1 : urlPage;
   });
 
-  const perPageParam = searchParams.get("per_page");
+  const perPageParam = searchParams.get("page_size");
   const urlPerPage = parseInt(perPageParam ?? "20", 10);
   const validPerPageValues = [10, 20, 50];
   const initialPerPage = validPerPageValues.includes(urlPerPage) ? urlPerPage : 20;
@@ -70,11 +70,11 @@ export function useEmbedState(props: UseEmbedStateProps) {
 
   // URL에서 파라미터 파싱
   const embedParams = parseEmbedParams(searchParams);
-  const initialFilterMode = embedParams.mode;
+  const initialFilterMode = embedParams.searchMode;
   const initialHierarchy: HierarchyFilterState = embedParams.catPath.length > 0
     ? [...embedParams.catPath]
     : [];
-  const initialFilterKeyword = embedParams.keyword ?? "";
+  const initialFilterKeyword = embedParams.likeQuery ?? "";
 
   const [perPage, setPerPage] = useState(initialPerPage);
   // 비로그인 또는 카테고리 미보유 시 "all"로 기본값 설정 (null 방지 — UI에서 둘 다 비활성 상태 방지)
@@ -103,8 +103,8 @@ export function useEmbedState(props: UseEmbedStateProps) {
   const [addMode, setAddMode] = useState<"single" | "bulk">("single");
 
   // 검색 state (URL 및 SSR prefetch에서 초기값)
-  const [searchText, setSearchText] = useState(props.serverSearchText ?? embedParams.searchText ?? "");
-  const [searchLanguage, setSearchLanguage] = useState(props.serverSearchLang ?? embedParams.searchLang);
+  const [searchText, setSearchText] = useState(props.serverSearchText ?? embedParams.similarityQuery ?? "");
+  const [searchLanguage, setSearchLanguage] = useState(props.serverSearchLang ?? embedParams.translationLang);
   const [hierarchyLang, setHierarchyLang] = useState(props.serverHierarchyLang ?? embedParams.hierarchyLang ?? "ko");
   const [searchResults, setSearchResults] = useState<Category[] | null>(props.serverSearchResults ?? null);
   const [queryEmbedding, setQueryEmbedding] = useState<number[] | null>(props.serverQueryEmbedding ?? null);
@@ -194,16 +194,16 @@ export function useEmbedState(props: UseEmbedStateProps) {
 
   // URL 업데이트 (현재 URL 보존 + 오버라이드만 적용)
   const updateURL = useCallback((overrides: {
-    filter?: string | undefined;
-    searchText?: string;
-    searchLanguage?: string;
+    ownerScope?: string | undefined;
+    similarityQuery?: string;
+    translationLang?: string;
     hierarchyLang?: string;
-    mode?: string;
+    searchMode?: string;
     catPath?: (string | null)[];
-    q?: string;
+    likeQuery?: string;
     folder?: string | null;
     userId?: number | null;
-    page?: number;
+    pageNumber?: number;
   }) => {
     const params = new URLSearchParams(window.location.search);
 
@@ -213,20 +213,20 @@ export function useEmbedState(props: UseEmbedStateProps) {
       if (clearChildren) clearChildren.forEach(k => params.delete(k));
     };
 
-    if ("filter" in overrides) apply("filter", overrides.filter);
-    if ("searchText" in overrides) {
-      if (overrides.searchText) params.set("stext", overrides.searchText);
-      else { params.delete("stext"); params.delete("slang"); }
+    if ("ownerScope" in overrides) apply("owner_scope", overrides.ownerScope);
+    if ("similarityQuery" in overrides) {
+      if (overrides.similarityQuery) params.set("similarity_query", overrides.similarityQuery);
+      else { params.delete("similarity_query"); params.delete("translation_lang"); }
     }
-    if ("searchLanguage" in overrides) {
-      if (overrides.searchLanguage && overrides.searchLanguage !== "ko") params.set("slang", overrides.searchLanguage);
-      else params.delete("slang");
+    if ("translationLang" in overrides) {
+      if (overrides.translationLang && overrides.translationLang !== "ko") params.set("translation_lang", overrides.translationLang);
+      else params.delete("translation_lang");
     }
     if ("hierarchyLang" in overrides) {
-      if (overrides.hierarchyLang && overrides.hierarchyLang !== "ko") params.set("lang", overrides.hierarchyLang);
-      else params.delete("lang");
+      if (overrides.hierarchyLang && overrides.hierarchyLang !== "ko") params.set("hierarchy_lang", overrides.hierarchyLang);
+      else params.delete("hierarchy_lang");
     }
-    if ("mode" in overrides && overrides.mode) params.set("mode", overrides.mode);
+    if ("searchMode" in overrides && overrides.searchMode) params.set("search_mode", overrides.searchMode);
     if ("catPath" in overrides) {
       // 기존 catN 모두 제거
       for (let i = 1; i <= 20; i++) params.delete(`cat${i}`);
@@ -237,7 +237,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
         });
       }
     }
-    if ("q" in overrides) apply("q", overrides.q);
+    if ("likeQuery" in overrides) apply("like_query", overrides.likeQuery);
     if ("folder" in overrides) {
       if (overrides.folder) params.set("folder", overrides.folder);
       else params.delete("folder");
@@ -247,10 +247,10 @@ export function useEmbedState(props: UseEmbedStateProps) {
       else params.delete("user_id");
     }
 
-    const effectivePage = overrides.page ?? page;
-    if (effectivePage > 1) params.set("page", String(effectivePage));
-    else params.delete("page");
-    if (perPage !== 20) params.set("per_page", String(perPage));
+    const effectivePage = overrides.pageNumber ?? page;
+    if (effectivePage > 1) params.set("page_number", String(effectivePage));
+    else params.delete("page_number");
+    if (perPage !== 20) params.set("page_size", String(perPage));
 
     const qs = params.toString();
     window.history.replaceState(null, "", `/embed${qs ? "?" + qs : ""}`);
@@ -265,14 +265,14 @@ export function useEmbedState(props: UseEmbedStateProps) {
       setSearchResults(null);
       setSearchMeta(null);
       setSearchError(null);
-      updateURL({ searchText: "", searchLanguage: "ko" });
+      updateURL({ similarityQuery: "", translationLang: "ko" });
       return;
     }
 
     setIsSearching(true);
     setSearchError(null);
     setKeywordSearchActive(false);
-    updateURL({ searchText, searchLanguage: searchLangRef.current });
+    updateURL({ similarityQuery: searchText, translationLang: searchLangRef.current });
     try {
       const data = await getCategories(
         token,
@@ -407,8 +407,8 @@ export function useEmbedState(props: UseEmbedStateProps) {
   // URL에 검색어가 있는데 state가 불일치하면 동기화 후 검색 실행 (앞으로가기, 뒤로가기)
   useEffect(() => {
     if (!mounted) return;
-    const urlSearchText = searchParams.get("stext") || "";
-    const urlSearchLang = searchParams.get("slang") || "ko";
+    const urlSearchText = searchParams.get("similarity_query") || "";
+    const urlSearchLang = searchParams.get("translation_lang") || "ko";
     if (urlSearchText && searchTextRef.current !== urlSearchText) {
       setSearchText(urlSearchText);
       setSearchLanguage(urlSearchLang);
@@ -422,7 +422,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
     setSearchResults(null);
     setSearchMeta(null);
     setSearchError(null);
-    updateURL({ searchText: "", searchLanguage: "ko" });
+    updateURL({ similarityQuery: "", translationLang: "ko" });
     // API에서 최신 카테고리 목록 로드 (캐시 대신)
     loadCategories(
       page,
@@ -536,9 +536,9 @@ export function useEmbedState(props: UseEmbedStateProps) {
     (state: { mode: "hierarchy" | "search"; hierarchy: HierarchyFilterState; keyword: string }) => {
       setHierarchyKeyword(state.keyword);
       updateURL({
-        mode: state.mode,
+        searchMode: state.mode,
         catPath: state.hierarchy,
-        q: state.keyword || undefined,
+        likeQuery: state.keyword || undefined,
       });
     },
     [updateURL]

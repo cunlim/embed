@@ -186,31 +186,31 @@ export type RecommendResponse = CategoryListResponse;
 
 export function getCategories(
   token?: string | null,
-  page?: number,
-  perPage?: number,
-  filter?: string,
-  search?: string,
+  pageNumber?: number,
+  pageSize?: number,
+  ownerScope?: string,
+  likeQuery?: string,
   folder?: string,
   userId?: number | null,
   steps?: StepName[],
-  searchLang?: string,
-  text?: string,
-  targetLanguage?: string,
+  hierarchyLang?: string,
+  similarityQuery?: string,
+  translationLang?: string,
 ): Promise<CategoryListResponse> {
   const params = new URLSearchParams();
-  if (page && page > 1) params.set("page", String(page));
-  params.set("per_page", String(perPage ?? 20));
-  if (filter) params.set("filter", filter);
-  if (search) params.set("search", search);
-  if (searchLang) params.set("search_lang", searchLang);
+  if (pageNumber && pageNumber > 1) params.set("page_number", String(pageNumber));
+  params.set("page_size", String(pageSize ?? 20));
+  if (ownerScope) params.set("owner_scope", ownerScope);
+  if (likeQuery) params.set("like_query", likeQuery);
+  if (hierarchyLang) params.set("hierarchy_lang", hierarchyLang);
   if (folder) params.set("folder", folder);
   if (userId) params.set("user_id", String(userId));
   if (steps && steps.length > 0) {
     steps.forEach((step) => params.append("steps[]", step));
   }
   // 유사도 검색 파라미터
-  if (text) params.set("text", text);
-  if (targetLanguage) params.set("target_language", targetLanguage);
+  if (similarityQuery) params.set("similarity_query", similarityQuery);
+  if (translationLang) params.set("translation_lang", translationLang);
 
   const qs = params.toString();
   return request<CategoryListResponse>(`/categories?${qs}`, { token });
@@ -218,18 +218,18 @@ export function getCategories(
 
 /** @deprecated getCategories() 사용 */
 export function recommend(
-  text: string,
-  targetLanguage: string,
+  similarityQuery: string,
+  translationLang: string,
   token?: string | null,
-  page?: number,
-  perPage?: number,
-  filter?: string,
-  keyword?: string,
+  pageNumber?: number,
+  pageSize?: number,
+  ownerScope?: string,
+  likeQuery?: string,
   folder?: string,
   userId?: number | null,
 ): Promise<CategoryListResponse> {
-  return getCategories(token, page, perPage, filter, keyword, folder,
-    userId, undefined, undefined, text, targetLanguage);
+  return getCategories(token, pageNumber, pageSize, ownerScope, likeQuery, folder,
+    userId, undefined, undefined, similarityQuery, translationLang);
 }
 
 /** cat1~catN 동적 파라미터. max_depth 설정에 따라 확장 가능. */

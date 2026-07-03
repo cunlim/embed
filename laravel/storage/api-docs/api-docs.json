@@ -25,7 +25,7 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "text"
+                                    "similarity_query"
                                 ],
                                 "properties": {
                                     "folder": {
@@ -34,22 +34,22 @@
                                         "default": "",
                                         "maxLength": 100
                                     },
-                                    "text": {
-                                        "description": "검색 텍스트",
+                                    "similarity_query": {
+                                        "description": "유사도 검색 텍스트",
                                         "type": "string",
                                         "maxLength": 500
                                     },
-                                    "target_language": {
+                                    "translation_lang": {
                                         "description": "유사도 검색 및 결과 표시 언어",
                                         "type": "string",
                                         "default": "ko",
                                         "enum": [
                                             "ko",
-                                            "zh",
-                                            "en"
+                                            "en",
+                                            "zh"
                                         ]
                                     },
-                                    "mode": {
+                                    "search_mode": {
                                         "description": "검색 모드 (search: 일반, hierarchy: 분류선택)",
                                         "type": "string",
                                         "default": "search",
@@ -58,28 +58,28 @@
                                             "hierarchy"
                                         ]
                                     },
-                                    "keyword": {
-                                        "description": "접두사 필터 키워드 (mode=hierarchy에서 유용)",
+                                    "like_query": {
+                                        "description": "접두사 필터 키워드 (search_mode=hierarchy에서 유용)",
                                         "type": "string",
                                         "default": "",
                                         "maxLength": 500
                                     },
-                                    "lang": {
-                                        "description": "mode=hierarchy일 때 접두사 검색 언어",
+                                    "hierarchy_lang": {
+                                        "description": "search_mode=hierarchy일 때 접두사 검색 언어",
                                         "type": "string",
                                         "default": "ko",
                                         "enum": [
                                             "ko",
-                                            "zh",
-                                            "en"
+                                            "en",
+                                            "zh"
                                         ]
                                     },
-                                    "page": {
+                                    "page_number": {
                                         "type": "integer",
                                         "default": 1,
                                         "minimum": 1
                                     },
-                                    "per_page": {
+                                    "page_size": {
                                         "type": "integer",
                                         "default": 20,
                                         "maximum": 50,

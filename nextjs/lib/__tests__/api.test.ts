@@ -30,22 +30,22 @@ describe("API 클라이언트", () => {
       await api.getCategories();
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "http://localhost:8000/api/categories?per_page=20",
+        "http://localhost:8000/api/categories?page_size=20",
         expect.objectContaining({ method: "GET" })
       );
     });
 
-    it("text 파라미터로 유사도 검색을 호출한다", async () => {
+    it("similarity_query 파라미터로 유사도 검색을 호출한다", async () => {
       mockResponse({ data: [], query_embedding: [0.1, 0.2] });
 
       await api.getCategories(undefined, 1, 20, undefined, undefined, undefined, undefined, undefined, undefined, "원피스", "ko");
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("text=%EC%9B%90%ED%94%BC%EC%8A%A4"),
+        expect.stringContaining("similarity_query=%EC%9B%90%ED%94%BC%EC%8A%A4"),
         expect.objectContaining({ method: "GET" })
       );
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("target_language=ko"),
+        expect.stringContaining("translation_lang=ko"),
         expect.objectContaining({ method: "GET" })
       );
     });

@@ -69,7 +69,7 @@ test('POST /api/v1/search — 유효한 검색은 결과를 반환한다', funct
 
     $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
-            'text' => '청바지',
+            'similarity_query' => '청바지',
         ]);
 
     $response->assertOk()
@@ -85,7 +85,7 @@ test('POST /api/v1/search — 검색 후 사용 로그가 기록된다', functio
 
     $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
-            'text' => '청바지',
+            'similarity_query' => '청바지',
         ]);
 
     $response->assertOk();
@@ -96,7 +96,7 @@ test('POST /api/v1/search — 검색 후 쿼터가 차감된다', function () {
 
     $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
-            'text' => '청바지',
+            'similarity_query' => '청바지',
         ]);
 
     $response->assertOk();
@@ -157,13 +157,13 @@ test('POST /api/v1/search — 기본 target_language는 ko이다', function () {
 
     $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
-            'text' => '청바지',
+            'similarity_query' => '청바지',
         ]);
 
     $response->assertOk();
 });
 
-test('POST /api/v1/search — mode=hierarchy+lang은 searchLang을 전달한다', function () {
+test('POST /api/v1/search — search_mode=hierarchy+hierarchy_lang은 hierarchy_lang을 전달한다', function () {
     $searchLog = new SearchLog([
         'search_keyword' => '청바지',
         'normalized_keyword' => '청바지',
@@ -215,47 +215,47 @@ test('POST /api/v1/search — mode=hierarchy+lang은 searchLang을 전달한다'
 
     $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
-            'text' => '청바지',
-            'mode' => 'hierarchy',
-            'lang' => 'en',
+            'similarity_query' => '청바지',
+            'search_mode' => 'hierarchy',
+            'hierarchy_lang' => 'en',
         ]);
 
     $response->assertOk();
 });
 
-test('POST /api/v1/search — text 없으면 검증 실패', function () {
+test('POST /api/v1/search — similarity_query 없으면 검증 실패', function () {
     $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', []);
 
     $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['text']);
+        ->assertJsonValidationErrors(['similarity_query']);
 });
 
-test('POST /api/v1/search — 유효하지 않은 mode는 검증 실패', function () {
+test('POST /api/v1/search — 유효하지 않은 search_mode는 검증 실패', function () {
     $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
-            'text' => '청바지',
-            'mode' => 'invalid',
+            'similarity_query' => '청바지',
+            'search_mode' => 'invalid',
         ]);
 
     $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['mode']);
+        ->assertJsonValidationErrors(['search_mode']);
 });
 
-test('POST /api/v1/search — 유효하지 않은 target_language는 검증 실패', function () {
+test('POST /api/v1/search — 유효하지 않은 translation_lang은 검증 실패', function () {
     $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
-            'text' => '청바지',
-            'target_language' => 'ja',
+            'similarity_query' => '청바지',
+            'translation_lang' => 'ja',
         ]);
 
     $response->assertUnprocessable()
-        ->assertJsonValidationErrors(['target_language']);
+        ->assertJsonValidationErrors(['translation_lang']);
 });
 
 test('POST /api/v1/search — API 키 없으면 401 반환', function () {
     $response = $this->postJson('/api/v1/search', [
-        'text' => '청바지',
+        'similarity_query' => '청바지',
     ]);
 
     $response->assertStatus(401);
@@ -266,7 +266,7 @@ test('POST /api/v1/search — X-Processing-Time-Ms 헤더를 포함한다', func
 
     $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
-            'text' => '청바지',
+            'similarity_query' => '청바지',
         ]);
 
     $response->assertOk()
@@ -280,7 +280,7 @@ test('POST /api/v1/search — 마지막 사용 시간이 갱신된다', function
 
     $response = $this->withHeader('Authorization', "Bearer {$this->apiKey->plain_key}")
         ->postJson('/api/v1/search', [
-            'text' => '청바지',
+            'similarity_query' => '청바지',
         ]);
 
     $response->assertOk();
