@@ -1,14 +1,5 @@
 {
-  "permissions": {
-    "deny": [
-      "Read(/docker/db/**)",
-      "Edit(/docker/db/**)",
-      "Write(/docker/db/**)",
-      "Bash(* /docker/db/**)"
-    ],
-    "disableBypassPermissionsMode": "disable"
-  },
-  "hooks": {
+  "stop-checks": {
     "Stop": [
       {
         "hooks": [
