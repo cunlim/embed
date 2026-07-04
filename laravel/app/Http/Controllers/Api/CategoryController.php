@@ -78,11 +78,7 @@ class CategoryController extends Controller
     {
         /** @var User|null $user */
         $user = auth('sanctum')->user();
-        $maxPerPage = $user ? PHP_INT_MAX : (int) config('services.pagination.max_per_page_guest', 100);
-        $perPage = min(
-            (int) $request->input('page_size', config('services.pagination.default_per_page', 20)),
-            $maxPerPage
-        );
+        $perPage = (int) $request->input('page_size', config('services.pagination.default_per_page', 20));
 
         $text = $request->input('similarity_query');
         $targetLanguage = $request->getTranslationLang();

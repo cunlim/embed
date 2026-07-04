@@ -24,7 +24,7 @@ class ApiSearchRequest extends FormRequest
             'like_query' => ['nullable', 'string', 'max:500'],
             'hierarchy_lang' => ['nullable', 'string', 'in:ko,en,zh'],
             'page_number' => ['nullable', 'integer', 'min:1'],
-            'page_size' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'page_size' => ['nullable', 'integer', 'min:1', 'max:'.config('services.pagination.max_per_page_api', 50)],
         ];
     }
 }

@@ -79,6 +79,7 @@ return [
     'pagination' => [
         'default_per_page' => 20,
         'max_per_page_guest' => 100,
+        'max_per_page_api' => 50,
     ],
 
     'recommend' => [
