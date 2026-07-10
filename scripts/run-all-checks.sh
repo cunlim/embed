@@ -67,7 +67,7 @@ run_check "Laravel Tests"      "laravel-test.txt" docker exec cl_embed_laravel p
 
 # ── 결과 수집 ──────────────────────────────────────────────────────
 get_exit() {
-  tail -1 "$RESULT_DIR/$1" 2>/dev/null | grep -oP 'EXIT=\K\d+' || echo "1"
+  grep -oP 'EXIT=\K\d+' "$RESULT_DIR/$1" 2>/dev/null || echo "1"
 }
 
 LINT_EXIT=$(get_exit "nextjs-lint.txt")

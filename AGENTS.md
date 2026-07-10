@@ -101,6 +101,7 @@
 - **SSR API URL 분리** — `NEXT_PUBLIC_API_URL`(외부/Cloudflare 경유)과 `INTERNAL_API_URL`(Docker 내부 직접 호출)을 구분. `lib/api.ts`에서 `typeof window === "undefined"`로 서버/클라이언트 판별. 서버 전용 env var는 `NEXT_PUBLIC_` 접두사 없이 설정. 새 API 함수 추가 시 `lib/api.ts`의 `request()` 사용 필수 — 인라인 fetch로 우회하면 서버에서 내부 URL 미적용.
 - **OAuth 로그인 redirect 파라미터 전달 체인 (쿠키 기반)** — 로그인 페이지의 `redirect` 쿼리 파라미터가 OAuth 플로우에서 유실되어 로그인 성공 후 항상 `/embed`로 이동하는 문제. 수정: (1) `loginWithOAuth(provider, redirect?)`에서 `redirect`에 브라우저 해시(`window.location.hash`)를 병합하여 임시 쿠키(`oauth_redirect`, 만료 10분)로 저장, (2) 백엔드 `OAuthController`는 세션 저장 및 쿼리 파라미터 전달 없이 프론트엔드로 단순 리다이렉트, (3) Next.js `middleware.ts`에서 `oauth_redirect` 쿠키 값을 읽어 최종 목적지로 즉시 302 리다이렉트하고 해당 쿠키를 파기함.
 - **인증 리다이렉트 URL 보존 패턴** — 보호된 페이지의 Server Component에서 `searchParams`로 쿼리 파라미터를 읽어 `redirect(`/login?redirect=${encodeURIComponent(path + qs)}`)`로 리다이렉트. Client Component에 위임하면 SSR 렌더링 후 클라이언트에서야 리다이렉트되어 header/nav 플래시가 발생하므로 서버 측에서 처리. 해시(`#abc`)는 HTTP 요청에서 서버로 직접 전송되지 않으므로, 로그인 액션 진입 시점(`loginWithOAuth`)에 클라이언트 브라우저 주소창의 해시를 읽어 `oauth_redirect` 쿠키에 함께 병합 및 저장함으로써 보존함.
+- **일반 카테고리 목록 pagination 파라미터 일관성** — 백엔드 `CategoryController::index()`는 Laravel Eloquent `paginate()`를 사용하여 쿼리하며 기본 `page` 파라미터를 사용한다. 하지만 프론트엔드는 `page_number`로 파라미터를 전송하므로, 백엔드에서 `paginate($perPage, ['*'], 'page_number')` 처럼 페이지네이션 파라미터 이름을 명시해주어 일관성을 맞춰야 한다.
 
 ### Sub-agent / Docker
 

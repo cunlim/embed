@@ -92,7 +92,7 @@ class CategoryController extends Controller
         $query = CategoryQueryService::buildListQuery($user, $request, withEmbeddings: true);
 
         return new CategoryCollection(
-            $query->orderBy('id', 'desc')->paginate($perPage)
+            $query->orderBy('id', 'desc')->paginate($perPage, ['*'], 'page_number')
         );
     }
 

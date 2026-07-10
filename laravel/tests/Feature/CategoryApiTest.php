@@ -176,3 +176,15 @@ test('GET /api/categories/levels — 기존 대 파라미터로 하위 호환 �
     $response->assertOk()
         ->assertJsonPath('data.options', ['여성의류']);
 });
+
+test('GET /api/categories — page_number 파라미터로 페이지네이션이 동작한다', function () {
+    Category::factory()->count(25)->create();
+
+    $response = $this->getJson('/api/categories?page_number=2&page_size=10');
+
+    $response->assertOk()
+        ->assertJsonCount(10, 'data')
+        ->assertJsonPath('meta.current_page', 2)
+        ->assertJsonPath('meta.last_page', 3)
+        ->assertJsonPath('meta.per_page', 10);
+});
