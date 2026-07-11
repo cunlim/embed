@@ -644,7 +644,7 @@ export function EmbedPageInner({
                                     type="button"
                                     className="cursor-pointer hover:underline"
                                     onClick={() => {
-                                      setActiveResult(cat as Category);
+                                      setActiveResult(cat);
                                       setCosineDialogOpen(true);
                                     }}
                                   >
@@ -723,7 +723,7 @@ export function EmbedPageInner({
                                   className="mt-1 w-fit cursor-pointer font-mono text-xs text-accent hover:underline"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setActiveResult(cat as Category);
+                                    setActiveResult(cat);
                                     setCosineDialogOpen(true);
                                   }}
                                 >

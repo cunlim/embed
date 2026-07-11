@@ -1,6 +1,6 @@
 // 서버(SSR)에서는 Docker 내부 네트워크로 직접 호출, 클라이언트에서는 외부 URL 사용
 const API_URL =
-  typeof globalThis.window === "undefined"
+  globalThis.window === undefined
     ? process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
     : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -23,13 +23,11 @@ interface RequestOptions {
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, token, cache } = options;
 
-  const isFormData = body instanceof FormData;
-
   const headers: Record<string, string> = {
     Accept: "application/json",
   };
 
-  if (!isFormData) {
+  if (!(body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -37,11 +35,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const bodyPayload: FormData | string | undefined = isFormData
-    ? (body as FormData)
-    : body !== undefined
-      ? JSON.stringify(body)
-      : undefined;
+  let bodyPayload: FormData | string | undefined;
+  if (body instanceof FormData) {
+    bodyPayload = body;
+  } else if (body !== undefined) {
+    bodyPayload = JSON.stringify(body);
+  }
 
   const res = await fetch(`${API_URL}${path}`, {
     method,

@@ -68,7 +68,7 @@ export function useAuth(initialUser?: User | null): UseAuthReturn {
     (provider: "google" | "github" | "naver", redirect?: string) => {
       if (redirect) {
         let finalRedirect = redirect;
-        if (typeof window !== "undefined" && globalThis.location.hash && !finalRedirect.includes("#")) {
+        if (globalThis.window !== undefined && globalThis.location.hash && !finalRedirect.includes("#")) {
           finalRedirect += globalThis.location.hash;
         }
         document.cookie = `oauth_redirect=${encodeURIComponent(finalRedirect)}; path=/; max-age=600; SameSite=Lax`;
