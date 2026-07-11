@@ -20,7 +20,7 @@ beforeEach(function () {
 /**
  * 공통 목업 설정 헬퍼
  */
-function setupMocks($test, $paginator = null): void
+function setupMocks($unused, $paginator = null): void
 {
     $category = new Category([
         'category_code' => '50000000',

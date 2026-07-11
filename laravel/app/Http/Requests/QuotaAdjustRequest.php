@@ -20,7 +20,7 @@ class QuotaAdjustRequest extends FormRequest
     {
         return [
             'type' => ['required', 'in:absolute,increment'],
-            'value' => ['required', 'integer', function ($attribute, $value, $fail) {
+            'value' => ['required', 'integer', function ($unused, $value, $fail) {
                 if ($this->input('type') === 'absolute' && $value < 0) {
                     $fail('절대값 설정은 0 이상이어야 합니다.');
                 }

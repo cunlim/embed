@@ -148,7 +148,7 @@ test('GET /api/auth/{provider}/callback - redirects to app url when client is ap
 });
 
 test('GET /api/auth/{provider}/callback - omits redirect param when not set', function () {
-    [$abstractUser, $provider] = mockSocialiteUser();
+    [$unused, $provider] = mockSocialiteUser();
 
     Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
 
