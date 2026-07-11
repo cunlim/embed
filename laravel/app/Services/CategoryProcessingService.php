@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\CategoryEmbedding;
+use App\Models\SearchLog;
 
 class CategoryProcessingService
 {
@@ -128,6 +129,26 @@ class CategoryProcessingService
                 ],
                 ['embedding' => $vector]
             );
+
+            // 임베딩 데이터를 search_logs 캐시 테이블에도 동기화 저장
+            $normalizer = app(SearchNormalizer::class);
+            $normalized = $normalizer->normalize($textForEmbedding);
+
+            // 정규화된 텍스트가 빈 문자열이면 캐시 의미가 없으므로 건너뛴다.
+            // PostgreSQL 에서 NULL 비교 문제도 함께 방지된다.
+            if ($normalized !== '') {
+                SearchLog::updateOrCreate(
+                    [
+                        'normalized_keyword' => $normalized,
+                        'embed_model_name' => $embedModelName,
+                    ],
+                    [
+                        'user_id' => auth('sanctum')->id() ?? $category->user_id,
+                        'search_keyword' => $textForEmbedding,
+                        'embedding' => $vector,
+                    ]
+                );
+            }
 
             return [
                 'status' => 'completed',
