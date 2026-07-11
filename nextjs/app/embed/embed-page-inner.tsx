@@ -99,24 +99,24 @@ export function EmbedPageInner({
   serverUserId,
   serverFolderGroups,
 }: {
-  serverLevelOptions: string[][];
-  serverMaxDepth: number;
-  serverCategories: Category[];
-  serverMeta: PaginationMeta | null;
-  serverHadToken: boolean;
-  serverFilter: string | null;
-  serverUser?: import("@/lib/api").User | null;
-  serverSearchResults: Category[] | null;
-  serverSearchMeta: PaginationMeta | null;
-  serverQueryEmbedding?: number[] | null;
-  serverSearchText: string | null;
-  serverSearchLang: string;
-  serverHierarchyLang?: string;
-  serverFolder?: string | null;
-  serverFolders?: string[];
-  serverUsers?: { id: number; name: string; email: string }[];
-  serverUserId?: string | null;
-  serverFolderGroups?: import("@/lib/api").FolderGroup[];
+  readonly serverLevelOptions: string[][];
+  readonly serverMaxDepth: number;
+  readonly serverCategories: Category[];
+  readonly serverMeta: PaginationMeta | null;
+  readonly serverHadToken: boolean;
+  readonly serverFilter: string | null;
+  readonly serverUser?: import("@/lib/api").User | null;
+  readonly serverSearchResults: Category[] | null;
+  readonly serverSearchMeta: PaginationMeta | null;
+  readonly serverQueryEmbedding?: number[] | null;
+  readonly serverSearchText: string | null;
+  readonly serverSearchLang: string;
+  readonly serverHierarchyLang?: string;
+  readonly serverFolder?: string | null;
+  readonly serverFolders?: string[];
+  readonly serverUsers?: { readonly id: number; readonly name: string; readonly email: string }[];
+  readonly serverUserId?: string | null;
+  readonly serverFolderGroups?: import("@/lib/api").FolderGroup[];
 }) {
   const state = useEmbedState({
     serverLevelOptions,

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartDataPoint } from "@/lib/api";
 
 interface UsageChartProps {
-  chart: ChartDataPoint[];
+  readonly chart: ChartDataPoint[];
 }
 
 export function UsageChart({ chart }: UsageChartProps) {

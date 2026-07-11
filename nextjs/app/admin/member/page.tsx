@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 type AdminMemberPageProps = {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  readonly searchParams: Promise<{ readonly [key: string]: string | string[] | undefined }>;
 };
 
 export default async function AdminMemberPage({ searchParams }: AdminMemberPageProps) {

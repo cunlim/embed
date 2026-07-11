@@ -50,7 +50,7 @@
 
 ### Phase 3: 검증
 
-- **전체 검증 실행** — `.claude/hooks/run-all-checks.sh --terminal`로 tsc, lint, test, pint 모두 확인. **경로 주의**: 스크립트는 저장소 루트 기준이므로 `nextjs/` 등 하위 디렉토리에서 작업 중일 때는 `../.claude/hooks/run-all-checks.sh --terminal`로 호출하거나 `cd`로 루트로 이동 후 실행해야 함.
+- **전체 검증 실행** — `scripts/run-all-checks.sh --terminal`로 tsc, lint, test, pint 모두 확인. **경로 주의**: 스크립트는 저장소 루트 기준이므로 `nextjs/` 등 하위 디렉토리에서 작업 중일 때는 `../scripts/run-all-checks.sh --terminal`로 호출하거나 `cd`로 루트로 이동 후 실행해야 함.
 - **EXIT=0 확인** —任何一个 체크가 실패하면 즉시 수정 후 재실행. 모두 통과할 때까지 반복.
 - **Playwright 재검증** — 수정 후 이슈가 해결되었는지 Playwright로 최종 확인 (버그 수정 시).
 

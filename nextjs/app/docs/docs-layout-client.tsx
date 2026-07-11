@@ -13,8 +13,8 @@ export function DocsLayoutClient({
   children,
   initialSidebarCollapsed,
 }: {
-  children: React.ReactNode;
-  initialSidebarCollapsed: boolean;
+  readonly children: React.ReactNode;
+  readonly initialSidebarCollapsed: boolean;
 }) {
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
@@ -79,7 +79,7 @@ function DocsNav() {
   );
 }
 
-function DocsNavButton({ doc, active }: { doc: DocEntry; active: boolean }) {
+function DocsNavButton({ doc, active }: { readonly doc: DocEntry; readonly active: boolean }) {
   return (
     <Link
       href={`/docs?doc=${doc.slug}`}

@@ -7,7 +7,7 @@ import { SocialLogin } from "@/components/social-login";
 import { useAuth } from "@/hooks/useAuth";
 
 interface LoginFormClientProps {
-  redirect?: string;
+  readonly redirect?: string;
 }
 
 export function LoginFormClient({ redirect }: LoginFormClientProps) {

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 type MyPageProps = {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  readonly searchParams: Promise<{ readonly [key: string]: string | string[] | undefined }>;
 };
 
 export default async function MyPage({ searchParams }: MyPageProps) {

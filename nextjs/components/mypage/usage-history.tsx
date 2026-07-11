@@ -11,7 +11,7 @@ import {
 import type { UsageHistoryItem } from "@/lib/api";
 
 interface UsageHistoryProps {
-  history: UsageHistoryItem[];
+  readonly history: UsageHistoryItem[];
 }
 
 /** 서버/클라이언트 동일 출력을 위한 포맷터 (locale 독립적) */
@@ -67,17 +67,23 @@ export function UsageHistory({ history }: UsageHistoryProps) {
                       {formatDate(item.created_at)}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {item.source === 'embed' ? (
-                        <Badge variant="secondary" className="bg-blue-500/15 text-blue-700 dark:text-blue-400">
-                          {item.source_label ?? 'Embed 유사도 검색'}
-                        </Badge>
-                      ) : item.source === 'deleted' ? (
-                        <Badge variant="outline" className="text-muted-foreground">
-                          {item.source_label ?? '(삭제됨)'}
-                        </Badge>
-                      ) : (
-                        item.api_key?.name ?? "-"
-                      )}
+                      {(() => {
+                        if (item.source === 'embed') {
+                          return (
+                            <Badge variant="secondary" className="bg-blue-500/15 text-blue-700 dark:text-blue-400">
+                              {item.source_label ?? 'Embed 유사도 검색'}
+                            </Badge>
+                          );
+                        }
+                        if (item.source === 'deleted') {
+                          return (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              {item.source_label ?? '(삭제됨)'}
+                            </Badge>
+                          );
+                        }
+                        return item.api_key?.name ?? "-";
+                      })()}
                     </TableCell>
                     <TableCell>{getStatusBadge(item.response_status)}</TableCell>
                     <TableCell className="text-right text-sm text-muted-foreground">

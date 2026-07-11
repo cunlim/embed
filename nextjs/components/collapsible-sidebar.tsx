@@ -12,11 +12,11 @@ import {
 import { cn } from "@/lib/utils";
 
 interface CollapsibleSidebarProps {
-  title: string;
-  children: React.ReactNode;
-  storageKey: string;
+  readonly title: string;
+  readonly children: React.ReactNode;
+  readonly storageKey: string;
   /** 서버에서 전달된 초기 collapsed 상태 (cookie 기반) */
-  initialCollapsed?: boolean;
+  readonly initialCollapsed?: boolean;
 }
 
 /**
@@ -36,12 +36,12 @@ function useCollapsedState(storageKey: string, initialCollapsed: boolean) {
     // subscribe: 같은 탭 toggle 반영을 위한 커스텀 이벤트
     (onStoreChange) => {
       const customHandler = () => onStoreChange();
-      window.addEventListener(`sidebar-${storageKey}`, customHandler);
-      return () => window.removeEventListener(`sidebar-${storageKey}`, customHandler);
+      globalThis.addEventListener(`sidebar-${storageKey}`, customHandler);
+      return () => globalThis.removeEventListener(`sidebar-${storageKey}`, customHandler);
     },
     // getSnapshot: cookie에서 현재 상태 읽기 (서버와 동일 소스)
     () => {
-      const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${storageKey}=([^;]*)`));
+      const match = new RegExp(String.raw`(?:^|;\s*)${storageKey}=([^;]*)`).exec(document.cookie);
       return match ? match[1] === "collapsed" : false;
     },
     // getServerSnapshot: Server Component에서 전달된 cookie 기반 값

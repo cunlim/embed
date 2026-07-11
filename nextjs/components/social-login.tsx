@@ -68,8 +68,8 @@ const oauthProviders = [
 ];
 
 interface SocialLoginProps {
-  className?: string;
-  redirect?: string;
+  readonly className?: string;
+  readonly redirect?: string;
 }
 
 export function SocialLogin({ className, redirect }: SocialLoginProps) {

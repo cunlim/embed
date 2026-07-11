@@ -16,16 +16,16 @@ import {
 import type { Category, StepName, BatchStatusData } from "@/lib/api";
 
 interface TaskExecutionProps {
-  token: string | null;
-  selectedIds: Set<number>;
-  categories: Category[];
-  filter: string | undefined;
-  keyword?: string;
-  canModify: (cat: Category) => boolean;
-  onComplete: (wasStopped: boolean) => void;
-  onCategoryComplete?: () => void;
-  folder?: string;
-  onStepsChange?: (steps: StepName[]) => void;
+  readonly token: string | null;
+  readonly selectedIds: Set<number>;
+  readonly categories: Category[];
+  readonly filter: string | undefined;
+  readonly keyword?: string;
+  readonly canModify: (cat: Category) => boolean;
+  readonly onComplete: (wasStopped: boolean) => void;
+  readonly onCategoryComplete?: () => void;
+  readonly folder?: string;
+  readonly onStepsChange?: (steps: StepName[]) => void;
 }
 
 interface BatchProgress {

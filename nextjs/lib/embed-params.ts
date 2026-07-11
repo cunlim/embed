@@ -51,7 +51,7 @@ export function parseEmbedParams(params: EmbedParamsReader): EmbedParams {
   }
 
   const scopeParam = params.get("owner_scope");
-  const ownerScope = scopeParam === "my" ? "my" : scopeParam === "all" ? "all" : undefined;
+  const ownerScope = scopeParam === "my" || scopeParam === "all" ? scopeParam : undefined;
 
   const similarityQuery = params.get("similarity_query") || null;
   const translationLangParam = params.get("translation_lang");

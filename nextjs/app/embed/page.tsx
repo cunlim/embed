@@ -53,15 +53,15 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
     } catch {}
   }
 
-  const urlPage = parseInt(reader.get("page_number") ?? "1", 10);
+  const urlPage = Number.parseInt(reader.get("page_number") ?? "1", 10);
   const page = Number.isNaN(urlPage) || urlPage < 1 ? 1 : urlPage;
-  const urlPerPage = parseInt(reader.get("page_size") ?? "20", 10);
+  const urlPerPage = Number.parseInt(reader.get("page_size") ?? "20", 10);
   const perPage = [10, 20, 50].includes(urlPerPage) ? urlPerPage : 20;
 
   // 계층별 옵션 prefetch (동적 깊이)
   const levelOptions: string[][] = [];
   let maxDepth = 1;
-  const urlUserIdNum = urlUserId ? parseInt(urlUserId, 10) : undefined;
+  const urlUserIdNum = urlUserId ? Number.parseInt(urlUserId, 10) : undefined;
 
   try {
     // 최상위 옵션 조회

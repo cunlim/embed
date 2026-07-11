@@ -61,7 +61,7 @@ export function useCategories(
       currentPageNumber.current = data.meta.current_page;
       currentPageSize.current = data.meta.per_page;
       currentOwnerScope.current = ownerScope;
-      currentLikeQuery.current = likeQuery !== undefined ? likeQuery : currentLikeQuery.current;
+      currentLikeQuery.current = likeQuery ?? currentLikeQuery.current;
       currentFolder.current = folder;
       currentSteps.current = steps;
       setIsLoaded(true);

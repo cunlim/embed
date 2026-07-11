@@ -4,7 +4,7 @@ import { AdminLayoutClient } from "./admin-layout-client";
 export default async function AdminLayout({
   children,
 }: {
-  children: React.ReactNode;
+  readonly children: React.ReactNode;
 }) {
   const cookieStore = await cookies();
   const initialSidebarCollapsed =

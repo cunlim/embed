@@ -12,8 +12,8 @@ import { ApiKeyCard } from "./api-key-card";
 import { ApiKeyCreateDialog } from "./api-key-create-dialog";
 
 interface ApiKeySectionProps {
-  token: string | null;
-  initialApiKeys?: ApiKeyItem[];
+  readonly token: string | null;
+  readonly initialApiKeys?: ApiKeyItem[];
 }
 
 export function ApiKeySection({ token, initialApiKeys }: ApiKeySectionProps) {

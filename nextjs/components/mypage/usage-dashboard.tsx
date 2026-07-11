@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UsageStats } from "@/lib/api";
 
 interface UsageDashboardProps {
-  stats: UsageStats | null;
+  readonly stats: UsageStats | null;
 }
 
 const STATS = [

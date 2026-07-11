@@ -17,13 +17,13 @@ import { fetchCategoryTranslations } from "@/lib/api";
 import type { Category } from "@/lib/api";
 
 interface CosineDetailDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  result: Category | null;
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly result: Category | null;
   /** 목록 API 응답 최상위의 query_embedding (검색어 임베딩) */
-  queryEmbedding?: number[] | null;
-  searchKeyword?: string;
-  targetLanguage?: string;
+  readonly queryEmbedding?: number[] | null;
+  readonly searchKeyword?: string;
+  readonly targetLanguage?: string;
 }
 
 // --- Helpers ---
@@ -278,7 +278,11 @@ export default function CosineDetailDialog({
             </p>
             <div className="min-w-0 flex items-center gap-2 rounded bg-muted/50 px-3 py-2">
               <span className="min-w-0 flex-1 truncate font-mono text-xs text-[#ef4444]">
-                {embeddingLoading ? "로딩 중..." : bEmb ? formatEmbeddingPreview(bEmb) : "—"}
+                {(() => {
+                  if (embeddingLoading) return "로딩 중...";
+                  if (bEmb) return formatEmbeddingPreview(bEmb);
+                  return "—";
+                })()}
               </span>
               {bEmb && bEmb.length > 0 && (
                 <Button

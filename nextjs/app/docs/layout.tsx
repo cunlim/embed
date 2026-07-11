@@ -4,7 +4,7 @@ import { DocsLayoutClient } from "./docs-layout-client";
 export default async function DocsLayout({
   children,
 }: {
-  children: React.ReactNode;
+  readonly children: React.ReactNode;
 }) {
   const cookieStore = await cookies();
   const initialSidebarCollapsed =

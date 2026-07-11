@@ -45,12 +45,12 @@ export function useEmbedState(props: UseEmbedStateProps) {
   // Parse page and per_page from URL
   const [page, setPage] = useState(() => {
     const pageParam = searchParams.get("page_number");
-    const urlPage = parseInt(pageParam ?? "1", 10);
+    const urlPage = Number.parseInt(pageParam ?? "1", 10);
     return Number.isNaN(urlPage) || urlPage < 1 ? 1 : urlPage;
   });
 
   const perPageParam = searchParams.get("page_size");
-  const urlPerPage = parseInt(perPageParam ?? "20", 10);
+  const urlPerPage = Number.parseInt(perPageParam ?? "20", 10);
   const validPerPageValues = [10, 20, 50];
   const initialPerPage = validPerPageValues.includes(urlPerPage) ? urlPerPage : 20;
 
@@ -92,7 +92,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
   selectedFolderRef.current = selectedFolder;
 
   const [selectedUserId, setSelectedUserId] = useState<number | null>(
-    props.serverUserId ? parseInt(props.serverUserId, 10) : null
+    props.serverUserId ? Number.parseInt(props.serverUserId, 10) : null
   );
   const selectedUserIdRef = useRef(selectedUserId);
   // eslint-disable-next-line react-hooks/refs
@@ -205,7 +205,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
     userId?: number | null;
     pageNumber?: number;
   }) => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.location.search);
 
     const apply = (key: string, value: string | null | undefined, clearChildren?: string[]) => {
       if (value) { params.set(key, value); return; }
@@ -253,7 +253,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
     if (perPage !== 20) params.set("page_size", String(perPage));
 
     const qs = params.toString();
-    window.history.replaceState(null, "", `/embed${qs ? "?" + qs : ""}`);
+    globalThis.history.replaceState(null, "", `/embed${qs ? "?" + qs : ""}`);
   }, [page, perPage]);
 
   const handleSearch = useCallback(async (pageArg?: number, keyword?: string) => {
@@ -439,7 +439,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
   // 전체 상태 초기화 (기능시연, 브라우저 뒤로가기 등에서 사용)
   const resetToDefault = useCallback(() => {
     // URL을 즉시 동기화 (window.history.replaceState로 렌더링 지연 없이 즉시 반영)
-    window.history.replaceState(null, "", "/embed");
+    globalThis.history.replaceState(null, "", "/embed");
 
     // data-loading effect가 중복 호출되지 않도록 건너뜀
     skipLoadEffectRef.current = true;
@@ -486,8 +486,8 @@ export function useEmbedState(props: UseEmbedStateProps) {
     const handleResetEmbed = () => {
       resetToDefault();
     };
-    window.addEventListener("resetEmbedPage", handleResetEmbed);
-    return () => window.removeEventListener("resetEmbedPage", handleResetEmbed);
+    globalThis.addEventListener("resetEmbedPage", handleResetEmbed);
+    return () => globalThis.removeEventListener("resetEmbedPage", handleResetEmbed);
   }, [resetToDefault]);
 
   const handleKeywordSearch = useCallback((keyword: string) => {
@@ -546,7 +546,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
 
   // SSR에서 prefetch된 사용자 정보를 CSR user가 로드되기 전까지 fallback으로 사용
   const effectiveUser = user ?? props.serverUser;
-  const canModify = useCallback((category: Category | Category) => {
+  const canModify = useCallback((category: Category) => {
     if (!effectiveUser) return false;
     return isAdmin(effectiveUser) || ("user_id" in category && category.user_id === effectiveUser.id);
   }, [effectiveUser]);
@@ -570,8 +570,8 @@ export function useEmbedState(props: UseEmbedStateProps) {
     });
   }, []);
 
-  const handleDelete = useCallback(async (cat: Category | Category) => {
-    if (!window.confirm(`"${cat.category_name_ko}" 카테고리를 삭제하시겠습니까?`)) return;
+  const handleDelete = useCallback(async (cat: Category) => {
+    if (!globalThis.confirm(`"${cat.category_name_ko}" 카테고리를 삭제하시겠습니까?`)) return;
     await deleteCategory(cat.id);
     setHierarchyRefreshKey(prev => prev + 1);
   }, [deleteCategory]);
@@ -581,10 +581,10 @@ export function useEmbedState(props: UseEmbedStateProps) {
       handleSearch(newPage);
     } else {
       setPage(newPage);
-      const params = new URLSearchParams(window.location.search);
+      const params = new URLSearchParams(globalThis.location.search);
       params.set("page_number", String(newPage));
       params.set("page_size", String(perPage));
-      window.history.pushState(null, "", `/embed?${params.toString()}`);
+      globalThis.history.pushState(null, "", `/embed?${params.toString()}`);
     }
   }, [isSearchMode, handleSearch, perPage]);
 

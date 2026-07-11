@@ -14,11 +14,11 @@ import { UsageChart } from "@/components/mypage/usage-chart";
 import { UsageHistory } from "@/components/mypage/usage-history";
 
 interface MyPageContentProps {
-  serverUser: User;
-  serverApiKeys: ApiKeyItem[];
-  serverUsageStats: UsageStats | null;
-  serverUsageHistory: UsageHistoryItem[];
-  serverChartData: ChartDataPoint[];
+  readonly serverUser: User;
+  readonly serverApiKeys: ApiKeyItem[];
+  readonly serverUsageStats: UsageStats | null;
+  readonly serverUsageHistory: UsageHistoryItem[];
+  readonly serverChartData: ChartDataPoint[];
 }
 
 export function MyPageContent({

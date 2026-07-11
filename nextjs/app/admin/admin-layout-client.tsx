@@ -15,8 +15,8 @@ export function AdminLayoutClient({
   children,
   initialSidebarCollapsed,
 }: {
-  children: React.ReactNode;
-  initialSidebarCollapsed: boolean;
+  readonly children: React.ReactNode;
+  readonly initialSidebarCollapsed: boolean;
 }) {
   const pathname = usePathname();
 

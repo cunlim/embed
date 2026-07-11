@@ -148,9 +148,9 @@ describe("useAuth", () => {
         result.current.loginWithOAuth("google", "/admin/member?mode=hierarchy");
       });
 
-      expect(window.location.href).toBe("/api/auth/google/redirect");
-      
-      const match = document.cookie.match(/(?:^|;\s*)oauth_redirect=([^;]*)/);
+      expect(globalThis.location.href).toBe("/api/auth/google/redirect");
+
+      const match = /(?:^|;\s*)oauth_redirect=([^;]*)/.exec(document.cookie);
       const oauthRedirect = match ? decodeURIComponent(match[1]) : null;
       expect(oauthRedirect).toBe("/admin/member?mode=hierarchy");
     });
@@ -163,7 +163,7 @@ describe("useAuth", () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      Object.defineProperty(window, "location", {
+      Object.defineProperty(globalThis, "location", {
         value: { href: "", hash: "#abc" },
         writable: true,
       });
@@ -172,7 +172,7 @@ describe("useAuth", () => {
         result.current.loginWithOAuth("google", "/admin/member?mode=hierarchy");
       });
 
-      const match = document.cookie.match(/(?:^|;\s*)oauth_redirect=([^;]*)/);
+      const match = /(?:^|;\s*)oauth_redirect=([^;]*)/.exec(document.cookie);
       const oauthRedirect = match ? decodeURIComponent(match[1]) : null;
       expect(oauthRedirect).toBe("/admin/member?mode=hierarchy#abc");
     });
