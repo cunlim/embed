@@ -90,6 +90,13 @@ test('POST /api/categories/{category}/run-step — embedding.ko가 정상 동작
         'category_id' => $category->id,
         'language' => 'ko',
     ]);
+
+    // search_logs 테이블에도 저장되었는지 확인
+    $this->assertDatabaseHas('search_logs', [
+        'search_keyword' => '테스트 카테고리',
+        'normalized_keyword' => '테스트 카테고리',
+        'embed_model_name' => config('services.embed.model', 'bge-m3:latest'),
+    ]);
 });
 
 test('POST /api/categories/{category}/run-step — 번역 없이 임베딩 실행 시 422를 반환한다', function () {
