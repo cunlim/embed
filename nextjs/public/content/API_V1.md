@@ -30,25 +30,25 @@ Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx
 
 | 파라미터 | 필수 | 타입 | 기본값 | 설명 |
 |----------|------|------|--------|------|
-| `text` | **예** | string (max:500) | - | 유사도 검색어. 입력 텍스트를 임베딩 벡터로 변환하여 가장 유사한 카테고리를 검색합니다. |
-| `target_language` | 아니오 | string | `ko` | 검색 결과로 반환할 카테고리명의 언어. `ko`(한국어), `en`(영어), `zh`(중국어) 중 선택. |
-| `page` | 아니오 | integer (min:1) | `1` | 페이지 번호. 1부터 시작합니다. |
-| `per_page` | 아니오 | integer (min:1, max:50) | `20` | 페이지당 결과 수. 최대 50개까지 요청 가능합니다. |
-| `keyword` | 아니오 | string (max:500) | `null` | 키워드 필터. 지정 시 카테고리명/코드에 해당 키워드가 포함된 결과만 반환합니다. |
+| `similarity_query` | **예** | string (max:500) | - | 유사도 검색어. 입력 텍스트를 임베딩 벡터로 변환하여 가장 유사한 카테고리를 검색합니다. |
+| `translation_lang` | 아니오 | string | `ko` | 검색 결과로 반환할 카테고리명의 언어. `ko`(한국어), `en`(영어), `zh`(중국어) 중 선택. |
+| `page_number` | 아니오 | integer (min:1) | `1` | 페이지 번호. 1부터 시작합니다. |
+| `page_size` | 아니오 | integer (min:1, max:50) | `20` | 페이지당 결과 수. 최대 50개까지 요청 가능합니다. |
+| `like_query` | 아니오 | string (max:500) | `null` | 키워드 필터. 지정 시 카테고리명/코드에 해당 키워드가 포함된 결과만 반환합니다. |
 | `folder` | 아니오 | string (max:100) | `null` | 폴더 필터. 지정된 폴더에 속한 카테고리로 검색 범위를 제한합니다. |
-| `mode` | 아니오 | string | `search` | 검색 모드. `search`(부분 검색 — 카테고리명에 키워드 포함), `hierarchy`(접두사 검색 — 카테고리명이 키워드로 시작). |
-| `lang` | 아니오 | string | - | 분류선택 계층 언어. `mode=hierarchy`일 때만 유효. `ko`, `en`, `zh` 중 선택. 계층 드롭다운 표시 언어를 결정합니다. |
+| `search_mode` | 아니오 | string | `search` | 검색 모드. `search`(부분 검색 — 카테고리명에 키워드 포함), `hierarchy`(접두사 검색 — 카테고리명이 키워드로 시작). |
+| `hierarchy_lang` | 아니오 | string | `ko` | 분류선택 계층 언어. `search_mode=hierarchy`일 때 유효. `ko`, `en`, `zh` 중 선택. 접두사 검색 언어와 계층 드롭다운 표시 언어를 결정합니다. |
 
-#### mode 파라미터 상세 설명
+#### search_mode 파라미터 상세 설명
 
-`mode` 파라미터는 검색 동작 방식을 결정합니다:
+`search_mode` 파라미터는 검색 동작 방식을 결정합니다:
 
-| mode 값 | 동작 | keyword 검색 방식 | 용도 |
-|---------|------|-------------------|------|
+| search_mode 값 | 동작 | like_query 검색 방식 | 용도 |
+|---------------|------|---------------------|------|
 | `search` (기본) | 부분 검색 | `%keyword%` — 카테고리명 어디에나 포함 | 일반 검색 |
 | `hierarchy` | 접두사 검색 | `keyword%` — 카테고리명이 키워드로 시작 | 분류선택 계층 탐색 |
 
-`mode=hierarchy` 사용 시 `lang` 파라미터로 계층 표시 언어를 지정할 수 있습니다 (예: `lang=ko` → 한국어 카테고리명 기준).
+`search_mode=hierarchy` 사용 시 `hierarchy_lang` 파라미터로 접두사 검색 언어를 지정할 수 있습니다 (예: `hierarchy_lang=ko` → 한국어 카테고리명 기준).
 
 #### 응답 형식
 
@@ -78,7 +78,7 @@ Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | `data[].category_code` | string | 카테고리 코드 |
-| `data[].category_name` | string | 카테고리명 (target_language 기준) |
+| `data[].category_name` | string | 카테고리명 (translation_lang 기준) |
 | `data[].similarity_score` | float | 유사도 점수 (0~1, 높을수록 유사) |
 | `meta.current_page` | integer | 현재 페이지 번호 |
 | `meta.per_page` | integer | 페이지당 결과 수 |
@@ -93,8 +93,8 @@ curl -X POST https://embed.cunlim.dev/api/v1/search \
   -H "Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "환경 보호",
-    "target_language": "ko"
+    "similarity_query": "환경 보호",
+    "translation_lang": "ko"
   }'
 ```
 
@@ -104,12 +104,12 @@ curl -X POST https://embed.cunlim.dev/api/v1/search \
   -H "Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "의류",
-    "target_language": "ko",
-    "keyword": "여름",
+    "similarity_query": "의류",
+    "translation_lang": "ko",
+    "like_query": "여름",
     "folder": "시즌상품",
-    "page": 1,
-    "per_page": 10
+    "page_number": 1,
+    "page_size": 10
   }'
 ```
 
@@ -119,11 +119,11 @@ curl -X POST https://embed.cunlim.dev/api/v1/search \
   -H "Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "의류",
-    "target_language": "ko",
-    "mode": "hierarchy",
-    "lang": "ko",
-    "keyword": "여성"
+    "similarity_query": "의류",
+    "translation_lang": "ko",
+    "search_mode": "hierarchy",
+    "hierarchy_lang": "ko",
+    "like_query": "여성"
   }'
 ```
 
@@ -133,8 +133,8 @@ curl -X POST https://embed.cunlim.dev/api/v1/search \
   -H "Authorization: Bearer cl_xxxxxxxxxxxxxxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "电子设备",
-    "target_language": "zh"
+    "similarity_query": "电子设备",
+    "translation_lang": "zh"
   }'
 ```
 
@@ -154,7 +154,7 @@ curl -X POST https://embed.cunlim.dev/api/v1/search \
   "success": false,
   "error": {
     "code": "validation_error",
-    "message": "text 필드는 필수입니다."
+    "message": "similarity_query 필드는 필수입니다."
   }
 }
 ```
@@ -206,14 +206,12 @@ curl -X POST https://embed.cunlim.dev/api/auth/login \
   -d '{"email": "user@example.com", "password": "password"}'
 
 # 토큰으로 카테고리 조회
-curl https://embed.cunlim.dev/api/categories \
+curl "https://embed.cunlim.dev/api/categories?page_size=20" \
   -H "Authorization: Bearer {token}"
   
-# 카테고리 추천
-curl -X POST https://embed.cunlim.dev/api/recommend \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "여름 원피스", "target_language": "ko"}'
+# 카테고리 유사도 검색 (/api/categories에 similarity_query 파라미터 사용)
+curl "https://embed.cunlim.dev/api/categories?similarity_query=여름+원피스&translation_lang=ko" \
+  -H "Authorization: Bearer {token}"
 ```
 
 ### Swagger 제공 엔드포인트
@@ -228,14 +226,13 @@ curl -X POST https://embed.cunlim.dev/api/recommend \
 | Auth | `GET /api/auth/user` | 현재 사용자 정보 |
 | Auth | `GET /api/auth/{provider}/redirect` | OAuth 리다이렉트 |
 | Auth | `GET /api/auth/{provider}/callback` | OAuth 콜백 |
-| Categories | `GET /api/categories` | 카테고리 목록 |
+| Categories | `GET /api/categories` | 카테고리 목록·유사도 검색 (`similarity_query` 파라미터로 검색) |
 | Categories | `POST /api/categories` | 카테고리 생성 |
 | Categories | `GET /api/categories/{id}` | 카테고리 상세 |
 | Categories | `GET /api/categories/{id}/translations` | 번역 상태 |
 | Categories | `POST /api/categories/{id}/run-step` | 처리 단계 실행 |
 | Categories | `PUT /api/categories/{id}/update-text` | 텍스트 수정 |
 | Categories | `DELETE /api/categories/{id}` | 카테고리 삭제 |
-| Recommend | `POST /api/recommend` | 카테고리 추천 |
 | External API | `POST /api/v1/search` | 외부 API 유사도 검색 (API Key 인증) |
 | System | `GET /api/health` | 서버 상태 확인 |
 
