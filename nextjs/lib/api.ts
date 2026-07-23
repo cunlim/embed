@@ -135,7 +135,7 @@ export async function fetchBatchStatus(
   });
 }
 
-// --- 카테고리 (통합: 기존 /api/recommend 포함) ---
+// --- 카테고리 (통합) ---
 
 export interface LanguageScore {
   similarity_score: number | null;
@@ -157,13 +157,10 @@ export interface Category {
   category_name_en: string | null;
   category_name?: string;
   translation_status: "completed" | "partial" | "pending";
-  // 유사도 필드 (text 검색 시에만 존재)
+  // 유사도 필드 (유사도 검색 시에만 존재)
   similarity_score?: number | null;
   per_language_scores?: PerLanguageScores | null;
 }
-
-/** @deprecated Category로 통합됨 */
-export type Recommendation = Category;
 
 export interface PaginationMeta {
   current_page: number;
@@ -185,9 +182,6 @@ export interface CategoryListResponse {
   };
   query_embedding?: number[] | null;
 }
-
-/** @deprecated CategoryListResponse로 통합됨 */
-export type RecommendResponse = CategoryListResponse;
 
 export function getCategories(
   token?: string | null,
@@ -219,22 +213,6 @@ export function getCategories(
 
   const qs = params.toString();
   return request<CategoryListResponse>(`/categories?${qs}`, { token });
-}
-
-/** @deprecated getCategories() 사용 */
-export function recommend(
-  similarityQuery: string,
-  translationLang: string,
-  token?: string | null,
-  pageNumber?: number,
-  pageSize?: number,
-  ownerScope?: string,
-  likeQuery?: string,
-  folder?: string,
-  userId?: number | null,
-): Promise<CategoryListResponse> {
-  return getCategories(token, pageNumber, pageSize, ownerScope, likeQuery, folder,
-    userId, undefined, undefined, similarityQuery, translationLang);
 }
 
 /** cat1~catN 동적 파라미터. max_depth 설정에 따라 확장 가능. */

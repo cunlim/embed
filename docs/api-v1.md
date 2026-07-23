@@ -34,14 +34,14 @@ Authorization: Bearer YOUR_API_KEY
 
 | 파라미터 | 필수 | 타입 | 기본값 | 설명 |
 |---|---|---|---|---|
-| `text` | 예 | string | - | 유사도 검색어 (최대 500자) |
-| `target_language` | 아니오 | string | `ko` | 검색 결과 언어 (`ko` / `zh` / `en`) |
-| `page` | 아니오 | integer | `1` | 페이지 번호 |
-| `per_page` | 아니오 | integer | `20` | 페이지당 결과 수 (최대 50) |
-| `keyword` | 아니오 | string | - | 키워드 필터 |
+| `similarity_query` | 예 | string | - | 유사도 검색어 (최대 500자) |
+| `translation_lang` | 아니오 | string | `ko` | 유사도 검색 및 결과 표시 언어 (`ko` / `zh` / `en`) |
+| `page_number` | 아니오 | integer | `1` | 페이지 번호 |
+| `page_size` | 아니오 | integer | `20` | 페이지당 결과 수 (최대 50) |
+| `like_query` | 아니오 | string | - | 접두사 필터 키워드 |
 | `folder` | 아니오 | string | - | 폴더 필터 |
-| `mode` | 아니오 | string | `search` | 검색 모드: `hierarchy`(접두사 검색), `search`(부분 검색) |
-| `lang` | 아니오 | string | `ko` | 분류선택 계층 언어. `mode=hierarchy`일 때 접두사 검색할 컬럼 (`ko` / `en` / `zh`) |
+| `search_mode` | 아니오 | string | `search` | 검색 모드: `hierarchy`(접두사 검색), `search`(부분 검색) |
+| `hierarchy_lang` | 아니오 | string | `ko` | `search_mode=hierarchy`일 때 접두사 검색할 컬럼 (`ko` / `en` / `zh`) |
 
 #### 요청 예시
 
@@ -50,11 +50,11 @@ curl -X POST https://embed.cunlim.dev/api/v1/search \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "환경 보호",
-    "target_language": "ko",
-    "page": 1,
-    "per_page": 20,
-    "mode": "search"
+    "similarity_query": "환경 보호",
+    "translation_lang": "ko",
+    "page_number": 1,
+    "page_size": 20,
+    "search_mode": "search"
   }'
 ```
 
@@ -142,4 +142,4 @@ curl -X POST https://embed.cunlim.dev/api/v1/search \
 
 - Quota 차감은 원자적 SQL 연산(`WHERE api_quota_remaining > 0`)으로 수행됩니다.
 - 동시 요청으로 quota가 음수로 내려가는 TOCTOU 경쟁 조건을 방지합니다.
-- 내부 API(`/api/recommend`)와 외부 API(`/api/v1/search`) 모두 모든 사용자(관리자 포함)에게 quota를 차감합니다.
+- 내부 API(`/api/categories`)와 외부 API(`/api/v1/search`) 모두 모든 사용자(관리자 포함)에게 quota를 차감합니다.

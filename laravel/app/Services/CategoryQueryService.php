@@ -45,7 +45,7 @@ class CategoryQueryService
 
     /**
      * 검색 필터를 적용합니다.
-     * - search_lang이 ko/en/zh이면 해당 컬럼에서 접두사 검색
+     * - hierarchy_lang이 ko/en/zh이면 해당 컬럼에서 접두사 검색
      * - 그렇지 않으면 모든 언어 컬럼에서 부분 검색
      */
     public static function applySearch(Builder $query, Request $request): Builder
@@ -55,8 +55,7 @@ class CategoryQueryService
         }
 
         $search = $request->input('like_query');
-        // 하위 호환: hierarchy_lang 우선, 없으면 search_lang 폴백
-        $searchLang = $request->input('hierarchy_lang', $request->input('search_lang'));
+        $searchLang = $request->input('hierarchy_lang');
 
         if ($searchLang && in_array($searchLang, ['ko', 'en', 'zh'])) {
             $langColumn = 'category_name_'.$searchLang;

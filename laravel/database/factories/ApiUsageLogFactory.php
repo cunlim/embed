@@ -17,7 +17,7 @@ class ApiUsageLogFactory extends Factory
             'api_key_id' => ApiKey::factory(),
             'user_id' => User::factory(),
             'endpoint' => '/api/v1/search',
-            'parameters' => ['text' => '청바지', 'target_language' => 'ko'],
+            'parameters' => ['similarity_query' => '청바지', 'translation_lang' => 'ko'],
             'response_status' => 200,
             'processing_time_ms' => fake()->numberBetween(50, 500),
         ];

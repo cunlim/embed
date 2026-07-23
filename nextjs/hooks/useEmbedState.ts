@@ -284,8 +284,8 @@ export function useEmbedState(props: UseEmbedStateProps) {
         selectedUserIdRef.current,
         undefined, // steps
         undefined, // searchLang
-        searchText,           // text (유사도 검색)
-        searchLangRef.current // targetLanguage
+        searchText,           // similarity_query (유사도 검색)
+        searchLangRef.current // translation_lang
       );
       setSearchResults(data.data);
       setSearchMeta(data.meta);
@@ -519,7 +519,7 @@ export function useEmbedState(props: UseEmbedStateProps) {
     setSearchMeta(null);
     setSearchError(null);
     setKeywordSearchActive(true);
-    // 검색 모드: 모든 언어 컬럼에서 부분 검색 (search_lang 미전달)
+    // 검색 모드: 모든 언어 컬럼에서 부분 검색 (hierarchy_lang 미전달)
     loadCategories(
       1,
       perPage,

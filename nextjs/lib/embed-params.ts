@@ -65,10 +65,3 @@ export function parseEmbedParams(params: EmbedParamsReader): EmbedParams {
 
   return { searchMode, likeQuery, ownerScope, similarityQuery, translationLang, hierarchyLang, catPath, folder, userId };
 }
-
-/**
- * @deprecated parseEmbedParams().likeQuery를 대신 사용하세요.
- */
-export function parseEmbedKeyword(params: EmbedParamsReader): string | null {
-  return parseEmbedParams(params).likeQuery;
-}

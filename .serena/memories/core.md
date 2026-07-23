@@ -25,7 +25,7 @@ AI 기반 다국어 카테고리 추천 시스템. 벡터 검색(pgvector)으로
 - 캐싱: 그룹 전체 하나의 캐시 키 (개별 `Cache::remember()` 금지)
 - 번역/임베딩은 동기 HTTP 컨트롤러에서 step 단위 처리
 - 외부 API: `POST /api/v1/search` — API key 인증(`cl_` 접두사) + quota(가입 시 500회, `api.free_quota` 설정, **영구 총량 — 일일 리셋 없음**) + rate limit(분당 60회)
-- 유사도 검색 quota: `POST /api/recommend` — 로그인 사용자에게도 `api_quota_remaining` 차감 (관리자 제외). 비로그인은 체크 없음.
+- 유사도 검색 quota: `GET /api/categories?similarity_query=...` — 로그인 사용자에게도 `api_quota_remaining` 차감 (관리자 제외). 비로그인은 체크 없음.
 - 마이페이지: `/mypage` — API key CRUD, 사용량 대시보드, 차트, 이력
 - 관리자 회원 관리: `/admin` 사이드바 "회원 관리" — 회원 상세 모달, quota 절대값/증감 조절
 - Docs 페이지: `/docs?doc=SLUG` 단일 라우트, `lib/docs.ts` 문서 목록, `public/content/*.md` 마크다운 렌더링 (react-markdown+remark-gfm). 문서 목록: USER_GUIDE → API_V1 → SIMILARITY_SEARCH → RESUME.

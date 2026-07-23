@@ -50,20 +50,6 @@ describe("API 클라이언트", () => {
       );
     });
 
-    it("recommend() 래퍼가 getCategories()를 호출한다", async () => {
-      mockResponse({ data: [] });
-
-      await api.recommend("테스트", "ko", "test-token");
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/categories?"),
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            Authorization: "Bearer test-token",
-          }),
-        })
-      );
-    });
   });
 
   describe("runStep", () => {

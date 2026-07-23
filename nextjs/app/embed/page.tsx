@@ -104,7 +104,7 @@ export default async function EmbedPage({ searchParams }: EmbedPageParams) {
     serverMeta = categoriesRes.meta;
   } catch {}
 
-  // 유사도 검색 prefetch (통합 API: getCategories에 text 파라미터 전달)
+  // 유사도 검색 prefetch (통합 API: getCategories에 similarity_query 파라미터 전달)
   let serverSearchResults: Category[] | null = null;
   let serverSearchMeta: PaginationMeta | null = null;
   let serverQueryEmbedding: number[] | null = null;

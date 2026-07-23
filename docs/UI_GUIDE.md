@@ -98,7 +98,7 @@
 - **목적**: 카테고리 추천, CRUD, 번역/임베딩 실행
 - **레이아웃**: 좌측 사이드바 + 우측 테이블 (`lg:col-span-2`)
 - **핵심 기능**:
-  - 카테고리 검색 (ko/zh/en 언어 선택 버튼 + `POST /api/recommend`)
+  - 카테고리 검색 (ko/zh/en 언어 선택 버튼 + `GET /api/categories?similarity_query=...`)
   - 카테고리 목록 (shadcn Table, 페이지네이션 10/20/50, URL 동기화)
   - 계층 탐색 (CategoryHierarchy — 동적 깊이 select, `>` 구분자)
   - 카테고리 추가·수정·삭제 (권한 기반)

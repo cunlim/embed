@@ -105,7 +105,7 @@ test('POST /api/v1/search — 검색 후 쿼터가 차감된다', function () {
     $this->assertEquals(9, $this->user->api_quota_remaining);
 });
 
-test('POST /api/v1/search — 기본 target_language는 ko이다', function () {
+test('POST /api/v1/search — 기본 translation_lang는 ko이다', function () {
     $searchLog = new SearchLog([
         'search_keyword' => '청바지',
         'normalized_keyword' => '청바지',
