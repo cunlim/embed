@@ -31,10 +31,15 @@ class CategoryQueryService
             if ($user && $user->isAdmin()) {
                 // admin/superadmin: no user_id restriction
             } elseif ($user) {
-                $query->where(function ($q) use ($user) {
-                    $q->where('user_id', $user->id)
-                        ->orWhere('user_id', 1);
-                });
+                $hasSteps = $request->filled('steps') && is_array($request->input('steps')) && ! empty($request->input('steps'));
+                if ($hasSteps) {
+                    $query->where('user_id', $user->id);
+                } else {
+                    $query->where(function ($q) use ($user) {
+                        $q->where('user_id', $user->id)
+                            ->orWhere('user_id', 1);
+                    });
+                }
             } else {
                 $query->where('user_id', 1);
             }

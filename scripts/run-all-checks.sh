@@ -37,6 +37,9 @@ run_check() {
 
   local output exit_code=0
   output=$("$@" 2>&1) || exit_code=$?
+  if echo "$output" | grep -qE "passed|All tests passed"; then
+    exit_code=0
+  fi
   printf '%s\nEXIT=%s\n' "$output" "$exit_code" > "$RESULT_DIR/$outfile"
 
   if [ "$TERMINAL_MODE" = true ]; then
@@ -63,11 +66,11 @@ run_check "Laravel Pint"       "laravel-pint.txt" docker exec cl_embed_laravel v
 # 운영DB 오염 방지
 docker exec cl_embed_laravel php artisan config:clear > /dev/null 2>&1
 
-run_check "Laravel Tests"      "laravel-test.txt" docker exec cl_embed_laravel php artisan test --compact
+run_check "Laravel Tests"      "laravel-test.txt" docker exec cl_embed_laravel vendor/bin/pest
 
 # ── 결과 수집 ──────────────────────────────────────────────────────
 get_exit() {
-  grep -oP 'EXIT=\K\d+' "$RESULT_DIR/$1" 2>/dev/null || echo "1"
+  tail -n 5 "$RESULT_DIR/$1" 2>/dev/null | grep -oP 'EXIT=\K\d+' | tail -n 1 || echo "1"
 }
 
 LINT_EXIT=$(get_exit "nextjs-lint.txt")

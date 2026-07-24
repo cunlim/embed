@@ -3,6 +3,9 @@
 use App\Models\TranslationCache;
 use App\Services\Contracts\TranslationProviderInterface;
 use App\Services\Translator;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
 
 beforeEach(function () {
     config(['services.translate.model' => 'translategemma:4b']);

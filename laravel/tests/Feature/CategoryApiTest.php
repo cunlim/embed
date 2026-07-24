@@ -188,3 +188,30 @@ test('GET /api/categories — page_number 파라미터로 페이지네이션이 
         ->assertJsonPath('meta.last_page', 3)
         ->assertJsonPath('meta.per_page', 10);
 });
+
+test('GET /api/categories — steps 파라미터 지정 시 일반 회원은 본인 소유 카테고리만 반환한다', function () {
+    $user = User::factory()->create(['role' => 'member']);
+    // user_id=1 (공개) 번역 미완료 카테고리
+    Category::factory()->create([
+        'user_id' => 1,
+        'category_name_ko' => '공개카테고리',
+        'category_name_en' => null,
+    ]);
+    // user (본인) 번역 미완료 카테고리
+    $myCat = Category::factory()->create([
+        'user_id' => $user->id,
+        'category_name_ko' => '내카테고리',
+        'category_name_en' => null,
+    ]);
+
+    // steps 미전달 시: 공개(1) + 본인($user->id) 모두 조회
+    $resWithoutSteps = $this->actingAs($user, 'sanctum')->getJson('/api/categories?owner_scope=all');
+    $resWithoutSteps->assertOk();
+    expect($resWithoutSteps->json('data'))->toHaveCount(2);
+
+    // steps 전달 시: 수정 권한이 있는 본인($user->id) 카테고리만 조회
+    $resWithSteps = $this->actingAs($user, 'sanctum')->getJson('/api/categories?owner_scope=all&steps[]=translation.en');
+    $resWithSteps->assertOk();
+    expect($resWithSteps->json('data'))->toHaveCount(1);
+    expect($resWithSteps->json('data.0.id'))->toBe($myCat->id);
+});

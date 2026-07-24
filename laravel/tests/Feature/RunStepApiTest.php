@@ -4,6 +4,9 @@ use App\Models\Category;
 use App\Models\User;
 use App\Services\EmbeddingGenerator;
 use App\Services\Translator;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
 
 test('POST /api/categories/{category}/run-step — 인증 없이 401을 반환한다', function () {
     $category = Category::factory()->create();
